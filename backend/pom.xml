@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.3.10</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.servit</groupId>
+	<artifactId>servit</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>servit</name>
+	<description>A web-based IT repair management system that automates repair tracking, enhances customer communication, and improves service efficiency for IT service providers</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer>
+			<id>paulo.carabuena</id>
+			<name>Paulo Y. Carabuena</name>
+			<email>paulo.carabuena@cit.edu</email>
+		</developer>
+		<developer>
+			<id>kylematthew.quitco</id>
+			<name>Kyle Matthew M. Quitco</name>
+			<email>kylematthew.quitco@cit.edu</email>
+		</developer>
+		<developer>
+			<id>reneekiara.busarang</id>
+			<name>Renee Kiara P. Busarang</name>
+			<email>reneekiara.busarang@cit.edu</email>
+		</developer>
+		<developer>
+			<id>reneekiara.busarang</id>
+			<name>Renee Kiara P. Busarang</name>
+			<email>reneekiara.busarang@cit.edu</email>
+		</developer>
+		<developer>
+			<id>allenluis.mangoroban</id>
+			<name>Allen Luis S. Mangoroban</name>
+			<email>allenluis.mangoroban@cit.edu</email>
+		</developer>
+		<developer>
+			<id>johngabriel.canal</id>
+			<name>John Gabriel Cañal</name>
+			<email>johngabriel.canal@cit.edu</email>
+		</developer>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>17</java.version>
+	</properties>
+	<dependencies>
+<!--		<dependency>-->
+<!--			<groupId>com.mysql</groupId>-->
+<!--			<artifactId>mysql-connector-j</artifactId>-->
+<!--			<scope>runtime</scope>-->
+<!--		</dependency>-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-data-jpa</artifactId>-->
+<!--		</dependency>-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-security</artifactId>-->
+<!--		</dependency>-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.security</groupId>-->
+<!--			<artifactId>spring-security-test</artifactId>-->
+<!--			<scope>test</scope>-->
+<!--		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
