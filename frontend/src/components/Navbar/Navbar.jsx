@@ -30,7 +30,7 @@ const Navbar = () => {
 
                 <div className={`${styles.authButtons} ${isMenuOpen ? styles.active : ''}`}>
                     <Link to="/login" className={styles.loginBtn}>Login</Link>
-                    <Link to="/signin" className={styles.signInBtn}>Sign In</Link>
+                    <Link to="/signup" className={styles.signUpBtn}>Sign up</Link>
                 </div>
             </div>
         </nav>

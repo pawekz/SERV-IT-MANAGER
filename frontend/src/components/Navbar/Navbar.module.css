@@ -94,7 +94,7 @@ button {
   color: #33e407;
 }
 
-.signInBtn {
+.signUpBtn {
   background-color: #33e407;
   color: white;
   padding: 0.5rem 1.5rem;
@@ -104,7 +104,7 @@ button {
   transition: background-color 0.3s ease;
 }
 
-.signInBtn:hover {
+.signUpBtn:hover {
   background-color: #2bc706;
 }
 
@@ -170,7 +170,7 @@ button {
     margin-bottom: 1rem;
   }
 
-  .signInBtn {
+  .signUpBtn {
     width: 100%;
     text-align: center;
   }
