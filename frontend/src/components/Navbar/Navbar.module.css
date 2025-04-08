@@ -1,0 +1,177 @@
+/* Add base styles that were previously in App.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Existing navbar styles */
+.navbar {
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 50px;
+  width: auto;
+}
+
+.navLinks {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks li {
+  margin: 0 1rem;
+}
+
+.navLinks li a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navLinks li a:hover {
+  color: #33e407;
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+}
+
+.loginBtn {
+  margin-right: 1rem;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.loginBtn:hover {
+  color: #33e407;
+}
+
+.signInBtn {
+  background-color: #33e407;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.signInBtn:hover {
+  background-color: #2bc706;
+}
+
+.mobileMenuButton {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  cursor: pointer;
+}
+
+.mobileMenuButton span {
+  height: 3px;
+  width: 100%;
+  background-color: #333;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .mobileMenuButton {
+    display: flex;
+  }
+
+  .navLinks {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    display: none;
+  }
+
+  .navLinks.active {
+    display: flex;
+  }
+
+  .navLinks li {
+    margin: 0.5rem 2rem;
+  }
+
+  .authButtons {
+    position: absolute;
+    top: 200px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    flex-direction: column;
+  }
+
+  .authButtons.active {
+    display: flex;
+  }
+
+  .loginBtn {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+
+  .signInBtn {
+    width: 100%;
+    text-align: center;
+  }
+}
