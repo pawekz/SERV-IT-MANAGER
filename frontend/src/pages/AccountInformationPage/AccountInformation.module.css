@@ -1,0 +1,270 @@
+.accountInformationPage {
+    font-family: "Poppins", sans-serif;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+  }
+  
+  .mainContent {
+    margin-top: 80px; /* To account for fixed navbar */
+    padding: 2rem 0;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .accountContainer {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin: 0 1rem;
+  }
+  
+  .sideBar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    background-color: #33e407;
+  }
+  
+  .accountContent {
+    padding: 2rem 2.5rem;
+  }
+  
+  .logoContainer {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .logo {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+  }
+  
+  .logo span {
+    color: #33e407;
+  }
+  
+  /* Account Section */
+  .accountSection {
+    margin-bottom: 2.5rem;
+  }
+  
+  .accountSection h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+  }
+  
+  .accountHeader {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .accountAvatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    border: 2px solid rgba(51, 228, 7, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #aaa;
+  }
+  
+  .accountInfo h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #333;
+  }
+  
+  .accountInfo p {
+    color: #666;
+    margin-bottom: 1rem;
+  }
+  
+  .changePhotoBtn {
+    background-color: transparent;
+    border: 1px solid #ddd;
+    color: #666;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .changePhotoBtn:hover {
+    background-color: #f9f9f9;
+    border-color: #ccc;
+  }
+  
+  /* Personal Section */
+  .personalSection {
+    margin-bottom: 2.5rem;
+  }
+  
+  .personalSection h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+  }
+  
+  .formRow {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .formGroup {
+    flex: 1;
+    margin-bottom: 1.5rem;
+  }
+  
+  .formGroup label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 0.5rem;
+  }
+  
+  .formGroup input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    color: #333;
+  }
+  
+  .formGroup input:focus {
+    outline: none;
+    border-color: #33e407;
+    box-shadow: 0 0 0 2px rgba(51, 228, 7, 0.1);
+  }
+  
+  .formGroup input::placeholder {
+    color: #aaa;
+  }
+  
+  /* Password Section */
+  .passwordSection {
+    margin-bottom: 2.5rem;
+  }
+  
+  .passwordSection h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+  }
+  
+  .passwordRequirement {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.5rem;
+  }
+  
+  .lastUpdated {
+    font-size: 0.875rem;
+    color: #888;
+    margin-top: 1.5rem;
+  }
+  
+  /* Action Buttons */
+  .actionButtons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .cancelBtn {
+    background-color: #f0f0f0;
+    border: none;
+    color: #666;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .cancelBtn:hover {
+    background-color: #e5e5e5;
+  }
+  
+  .saveBtn {
+    background-color: #33e407;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .saveBtn:hover {
+    background-color: #2bc706;
+  }
+  
+  /* Back Link */
+  .backLink {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .backLink a {
+    color: #33e407;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  
+  .backLink a:hover {
+    color: #2bc706;
+    text-decoration: underline;
+  }
+  
+  /* Responsive Styles */
+  @media (max-width: 768px) {
+    .formRow {
+      flex-direction: column;
+      gap: 0;
+    }
+  
+    .accountHeader {
+      flex-direction: column;
+      text-align: center;
+    }
+  
+    .actionButtons {
+      flex-direction: column-reverse;
+    }
+  
+    .cancelBtn,
+    .saveBtn {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .accountContent {
+      padding: 1.5rem;
+    }
+  }
+  
