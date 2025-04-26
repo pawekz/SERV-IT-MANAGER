@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { LayoutGrid, Users, Monitor, Wrench, FileText, Clock, UserPlus, Settings, Download, Edit } from "lucide-react"
 
@@ -12,6 +10,7 @@ export default function AutomatedClaimForm() {
 
     return (
         <div className="flex min-h-screen bg-gray-50">
+            {/* im gonna add the sidebar to be a component soon */}
             {/* Sidebar */}
             <aside
                 className={`fixed h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 
