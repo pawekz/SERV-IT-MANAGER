@@ -1,4 +1,4 @@
-// "use client"
+"use client"
 
 import { useState } from "react"
 import { LayoutGrid, Users, Monitor, Wrench, FileText, Clock, UserPlus, Settings, Download, Edit } from "lucide-react"
@@ -198,9 +198,11 @@ export default function AutomatedClaimForm() {
                     </div>
                 </div>
 
-                <div className="p-6">
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">Automated Claim Form</h1>
+                {/* THIS IS WHERE THE VERTICAL POSITIONING IS ADJUSTED - REDUCED TOP PADDING */}
+                <div className="p-3 pt-0 -mt-[50px]">
+                    {/* REDUCED MARGIN BOTTOM HERE */}
+                    <div className="mb-3">
+                        <h1 className="text-2xl font-semibold text-gray-800 mb-1">Automated Claim Form</h1>
                         <p className="text-gray-600 text-sm max-w-3xl">
                             Review the automatically generated claim form with prefilled customer, device, and repair details. You can
                             export or download the form as PDF for printing or digital submission.
@@ -208,20 +210,21 @@ export default function AutomatedClaimForm() {
                     </div>
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between p-3 border-b border-gray-200">
                             <h2 className="text-base font-semibold text-gray-800">Claim Form Preview</h2>
                             <div>
-                                <button className="inline-flex items-center justify-center px-4 py-2.5 bg-[#33e407] text-white rounded-md text-sm font-medium hover:bg-[#2bc906] transition-colors">
+                                <button className="inline-flex items-center justify-center px-4 py-2 bg-[#33e407] text-white rounded-md text-sm font-medium hover:bg-[#2bc906] transition-colors">
                                     <Download size={16} className="mr-2" />
                                     Download PDF
                                 </button>
                             </div>
                         </div>
 
-                        <div className="p-5">
-                            {/* Preview Container */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
-                                <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-200">
+                        {/* REDUCED PADDING HERE */}
+                        <div className="p-4">
+                            {/* Preview Container - REDUCED PADDING AND MARGINS */}
+                            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
                                     <div className="text-2xl font-bold">
                                         IO<span className="text-[#33e407]">CONNECT</span>
                                     </div>
@@ -231,9 +234,9 @@ export default function AutomatedClaimForm() {
                                     </div>
                                 </div>
 
-                                <h2 className="text-xl font-semibold text-center mb-5">Device Repair Claim Form</h2>
+                                <h2 className="text-xl font-semibold text-center mb-4">Device Repair Claim Form</h2>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <div className="font-semibold text-gray-800 mb-2">Customer Information</div>
                                         <div className="text-sm mb-1">
@@ -283,45 +286,45 @@ export default function AutomatedClaimForm() {
                                     </div>
                                 </div>
 
-                                <div className="mb-5">
+                                <div className="mb-4">
                                     <div className="font-semibold text-gray-800 mb-2">Repair Details</div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr>
-                                                    <th className="text-left p-2.5 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
                                                         Issue Description
                                                     </th>
-                                                    <th className="text-left p-2.5 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
                                                         Repair Type
                                                     </th>
-                                                    <th className="text-left p-2.5 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
                                                         Parts Required
                                                     </th>
-                                                    <th className="text-left p-2.5 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
                                                         Cost
                                                     </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td className="p-2.5 border-b border-gray-200">Cracked screen with display malfunction</td>
-                                                    <td className="p-2.5 border-b border-gray-200">Screen Replacement</td>
-                                                    <td className="p-2.5 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>
-                                                    <td className="p-2.5 border-b border-gray-200">$279.99</td>
+                                                    <td className="p-2 border-b border-gray-200">Cracked screen with display malfunction</td>
+                                                    <td className="p-2 border-b border-gray-200">Screen Replacement</td>
+                                                    <td className="p-2 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>
+                                                    <td className="p-2 border-b border-gray-200">$279.99</td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="p-2.5 border-b border-gray-200">Battery draining quickly</td>
-                                                    <td className="p-2.5 border-b border-gray-200">Battery Replacement</td>
-                                                    <td className="p-2.5 border-b border-gray-200">iPhone 13 Pro Battery</td>
-                                                    <td className="p-2.5 border-b border-gray-200">$89.99</td>
+                                                    <td className="p-2 border-b border-gray-200">Battery draining quickly</td>
+                                                    <td className="p-2 border-b border-gray-200">Battery Replacement</td>
+                                                    <td className="p-2 border-b border-gray-200">iPhone 13 Pro Battery</td>
+                                                    <td className="p-2 border-b border-gray-200">$89.99</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
 
-                                <div className="mb-5">
+                                <div className="mb-4">
                                     <div className="font-semibold text-gray-800 mb-2">Additional Notes</div>
                                     <p className="text-sm text-gray-600">
                                         Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The
@@ -330,8 +333,8 @@ export default function AutomatedClaimForm() {
                                     </p>
                                 </div>
 
-                                <div className="mt-10 pt-5 border-t border-gray-200 flex flex-col md:flex-row justify-between">
-                                    <div className="w-full md:w-48 mb-5 md:mb-0">
+                                <div className="mt-8 pt-4 border-t border-gray-200 flex flex-col md:flex-row justify-between">
+                                    <div className="w-full md:w-48 mb-4 md:mb-0">
                                         <div className="border-b border-gray-300 h-10 mb-2"></div>
                                         <div className="text-xs text-gray-500">Customer Signature</div>
                                     </div>
@@ -342,45 +345,45 @@ export default function AutomatedClaimForm() {
                                 </div>
                             </div>
 
-                            {/* Form Sections */}
-                            <div className="mb-6 pb-6 border-b border-gray-200">
-                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-4">
+                            {/* Form Sections - REDUCED PADDING AND MARGINS */}
+                            <div className="mb-4 pb-4 border-b border-gray-200">
+                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-3">
                                     <Users size={18} className="mr-2" />
                                     Customer Information
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Full Name</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Full Name</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="Sarah Johnson"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Email Address</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Email Address</label>
                                         <input
                                             type="email"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="sarah.johnson@example.com"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Phone Number</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Phone Number</label>
                                         <input
                                             type="tel"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="(555) 123-4567"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Address</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Address</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="123 Main Street, Apt 4B, New York, NY 10001"
                                             disabled
                                         />
@@ -388,53 +391,53 @@ export default function AutomatedClaimForm() {
                                 </div>
                             </div>
 
-                            <div className="mb-6 pb-6 border-b border-gray-200">
-                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-4">
+                            <div className="mb-4 pb-4 border-b border-gray-200">
+                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-3">
                                     <Monitor size={18} className="mr-2" />
                                     Device Information
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Device Type</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Device Type</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="Smartphone"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Brand/Model</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Brand/Model</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="iPhone 13 Pro"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Serial Number/IMEI</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Serial Number/IMEI</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="IMEI: 352789104563214"
                                             disabled
                                         />
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Purchase Date</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Purchase Date</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="06/15/2023"
                                             disabled
                                         />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Warranty Status</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Warranty Status</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             value="In Warranty (Valid until 06/15/2025)"
                                             disabled
                                         />
@@ -442,45 +445,45 @@ export default function AutomatedClaimForm() {
                                 </div>
                             </div>
 
-                            <div className="mb-6">
-                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-4">
+                            <div className="mb-4">
+                                <h3 className="flex items-center text-base font-semibold text-gray-800 mb-3">
                                     <Wrench size={18} className="mr-2" />
                                     Repair Details
                                 </h3>
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 gap-3">
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Issue Description</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Issue Description</label>
                                         <textarea
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             rows={3}
                                             disabled
                                             defaultValue="Cracked screen with display malfunction. Battery draining quickly."
                                         />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Repair Type</label>
+                                            <label className="block mb-1 text-sm font-medium text-gray-700">Repair Type</label>
                                             <input
                                                 type="text"
-                                                className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                                className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                                 value="Screen Replacement, Battery Replacement"
                                                 disabled
                                             />
                                         </div>
                                         <div>
-                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Estimated Cost</label>
+                                            <label className="block mb-1 text-sm font-medium text-gray-700">Estimated Cost</label>
                                             <input
                                                 type="text"
-                                                className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
-                                                value="$369.98"
+                                                className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
+                                                value="PHP 100.98"
                                                 disabled
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Additional Notes</label>
+                                        <label className="block mb-1 text-sm font-medium text-gray-700">Additional Notes</label>
                                         <textarea
-                                            className="w-full p-2.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 disabled:cursor-not-allowed"
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             rows={3}
                                             disabled
                                             defaultValue="Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The screen cracked and touch functionality is intermittent. Battery was already showing signs of degradation before the incident. Device has been backed up by the customer."
@@ -490,11 +493,11 @@ export default function AutomatedClaimForm() {
                             </div>
 
                             <div className="flex justify-end gap-3">
-                                <button className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors">
+                                <button className="inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors">
                                     <Edit size={16} className="mr-2" />
                                     Edit Form
                                 </button>
-                                <button className="inline-flex items-center justify-center px-4 py-2.5 bg-[#33e407] text-white rounded-md text-sm font-medium hover:bg-[#2bc906] transition-colors">
+                                <button className="inline-flex items-center justify-center px-4 py-2 bg-[#33e407] text-white rounded-md text-sm font-medium hover:bg-[#2bc906] transition-colors">
                                     <Download size={16} className="mr-2" />
                                     Download PDF
                                 </button>
