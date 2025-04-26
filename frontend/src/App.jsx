@@ -7,6 +7,7 @@ import AboutPage from "./pages/AboutPage/AboutPage";
 import AccountInformation from "./pages/AccountInformationPage/AccountInformation";
 import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagement";
 import UserManagement from "./pages/UserManagementPage/UserManagement";
+import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 
 function App() {
   return (
@@ -20,7 +21,7 @@ function App() {
         <Route path="/accountinformation" element={<AccountInformation />} />
         <Route path="/passwordmanagement" element={<PasswordManagement />} />
         <Route path="/usermanagement" element={<UserManagement />} />
-
+        <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         {/* <Route path="*" element={<LandingPage />} /> */}
       </Routes>
     </Router>
