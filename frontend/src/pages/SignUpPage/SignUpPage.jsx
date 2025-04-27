@@ -1,61 +1,96 @@
 import React from 'react';
-import styles from './SignUpPage.module.css';
 
 const SignUpPage = () => {
     return (
-        <div className={styles.pageContainer}>
-            <div className={styles.signupContainer}>
-                <div className={styles.logoContainer}>
-                    <div className={styles.logo}>IO<span>CONNECT</span></div>
+        <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
+            <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-md relative overflow-hidden">
+                {/* Green accent border on the left */}
+                <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
+
+                {/* Logo */}
+                <div className="text-center mb-2">
+                    <div className="text-2xl font-bold text-gray-800 tracking-wide">
+                        IO<span className="text-[#33e407]">CONNECT</span>
+                    </div>
                 </div>
 
-                <h1 className={styles.formTitle}>Create your account</h1>
+                {/* Form Title */}
+                <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                    Create your account
+                </h1>
 
+                {/* Signup Form */}
                 <form>
-                    <div className={styles.formGroup}>
-                        <label htmlFor="fullname">Full Name</label>
+                    <div className="mb-5">
+                        <label
+                            htmlFor="fullname"
+                            className="block mb-2 text-sm font-medium text-gray-600"
+                        >
+                            Full Name
+                        </label>
                         <input
                             type="text"
                             id="fullname"
-                            className={styles.formControl}
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Enter your full name"
                             required
                         />
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label htmlFor="email">Email</label>
+                    <div className="mb-5">
+                        <label
+                            htmlFor="email"
+                            className="block mb-2 text-sm font-medium text-gray-600"
+                        >
+                            Email
+                        </label>
                         <input
                             type="email"
                             id="email"
-                            className={styles.formControl}
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Enter your email"
                             required
                         />
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label htmlFor="password">Password</label>
+                    <div className="mb-5">
+                        <label
+                            htmlFor="password"
+                            className="block mb-2 text-sm font-medium text-gray-600"
+                        >
+                            Password
+                        </label>
                         <input
                             type="password"
                             id="password"
-                            className={styles.formControl}
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Create a password"
                             required
                         />
-                        <div className={styles.passwordRequirements}>
+                        <div className="text-xs text-gray-400 mt-1.5">
                             Password must be at least 8 characters long
                         </div>
                     </div>
 
-                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Sign Up</button>
+                    <button
+                        type="submit"
+                        className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors"
+                    >
+                        Sign Up
+                    </button>
                 </form>
 
-                <div className={styles.divider}>OR</div>
+                {/* Divider */}
+                <div className="flex items-center my-6 text-gray-400 text-sm">
+                    <div className="flex-1 h-px bg-gray-200"></div>
+                    <div className="px-4">OR</div>
+                    <div className="flex-1 h-px bg-gray-200"></div>
+                </div>
 
-                <button className={`${styles.btn} ${styles.btnGoogle}`}>
+                {/* Google Sign Up Button */}
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
                     <svg
-                        className={styles.googleIcon}
+                        className="w-4 h-4"
                         viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg"
                     >
@@ -79,8 +114,9 @@ const SignUpPage = () => {
                     Sign up with Google
                 </button>
 
-                <div className={styles.loginLink}>
-                    Already have an account? <a href="index.html">Sign in</a>
+                {/* Login Link */}
+                <div className="text-center mt-4 text-sm text-gray-600">
+                    Already have an account? <a href="index.html" className="text-[#33e407] font-medium hover:underline">Sign in</a>
                 </div>
             </div>
         </div>
