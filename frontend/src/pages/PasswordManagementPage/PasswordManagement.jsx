@@ -23,17 +23,20 @@ const PasswordManagement = () => {
                         Create a strong password to protect your account
                     </p>
 
+                    {/* This is where the messages Success Message or error message and it will display based on the state of the password change process. */}
+                    {/* Error message (hidden by default) */}
+
                     {/* Success message (hidden by default) */}
-                    <div className="hidden bg-green-50 text-green-700 border border-green-100 rounded-md p-3 mb-6 flex items-center">
+
+                    {/* <div className="hidden bg-green-50 text-green-700 border border-green-100 rounded-md p-3 mb-6 flex items-center">
                         <span className="mr-3 text-lg">✓</span>
                         Password changed successfully!
                     </div>
 
-                    {/* Error message (hidden by default) */}
                     <div className="hidden bg-red-50 text-red-600 border border-red-100 rounded-md p-3 mb-6 flex items-center">
                         <span className="mr-3 text-lg">✕</span>
                         Current password is incorrect. Please try again.
-                    </div>
+                    </div> */}
 
                     <form>
                         <div className="mb-6">
