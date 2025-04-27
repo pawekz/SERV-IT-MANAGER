@@ -178,7 +178,7 @@ const AccountInformation = () => {
                         </div>
 
                         <div className="text-center mt-4">
-                            <Link to="/" className="font-medium hover:underline" style={{ color: "#33e407", "&:hover": { color: "#2bc706" } }}>
+                            <Link to="#" className="font-medium hover:underline" style={{ color: "#33e407", "&:hover": { color: "#2bc706" } }}>
                                 ← Back to Dashboard
                             </Link>
                         </div>

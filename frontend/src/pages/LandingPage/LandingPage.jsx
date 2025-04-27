@@ -26,7 +26,7 @@ const LandingPage = () => {
                                     Explore Features
                                 </a>
                                 <a
-                                    href="#contact"
+                                    href="/signup"
                                     className="bg-transparent text-gray-800 px-8 py-3 rounded font-medium border border-[#33e407] transition-all duration-300 hover:bg-[rgba(51,228,7,0.1)] hover:-translate-y-1"
                                 >
                                     Get Started
@@ -245,7 +245,7 @@ const LandingPage = () => {
                             Join IOCONNECT today and transform your service management
                         </p>
                         <a
-                            href="#contact"
+                            href="/signup"
                             className="inline-block bg-white text-[#33e407] px-10 py-4 rounded font-semibold transition-all duration-300 hover:bg-opacity-90 hover:-translate-y-1 hover:shadow-lg"
                         >
                             Get Started Now

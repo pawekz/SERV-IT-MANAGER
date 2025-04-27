@@ -17,7 +17,7 @@ const LoginPage = () => {
 
                     {/* Form Title */}
                     <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-                        Sign in to your account
+                        Login to your account
                     </h1>
 
                     {/* Login Form */}
@@ -58,7 +58,7 @@ const LoginPage = () => {
                             type="submit"
                             className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors"
                         >
-                            Sign In
+                            Login
                         </button>
 
                         <a
@@ -100,7 +100,7 @@ const LoginPage = () => {
                                 fill="#EA4335"
                             />
                         </svg>
-                        Sign in with Google
+                        Login with Google
                     </button>
                 </div>
             </div>
