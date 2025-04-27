@@ -256,7 +256,9 @@ const ContactPage = () => {
                             <h2 className="text-4xl font-bold mb-4 text-gray-800">
                                 Our <span className="text-[#33e407]">Location</span>
                             </h2>
-                            <p className="text-lg text-gray-600">Visit our office in Cebu City</p>
+                            {/* <p className="text-lg text-gray-600">Visit our office in Cebu City</p> */}
+                            <p className="text-lg text-gray-600">Address: 8H Peace Valley Friendship St., Lahug Cebu City
+                            </p>
                         </div>
                         <div className="relative rounded-lg overflow-hidden shadow-md">
                             <div className="w-full h-[450px] relative">
