@@ -187,6 +187,7 @@ const AccountInformation = () => {
             </main>
 
             <Footer />
+
         </div>
     );
 };
