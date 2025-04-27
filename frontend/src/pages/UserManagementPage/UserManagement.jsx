@@ -303,7 +303,10 @@ const UserManagement = () => {
                             <span>Showing 1 to 5 of 12 entries</span>
                         </div>
                         <div className="flex gap-1">
-                            <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer opacity-50 cursor-not-allowed">
+                            {/* <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer opacity-50 cursor-not-allowed">
+                                <ChevronLeft size={16} />
+                            </button> */}
+                            <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm opacity-50 cursor-not-allowed">
                                 <ChevronLeft size={16} />
                             </button>
                             <button className="flex items-center justify-center min-w-8 h-8 rounded border border-none bg-[#33e407] text-white text-sm cursor-pointer">1</button>
