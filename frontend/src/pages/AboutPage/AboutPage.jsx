@@ -9,7 +9,7 @@ const AboutPage = () => {
 
             <main className="mt-20">
                 {/* Hero Section */}
-                <section className="bg-gradient-to-tr from-[#33e407]/10 to-white py-24 text-center">
+                <section className="bg-gradient-to-tr from-[rgba(93,255,53,0.34)] to-white py-24 text-center">
                     <div className="max-w-7xl mx-auto px-8">
                         <div>
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-800">

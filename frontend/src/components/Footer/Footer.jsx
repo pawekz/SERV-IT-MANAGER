@@ -15,10 +15,10 @@ const Footer = () => {
                             and enhance customer satisfaction.
                         </p>
                         <div className={styles.socialIcons}>
-                            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+                            <a href="https://www.facebook.com/ioconnectcbu" target="_blank" rel="noopener noreferrer">
                                 <Facebook size={20} />
                             </a>
-                            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                            {/* <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
                                 <Twitter size={20} />
                             </a>
                             <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
@@ -26,7 +26,7 @@ const Footer = () => {
                             </a>
                             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
                                 <Instagram size={20} />
-                            </a>
+                            </a> */}
                         </div>
                     </div>
 
@@ -35,7 +35,7 @@ const Footer = () => {
                         <ul>
                             <li><Link to="/">Home</Link></li>
                             <li><Link to="/about">About Us</Link></li>
-                            <li><Link to="/services">Services</Link></li>
+                            {/* <li><Link to="/services">Services</Link></li> */}
                             <li><Link to="/contact">Contact Us</Link></li>
                         </ul>
                     </div>
