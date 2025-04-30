@@ -13,7 +13,7 @@ const Navbar = () => {
         <nav className={styles.navbar}>
             <div className={styles.container}>
                 <Link to="/" className={styles.logoContainer}>
-                    <img src="/ioconnect-logo.png" alt="IOCONNECT Logo" className={styles.logo} />
+                    <img src="src/assets/images/logo.png" alt="IOCONNECT Logo" className={styles.logo} />
                 </Link>
 
                 <div className={styles.mobileMenuButton} onClick={toggleMenu}>

@@ -29,15 +29,20 @@ const LandingPage = () => {
                             </div>
                         </div>
                         <div className={styles.heroImage}>
-                            <img src="/ioconnect-logo.png" alt="IOCONNECT" />
+                            <img src="src/assets/images/mock.png" alt="IOCONNECT" />
                         </div>
                     </div>
                 </section>
+
 
                 {/* About Section */}
                 <section className={styles.aboutSection} id="about">
                     <div className={styles.container}>
                         <div className={styles.sectionHeader}>
+                            <div className={styles.aboutImage}>
+                                {/* <img src="/ioconnect-logo.png" alt="About IOCONNECT" /> */}
+                                <img src="src/assets/images/iocon_logo.png" alt="About IOCONNECT" />
+                            </div>
                             <h2>
                                 About <span>IOCONNECT</span>
                             </h2>
@@ -45,10 +50,6 @@ const LandingPage = () => {
                         </div>
 
                         <div className={styles.aboutContent}>
-                            <div className={styles.aboutImage}>
-                                {/* <img src="/ioconnect-logo.png" alt="About IOCONNECT" /> */}
-                                <img src="/ioconnect-logo.png" alt="About IOCONNECT" />
-                            </div>
                             <div className={styles.aboutText}>
                                 <h3>Digitizing IT Repair Workflow</h3>
                                 <p>
@@ -68,6 +69,18 @@ const LandingPage = () => {
                         </div>
                     </div>
                 </section>
+
+                {/* CTA Section */}
+                <section className={styles.ctaSection}>
+                    <div className={styles.container}>
+                        <h2>Ready to streamline your IT repair process?</h2>
+                        <p>Join IOCONNECT today and transform your service management</p>
+                        <a href="#contact" className={styles.ctaButton}>
+                            Get Started Now
+                        </a>
+                    </div>
+                </section>
+
 
                 {/* Features Section */}
                 <section className={styles.featuresSection} id="features">
@@ -211,114 +224,105 @@ const LandingPage = () => {
                     </div>
                 </section>
 
-                {/* CTA Section */}
-                <section className={styles.ctaSection}>
-                    <div className={styles.container}>
-                        <h2>Ready to streamline your IT repair process?</h2>
-                        <p>Join IOCONNECT today and transform your service management</p>
-                        <a href="#contact" className={styles.ctaButton}>
-                            Get Started Now
-                        </a>
-                    </div>
-                </section>
+
 
                 {/* Contact Section */}
-                <section className={styles.contactSection} id="contact">
-                    <div className={styles.container}>
-                        <div className={styles.sectionHeader}>
-                            <h2>
-                                Contact <span>Us</span>
-                            </h2>
-                            <p>Get in touch with our team for more information</p>
-                        </div>
+                {/*<section className={styles.contactSection} id="contact">*/}
+                {/*    <div className={styles.container}>*/}
+                {/*        <div className={styles.sectionHeader}>*/}
+                {/*            <h2>*/}
+                {/*                Contact <span>Us</span>*/}
+                {/*            </h2>*/}
+                {/*            <p>Get in touch with our team for more information</p>*/}
+                {/*        </div>*/}
 
-                        <div className={styles.contactContent}>
-                            <div className={styles.contactInfo}>
-                                <div className={styles.contactCard}>
-                                    <div className={styles.contactIcon}>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                            <circle cx="12" cy="10" r="3"></circle>
-                                        </svg>
-                                    </div>
-                                    <h3>Address</h3>
-                                    <p>8H Peace Valley Friendship St., Lahug Cebu City</p>
-                                </div>
+                {/*        <div className={styles.contactContent}>*/}
+                {/*            <div className={styles.contactInfo}>*/}
+                {/*                <div className={styles.contactCard}>*/}
+                {/*                    <div className={styles.contactIcon}>*/}
+                {/*                        <svg*/}
+                {/*                            xmlns="http://www.w3.org/2000/svg"*/}
+                {/*                            width="24"*/}
+                {/*                            height="24"*/}
+                {/*                            viewBox="0 0 24 24"*/}
+                {/*                            fill="none"*/}
+                {/*                            stroke="currentColor"*/}
+                {/*                            strokeWidth="2"*/}
+                {/*                            strokeLinecap="round"*/}
+                {/*                            strokeLinejoin="round"*/}
+                {/*                        >*/}
+                {/*                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>*/}
+                {/*                            <circle cx="12" cy="10" r="3"></circle>*/}
+                {/*                        </svg>*/}
+                {/*                    </div>*/}
+                {/*                    <h3>Address</h3>*/}
+                {/*                    <p>8H Peace Valley Friendship St., Lahug Cebu City</p>*/}
+                {/*                </div>*/}
 
-                                <div className={styles.contactCard}>
-                                    <div className={styles.contactIcon}>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                        </svg>
-                                    </div>
-                                    <h3>Phone</h3>
-                                    <p>032-272-9019</p>
-                                </div>
+                {/*                <div className={styles.contactCard}>*/}
+                {/*                    <div className={styles.contactIcon}>*/}
+                {/*                        <svg*/}
+                {/*                            xmlns="http://www.w3.org/2000/svg"*/}
+                {/*                            width="24"*/}
+                {/*                            height="24"*/}
+                {/*                            viewBox="0 0 24 24"*/}
+                {/*                            fill="none"*/}
+                {/*                            stroke="currentColor"*/}
+                {/*                            strokeWidth="2"*/}
+                {/*                            strokeLinecap="round"*/}
+                {/*                            strokeLinejoin="round"*/}
+                {/*                        >*/}
+                {/*                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>*/}
+                {/*                        </svg>*/}
+                {/*                    </div>*/}
+                {/*                    <h3>Phone</h3>*/}
+                {/*                    <p>032-272-9019</p>*/}
+                {/*                </div>*/}
 
-                                <div className={styles.contactCard}>
-                                    <div className={styles.contactIcon}>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                            <polyline points="22,6 12,13 2,6"></polyline>
-                                        </svg>
-                                    </div>
-                                    <h3>Email</h3>
-                                    <p>info@ioconnect-cbu.com</p>
-                                </div>
-                            </div>
+                {/*                <div className={styles.contactCard}>*/}
+                {/*                    <div className={styles.contactIcon}>*/}
+                {/*                        <svg*/}
+                {/*                            xmlns="http://www.w3.org/2000/svg"*/}
+                {/*                            width="24"*/}
+                {/*                            height="24"*/}
+                {/*                            viewBox="0 0 24 24"*/}
+                {/*                            fill="none"*/}
+                {/*                            stroke="currentColor"*/}
+                {/*                            strokeWidth="2"*/}
+                {/*                            strokeLinecap="round"*/}
+                {/*                            strokeLinejoin="round"*/}
+                {/*                        >*/}
+                {/*                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>*/}
+                {/*                            <polyline points="22,6 12,13 2,6"></polyline>*/}
+                {/*                        </svg>*/}
+                {/*                    </div>*/}
+                {/*                    <h3>Email</h3>*/}
+                {/*                    <p>info@ioconnect-cbu.com</p>*/}
+                {/*                </div>*/}
+                {/*            </div>*/}
 
-                            <div className={styles.contactForm}>
-                                <form>
-                                    <div className={styles.formGroup}>
-                                        <input type="text" placeholder="Your Name" required />
-                                    </div>
-                                    <div className={styles.formGroup}>
-                                        <input type="email" placeholder="Your Email" required />
-                                    </div>
-                                    <div className={styles.formGroup}>
-                                        <input type="text" placeholder="Subject" required />
-                                    </div>
-                                    <div className={styles.formGroup}>
-                                        <textarea placeholder="Your Message" rows="5" required></textarea>
-                                    </div>
-                                    <button type="submit" className={styles.submitBtn}>
-                                        Send Message
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                {/*            <div className={styles.contactForm}>*/}
+                {/*                <form>*/}
+                {/*                    <div className={styles.formGroup}>*/}
+                {/*                        <input type="text" placeholder="Your Name" required />*/}
+                {/*                    </div>*/}
+                {/*                    <div className={styles.formGroup}>*/}
+                {/*                        <input type="email" placeholder="Your Email" required />*/}
+                {/*                    </div>*/}
+                {/*                    <div className={styles.formGroup}>*/}
+                {/*                        <input type="text" placeholder="Subject" required />*/}
+                {/*                    </div>*/}
+                {/*                    <div className={styles.formGroup}>*/}
+                {/*                        <textarea placeholder="Your Message" rows="5" required></textarea>*/}
+                {/*                    </div>*/}
+                {/*                    <button type="submit" className={styles.submitBtn}>*/}
+                {/*                        Send Message*/}
+                {/*                    </button>*/}
+                {/*                </form>*/}
+                {/*            </div>*/}
+                {/*        </div>*/}
+                {/*    </div>*/}
+                {/*</section>*/}
             </main>
 
             <Footer />
