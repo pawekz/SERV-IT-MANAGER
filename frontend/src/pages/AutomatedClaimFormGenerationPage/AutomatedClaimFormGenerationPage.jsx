@@ -103,7 +103,7 @@ export default function AutomatedClaimForm() {
                             <li className="mb-0.5">
                                 <a
                                     href="#"
-                                    className="flex items-center px-5 py-2.5 text-gray-600 bg-green-50 text-[#33e407] border-l-3 border-[#33e407]"
+                                    className="flex items-center px-5 py-2.5 bg-green-50 text-[#33e407] border-l-3 border-[#33e407]"
                                 >
                                     <div className="flex items-center justify-center w-5 h-5 mr-3">
                                         <FileText size={18} />
