@@ -22,8 +22,8 @@ main {
 
 /* Hero Section */
 .heroSection {
-  background: linear-gradient(138deg, rgba(51, 255, 0, 0.195) 0%, rgba(255, 255, 255, 1) 100%);
-  padding: 5rem 0;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.4) 0%, rgba(255, 255, 255, 0.5) 100%);
+  padding: 7rem 0;
 }
 
 .heroContent {
@@ -46,7 +46,7 @@ main {
 }
 
 .heroContent h1 span {
-  color: #33e407;
+  color: #10B981;
 }
 
 .heroContent p {
@@ -62,7 +62,7 @@ main {
 }
 
 .primaryBtn {
-  background-color: #33e407;
+  background-color: #10B981;
   color: white;
   padding: 0.8rem 2rem;
   border-radius: 4px;
@@ -85,7 +85,7 @@ main {
   border-radius: 4px;
   text-decoration: none;
   font-weight: 500;
-  border: 1px solid #33e407;
+  border: 1px solid #10B981;
   transition: all 0.3s ease;
   display: inline-block;
 }
@@ -96,9 +96,11 @@ main {
 }
 
 .heroImage img {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 80%;
+  /*padding-left: 3rem;*/
+  opacity: 0.8;
+  /*border-radius: 10px;*/
+  /*box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);*/
 }
 
 /* Section Header */
@@ -115,7 +117,7 @@ main {
 }
 
 .sectionHeader h2 span {
-  color: #33e407;
+  color: #00fd6b;
 }
 
 .sectionHeader p {
@@ -143,19 +145,20 @@ main {
 
 .aboutImage img {
   max-width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  /*border-radius: 10px;*/
+  /*box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);*/
 }
 
 .aboutText {
   flex: 1;
+  margin-left: 5rem;
 }
 
 .aboutText h3 {
   font-size: 1.8rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: #33e407;
+  color: #00fd6b;
 }
 
 .aboutText p {
@@ -201,7 +204,7 @@ main {
 }
 
 .featureIcon svg {
-  color: #33e407;
+  color: #10B981;
 }
 
 .featureCard h3 {
@@ -219,7 +222,7 @@ main {
 /* CTA Section */
 .ctaSection {
   padding: 5rem 0;
-  background: linear-gradient(135deg, rgba(51, 228, 7, 0.9) 0%, rgba(51, 228, 7, 0.7) 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 1) 0%, rgba(51, 228, 7, 0.5) 100%);
   color: white;
   text-align: center;
 }

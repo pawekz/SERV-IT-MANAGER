@@ -9,6 +9,11 @@ const Navbar = () => {
     };
 
     return (
+
+        <nav className={styles.navbar}>
+            <div className={styles.container}>
+                <Link to="/" className={styles.logoContainer}>
+                    <img src="src/assets/images/logo.png" alt="IOCONNECT Logo" className={styles.logo} />
         <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
             <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
                 {/* Logo */}
