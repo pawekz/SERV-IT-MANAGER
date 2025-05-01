@@ -1,6 +1,83 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const SignUpPage = () => {
+    // State for form inputs
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+
+    // Handle input changes
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setFormData({ ...formData, [id]: value });
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        // Basic validation
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+            setError('All fields are required');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.password.length < 8) {
+            setError('Password must be at least 8 characters long');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8080/user/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            // Check if response has content before parsing JSON
+            const contentType = response.headers.get("content-type");
+            let data = null;
+            
+            if (contentType && contentType.includes("application/json") && response.status !== 204) {
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    console.warn("Response couldn't be parsed as JSON:", parseError);
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(data?.message || `Registration failed with status: ${response.status}`);
+            }
+
+            // Registration successful
+            setSuccess(true);
+            setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: ''
+            });
+        } catch (err) {
+            setError(err.message || 'Something went wrong. Please try again.');
+            console.error("Registration error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
             <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-md relative overflow-hidden">
@@ -19,22 +96,57 @@ const SignUpPage = () => {
                     Create your account
                 </h1>
 
+                {/* Success message */}
+                {success && (
+                    <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded">
+                        Registration successful! You can now log in.
+                    </div>
+                )}
+
+                {/* Error message */}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded">
+                        {error}
+                    </div>
+                )}
+
                 {/* Signup Form */}
-                <form>
-                    <div className="mb-5">
-                        <label
-                            htmlFor="fullname"
-                            className="block mb-2 text-sm font-medium text-gray-600"
-                        >
-                            Full Name
-                        </label>
-                        <input
-                            type="text"
-                            id="fullname"
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                            placeholder="Enter your full name"
-                            required
-                        />
+                <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label
+                                htmlFor="firstName"
+                                className="block mb-2 text-sm font-medium text-gray-600"
+                            >
+                                First Name
+                            </label>
+                            <input
+                                type="text"
+                                id="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                placeholder="First name"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="lastName"
+                                className="block mb-2 text-sm font-medium text-gray-600"
+                            >
+                                Last Name
+                            </label>
+                            <input
+                                type="text"
+                                id="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                placeholder="Last name"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div className="mb-5">
@@ -47,6 +159,8 @@ const SignUpPage = () => {
                         <input
                             type="email"
                             id="email"
+                            value={formData.email}
+                            onChange={handleChange}
                             className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Enter your email"
                             required
@@ -63,6 +177,8 @@ const SignUpPage = () => {
                         <input
                             type="password"
                             id="password"
+                            value={formData.password}
+                            onChange={handleChange}
                             className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Create a password"
                             required
@@ -74,9 +190,10 @@ const SignUpPage = () => {
 
                     <button
                         type="submit"
-                        className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors"
+                        disabled={loading}
+                        className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
-                        Sign Up
+                        {loading ? 'Signing Up...' : 'Sign Up'}
                     </button>
                 </form>
 
