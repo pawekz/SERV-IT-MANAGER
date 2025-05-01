@@ -30,6 +30,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
         String token = jwtUtil.generateToken(u.getUsername(), u.getRole().name(), u.getFirstName(), u.getLastName(), u.getEmail());
+        System.out.println("Token:" + token);
         return new AuthResponse(token, u.getRole().name());
     }
 }

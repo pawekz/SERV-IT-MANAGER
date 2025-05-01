@@ -44,6 +44,7 @@ public class UserService {
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setRole(userRepo.count() == 0 ? UserRole.ADMIN : UserRole.CUSTOMER);
         userRepo.save(u);
+        System.out.print("User registered: " + u.getEmail());
     }
 
     public ProfileResponse getCurrentUserProfile() {
