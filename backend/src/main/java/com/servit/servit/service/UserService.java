@@ -40,6 +40,7 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
+        u.setUsername(req.getEmail()); // Set username to email
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setRole(userRepo.count() == 0 ? UserRole.ADMIN : UserRole.CUSTOMER);
         userRepo.save(u);
