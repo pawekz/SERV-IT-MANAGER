@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom"
-import styles from "./UserManagement.module.css"
 import {
     LayoutGrid,
     Users,
@@ -19,75 +18,76 @@ import {
 
 const UserManagement = () => {
     return (
-        <div className={styles.userManagementPage}>
-            <div className={styles.sidebar}>
-                <div className={styles.logo}>
-                    <h1>
-                        IO<span>CONNECT</span>
+        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+            {/* Sidebar */}
+            <div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">
+                <div className="p-6 border-b border-gray-200">
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        IO<span className="text-[#33e407]">CONNECT</span>
                     </h1>
                 </div>
 
-                <nav className={styles.navigation}>
-                    <div className={styles.navSection}>
-                        <h2>MAIN</h2>
+                <nav className="flex-1 py-4 overflow-y-auto">
+                    <div className="mb-6">
+                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
                         <ul>
-                            <li>
-                                <Link to="/dashboard">
-                                    <LayoutGrid size={18} />
+                            <li className="mb-1">
+                                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <LayoutGrid size={18} className="mr-3" />
                                     <span>Dashboard</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/users">
-                                    <Users size={18} />
+                            <li className="mb-1">
+                                <Link to="/users" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <Users size={18} className="mr-3" />
                                     <span>Users</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/projects">
-                                    <FolderKanban size={18} />
+                            <li className="mb-1">
+                                <Link to="/projects" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <FolderKanban size={18} className="mr-3" />
                                     <span>Projects</span>
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
-                    <div className={styles.navSection}>
-                        <h2>ADMINISTRATION</h2>
+                    <div className="mb-6">
+                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                         <ul>
-                            <li className={styles.active}>
-                                <Link to="/user-management">
-                                    <UserCog size={18} />
+                            <li className="mb-1">
+                                <Link to="/user-management" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
+                                    <UserCog size={18} className="mr-3" />
                                     <span>User Management</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/roles">
-                                    <ShieldCheck size={18} />
+                            <li className="mb-1">
+                                <Link to="/roles" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <ShieldCheck size={18} className="mr-3" />
                                     <span>Roles & Permissions</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/settings">
-                                    <Settings size={18} />
+                            <li className="mb-1">
+                                <Link to="/settings" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <Settings size={18} className="mr-3" />
                                     <span>Settings</span>
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
-                    <div className={styles.navSection}>
-                        <h2>REPORTS</h2>
+                    <div className="mb-6">
+                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>
                         <ul>
-                            <li>
-                                <Link to="/analytics">
-                                    <BarChart3 size={18} />
+                            <li className="mb-1">
+                                <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <BarChart3 size={18} className="mr-3" />
                                     <span>Analytics</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/audit-logs">
-                                    <ClipboardList size={18} />
+                            <li className="mb-1">
+                                <Link to="/audit-logs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                                    <ClipboardList size={18} className="mr-3" />
                                     <span>Audit Logs</span>
                                 </Link>
                             </li>
@@ -95,49 +95,54 @@ const UserManagement = () => {
                     </div>
                 </nav>
 
-                <div className={styles.userProfile}>
-                    <div className={styles.userAvatar}>
+                <div className="p-4 border-t border-gray-200 flex items-center">
+                    <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
                         <span>AD</span>
                     </div>
-                    <div className={styles.userInfo}>
-                        <h3>Admin User</h3>
-                        <p>Administrator</p>
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-800 m-0">Admin User</h3>
+                        <p className="text-xs text-gray-500 m-0">Administrator</p>
                     </div>
                 </div>
             </div>
 
-            <div className={styles.mainContent}>
-                <div className={styles.pageHeader}>
-                    <h1>User Management</h1>
-                    <p>
+            {/* Main Content */}
+            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-semibold text-gray-800 mb-2">User Management</h1>
+                    <p className="text-gray-600 text-base max-w-3xl">
                         Manage user accounts and control access by assigning appropriate roles. Role-Based Access Control (RBAC)
                         allows you to define permissions based on user roles.
                     </p>
                 </div>
 
-                <div className={styles.usersSection}>
-                    <div className={styles.sectionHeader}>
-                        <h2>Users</h2>
-                        <button className={styles.addUserBtn}>
-                            <Plus size={16} />
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold text-gray-800 m-0">Users</h2>
+                        <button className="flex items-center bg-[#33e407] text-white border-none rounded px-4 py-2 font-medium cursor-pointer transition-colors hover:bg-[#2bc706]">
+                            <Plus size={16} className="mr-2" />
                             <span>Add User</span>
                         </button>
                     </div>
 
-                    <div className={styles.tableControls}>
-                        <div className={styles.searchBar}>
-                            <Search size={16} />
-                            <input type="text" placeholder="Search users..." />
+                    <div className="flex justify-between mb-4">
+                        <div className="relative flex-1 max-w-md">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="Search users..."
+                                className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                            />
                         </div>
-                        <div className={styles.filters}>
-                            <select className={styles.filterSelect}>
+                        <div className="flex gap-4">
+                            <select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                 <option>All Roles</option>
                                 <option>Admin</option>
                                 <option>Manager</option>
                                 <option>User</option>
                                 <option>Guest</option>
                             </select>
-                            <select className={styles.filterSelect}>
+                            <select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                 <option>All Status</option>
                                 <option>Active</option>
                                 <option>Inactive</option>
@@ -146,144 +151,144 @@ const UserManagement = () => {
                         </div>
                     </div>
 
-                    <div className={styles.tableContainer}>
-                        <table className={styles.usersTable}>
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                        <table className="w-full border-collapse">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Current Role</th>
-                                    <th>Assign Role</th>
-                                    <th>Actions</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Current Role</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Assign Role</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>John Doe</td>
-                                    <td>john.doe@ioconnect.com</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">John Doe</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">john.doe@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
                                     </td>
-                                    <td>Admin</td>
-                                    <td>
-                                        <select className={styles.roleSelect}>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Admin</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                             <option>Admin</option>
                                             <option>Manager</option>
                                             <option>User</option>
                                             <option>Guest</option>
                                         </select>
                                     </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.editBtn}>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                 <PenLine size={16} />
                                             </button>
-                                            <button className={styles.deleteBtn}>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Jane Smith</td>
-                                    <td>jane.smith@ioconnect.com</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Jane Smith</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">jane.smith@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
                                     </td>
-                                    <td>Manager</td>
-                                    <td>
-                                        <select className={styles.roleSelect}>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Manager</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                             <option>Manager</option>
                                             <option>Admin</option>
                                             <option>User</option>
                                             <option>Guest</option>
                                         </select>
                                     </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.editBtn}>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                 <PenLine size={16} />
                                             </button>
-                                            <button className={styles.deleteBtn}>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Robert Johnson</td>
-                                    <td>robert.johnson@ioconnect.com</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusInactive}`}>Inactive</span>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Robert Johnson</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">robert.johnson@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inactive</span>
                                     </td>
-                                    <td>User</td>
-                                    <td>
-                                        <select className={styles.roleSelect}>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">User</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                             <option>User</option>
                                             <option>Admin</option>
                                             <option>Manager</option>
                                             <option>Guest</option>
                                         </select>
                                     </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.editBtn}>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                 <PenLine size={16} />
                                             </button>
-                                            <button className={styles.deleteBtn}>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Emily Davis</td>
-                                    <td>emily.davis@ioconnect.com</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusPending}`}>Pending</span>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Emily Davis</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">emily.davis@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-500">Pending</span>
                                     </td>
-                                    <td>Guest</td>
-                                    <td>
-                                        <select className={styles.roleSelect}>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Guest</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                             <option>Guest</option>
                                             <option>Admin</option>
                                             <option>Manager</option>
                                             <option>User</option>
                                         </select>
                                     </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.editBtn}>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                 <PenLine size={16} />
                                             </button>
-                                            <button className={styles.deleteBtn}>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Michael Wilson</td>
-                                    <td>michael.wilson@ioconnect.com</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
+                                    <td className="p-4 text-gray-800">Michael Wilson</td>
+                                    <td className="p-4 text-gray-800">michael.wilson@ioconnect.com</td>
+                                    <td className="p-4">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
                                     </td>
-                                    <td>User</td>
-                                    <td>
-                                        <select className={styles.roleSelect}>
+                                    <td className="p-4 text-gray-800">User</td>
+                                    <td className="p-4">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                             <option>User</option>
                                             <option>Admin</option>
                                             <option>Manager</option>
                                             <option>Guest</option>
                                         </select>
                                     </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.editBtn}>
+                                    <td className="p-4">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                 <PenLine size={16} />
                                             </button>
-                                            <button className={styles.deleteBtn}>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
@@ -293,18 +298,21 @@ const UserManagement = () => {
                         </table>
                     </div>
 
-                    <div className={styles.tablePagination}>
-                        <div className={styles.paginationInfo}>
+                    <div className="flex justify-between items-center py-4">
+                        <div className="text-gray-600 text-sm">
                             <span>Showing 1 to 5 of 12 entries</span>
                         </div>
-                        <div className={styles.paginationControls}>
-                            <button className={styles.paginationBtn} disabled>
+                        <div className="flex gap-1">
+                            {/* <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer opacity-50 cursor-not-allowed">
+                                <ChevronLeft size={16} />
+                            </button> */}
+                            <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm opacity-50 cursor-not-allowed">
                                 <ChevronLeft size={16} />
                             </button>
-                            <button className={`${styles.paginationBtn} ${styles.active}`}>1</button>
-                            <button className={styles.paginationBtn}>2</button>
-                            <button className={styles.paginationBtn}>3</button>
-                            <button className={styles.paginationBtn}>
+                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-none bg-[#33e407] text-white text-sm cursor-pointer">1</button>
+                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">2</button>
+                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">3</button>
+                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">
                                 <ChevronRight size={16} />
                             </button>
                         </div>
