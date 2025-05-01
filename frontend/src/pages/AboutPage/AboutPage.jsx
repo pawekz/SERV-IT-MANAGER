@@ -9,7 +9,12 @@ const AboutPage = () => {
 
             <main className="mt-20">
                 {/* Hero Section */}
-                <section className="bg-gradient-to-tr from-[rgba(93,255,53,0.34)] to-white py-24 text-center">
+                <section
+                    className="py-24 text-center"
+                    style={{
+                        background: "linear-gradient(180deg, rgba(16, 185, 129, 0.4) 0%, rgba(255, 255, 255, 0.5) 100%)"
+                    }}
+                >
                     <div className="max-w-7xl mx-auto px-8">
                         <div>
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-800">
@@ -21,6 +26,7 @@ const AboutPage = () => {
                         </div>
                     </div>
                 </section>
+
 
                 {/* Our Story Section */}
                 <section className="py-20 bg-white">
