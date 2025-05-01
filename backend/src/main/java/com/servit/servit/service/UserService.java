@@ -52,6 +52,9 @@ public class UserService {
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        System.out.println("User found: " + u.getEmail());
+
         return new ProfileResponse(
                 u.getUser_id(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
@@ -70,6 +73,9 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
+
+        System.out.println("User updated: " + u.getEmail());
+
         userRepo.save(u);
     }
 
@@ -89,9 +95,9 @@ public class UserService {
     @Transactional
     public void changeUserRole(Integer userId, String newRole) {
         // ensure current is ADMIN
-        if (!SecurityContextHolder.getContext().getAuthentication()
+        if (SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             throw new SecurityException("Admin privileges required");
         }
         UserEntity u = userRepo.findById(userId)

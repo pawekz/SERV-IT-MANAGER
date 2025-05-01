@@ -25,11 +25,13 @@ public class UserController {
         return ResponseEntity.status(201).build();
     }
 
+    // get Current UserProfile
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> me() {
         return ResponseEntity.ok(userSvc.getCurrentUserProfile());
     }
 
+    // update Current User
     @PatchMapping("/me")
     public ResponseEntity<Void> updateProfile(@RequestBody UpdateProfileRequest req) {
         userSvc.updateProfile(req);
