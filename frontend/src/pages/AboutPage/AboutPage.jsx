@@ -262,7 +262,6 @@ const AboutPage = () => {
                 </section>
 
                 {/* CTA Section */}
-                {/* <section className="py-20 bg-gradient-to-tr from-[#33e407]/90 to-[#33e407]/70 text-white text-center"> */}
                 <section className="py-20 text-white text-center bg-[linear-gradient(135deg,_rgba(16,185,129,1)_0%,_rgba(51,228,7,0.5)_100%)]">
 
 
