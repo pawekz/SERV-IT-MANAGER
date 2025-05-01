@@ -10,11 +10,13 @@ const ContactPage = () => {
 
             <main className="mt-20">
                 {/* Hero Section */}
-                <section className="bg-gradient-to-br from-[rgba(93,255,53,0.34)] to-white py-20 text-center">
+                {/* <section className="bg-gradient-to-br from-[rgba(93,255,53,0.34)] to-white py-20 text-center"> */}
+                <section className="py-20 text-center bg-[linear-gradient(180deg,_rgba(16,185,129,0.4)_0%,_rgba(255,255,255,0.5)_100%)]">
+
                     <div className="max-w-7xl mx-auto px-8">
                         <div>
                             <h1 className="text-5xl font-bold mb-6 text-gray-800">
-                                Get in <span className="text-[#33e407]">Touch</span>
+                                Get in <span className="text-[#10B981]">Touch</span>
                             </h1>
                             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                                 We'd love to hear from you. Reach out to our team with any questions or inquiries.
@@ -329,7 +331,9 @@ const ContactPage = () => {
                 </section>
 
                 {/* CTA Section */}
-                <section className="py-20 bg-gradient-to-br from-[rgba(51,228,7,0.9)] to-[rgba(51,228,7,0.7)] text-white text-center">
+                {/* <section className="py-20 bg-gradient-to-br from-[rgba(51,228,7,0.9)] to-[rgba(51,228,7,0.7)] text-white text-center"> */}
+                <section className="py-20 text-white text-center bg-[linear-gradient(135deg,_rgba(16,185,129,1)_0%,_rgba(51,228,7,0.5)_100%)]">
+
                     <div className="max-w-7xl mx-auto px-8">
                         <h2 className="text-4xl font-bold mb-4">Ready to transform your IT repair management?</h2>
                         <p className="text-lg mb-8 max-w-2xl mx-auto">Join hundreds of businesses that trust IOCONNECT for their repair workflow needs</p>

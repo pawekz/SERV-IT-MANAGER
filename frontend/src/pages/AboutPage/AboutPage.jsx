@@ -18,7 +18,7 @@ const AboutPage = () => {
                     <div className="max-w-7xl mx-auto px-8">
                         <div>
                             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-800">
-                                About <span className="text-[#33e407]">IOCONNECT</span>
+                                About <span className="text-[#10B981]">IOCONNECT</span>
                             </h1>
                             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                                 Transforming IT repair management through innovation and excellence
@@ -262,7 +262,10 @@ const AboutPage = () => {
                 </section>
 
                 {/* CTA Section */}
-                <section className="py-20 bg-gradient-to-tr from-[#33e407]/90 to-[#33e407]/70 text-white text-center">
+                {/* <section className="py-20 bg-gradient-to-tr from-[#33e407]/90 to-[#33e407]/70 text-white text-center"> */}
+                <section className="py-20 text-white text-center bg-[linear-gradient(135deg,_rgba(16,185,129,1)_0%,_rgba(51,228,7,0.5)_100%)]">
+
+
                     <div className="max-w-7xl mx-auto px-8">
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">
                             Ready to transform your IT repair management?
