@@ -4,7 +4,6 @@ import com.servit.servit.DTO.*;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.UserRole;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,14 +39,14 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
-        u.setUsername(req.getEmail()); // Set username to email
+        u.setUsername(req.getEmail());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setRole(userRepo.count() == 0 ? UserRole.ADMIN : UserRole.CUSTOMER);
         userRepo.save(u);
         System.out.print("User registered: " + u.getEmail());
     }
 
-    public ProfileResponse getCurrentUserProfile() {
+    public GetUserResponse getUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -55,13 +54,13 @@ public class UserService {
 
         System.out.println("User found: " + u.getEmail());
 
-        return new ProfileResponse(
+        return new GetUserResponse(
                 u.getUser_id(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
     }
 
     @Transactional
-    public void updateProfile(UpdateProfileRequest req) {
+    public void updateProfile(UpdateUserRequest req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -106,9 +105,9 @@ public class UserService {
         userRepo.save(u);
     }
 
-    public List<ProfileResponse> listAllUsers() {
+    public List<GetUserResponse> listAllUsers() {
         return userRepo.findAll().stream()
-                .map(u -> new ProfileResponse(
+                .map(u -> new GetUserResponse(
                         u.getUser_id(), u.getFirstName(), u.getLastName(),
                         u.getEmail(), u.getRole().name()))
                 .toList();

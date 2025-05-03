@@ -25,33 +25,31 @@ public class UserController {
         return ResponseEntity.status(201).build();
     }
 
-    // get Current UserProfile
-    @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> me() {
-        return ResponseEntity.ok(userSvc.getCurrentUserProfile());
+    @GetMapping("/getUser")
+    public ResponseEntity<GetUserResponse> getUser() {
+        return ResponseEntity.ok(userSvc.getUser());
     }
 
-    // update Current User
-    @PatchMapping("/me")
-    public ResponseEntity<Void> updateProfile(@RequestBody UpdateProfileRequest req) {
+    @PatchMapping("/updateUser")
+    public ResponseEntity<Void> updateUser(@RequestBody UpdateUserRequest req) {
         userSvc.updateProfile(req);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/password")
+    @PatchMapping("/changePassword")
     public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest req) {
         userSvc.changePassword(req);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<ProfileResponse>> listUsers() {
+    public ResponseEntity<List<GetUserResponse>> listUsers() {
         return ResponseEntity.ok(userSvc.listAllUsers());
     }
 
-    @PatchMapping("/{id}/role")
-    public ResponseEntity<Void> changeRole(@PathVariable Integer id,
-                                           @RequestBody ChangeRoleRequest req) {
+    @PatchMapping("/{id}/changeUserRole")
+    public ResponseEntity<Void> changeUserRole(@PathVariable Integer id,
+                                               @RequestBody ChangeUserRoleRequest req) {
         userSvc.changeUserRole(id, req.getRole());
         return ResponseEntity.noContent().build();
     }
