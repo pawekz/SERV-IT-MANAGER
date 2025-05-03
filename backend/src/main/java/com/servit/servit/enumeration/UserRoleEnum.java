@@ -1,6 +1,6 @@
 package com.servit.servit.enumeration;
 
-public enum UserRole {
+public enum UserRoleEnum {
     ADMIN,
     TECHNICIAN,
     CUSTOMER

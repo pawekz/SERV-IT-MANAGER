@@ -1,6 +1,6 @@
 package com.servit.servit.entity;
 
-import com.servit.servit.enumeration.UserRole;
+import com.servit.servit.enumeration.UserRoleEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +38,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
-    private UserRole role;
+    private UserRoleEnum role;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

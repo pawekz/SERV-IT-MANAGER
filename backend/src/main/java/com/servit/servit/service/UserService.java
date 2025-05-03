@@ -1,9 +1,9 @@
 package com.servit.servit.service;
 
-import com.servit.servit.DTO.*;
+import com.servit.servit.dto.*;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
-import com.servit.servit.enumeration.UserRole;
+import com.servit.servit.enumeration.UserRoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class UserService {
     }
 
     @Transactional
-    public void register(RegistrationRequest req) {
+    public void register(RegistrationRequestDTO req) {
         if (req.getEmail() == null || req.getPassword() == null || req.getFirstName() == null || req.getLastName() == null) {
             throw new IllegalArgumentException("All fields are required");
         }
@@ -41,12 +41,12 @@ public class UserService {
         u.setEmail(req.getEmail());
         u.setUsername(req.getEmail());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
-        u.setRole(userRepo.count() == 0 ? UserRole.ADMIN : UserRole.CUSTOMER);
+        u.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         userRepo.save(u);
         System.out.print("User registered: " + u.getEmail());
     }
 
-    public GetUserResponse getUser() {
+    public GetUserResponseDTO getUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -54,13 +54,13 @@ public class UserService {
 
         System.out.println("User found: " + u.getEmail());
 
-        return new GetUserResponse(
+        return new GetUserResponseDTO(
                 u.getUser_id(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
     }
 
     @Transactional
-    public void updateProfile(UpdateUserRequest req) {
+    public void updateProfile(UpdateUserRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -79,7 +79,7 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(ChangePasswordRequest req) {
+    public void changePassword(ChangePasswordRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -95,13 +95,13 @@ public class UserService {
     public void changeUserRole(Integer userId, String newRole) {
         UserEntity u = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        u.setRole(UserRole.valueOf(newRole));
+        u.setRole(UserRoleEnum.valueOf(newRole));
         userRepo.save(u);
     }
 
-    public List<GetUserResponse> listAllUsers() {
+    public List<GetUserResponseDTO> listAllUsers() {
         return userRepo.findAll().stream()
-                .map(u -> new GetUserResponse(
+                .map(u -> new GetUserResponseDTO(
                         u.getUser_id(), u.getFirstName(), u.getLastName(),
                         u.getEmail(), u.getRole().name()))
                 .toList();
