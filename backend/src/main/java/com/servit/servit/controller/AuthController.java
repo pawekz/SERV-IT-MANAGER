@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.DTO.*;
+import com.servit.servit.dto.*;
 import com.servit.servit.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO req) {
         return ResponseEntity.ok(authService.authenticate(req));
     }
 }
