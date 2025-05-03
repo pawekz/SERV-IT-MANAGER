@@ -21,19 +21,19 @@ public class UserEntity {
     @Column(name = "user_id")
     private Integer userId;
 
-    @Column(name = "username", nullable = false, length = 255)
+    @Column(name = "username", nullable = false)
     private String username;
 
     @Column(name = "password", nullable = false, columnDefinition = "TEXT")
     private String password;
 
-    @Column(name = "email", nullable = false, length = 255)
+    @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "first_name", nullable = false, length = 255)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 255)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
     @Enumerated(EnumType.STRING)
