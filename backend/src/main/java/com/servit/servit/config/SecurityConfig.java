@@ -37,7 +37,13 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/user/register", "/auth/login").permitAll()
+                        .requestMatchers(
+                                "/user/register",
+                                "/auth/login"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/user/*/changeUserRole"
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())

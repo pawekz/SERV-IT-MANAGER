@@ -93,12 +93,6 @@ public class UserService {
 
     @Transactional
     public void changeUserRole(Integer userId, String newRole) {
-        // ensure current is ADMIN
-        if (SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities().stream()
-                .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
-            throw new SecurityException("Admin privileges required");
-        }
         UserEntity u = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         u.setRole(UserRole.valueOf(newRole));
