@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class GetUserResponseDTO {
+public class GetCurrentUserResponseDTO {
     private Integer userId;
     private String firstName;
     private String lastName;

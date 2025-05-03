@@ -25,14 +25,14 @@ public class UserController {
         return ResponseEntity.status(201).build();
     }
 
-    @GetMapping("/getUser")
-    public ResponseEntity<GetUserResponseDTO> getUser() {
-        return ResponseEntity.ok(userSvc.getUser());
+    @GetMapping("/getCurrentUser")
+    public ResponseEntity<GetCurrentUserResponseDTO> getCurrentUser() {
+        return ResponseEntity.ok(userSvc.getCurrentUser());
     }
 
-    @PatchMapping("/updateUser")
-    public ResponseEntity<Void> updateUser(@RequestBody UpdateUserRequestDTO req) {
-        userSvc.updateProfile(req);
+    @PatchMapping("/updateCurrentUser")
+    public ResponseEntity<Void> updateCurrentUser(@RequestBody UpdateCurrentUserRequestDTO req) {
+        userSvc.updateCurrentUser(req);
         return ResponseEntity.noContent().build();
     }
 
@@ -43,7 +43,7 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<GetUserResponseDTO>> listUsers() {
+    public ResponseEntity<List<GetCurrentUserResponseDTO>> listUsers() {
         return ResponseEntity.ok(userSvc.listAllUsers());
     }
 

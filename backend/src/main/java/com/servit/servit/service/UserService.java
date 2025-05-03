@@ -46,7 +46,7 @@ public class UserService {
         System.out.print("User registered: " + u.getEmail());
     }
 
-    public GetUserResponseDTO getUser() {
+    public GetCurrentUserResponseDTO getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -54,13 +54,13 @@ public class UserService {
 
         System.out.println("User found: " + u.getEmail());
 
-        return new GetUserResponseDTO(
+        return new GetCurrentUserResponseDTO(
                 u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
     }
 
     @Transactional
-    public void updateProfile(UpdateUserRequestDTO req) {
+    public void updateCurrentUser(UpdateCurrentUserRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -99,9 +99,9 @@ public class UserService {
         userRepo.save(u);
     }
 
-    public List<GetUserResponseDTO> listAllUsers() {
+    public List<GetCurrentUserResponseDTO> listAllUsers() {
         return userRepo.findAll().stream()
-                .map(u -> new GetUserResponseDTO(
+                .map(u -> new GetCurrentUserResponseDTO(
                         u.getUserId(), u.getFirstName(), u.getLastName(),
                         u.getEmail(), u.getRole().name()))
                 .toList();
