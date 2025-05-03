@@ -55,7 +55,7 @@ public class UserService {
         System.out.println("User found: " + u.getEmail());
 
         return new GetUserResponseDTO(
-                u.getUser_id(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
+                u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
     }
 
@@ -102,7 +102,7 @@ public class UserService {
     public List<GetUserResponseDTO> listAllUsers() {
         return userRepo.findAll().stream()
                 .map(u -> new GetUserResponseDTO(
-                        u.getUser_id(), u.getFirstName(), u.getLastName(),
+                        u.getUserId(), u.getFirstName(), u.getLastName(),
                         u.getEmail(), u.getRole().name()))
                 .toList();
     }
