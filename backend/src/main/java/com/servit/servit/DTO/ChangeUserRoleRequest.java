@@ -5,6 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ChangeRoleRequest {
+public class ChangeUserRoleRequest {
     private String role;
 }

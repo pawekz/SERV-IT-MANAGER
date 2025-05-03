@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class UpdateProfileRequest {
+public class UpdateUserRequest {
     private String firstName;
     private String lastName;
     private String email;
