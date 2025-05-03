@@ -1,6 +1,6 @@
 package com.servit.servit.entity;
 
-import com.servit.servit.util.UserRole;
+import com.servit.servit.enumeration.UserRole;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -3,7 +3,7 @@ package com.servit.servit.service;
 import com.servit.servit.DTO.*;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
-import com.servit.servit.util.UserRole;
+import com.servit.servit.enumeration.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

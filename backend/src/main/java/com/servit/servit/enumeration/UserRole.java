@@ -1,4 +1,4 @@
-package com.servit.servit.util;
+package com.servit.servit.enumeration;
 
 public enum UserRole {
     ADMIN,
