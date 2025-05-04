@@ -361,7 +361,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="Sarah Johnson"
+                                            // value="Sarah Johnson"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -370,7 +371,9 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="email"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="sarah.johnson@example.com"
+                                            // value="sarah.johnson@example.com"
+                                            value=""
+
                                             disabled
                                         />
                                     </div>
@@ -379,7 +382,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="tel"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="(555) 123-4567"
+                                            // value="(555) 123-4567"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -388,7 +392,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="123 Main Street, Apt 4B, New York, NY 10001"
+                                            // value="123 Main Street, Apt 4B, New York, NY 10001"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -406,7 +411,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="Smartphone"
+                                            // value="Smartphone"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -415,7 +421,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="iPhone 13 Pro"
+                                            // value="iPhone 13 Pro"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -424,7 +431,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="IMEI: 352789104563214"
+                                            // value="IMEI: 352789104563214"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -433,7 +441,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="06/15/2023"
+                                            // value="06/15/2023"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -442,7 +451,8 @@ export default function AutomatedClaimForm() {
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                            value="In Warranty (Valid until 06/15/2025)"
+                                            // value="In Warranty (Valid until 06/15/2025)"
+                                            value=""
                                             disabled
                                         />
                                     </div>
@@ -460,8 +470,9 @@ export default function AutomatedClaimForm() {
                                         <textarea
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             rows={3}
+                                            // defaultValue="Cracked screen with display malfunction. Battery draining quickly."
+                                            value=""
                                             disabled
-                                            defaultValue="Cracked screen with display malfunction. Battery draining quickly."
                                         />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -470,7 +481,8 @@ export default function AutomatedClaimForm() {
                                             <input
                                                 type="text"
                                                 className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                                value="Screen Replacement, Battery Replacement"
+                                                // value="Screen Replacement, Battery Replacement"
+                                                value=""
                                                 disabled
                                             />
                                         </div>
@@ -479,7 +491,9 @@ export default function AutomatedClaimForm() {
                                             <input
                                                 type="text"
                                                 className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
-                                                value="PHP 100.98"
+                                                // value="PHP 100.98"
+                                                value=""
+
                                                 disabled
                                             />
                                         </div>
@@ -489,8 +503,10 @@ export default function AutomatedClaimForm() {
                                         <textarea
                                             className="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-800 hover:cursor-pointer"
                                             rows={3}
+                                            // defaultValue="Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The screen cracked and touch functionality is intermittent. Battery was already showing signs of degradation before the incident. Device has been backed up by the customer."
+                                            value=""
                                             disabled
-                                            defaultValue="Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The screen cracked and touch functionality is intermittent. Battery was already showing signs of degradation before the incident. Device has been backed up by the customer."
+
                                         />
                                     </div>
                                 </div>
