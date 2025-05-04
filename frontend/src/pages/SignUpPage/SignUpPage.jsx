@@ -11,11 +11,24 @@ const SignUpPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [isPasswordValid, setIsPasswordValid] = useState(false);
 
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
         setFormData({ ...formData, [id]: value });
+        
+        // Check password validity when password field changes
+        if (id === 'password') {
+            setIsPasswordValid(value.length >= 8);
+        }
+    };
+
+    // Calculate password strength percentage
+    const getPasswordProgress = () => {
+        if (!formData.password) return 0;
+        const progress = Math.min(formData.password.length / 8 * 100, 100);
+        return progress;
     };
 
     // Handle form submission
@@ -174,17 +187,58 @@ const SignUpPage = () => {
                         >
                             Password
                         </label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                            placeholder="Create a password"
-                            required
-                        />
-                        <div className="text-xs text-gray-400 mt-1.5">
-                            Password must be at least 8 characters long
+                        <div className="relative">
+                            <input
+                                type="password"
+                                id="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 text-sm border rounded-md focus:outline-none transition-colors ${
+                                    formData.password ? 
+                                        isPasswordValid ? 
+                                            'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 
+                                            'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' 
+                                        : 'border-gray-200 focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]'
+                                }`}
+                                placeholder="Create a password"
+                                required
+                            />
+                            {formData.password && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    {isPasswordValid ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Password progress animation */}
+                        {formData.password && (
+                            <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full transition-all duration-300 ease-out ${
+                                        isPasswordValid ? 'bg-green-500' : 'bg-amber-500'
+                                    }`} 
+                                    style={{ width: `${getPasswordProgress()}%` }}
+                                ></div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center">
+                            <div className={`text-xs mt-1.5 ${isPasswordValid ? 'text-green-600' : formData.password ? 'text-red-600' : 'text-gray-400'}`}>
+                                Password must be at least 8 characters long {formData.password && (isPasswordValid ? '✓' : '✗')}
+                            </div>
+                            {formData.password && !isPasswordValid && (
+                                <div className="text-xs mt-1.5 text-amber-600">
+                                    {8 - formData.password.length} more {8 - formData.password.length === 1 ? 'character' : 'characters'} needed
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -241,3 +295,4 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
+
