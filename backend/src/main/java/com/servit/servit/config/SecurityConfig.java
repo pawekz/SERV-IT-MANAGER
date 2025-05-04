@@ -42,7 +42,15 @@ public class SecurityConfig {
                                 "/auth/login"
                         ).permitAll()
                         .requestMatchers(
-                                "/user/changeUserRole/*"
+                                "/user/changeRole/*",
+                                "/user/getAllUsers",
+                                "/user/getUser/*",
+                                "/user/changePassword/*",
+                                "/user/updateEmail/*",
+                                "/user/updateFirstName/*",
+                                "/user/updateLastName/*",
+                                "/user/updateName/*",
+                                "/user/deleteUser/*"
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
