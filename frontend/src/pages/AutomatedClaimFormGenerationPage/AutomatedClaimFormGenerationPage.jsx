@@ -307,16 +307,21 @@ export default function AutomatedClaimForm() {
                                             </thead>
                                             <tbody>
                                             <tr>
-                                                <td className="p-2 border-b border-gray-200">Cracked screen with display malfunction</td>
-                                                <td className="p-2 border-b border-gray-200">Screen Replacement</td>
-                                                <td className="p-2 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>
-                                                <td className="p-2 border-b border-gray-200">$279.99</td>
+                                                {/*<td className="p-2 border-b border-gray-200">Cracked screen with display malfunction</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">Screen Replacement</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">$279.99</td>*/}
                                             </tr>
                                             <tr>
-                                                <td className="p-2 border-b border-gray-200">Battery draining quickly</td>
-                                                <td className="p-2 border-b border-gray-200">Battery Replacement</td>
-                                                <td className="p-2 border-b border-gray-200">iPhone 13 Pro Battery</td>
-                                                <td className="p-2 border-b border-gray-200">$89.99</td>
+                                                <td className="p-2 border-b border-gray-200"></td>
+                                                <td className="p-2 border-b border-gray-200"></td>
+                                                <td className="p-2 border-b border-gray-200"></td>
+                                                <td className="p-2 border-b border-gray-200"></td>
+
+                                                {/*<td className="p-2 border-b border-gray-200">Battery draining quickly</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">Battery Replacement</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">iPhone 13 Pro Battery</td>*/}
+                                                {/*<td className="p-2 border-b border-gray-200">$89.99</td>*/}
                                             </tr>
                                             </tbody>
                                         </table>
@@ -325,11 +330,11 @@ export default function AutomatedClaimForm() {
 
                                 <div className="mb-4">
                                     <div className="font-semibold text-gray-800 mb-2">Additional Notes</div>
-                                    <p className="text-sm text-gray-600">
-                                        Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The
-                                        screen cracked and touch functionality is intermittent. Battery was already showing signs of
-                                        degradation before the incident. Device has been backed up by the customer.
-                                    </p>
+                                    {/*<p className="text-sm text-gray-600">*/}
+                                    {/*    Customer reported that the device was dropped from approximately 3 feet onto a hard surface. The*/}
+                                    {/*    screen cracked and touch functionality is intermittent. Battery was already showing signs of*/}
+                                    {/*    degradation before the incident. Device has been backed up by the customer.*/}
+                                    {/*</p>*/}
                                 </div>
 
                                 <div className="mt-8 pt-4 border-t border-gray-200 flex flex-col md:flex-row justify-between">
