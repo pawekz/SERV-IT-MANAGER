@@ -93,7 +93,7 @@ public class UserService {
     }
 
     @Transactional
-    public void changeUserRole(Integer userId, String newRole) {
+    public void changeRole(Integer userId, String newRole) {
         UserEntity u = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         u.setRole(UserRoleEnum.valueOf(newRole));

@@ -3,6 +3,6 @@ package com.servit.servit.dto;
 import lombok.Data;
 
 @Data
-public class ChangeUserRoleRequestDTO {
+public class ChangeRoleRequestDTO {
     private String role;
 }
