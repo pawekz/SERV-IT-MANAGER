@@ -1,10 +1,9 @@
 package com.servit.servit.service;
 
-import com.servit.servit.DTO.*;
+import com.servit.servit.dto.*;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
-import com.servit.servit.util.UserRole;
-import org.apache.catalina.User;
+import com.servit.servit.enumeration.UserRoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,7 @@ public class UserService {
     }
 
     @Transactional
-    public void register(RegistrationRequest req) {
+    public void register(RegistrationRequestDTO req) {
         if (req.getEmail() == null || req.getPassword() == null || req.getFirstName() == null || req.getLastName() == null) {
             throw new IllegalArgumentException("All fields are required");
         }
@@ -40,14 +39,14 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
-        u.setUsername(req.getEmail()); // Set username to email
+        u.setUsername(req.getEmail());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
-        u.setRole(userRepo.count() == 0 ? UserRole.ADMIN : UserRole.CUSTOMER);
+        u.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         userRepo.save(u);
         System.out.print("User registered: " + u.getEmail());
     }
 
-    public ProfileResponse getCurrentUserProfile() {
+    public GetCurrentUserResponseDTO getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -55,13 +54,13 @@ public class UserService {
 
         System.out.println("User found: " + u.getEmail());
 
-        return new ProfileResponse(
-                u.getUser_id(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
+        return new GetCurrentUserResponseDTO(
+                u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
         );
     }
 
     @Transactional
-    public void updateProfile(UpdateProfileRequest req) {
+    public void updateCurrentUser(UpdateCurrentUserRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -73,6 +72,7 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
+        u.setUsername(req.getEmail());
 
         System.out.println("User updated: " + u.getEmail());
 
@@ -80,7 +80,7 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(ChangePasswordRequest req) {
+    public void changePassword(ChangeCurrentUserPasswordRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
@@ -94,22 +94,16 @@ public class UserService {
 
     @Transactional
     public void changeUserRole(Integer userId, String newRole) {
-        // ensure current is ADMIN
-        if (SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities().stream()
-                .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
-            throw new SecurityException("Admin privileges required");
-        }
         UserEntity u = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        u.setRole(UserRole.valueOf(newRole));
+        u.setRole(UserRoleEnum.valueOf(newRole));
         userRepo.save(u);
     }
 
-    public List<ProfileResponse> listAllUsers() {
+    public List<GetCurrentUserResponseDTO> listAllUsers() {
         return userRepo.findAll().stream()
-                .map(u -> new ProfileResponse(
-                        u.getUser_id(), u.getFirstName(), u.getLastName(),
+                .map(u -> new GetCurrentUserResponseDTO(
+                        u.getUserId(), u.getFirstName(), u.getLastName(),
                         u.getEmail(), u.getRole().name()))
                 .toList();
     }

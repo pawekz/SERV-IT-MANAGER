@@ -1,11 +1,11 @@
-package com.servit.servit.DTO;
+package com.servit.servit.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AuthResponse {
+public class AuthResponseDTO {
     private String token;
     private String role;
 }

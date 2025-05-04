@@ -1,11 +1,11 @@
-package com.servit.servit.DTO;
+package com.servit.servit.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ChangePasswordRequest {
+public class ChangeCurrentUserPasswordRequestDTO {
     private String currentPassword;
     private String newPassword;
 }

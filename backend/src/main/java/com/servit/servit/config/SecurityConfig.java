@@ -1,6 +1,5 @@
 package com.servit.servit.config;
 
-import com.servit.servit.util.JwtUtil;
 import com.servit.servit.filter.JwtRequestFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +20,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 public class SecurityConfig {
 
+    @Autowired
     private final JwtRequestFilter jwtRequestFilter;
 
     @Bean
@@ -37,7 +37,13 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/user/register", "/auth/login").permitAll()
+                        .requestMatchers(
+                                "/user/register",
+                                "/auth/login"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/user/changeUserRole/*"
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())

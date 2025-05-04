@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.DTO.*;
+import com.servit.servit.dto.*;
 import com.servit.servit.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,38 +20,36 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegistrationRequest req) {
+    public ResponseEntity<Void> register(@RequestBody RegistrationRequestDTO req) {
         userSvc.register(req);
         return ResponseEntity.status(201).build();
     }
 
-    // get Current UserProfile
-    @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> me() {
-        return ResponseEntity.ok(userSvc.getCurrentUserProfile());
+    @GetMapping("/getCurrentUser")
+    public ResponseEntity<GetCurrentUserResponseDTO> getCurrentUser() {
+        return ResponseEntity.ok(userSvc.getCurrentUser());
     }
 
-    // update Current User
-    @PatchMapping("/me")
-    public ResponseEntity<Void> updateProfile(@RequestBody UpdateProfileRequest req) {
-        userSvc.updateProfile(req);
+    @PatchMapping("/updateCurrentUser")
+    public ResponseEntity<Void> updateCurrentUser(@RequestBody UpdateCurrentUserRequestDTO req) {
+        userSvc.updateCurrentUser(req);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/password")
-    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest req) {
+    @PatchMapping("/changeCurrentUserPassword")
+    public ResponseEntity<Void> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
         userSvc.changePassword(req);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<ProfileResponse>> listUsers() {
+    public ResponseEntity<List<GetCurrentUserResponseDTO>> listUsers() {
         return ResponseEntity.ok(userSvc.listAllUsers());
     }
 
-    @PatchMapping("/{id}/role")
-    public ResponseEntity<Void> changeRole(@PathVariable Integer id,
-                                           @RequestBody ChangeRoleRequest req) {
+    @PatchMapping("/changeUserRole/{id}")
+    public ResponseEntity<Void> changeUserRole(@PathVariable Integer id,
+                                               @RequestBody ChangeUserRoleRequestDTO req) {
         userSvc.changeUserRole(id, req.getRole());
         return ResponseEntity.noContent().build();
     }

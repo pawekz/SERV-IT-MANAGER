@@ -1,14 +1,15 @@
-package com.servit.servit.DTO;
+package com.servit.servit.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
-public class ProfileResponse {
-    private Integer userId;
+public class RegistrationRequestDTO {
     private String firstName;
     private String lastName;
     private String email;
-    private String role;
+    private String password;
 }
