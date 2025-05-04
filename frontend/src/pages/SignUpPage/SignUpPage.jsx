@@ -26,6 +26,16 @@ const SignUpPage = () => {
         }
     };
 
+    // Handle name input - only allow letters
+    const handleNameInput = (e) => {
+        const { id, value } = e.target;
+        // Only accept letters, spaces, hyphens, and apostrophes for names
+        // Regex pattern: only letters (including accented), spaces, hyphens, apostrophes
+        if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']*$/.test(value) || value === '') {
+            setFormData({ ...formData, [id]: value });
+        }
+    };
+
     // Calculate password strength percentage
     const getPasswordProgress = () => {
         if (!formData.password) return 0;
@@ -144,7 +154,7 @@ const SignUpPage = () => {
                                 type="text"
                                 id="firstName"
                                 value={formData.firstName}
-                                onChange={handleChange}
+                                onChange={handleNameInput}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="First name"
                                 required
@@ -161,7 +171,7 @@ const SignUpPage = () => {
                                 type="text"
                                 id="lastName"
                                 value={formData.lastName}
-                                onChange={handleChange}
+                                onChange={handleNameInput}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="Last name"
                                 required
