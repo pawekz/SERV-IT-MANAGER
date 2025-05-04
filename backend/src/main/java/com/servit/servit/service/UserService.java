@@ -72,6 +72,7 @@ public class UserService {
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
+        u.setUsername(req.getEmail());
 
         System.out.println("User updated: " + u.getEmail());
 
