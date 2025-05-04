@@ -36,8 +36,8 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/changePassword")
-    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequestDTO req) {
+    @PatchMapping("/changeCurrentUserPassword")
+    public ResponseEntity<Void> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
         userSvc.changePassword(req);
         return ResponseEntity.noContent().build();
     }

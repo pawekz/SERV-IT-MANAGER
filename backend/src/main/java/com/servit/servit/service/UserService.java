@@ -79,7 +79,7 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(ChangePasswordRequestDTO req) {
+    public void changePassword(ChangeCurrentUserPasswordRequestDTO req) {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
