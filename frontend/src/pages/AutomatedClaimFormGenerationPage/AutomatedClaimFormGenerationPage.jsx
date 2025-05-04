@@ -228,8 +228,8 @@ export default function AutomatedClaimForm() {
                                         IO<span className="text-[#33e407]">CONNECT</span>
                                     </div>
                                     <div className="text-sm">
-                                        <div>Claim #: CL-2025-0042</div>
-                                        <div>Date: 03/24/2025</div>
+                                        <div>Claim #: </div>
+                                        <div>Date: </div>
                                     </div>
                                 </div>
 
@@ -240,23 +240,23 @@ export default function AutomatedClaimForm() {
                                         <div className="font-semibold text-gray-800 mb-2">Customer Information</div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Name:</span>
-                                            <span>Sarah Johnson</span>
+                                            {/*<span>Sarah Johnson</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Email:</span>
-                                            <span>sarah.johnson@example.com</span>
+                                            {/*<span>sarah.johnson@example.com</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Phone:</span>
-                                            <span>(555) 123-4567</span>
+                                            {/*<span>(555) 123-4567</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Address:</span>
-                                            <span>
-                                                123 Main Street, Apt 4B
-                                                <br />
-                                                New York, NY 10001
-                                            </span>
+                                            {/*<span>*/}
+                                            {/*    123 Main Street, Apt 4B*/}
+                                            {/*    <br />*/}
+                                            {/*    New York, NY 10001*/}
+                                            {/*</span>*/}
                                         </div>
                                     </div>
 
@@ -264,23 +264,23 @@ export default function AutomatedClaimForm() {
                                         <div className="font-semibold text-gray-800 mb-2">Device Information</div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Device Type:</span>
-                                            <span>Smartphone</span>
+                                            {/*<span>Smartphone</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Brand/Model:</span>
-                                            <span>iPhone 13 Pro</span>
+                                            {/*<span>iPhone 13 Pro</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Serial Number:</span>
-                                            <span>IMEI: 352789104563214</span>
+                                            {/*<span>IMEI: 352789104563214</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Purchase Date:</span>
-                                            <span>06/15/2023</span>
+                                            {/*<span>06/15/2023</span>*/}
                                         </div>
                                         <div className="text-sm mb-1">
                                             <span className="inline-block font-medium min-w-[120px]">Warranty Status:</span>
-                                            <span>In Warranty (Valid until 06/15/2025)</span>
+                                            {/*<span>In Warranty (Valid until 06/15/2025)</span>*/}
                                         </div>
                                     </div>
                                 </div>
@@ -290,34 +290,34 @@ export default function AutomatedClaimForm() {
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
-                                                <tr>
-                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
-                                                        Issue Description
-                                                    </th>
-                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
-                                                        Repair Type
-                                                    </th>
-                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
-                                                        Parts Required
-                                                    </th>
-                                                    <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
-                                                        Cost
-                                                    </th>
-                                                </tr>
+                                            <tr>
+                                                <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    Issue Description
+                                                </th>
+                                                <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    Repair Type
+                                                </th>
+                                                <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    Parts Required
+                                                </th>
+                                                <th className="text-left p-2 bg-gray-50 border-b border-gray-200 font-semibold text-gray-800">
+                                                    Cost
+                                                </th>
+                                            </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td className="p-2 border-b border-gray-200">Cracked screen with display malfunction</td>
-                                                    <td className="p-2 border-b border-gray-200">Screen Replacement</td>
-                                                    <td className="p-2 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>
-                                                    <td className="p-2 border-b border-gray-200">$279.99</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="p-2 border-b border-gray-200">Battery draining quickly</td>
-                                                    <td className="p-2 border-b border-gray-200">Battery Replacement</td>
-                                                    <td className="p-2 border-b border-gray-200">iPhone 13 Pro Battery</td>
-                                                    <td className="p-2 border-b border-gray-200">$89.99</td>
-                                                </tr>
+                                            <tr>
+                                                <td className="p-2 border-b border-gray-200">Cracked screen with display malfunction</td>
+                                                <td className="p-2 border-b border-gray-200">Screen Replacement</td>
+                                                <td className="p-2 border-b border-gray-200">iPhone 13 Pro OLED Display Assembly</td>
+                                                <td className="p-2 border-b border-gray-200">$279.99</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="p-2 border-b border-gray-200">Battery draining quickly</td>
+                                                <td className="p-2 border-b border-gray-200">Battery Replacement</td>
+                                                <td className="p-2 border-b border-gray-200">iPhone 13 Pro Battery</td>
+                                                <td className="p-2 border-b border-gray-200">$89.99</td>
+                                            </tr>
                                             </tbody>
                                         </table>
                                     </div>
