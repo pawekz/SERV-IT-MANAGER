@@ -233,7 +233,7 @@ const SignUpPage = () => {
 
                 {/* Login Link */}
                 <div className="text-center mt-4 text-sm text-gray-600">
-                    Already have an account? <a href="index.html" className="text-[#33e407] font-medium hover:underline">Sign in</a>
+                    Already have an account? <a href="/login" className="text-[#33e407] font-medium hover:underline">Login</a>
                 </div>
             </div>
         </div>
