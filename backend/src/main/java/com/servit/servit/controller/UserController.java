@@ -47,7 +47,7 @@ public class UserController {
         return ResponseEntity.ok(userSvc.listAllUsers());
     }
 
-    @PatchMapping("/{id}/changeUserRole")
+    @PatchMapping("/changeUserRole/{id}")
     public ResponseEntity<Void> changeUserRole(@PathVariable Integer id,
                                                @RequestBody ChangeUserRoleRequestDTO req) {
         userSvc.changeUserRole(id, req.getRole());
