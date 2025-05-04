@@ -1,6 +1,67 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    // Handle input changes
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setFormData({ ...formData, [id]: value });
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        // Basic validation
+        if (!formData.email || !formData.password) {
+            setError('Email and password are required');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8080/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.message || 'Invalid email or password');
+            }
+
+            // Store the authentication token if received
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+            }
+
+            // Login successful - redirect to account page
+            navigate("/accountinformation");
+
+        } catch (err) {
+            setError(err.message || 'Login failed. Please try again.');
+            console.error("Login error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center">
             <div className="w-full max-w-md bg-white rounded-xl shadow-md relative overflow-hidden">
@@ -20,8 +81,15 @@ const LoginPage = () => {
                         Login to your account
                     </h1>
 
+                    {/* Error message */}
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     {/* Login Form */}
-                    <form>
+                    <form onSubmit={handleLogin}>
                         <div className="mb-5">
                             <label
                                 htmlFor="email"
@@ -32,6 +100,8 @@ const LoginPage = () => {
                             <input
                                 type="email"
                                 id="email"
+                                value={formData.email}
+                                onChange={handleChange}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="Enter your email"
                                 required
@@ -48,6 +118,8 @@ const LoginPage = () => {
                             <input
                                 type="password"
                                 id="password"
+                                value={formData.password}
+                                onChange={handleChange}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="Enter your password"
                                 required
@@ -56,9 +128,10 @@ const LoginPage = () => {
 
                         <button
                             type="submit"
-                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors"
+                            disabled={loading}
+                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
-                            Login
+                            {loading ? 'Logging in...' : 'Login'}
                         </button>
 
                         <a
@@ -76,8 +149,11 @@ const LoginPage = () => {
                         <div className="flex-1 h-px bg-gray-200"></div>
                     </div>
 
-                    {/* Google Sign In Button */}
-                    <button className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+                    {/* Google Login Button */}
+                    <button
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                        onClick={() => alert("Google login is not implemented yet")}
+                    >
                         <svg
                             className="w-4 h-4"
                             viewBox="0 0 24 24"
@@ -102,6 +178,11 @@ const LoginPage = () => {
                         </svg>
                         Login with Google
                     </button>
+
+                    {/* Sign Up Link */}
+                    <div className="text-center mt-4 text-sm text-gray-600">
+                        Don't have an account? <a href="/signup" className="text-[#33e407] font-medium hover:underline">Sign Up</a>
+                    </div>
                 </div>
             </div>
         </div>

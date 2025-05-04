@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SignUpPage = () => {
+    const navigate = useNavigate();
     // State for form inputs
     const [formData, setFormData] = useState({
         firstName: '',
@@ -83,6 +85,11 @@ const SignUpPage = () => {
                 email: '',
                 password: ''
             });
+            
+            // Redirect to login page after a brief delay
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
             console.error("Registration error:", err);
