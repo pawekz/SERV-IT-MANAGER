@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SignUpPage = () => {
+    const navigate = useNavigate();
     // State for form inputs
     const [formData, setFormData] = useState({
         firstName: '',
@@ -11,11 +13,40 @@ const SignUpPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [isPasswordValid, setIsPasswordValid] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
         setFormData({ ...formData, [id]: value });
+        
+        // Check password validity when password field changes
+        if (id === 'password') {
+            setIsPasswordValid(value.length >= 8);
+        }
+    };
+
+    // Handle name input - only allow letters
+    const handleNameInput = (e) => {
+        const { id, value } = e.target;
+        // Only accept letters, spaces, hyphens, and apostrophes for names
+        // Regex pattern: only letters (including accented), spaces, hyphens, apostrophes
+        if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']*$/.test(value) || value === '') {
+            setFormData({ ...formData, [id]: value });
+        }
+    };
+
+    // Calculate password strength percentage
+    const getPasswordProgress = () => {
+        if (!formData.password) return 0;
+        const progress = Math.min(formData.password.length / 8 * 100, 100);
+        return progress;
+    };
+
+    // Toggle password visibility
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
     };
 
     // Handle form submission
@@ -70,6 +101,11 @@ const SignUpPage = () => {
                 email: '',
                 password: ''
             });
+            
+            // Redirect to login page after a brief delay
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
             console.error("Registration error:", err);
@@ -124,7 +160,7 @@ const SignUpPage = () => {
                                 type="text"
                                 id="firstName"
                                 value={formData.firstName}
-                                onChange={handleChange}
+                                onChange={handleNameInput}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="First name"
                                 required
@@ -141,7 +177,7 @@ const SignUpPage = () => {
                                 type="text"
                                 id="lastName"
                                 value={formData.lastName}
-                                onChange={handleChange}
+                                onChange={handleNameInput}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="Last name"
                                 required
@@ -174,17 +210,78 @@ const SignUpPage = () => {
                         >
                             Password
                         </label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                            placeholder="Create a password"
-                            required
-                        />
-                        <div className="text-xs text-gray-400 mt-1.5">
-                            Password must be at least 8 characters long
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 text-sm border rounded-md focus:outline-none transition-colors ${
+                                    formData.password ? 
+                                        isPasswordValid ? 
+                                            'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 
+                                            'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' 
+                                        : 'border-gray-200 focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]'
+                                }`}
+                                placeholder="Create a password"
+                                required
+                            />
+                            {/* Password validation icon */}
+                            {formData.password && (
+                                <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                                    {isPasswordValid ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                </div>
+                            )}
+                            {/* Password visibility toggle button */}
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                onClick={togglePasswordVisibility}
+                                tabIndex="-1"
+                            >
+                                {showPassword ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                                        <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+                        
+                        {/* Password progress animation */}
+                        {formData.password && (
+                            <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full transition-all duration-300 ease-out ${
+                                        isPasswordValid ? 'bg-green-500' : 'bg-amber-500'
+                                    }`} 
+                                    style={{ width: `${getPasswordProgress()}%` }}
+                                ></div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center">
+                            <div className={`text-xs mt-1.5 ${isPasswordValid ? 'text-green-600' : formData.password ? 'text-red-600' : 'text-gray-400'}`}>
+                                Password must be at least 8 characters long {formData.password && (isPasswordValid ? '✓' : '✗')}
+                            </div>
+                            {formData.password && !isPasswordValid && (
+                                <div className="text-xs mt-1.5 text-amber-600">
+                                    {8 - formData.password.length} more {8 - formData.password.length === 1 ? 'character' : 'characters'} needed
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -233,7 +330,7 @@ const SignUpPage = () => {
 
                 {/* Login Link */}
                 <div className="text-center mt-4 text-sm text-gray-600">
-                    Already have an account? <a href="index.html" className="text-[#33e407] font-medium hover:underline">Sign in</a>
+                    Already have an account? <a href="/login" className="text-[#33e407] font-medium hover:underline">Login</a>
                 </div>
             </div>
         </div>
@@ -241,3 +338,4 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
+

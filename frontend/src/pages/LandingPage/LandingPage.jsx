@@ -23,7 +23,7 @@ const LandingPage = () => {
                                 <a href="#features" className={styles.primaryBtn}>
                                     Explore Features
                                 </a>
-                                <a href="#contact" className={styles.secondaryBtn}>
+                                <a href="/signup" className={styles.secondaryBtn}>
                                     Get Started
                                 </a>
                             </div>
