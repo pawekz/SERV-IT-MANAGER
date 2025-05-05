@@ -35,34 +35,39 @@ const LoginPage = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/user/getCurrentUser', {
+            const response = await fetch('http://localhost:8080/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     email: formData.email,
-                    password: formData.password
+                    password: formData.password,
                 }),
             });
 
+            if (!response.ok) {
+                throw new Error('Invalid email or password');
+            }
+
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data?.message || 'Invalid email or password');
+            if (!data || !data.token) {
+                throw new Error('No response from server');
             }
 
-            // Store the authentication token if received
-            if (data.token) {
-                localStorage.setItem('authToken', data.token);
+            // Store the authentication token
+            localStorage.setItem('authToken', data.token);
+
+            // Redirect based on role
+            if (data.role === 'ADMIN') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/accountinformation');
             }
-
-            // Login successful - redirect to account page
-            navigate("/accountinformation");
-
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
-            console.error("Login error:", err);
+            console.error('Login error:', err);
         } finally {
             setLoading(false);
         }
