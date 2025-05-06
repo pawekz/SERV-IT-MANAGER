@@ -35,20 +35,26 @@ const AccountInformation = () => {
         const fetchUserData = async () => {
             try {
                 setLoading(true);
-                
-                // Clear the session storage to prevent showing stale data
-                sessionStorage.removeItem('userData');
-                
-                // Get token from localStorage
+
+                // Check if we have cached user data in sessionStorage first
+                const cachedUserData = sessionStorage.getItem('userData');
+                if (cachedUserData) {
+                    const parsedData = JSON.parse(cachedUserData);
+                    setUserData(parsedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // Get token from localStorage if no cached data
                 const token = localStorage.getItem('authToken');
-                
+
                 if (!token) {
                     throw new Error("Not authenticated. Please log in.");
                 }
-                
+
                 // Try to parse token to get user info
                 const decodedToken = parseJwt(token);
-                
+
                 if (decodedToken) {
                     const userData = {
                         firstName: decodedToken.firstName || '',
@@ -56,14 +62,14 @@ const AccountInformation = () => {
                         email: decodedToken.email || decodedToken.sub || '',
                         password: '********' // Mask password for security
                     };
-                    
+
                     setUserData(userData);
-                    
+
                     // Cache the user data in sessionStorage for persistence across refreshes
                     sessionStorage.setItem('userData', JSON.stringify(userData));
                 } else {
-                    // If token can't be decoded, fetch user data from API
-                    await fetchCurrentUser(token);
+                    // If token can't be decoded, could attempt API call to get user data
+                    throw new Error("Could not retrieve user information");
                 }
                 setError(null);
             } catch (err) {
@@ -71,41 +77,6 @@ const AccountInformation = () => {
                 setError("Failed to load account information. Please try again later.");
             } finally {
                 setLoading(false);
-            }
-        };
-        
-        // Function to fetch current user data from the API if token parsing fails
-        const fetchCurrentUser = async (token) => {
-            try {
-                const response = await fetch('http://localhost:8080/user/currentUser', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error("Failed to fetch user information");
-                }
-                
-                const userData = await response.json();
-                
-                setUserData({
-                    firstName: userData.firstName || '',
-                    lastName: userData.lastName || '',
-                    email: userData.email || '',
-                    password: '********' // Mask password for security
-                });
-                
-                // Cache the user data
-                sessionStorage.setItem('userData', JSON.stringify({
-                    firstName: userData.firstName || '',
-                    lastName: userData.lastName || '',
-                    email: userData.email || '',
-                    password: '********'
-                }));
-            } catch (error) {
-                console.error("Error fetching current user:", error);
-                throw error;
             }
         };
 
@@ -152,12 +123,12 @@ const AccountInformation = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
+
         // For firstName and lastName, only allow letters
         if (name === 'firstName' || name === 'lastName') {
             // Replace any non-letter characters with empty string
             const lettersOnly = value.replace(/[^a-zA-Z]/g, '');
-            
+
             setEditFormData(prevData => ({
                 ...prevData,
                 [name]: lettersOnly
@@ -200,44 +171,41 @@ const AccountInformation = () => {
             }
 
             const data = await response.text();
-            
+
             // Update localStorage with new token if it's returned
             if (data && data.includes("Token:")) {
                 const newToken = data.split("Token:")[1].trim();
                 localStorage.setItem('authToken', newToken);
-                
-                // Clear session storage to force a refresh of user data
-                sessionStorage.removeItem('userData');
-                
+
                 // Parse the new token to get updated user data
                 const decodedToken = parseJwt(newToken);
-                
+
                 if (decodedToken) {
                     // Update userData state with the information from the new token
-                    const updatedUserData = {
+                    setUserData({
                         firstName: decodedToken.firstName || editFormData.firstName,
                         lastName: decodedToken.lastName || editFormData.lastName,
                         email: decodedToken.email || decodedToken.sub || editFormData.email,
                         password: '********' // Keep password masked
-                    };
-                    setUserData(updatedUserData);
-                    
-                    // Store updated user data in sessionStorage
-                    sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
+                    });
                 }
             } else {
                 // Even if no token is returned, update the user data with form values
-                const updatedUserData = {
+                setUserData({
                     ...userData,
                     firstName: editFormData.firstName,
                     lastName: editFormData.lastName,
                     email: editFormData.email
-                };
-                setUserData(updatedUserData);
-                
-                // Store updated user data in sessionStorage
-                sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
+                });
             }
+
+            // Store updated user data in sessionStorage for persistence across refreshes
+            sessionStorage.setItem('userData', JSON.stringify({
+                firstName: editFormData.firstName,
+                lastName: editFormData.lastName,
+                email: editFormData.email,
+                password: '********'
+            }));
             
             setUpdateStatus({
                 success: true,
