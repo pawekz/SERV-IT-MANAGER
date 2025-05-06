@@ -251,10 +251,16 @@ const AccountInformation = () => {
                                     <button className="bg-gray-100 text-gray-600 py-3 px-6 rounded-md font-medium transition-all hover:bg-gray-200 w-full md:w-auto">
                                         Cancel
                                     </button>
-                                    <button className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white"
-                                        style={{ backgroundColor: "#33e407", "&:hover": { backgroundColor: "#2bc706" } }}>
-                                        Save Changes
+                                    <button
+                                        className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#17A2B8] hover:bg-[#138496]">
+                                        Change Password
                                     </button>
+
+                                    <button
+                                        className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#33e407] hover:bg-[#2bc706]">
+                                        Edit Profile
+                                    </button>
+
                                 </div>
                             </>
                         )}
