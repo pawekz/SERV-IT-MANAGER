@@ -13,6 +13,17 @@ const PasswordManagement = () => {
         confirmPassword: ''
     });
 
+    // Calculate password strength percentage based on length
+    const calculatePasswordStrength = () => {
+        const passwordLength = formValues.newPassword.length;
+        const targetLength = 8;
+        const percentage = Math.min((passwordLength / targetLength) * 100, 100);
+        return {
+            percentage,
+            charactersRemaining: Math.max(targetLength - passwordLength, 0)
+        };
+    };
+
     // Toggle password visibility functions
     const toggleCurrentPasswordVisibility = () => setShowCurrentPassword(!showCurrentPassword);
     const toggleNewPasswordVisibility = () => setShowNewPassword(!showNewPassword);
@@ -41,6 +52,9 @@ const PasswordManagement = () => {
         setShowConfirmPassword(false);
     };
 
+    // Get password strength info
+    const { percentage, charactersRemaining } = calculatePasswordStrength();
+
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center px-5 py-10">
             <div className="w-full max-w-lg bg-white rounded-xl shadow-md relative overflow-hidden my-10">
@@ -67,16 +81,6 @@ const PasswordManagement = () => {
                     {/* Error message (hidden by default) */}
 
                     {/* Success message (hidden by default) */}
-
-                    {/* <div className="hidden bg-green-50 text-green-700 border border-green-100 rounded-md p-3 mb-6 flex items-center">
-                        <span className="mr-3 text-lg">✓</span>
-                        Password changed successfully!
-                    </div>
-
-                    <div className="hidden bg-red-50 text-red-600 border border-red-100 rounded-md p-3 mb-6 flex items-center">
-                        <span className="mr-3 text-lg">✕</span>
-                        Current password is incorrect. Please try again.
-                    </div> */}
 
                     <form>
                         <div className="mb-6">
@@ -142,9 +146,28 @@ const PasswordManagement = () => {
                                 </button>
                             </div>
                             {/* Password strength meter */}
-                            <div className="mt-2 h-1 bg-gray-200 rounded-sm overflow-hidden">
-                                <div className="h-full w-2/3 bg-yellow-400 transition-all duration-300"></div>
-                            </div>
+                            {formValues.newPassword.length > 0 ? (
+                                <div className="mt-2">
+                                    <div className="h-1 bg-gray-200 rounded-sm overflow-hidden">
+                                        <div 
+                                            className={`h-full transition-all duration-500 ease-out ${percentage === 100 ? 'bg-[#33e407]' : 'bg-yellow-400'}`}
+                                            style={{ width: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="flex justify-start items-center mt-1">
+                                        <span className="text-xs text-gray-500">
+                                            {charactersRemaining > 0 ? 
+                                                `${charactersRemaining} more character${charactersRemaining !== 1 ? 's' : ''} needed` : 
+                                                'Minimum length reached'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mt-2">
+                                    <span className="text-xs text-gray-500">Password must be at least 8 characters long</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="mb-6">
@@ -182,15 +205,15 @@ const PasswordManagement = () => {
                         {/* Password Requirements */}
                         <div className="my-6 bg-gray-50 rounded-lg p-4">
                             <div className="text-sm font-semibold text-gray-600 mb-3">
-                                Password Requirements
+                                Password Requirement
                             </div>
                             <ul className="space-y-2">
                                 {[
                                     'At least 8 characters long',
-                                    'Include at least one uppercase letter',
-                                    'Include at least one number',
-                                    'Include at least one special character',
-                                    'Should not be the same as your previous password'
+                                    // 'Include at least one uppercase letter',
+                                    // 'Include at least one number',
+                                    // 'Include at least one special character',
+                                    // 'Should not be the same as your previous password'
                                 ].map((requirement, index) => (
                                     <li key={index} className="text-xs text-gray-600 flex items-center">
                                         <span className="w-1.5 h-1.5 bg-[#33e407] rounded-full mr-2"></span>
