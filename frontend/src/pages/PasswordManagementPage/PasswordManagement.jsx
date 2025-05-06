@@ -122,7 +122,7 @@ const PasswordManagement = () => {
 
                     {/* Back link */}
                     <div className="text-center mt-6 text-sm text-gray-600">
-                        <a href="account.html" className="text-[#33e407] font-medium hover:underline">
+                        <a href="/accountinformation" className="text-[#33e407] font-medium hover:underline">
                             &larr; Back to Account Settings
                         </a>
                     </div>
