@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
@@ -12,6 +12,7 @@ const AccountInformation = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
     // Function to decode JWT token
     const parseJwt = (token) => {
@@ -65,6 +66,10 @@ const AccountInformation = () => {
             return `${userData.firstName.charAt(0)}${userData.lastName.charAt(0)}`;
         }
         return "U";  // Default if no name available
+    };
+
+    const handlePasswordRedirect = () => {
+        navigate('/passwordmanagement');
     };
 
     return (
@@ -252,6 +257,7 @@ const AccountInformation = () => {
                                         Cancel
                                     </button>
                                     <button
+                                        onClick={handlePasswordRedirect}
                                         className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#17A2B8] hover:bg-[#138496]">
                                         Change Password
                                     </button>
@@ -281,3 +287,4 @@ const AccountInformation = () => {
 };
 
 export default AccountInformation;
+
