@@ -190,67 +190,67 @@ const AccountInformation = () => {
                                     </div>
                                 </section>
 
-                                <section className="mb-10">
-                                    <h2 className="text-xl font-semibold text-gray-800 mb-6">Change Password</h2>
+                                {/*<section className="mb-10">*/}
+                                {/*    <h2 className="text-xl font-semibold text-gray-800 mb-6">Change Password</h2>*/}
 
-                                    <div className="mb-6">
-                                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Current Password
-                                        </label>
-                                        <input
-                                            type="password"
-                                            id="currentPassword"
-                                            name="currentPassword"
-                                            placeholder="Enter your current password"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"
-                                            style={{
-                                                "&:focus": {
-                                                    borderColor: "#33e407",
-                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                }
-                                            }}
-                                        />
-                                    </div>
+                                {/*    <div className="mb-6">*/}
+                                {/*        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-600 mb-2">*/}
+                                {/*            Current Password*/}
+                                {/*        </label>*/}
+                                {/*        <input*/}
+                                {/*            type="password"*/}
+                                {/*            id="currentPassword"*/}
+                                {/*            name="currentPassword"*/}
+                                {/*            placeholder="Enter your current password"*/}
+                                {/*            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"*/}
+                                {/*            style={{*/}
+                                {/*                "&:focus": {*/}
+                                {/*                    borderColor: "#33e407",*/}
+                                {/*                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"*/}
+                                {/*                }*/}
+                                {/*            }}*/}
+                                {/*        />*/}
+                                {/*    </div>*/}
 
-                                    <div className="flex flex-col md:flex-row gap-6 mb-6">
-                                        <div className="flex-1 mb-6 md:mb-0">
-                                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-600 mb-2">
-                                                New Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="newPassword"
-                                                name="newPassword"
-                                                placeholder="Enter new password"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"
-                                                style={{
-                                                    "&:focus": {
-                                                        borderColor: "#33e407",
-                                                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-600 mb-2">
-                                                Confirm New Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="confirmPassword"
-                                                name="confirmPassword"
-                                                placeholder="Confirm new password"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"
-                                                style={{
-                                                    "&:focus": {
-                                                        borderColor: "#33e407",
-                                                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
+                                {/*    <div className="flex flex-col md:flex-row gap-6 mb-6">*/}
+                                {/*        <div className="flex-1 mb-6 md:mb-0">*/}
+                                {/*            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-600 mb-2">*/}
+                                {/*                New Password*/}
+                                {/*            </label>*/}
+                                {/*            <input*/}
+                                {/*                type="password"*/}
+                                {/*                id="newPassword"*/}
+                                {/*                name="newPassword"*/}
+                                {/*                placeholder="Enter new password"*/}
+                                {/*                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"*/}
+                                {/*                style={{*/}
+                                {/*                    "&:focus": {*/}
+                                {/*                        borderColor: "#33e407",*/}
+                                {/*                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"*/}
+                                {/*                    }*/}
+                                {/*                }}*/}
+                                {/*            />*/}
+                                {/*        </div>*/}
+                                {/*        <div className="flex-1">*/}
+                                {/*            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-600 mb-2">*/}
+                                {/*                Confirm New Password*/}
+                                {/*            </label>*/}
+                                {/*            <input*/}
+                                {/*                type="password"*/}
+                                {/*                id="confirmPassword"*/}
+                                {/*                name="confirmPassword"*/}
+                                {/*                placeholder="Confirm new password"*/}
+                                {/*                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none placeholder-gray-400"*/}
+                                {/*                style={{*/}
+                                {/*                    "&:focus": {*/}
+                                {/*                        borderColor: "#33e407",*/}
+                                {/*                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"*/}
+                                {/*                    }*/}
+                                {/*                }}*/}
+                                {/*            />*/}
+                                {/*        </div>*/}
+                                {/*    </div>*/}
+                                {/*</section>*/}
 
                                 <div className="flex md:flex-row flex-col-reverse justify-end gap-4 mb-6">
                                     <button className="bg-gray-100 text-gray-600 py-3 px-6 rounded-md font-medium transition-all hover:bg-gray-200 w-full md:w-auto">
