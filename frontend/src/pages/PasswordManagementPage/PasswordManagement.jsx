@@ -202,26 +202,26 @@ const PasswordManagement = () => {
                             </div>
                         </div>
 
-                        {/* Password Requirements */}
-                        <div className="my-6 bg-gray-50 rounded-lg p-4">
-                            <div className="text-sm font-semibold text-gray-600 mb-3">
-                                Password Requirement
-                            </div>
-                            <ul className="space-y-2">
-                                {[
-                                    'At least 8 characters long',
-                                    // 'Include at least one uppercase letter',
-                                    // 'Include at least one number',
-                                    // 'Include at least one special character',
-                                    // 'Should not be the same as your previous password'
-                                ].map((requirement, index) => (
-                                    <li key={index} className="text-xs text-gray-600 flex items-center">
-                                        <span className="w-1.5 h-1.5 bg-[#33e407] rounded-full mr-2"></span>
-                                        {requirement}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        {/*/!* Password Requirements *!/*/}
+                        {/*<div className="my-6 bg-gray-50 rounded-lg p-4">*/}
+                        {/*    <div className="text-sm font-semibold text-gray-600 mb-3">*/}
+                        {/*        Password Requirement*/}
+                        {/*    </div>*/}
+                        {/*    <ul className="space-y-2">*/}
+                        {/*        {[*/}
+                        {/*            'At least 8 characters long',*/}
+                        {/*            // 'Include at least one uppercase letter',*/}
+                        {/*            // 'Include at least one number',*/}
+                        {/*            // 'Include at least one special character',*/}
+                        {/*            // 'Should not be the same as your previous password'*/}
+                        {/*        ].map((requirement, index) => (*/}
+                        {/*            <li key={index} className="text-xs text-gray-600 flex items-center">*/}
+                        {/*                <span className="w-1.5 h-1.5 bg-[#33e407] rounded-full mr-2"></span>*/}
+                        {/*                {requirement}*/}
+                        {/*            </li>*/}
+                        {/*        ))}*/}
+                        {/*    </ul>*/}
+                        {/*</div>*/}
 
                         {/* Action Buttons */}
                         <div className="flex justify-between gap-3 mt-4 sm:flex-row flex-col-reverse">
