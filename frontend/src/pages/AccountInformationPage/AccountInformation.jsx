@@ -253,9 +253,9 @@ const AccountInformation = () => {
                                 {/*</section>*/}
 
                                 <div className="flex md:flex-row flex-col-reverse justify-end gap-4 mb-6">
-                                    <button className="bg-gray-100 text-gray-600 py-3 px-6 rounded-md font-medium transition-all hover:bg-gray-200 w-full md:w-auto">
-                                        Cancel
-                                    </button>
+                                    {/*<button className="bg-gray-100 text-gray-600 py-3 px-6 rounded-md font-medium transition-all hover:bg-gray-200 w-full md:w-auto">*/}
+                                    {/*    Cancel*/}
+                                    {/*</button>*/}
                                     <button
                                         onClick={handlePasswordRedirect}
                                         className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#17A2B8] hover:bg-[#138496]">
