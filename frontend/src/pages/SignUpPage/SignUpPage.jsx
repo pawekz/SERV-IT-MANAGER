@@ -27,6 +27,15 @@ const SignUpPage = () => {
         }
     };
 
+    // Add this new function to handle phone number input
+    const handlePhoneInput = (e) => {
+        const { id, value } = e.target;
+        // Only allow numeric values
+        if (/^\d*$/.test(value) || value === '') {
+            setFormData({ ...formData, [id]: value });
+        }
+    };
+
     // Handle name input - only allow letters
     const handleNameInput = (e) => {
         const { id, value } = e.target;
@@ -199,6 +208,24 @@ const SignUpPage = () => {
                             onChange={handleChange}
                             className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Enter your email"
+                            required
+                        />
+                    </div>
+{/*for phone number*/}
+                    <div className="mb-5">
+                        <label
+                            htmlFor="phoneNumber"
+                            className="block mb-2 text-sm font-medium text-gray-600"
+                        >
+                            Phone Number
+                        </label>
+                        <input
+                            type="tel"
+                            id="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handlePhoneInput}
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                            placeholder="Enter your phone number"
                             required
                         />
                     </div>
