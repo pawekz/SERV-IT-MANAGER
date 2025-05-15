@@ -343,6 +343,27 @@ const AccountInformation = () => {
                                             }}
                                         />
                                     </div>
+
+                                    {/*Phone number change this later john to phone and replace the email for phone*/}
+                                    <div className="mb-6">
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-2">
+                                            Phone Number
+                                        </label>
+                                        <input
+                                            type="email"
+                                            id="email"
+                                            name="email"
+                                            value={"+63123234412"}
+                                            readOnly
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
+                                            style={{
+                                                "&:focus": {
+                                                    borderColor: "#33e407",
+                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </section>
 
                                 <div className="flex md:flex-row flex-col-reverse justify-end gap-4 mb-6">
