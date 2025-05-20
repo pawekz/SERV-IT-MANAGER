@@ -27,7 +27,7 @@ public class UserService {
 
     @Transactional
     public void register(RegistrationRequestDTO req) {
-        if (req.getEmail() == null || req.getPassword() == null || req.getFirstName() == null || req.getLastName() == null) {
+        if (req.getEmail() == null || req.getPassword() == null || req.getFirstName() == null || req.getLastName() == null || req.getUsername() == null) {
             throw new IllegalArgumentException("All fields are required");
         }
 
@@ -35,11 +35,15 @@ public class UserService {
             throw new IllegalArgumentException("Email already in use");
         }
 
+        if (userRepo.findByUsername(req.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already in use");
+        }
+
         UserEntity u = new UserEntity();
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
-        u.setUsername(req.getEmail());
+        u.setUsername(req.getUsername());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         userRepo.save(u);
@@ -65,14 +69,21 @@ public class UserService {
                 .getAuthentication().getName();
         UserEntity u = userRepo.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         if (!u.getEmail().equals(req.getEmail())
                 && userRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
+
+        if (!u.getUsername().equals(req.getUsername())
+                && userRepo.findByUsername(req.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already in use");
+        }
+
         u.setFirstName(req.getFirstName());
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
-        u.setUsername(req.getEmail());
+        u.setUsername(req.getUsername());
 
         System.out.println("User updated: " + u.getEmail());
 
