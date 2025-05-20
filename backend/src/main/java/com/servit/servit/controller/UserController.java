@@ -87,16 +87,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/deleteUser/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
+        userSvc.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // OPTIONAL ra ni, mo update ni ang both first and last name in one request
     @PatchMapping("/updateName/{id}")
     public ResponseEntity<Void> updateName(@PathVariable Integer id, @RequestBody UpdateNameRequestDTO req) {
         userSvc.updateName(id, req.getNewFirstName(), req.getNewLastName());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/deleteUser/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
-        userSvc.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 }
