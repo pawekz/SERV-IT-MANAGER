@@ -256,7 +256,7 @@ const UserManagement = () => {
                                             <td className="p-4 border-b border-gray-200 text-gray-800">{user.role}</td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                                    <option>{user.role}</option>
+                                                    {/*<option>{user.role}</option>*/}
                                                     <option>Admin</option>
                                                     <option>Customer</option>
                                                     <option>Technician</option>
