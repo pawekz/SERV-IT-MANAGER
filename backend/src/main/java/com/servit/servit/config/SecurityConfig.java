@@ -39,8 +39,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
                                 "/user/register",
-                                "/auth/login"
+                                "/auth/login",
+                                "/user/verifyOtp"
                         ).permitAll()
+                        .requestMatchers(
+                                "/user/getCurrentUser",
+                                "/user/changeCurrentUserPassword",
+                                "/user/updateCurrentUserFullName",
+                                "/user/changeCurrentUserPhoneNumber",
+                                "/user/updateCurrentUsername"
+                        ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/user/changeRole/*",
                                 "/user/getAllUsers",
@@ -48,8 +56,10 @@ public class SecurityConfig {
                                 "/user/changePassword/*",
                                 "/user/updateEmail/*",
                                 "/user/updateFullName/*",
-                                "/user/deleteUser/*"
-                        ).hasRole("ADMIN")
+                                "/user/deleteUser/*",
+                                "/user/updatePhoneNuber/*",
+                                "/user/updateUsername/*"
+                        ).hasAnyRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())
