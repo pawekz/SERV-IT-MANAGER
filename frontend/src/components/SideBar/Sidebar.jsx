@@ -5,7 +5,7 @@ import {
     Users,
     FolderKanban,
     UserCog,
-    ShieldCheck,
+    DatabaseBackup,
     Settings,
     BarChart3,
     ClipboardList, LogOut,
@@ -95,12 +95,6 @@ const Sidebar = ({ activePage }) => {
                     <span>Dashboard</span>
                 </Link>
             </li>
-            <li className="mb-1">
-                <Link to="/users" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <Users size={18} className="mr-3" />
-                    <span>Users</span>
-                </Link>
-            </li>
             <h2 className=" text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
             <li className="mb-1">
                 <Link to="/user-management" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
@@ -109,9 +103,10 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/roles" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <ShieldCheck size={18} className="mr-3" />
-                    <span>Roles & Permissions</span>
+
+                <Link to="/backup" className={linkClass('backup')}>
+                    < DatabaseBackup size={18} className="mr-3" />
+                    <span>Backup & Recovery</span>
                 </Link>
             </li>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>
