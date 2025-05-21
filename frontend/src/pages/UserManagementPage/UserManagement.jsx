@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
 import {
     LayoutGrid,
     Users,
@@ -17,6 +18,72 @@ import {
 } from "lucide-react"
 
 const UserManagement = () => {
+    // Sample users data - in a real app this would come from an API
+    const [users, setUsers] = useState([
+        {
+            id: 1,
+            name: "John Doe",
+            email: "john.doe@ioconnect.com",
+            status: "Active",
+            role: "Admin"
+        },
+        {
+            id: 2,
+            name: "Jane Smith",
+            email: "jane.smith@ioconnect.com",
+            status: "Active",
+            role: "Manager"
+        },
+        {
+            id: 3,
+            name: "Robert Johnson",
+            email: "robert.johnson@ioconnect.com",
+            status: "Inactive",
+            role: "User"
+        },
+        {
+            id: 4,
+            name: "Emily Davis",
+            email: "emily.davis@ioconnect.com",
+            status: "Pending",
+            role: "Guest"
+        },
+        {
+            id: 5,
+            name: "Michael Wilson",
+            email: "michael.wilson@ioconnect.com",
+            status: "Active",
+            role: "User"
+        }
+    ]);
+    
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredUsers, setFilteredUsers] = useState(users);
+    const [tableMinHeight, setTableMinHeight] = useState("auto");
+    
+    // Set initial table height on component mount
+    useEffect(() => {
+        // Set a minimum table height based on initial content
+        // Using a fixed height that accommodates ~5 rows + header
+        setTableMinHeight("380px"); 
+    }, []);
+    
+    // Filter users based on search term
+    const handleSearch = (e) => {
+        const term = e.target.value;
+        setSearchTerm(term);
+        
+        if (term.trim() === '') {
+            setFilteredUsers(users);
+        } else {
+            const filtered = users.filter(user => 
+                user.name.toLowerCase().includes(term.toLowerCase()) || 
+                user.email.toLowerCase().includes(term.toLowerCase())
+            );
+            setFilteredUsers(filtered);
+        }
+    };
+    
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
             {/* Sidebar */}
@@ -130,7 +197,9 @@ const UserManagement = () => {
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
                                 type="text"
-                                placeholder="Search users..."
+                                placeholder="Search by name or email..."
+                                value={searchTerm}
+                                onChange={handleSearch}
                                 className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                             />
                         </div>
@@ -142,16 +211,13 @@ const UserManagement = () => {
                                 <option>User</option>
                                 <option>Guest</option>
                             </select>
-                            {/*<select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                            {/*    <option>All Status</option>*/}
-                            {/*    <option>Active</option>*/}
-                            {/*    <option>Inactive</option>*/}
-                            {/*    <option>Pending</option>*/}
-                            {/*</select>*/}
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                    <div 
+                        className="bg-white rounded-lg shadow-sm overflow-hidden mb-6" 
+                        style={{ minHeight: tableMinHeight }}
+                    >
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr>
@@ -163,151 +229,58 @@ const UserManagement = () => {
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-
-                                {/*This is just static for the displaying of stuff */}
-                                <tr>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">John Doe</td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">john.doe@ioconnect.com</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Admin</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                            <option>Admin</option>
-                                            <option>Manager</option>
-                                            <option>User</option>
-                                            <option>Guest</option>
-                                        </select>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                <PenLine size={16} />
-                                            </button>
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Jane Smith</td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">jane.smith@ioconnect.com</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Manager</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                            <option>Manager</option>
-                                            <option>Admin</option>
-                                            <option>User</option>
-                                            <option>Guest</option>
-                                        </select>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                <PenLine size={16} />
-                                            </button>
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Robert Johnson</td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">robert.johnson@ioconnect.com</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inactive</span>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">User</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                            <option>User</option>
-                                            <option>Admin</option>
-                                            <option>Manager</option>
-                                            <option>Guest</option>
-                                        </select>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                <PenLine size={16} />
-                                            </button>
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Emily Davis</td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">emily.davis@ioconnect.com</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-500">Pending</span>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200 text-gray-800">Guest</td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                            <option>Guest</option>
-                                            <option>Admin</option>
-                                            <option>Manager</option>
-                                            <option>User</option>
-                                        </select>
-                                    </td>
-                                    <td className="p-4 border-b border-gray-200">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                <PenLine size={16} />
-                                            </button>
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4 text-gray-800">Michael Wilson</td>
-                                    <td className="p-4 text-gray-800">michael.wilson@ioconnect.com</td>
-                                    <td className="p-4">
-                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
-                                    </td>
-                                    <td className="p-4 text-gray-800">User</td>
-                                    <td className="p-4">
-                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                            <option>User</option>
-                                            <option>Admin</option>
-                                            <option>Manager</option>
-                                            <option>Guest</option>
-                                        </select>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                <PenLine size={16} />
-                                            </button>
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                            <tbody className="relative">
+                                {filteredUsers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="p-4 text-center text-gray-500">
+                                            No users matching your search criteria
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredUsers.map(user => (
+                                        <tr key={user.id}>
+                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.name}</td>
+                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.email}</td>
+                                            <td className="p-4 border-b border-gray-200">
+                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium 
+                                                    ${user.status === "Active" ? "bg-[#e6f9e6] text-[#33e407]" : 
+                                                      user.status === "Inactive" ? "bg-gray-100 text-gray-500" : 
+                                                      "bg-orange-50 text-orange-500"}`}>
+                                                    {user.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.role}</td>
+                                            <td className="p-4 border-b border-gray-200">
+                                                <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                                    <option>{user.role}</option>
+                                                    <option>Admin</option>
+                                                    <option>Manager</option>
+                                                    <option>User</option>
+                                                    <option>Guest</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-4 border-b border-gray-200">
+                                                <div className="flex gap-2">
+                                                    <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                        <PenLine size={16} />
+                                                    </button>
+                                                    <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
 
                     <div className="flex justify-between items-center py-4">
                         <div className="text-gray-600 text-sm">
-                            <span>Showing 1 to 5 of 12 entries</span>
+                            <span>Showing {filteredUsers.length > 0 ? '1' : '0'} to {filteredUsers.length} of {users.length} entries</span>
                         </div>
                         <div className="flex gap-1">
-                            {/* <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer opacity-50 cursor-not-allowed">
-                                <ChevronLeft size={16} />
-                            </button> */}
                             <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm opacity-50 cursor-not-allowed">
                                 <ChevronLeft size={16} />
                             </button>
