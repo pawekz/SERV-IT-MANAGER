@@ -70,6 +70,7 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendOtpEmail(req.getEmail(), otp);
+
     }
 
     @Transactional
@@ -92,6 +93,8 @@ public class UserService {
         if (user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
+
+        otpService.invalidateOtp(email);
 
         String otp = otpService.generateOtp(email);
         emailService.sendOtpEmail(email, otp);
@@ -153,6 +156,13 @@ public class UserService {
 
     @Transactional
     public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
+        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+    }
+
+    @Transactional
+    public void verifyEmailOtp(OtpVerificationRequestDTO req) {
         if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }

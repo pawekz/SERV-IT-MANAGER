@@ -31,6 +31,10 @@ public class OtpService {
         return isValid;
     }
 
+    public void invalidateOtp(String email) {
+        otpStore.remove(email);
+    }
+
     private record OtpDetails(String otp, LocalDateTime expirationTime) {
 
     }
