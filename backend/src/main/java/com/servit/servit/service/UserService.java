@@ -28,15 +28,15 @@ public class UserService {
     // USER SIDE
 
     public GetUserResponseDTO getCurrentUser() {
-        String email = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        UserEntity u = userRepo.findByEmail(email)
+        UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        System.out.println("User found: " + u.getEmail());
+        System.out.println("User found: " + user.getEmail());
 
         return new GetUserResponseDTO(
-                u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name(), u.getPhoneNumber()
+                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber()
         );
     }
 
@@ -50,37 +50,37 @@ public class UserService {
             throw new IllegalArgumentException("Username already in use");
         }
 
-        UserEntity u = new UserEntity();
-        u.setFirstName(req.getFirstName());
-        u.setLastName(req.getLastName());
-        u.setEmail(req.getEmail());
-        u.setUsername(req.getUsername());
-        u.setPassword(passwordEncoder.encode(req.getPassword()));
-        u.setPhoneNumber(req.getPhoneNumber());
-        u.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
-        userRepo.save(u);
-        System.out.print("User registered: " + u.getEmail());
+        UserEntity user = new UserEntity();
+        user.setFirstName(req.getFirstName());
+        user.setLastName(req.getLastName());
+        user.setEmail(req.getEmail());
+        user.setUsername(req.getUsername());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setPhoneNumber(req.getPhoneNumber());
+        user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
+        userRepo.save(user);
+        System.out.print("User registered: " + user.getEmail());
     }
 
     @Transactional
     public void changeCurrentUserPassword(ChangeCurrentUserPasswordRequestDTO req) {
-        String email = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        UserEntity u = userRepo.findByEmail(email)
+        UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (!passwordEncoder.matches(req.getCurrentPassword(), u.getPassword())) {
+        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Current password incorrect");
         }
-        u.setPassword(passwordEncoder.encode(req.getNewPassword()));
-        userRepo.save(u);
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepo.save(user);
     }
 
 
     @Transactional
     public void updateCurrentUserFullName(UpdateFullNameRequestDTO req) {
-        String email = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        UserEntity user = userRepo.findByEmail(email)
+        UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setFirstName(req.getNewFirstName());
         user.setLastName(req.getNewLastName());
@@ -89,9 +89,9 @@ public class UserService {
 
     @Transactional
     public void changeCurrentUserPhoneNumber(ChangePhoneNumberDTO req) {
-        String email = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        UserEntity user = userRepo.findByEmail(email)
+        UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setPhoneNumber(req.getNewPhoneNumber());
         userRepo.save(user);
@@ -99,9 +99,9 @@ public class UserService {
 
     @Transactional
     public void updateCurrentUsername(UpdateUsernameRequestDTO req) {
-        String email = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        UserEntity user = userRepo.findByEmail(email)
+        UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setUsername(req.getNewUsername());
         userRepo.save(user);
@@ -111,17 +111,17 @@ public class UserService {
 
     @Transactional
     public void changeRole(Integer userId, String newRole) {
-        UserEntity u = userRepo.findById(userId)
+        UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        u.setRole(UserRoleEnum.valueOf(newRole));
-        userRepo.save(u);
+        user.setRole(UserRoleEnum.valueOf(newRole));
+        userRepo.save(user);
     }
 
     public List<GetUserResponseDTO> getAllUsers() {
         return userRepo.findAll().stream()
-                .map(u -> new GetUserResponseDTO(
-                        u.getUserId(), u.getFirstName(), u.getLastName(),
-                        u.getEmail(), u.getRole().name(), u.getPhoneNumber()))
+                .map(user -> new GetUserResponseDTO(
+                        user.getUserId(), user.getFirstName(), user.getLastName(),
+                        user.getEmail(), user.getRole().name(), user.getPhoneNumber()))
                 .toList();
     }
 
