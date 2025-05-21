@@ -27,10 +27,6 @@ public class UserService {
 
     @Transactional
     public void register(RegistrationRequestDTO req) {
-        if (req.getEmail() == null || req.getPassword() == null || req.getFirstName() == null || req.getLastName() == null || req.getUsername() == null) {
-            throw new IllegalArgumentException("All fields are required");
-        }
-
         if (userRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
@@ -45,6 +41,7 @@ public class UserService {
         u.setEmail(req.getEmail());
         u.setUsername(req.getUsername());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
+        u.setPhoneNumber(req.getPhoneNumber());
         u.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         userRepo.save(u);
         System.out.print("User registered: " + u.getEmail());
@@ -59,7 +56,7 @@ public class UserService {
         System.out.println("User found: " + u.getEmail());
 
         return new GetUserResponseDTO(
-                u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name()
+                u.getUserId(), u.getFirstName(), u.getLastName(), u.getEmail(), u.getRole().name(), u.getPhoneNumber()
         );
     }
 
@@ -84,6 +81,7 @@ public class UserService {
         u.setLastName(req.getLastName());
         u.setEmail(req.getEmail());
         u.setUsername(req.getUsername());
+        u.setPhoneNumber(req.getPhoneNumber());
 
         System.out.println("User updated: " + u.getEmail());
 
@@ -115,7 +113,7 @@ public class UserService {
         return userRepo.findAll().stream()
                 .map(u -> new GetUserResponseDTO(
                         u.getUserId(), u.getFirstName(), u.getLastName(),
-                        u.getEmail(), u.getRole().name()))
+                        u.getEmail(), u.getRole().name(), u.getPhoneNumber()))
                 .toList();
     }
 
@@ -124,7 +122,7 @@ public class UserService {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return new GetUserResponseDTO(
-                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name()
+                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber()
         );
     }
 

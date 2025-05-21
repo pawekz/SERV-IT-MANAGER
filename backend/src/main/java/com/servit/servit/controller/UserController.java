@@ -32,6 +32,7 @@ public class UserController {
         return ResponseEntity.ok(userSvc.getCurrentUser());
     }
 
+    // Optional
     @PatchMapping("/updateCurrentUser")
     public ResponseEntity<Void> updateCurrentUser(@RequestBody UpdateCurrentUserRequestDTO req) {
         userSvc.updateCurrentUser(req);
@@ -99,4 +100,5 @@ public class UserController {
         userSvc.updateName(id, req.getNewFirstName(), req.getNewLastName());
         return ResponseEntity.noContent().build();
     }
+
 }
