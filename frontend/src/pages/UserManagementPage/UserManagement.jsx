@@ -53,6 +53,7 @@ const UserManagement = () => {
     ]);
     
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedRole, setSelectedRole] = useState('All Roles');
     const [filteredUsers, setFilteredUsers] = useState(users);
     const [tableMinHeight, setTableMinHeight] = useState("auto");
     
@@ -63,20 +64,34 @@ const UserManagement = () => {
         setTableMinHeight("380px"); 
     }, []);
     
-    // Filter users based on search term
-    const handleSearch = (e) => {
-        const term = e.target.value;
-        setSearchTerm(term);
+    // Filter users based on search term and selected role
+    useEffect(() => {
+        let filtered = users;
         
-        if (term.trim() === '') {
-            setFilteredUsers(users);
-        } else {
-            const filtered = users.filter(user => 
-                user.name.toLowerCase().includes(term.toLowerCase()) || 
-                user.email.toLowerCase().includes(term.toLowerCase())
+        // First filter by search term
+        if (searchTerm.trim() !== '') {
+            filtered = filtered.filter(user => 
+                user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                user.email.toLowerCase().includes(searchTerm.toLowerCase())
             );
-            setFilteredUsers(filtered);
         }
+        
+        // Then filter by role if not "All Roles"
+        if (selectedRole !== 'All Roles') {
+            filtered = filtered.filter(user => user.role === selectedRole);
+        }
+        
+        setFilteredUsers(filtered);
+    }, [searchTerm, selectedRole, users]);
+    
+    // Handle search input change
+    const handleSearch = (e) => {
+        setSearchTerm(e.target.value);
+    };
+    
+    // Handle role selection change
+    const handleRoleChange = (e) => {
+        setSelectedRole(e.target.value);
     };
     
     return (
@@ -199,7 +214,11 @@ const UserManagement = () => {
                             />
                         </div>
                         <div className="flex gap-4">
-                            <select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                            <select 
+                                value={selectedRole}
+                                onChange={handleRoleChange}
+                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                            >
                                 <option>All Roles</option>
                                 <option>Admin</option>
                                 <option>Manager</option>
