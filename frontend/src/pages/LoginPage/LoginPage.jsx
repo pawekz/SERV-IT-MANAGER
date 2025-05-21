@@ -58,6 +58,7 @@ const LoginPage = () => {
 
             // Store the authentication token
             localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userRole', data.role);
 
             // Redirect based on role
             if (data.role === 'ADMIN') {

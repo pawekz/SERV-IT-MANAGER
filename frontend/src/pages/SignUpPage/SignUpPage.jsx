@@ -7,6 +7,8 @@ const SignUpPage = () => {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
+        userName: '',
+        phoneNumber: '',
         email: '',
         password: '',
         phoneNumber: ''
@@ -24,7 +26,7 @@ const SignUpPage = () => {
         
         // Check password validity when password field changes
         if (id === 'password') {
-            setIsPasswordValid(value.length >= 8);
+            setIsPasswordValid(passwordRegex.test(value));
         }
     };
 
@@ -71,6 +73,9 @@ const SignUpPage = () => {
         setShowPassword(!showPassword);
     };
 
+    // Password validation regex
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -78,14 +83,14 @@ const SignUpPage = () => {
         setLoading(true);
 
         // Basic validation
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.phoneNumber || !formData.username) {
             setError('All fields are required');
             setLoading(false);
             return;
         }
 
-        if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters long');
+        if (!passwordRegex.test(formData.password)) {
+            setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
             setLoading(false);
             return;
         }
@@ -120,6 +125,7 @@ const SignUpPage = () => {
             setFormData({
                 firstName: '',
                 lastName: '',
+                userName: '',
                 email: '',
                 password: ''
             });
@@ -205,6 +211,24 @@ const SignUpPage = () => {
                                 required
                             />
                         </div>
+                    </div>
+
+                    <div className="mb-5">
+                        <label
+                            htmlFor="userName"
+                            className="block mb-2 text-sm font-medium text-gray-600"
+                        >
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            id="userName"
+                            value={formData.userName}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                            placeholder="Enter your username"
+                            required
+                        />
                     </div>
 
                     <div className="mb-5">
@@ -325,12 +349,28 @@ const SignUpPage = () => {
                         )}
                         
                         <div className="flex justify-between items-center">
-                            <div className={`text-xs mt-1.5 ${isPasswordValid ? 'text-green-600' : formData.password ? 'text-red-600' : 'text-gray-400'}`}>
-                                Password must be at least 8 characters long {formData.password && (isPasswordValid ? '✓' : '✗')}
-                            </div>
+                            {!formData.password && (
+                                <div className="text-xs mt-1.5 text-gray-400">
+                                    Password must be at least 8 characters and include uppercase, lowercase, number, and special character
+                                </div>
+                            )}
                             {formData.password && !isPasswordValid && (
-                                <div className="text-xs mt-1.5 text-amber-600">
-                                    {8 - formData.password.length} more {8 - formData.password.length === 1 ? 'character' : 'characters'} needed
+                                <div className="mt-2 space-y-1 text-xs">
+                                    <div className={`${formData.password.length >= 8 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formData.password.length >= 8 ? '✓' : '✗'} At least 8 characters
+                                    </div>
+                                    <div className={`${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
+                                        {/[A-Z]/.test(formData.password) ? '✓' : '✗'} At least one uppercase letter
+                                    </div>
+                                    <div className={`${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
+                                        {/[a-z]/.test(formData.password) ? '✓' : '✗'} At least one lowercase letter
+                                    </div>
+                                    <div className={`${/\d/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
+                                        {/\d/.test(formData.password) ? '✓' : '✗'} At least one number
+                                    </div>
+                                    <div className={`${/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
+                                        {/[@$!%*?&]/.test(formData.password) ? '✓' : '✗'} At least one special character (@$!%*?&)
+                                    </div>
                                 </div>
                             )}
                         </div>
