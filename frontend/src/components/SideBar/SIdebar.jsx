@@ -14,63 +14,10 @@ import {
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
-    const [userData, setUserData] = useState({
-        firstName: '',
-        lastName: ''
-    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
-    
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                setLoading(true);
-
-                // Check if we have cached user data in sessionStorage first
-                const cachedUserData = sessionStorage.getItem('userData');
-                if (cachedUserData) {
-                    const parsedData = JSON.parse(cachedUserData);
-                    setUserData(parsedData);
-                    setLoading(false);
-                    return;
-                }
-
-                // Get token from localStorage if no cached data
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
-                }
-
-                // Try to parse token to get user info
-                const decodedToken = parseJwt(token);
-
-                if (decodedToken) {
-                    const userData = {
-                        firstName: decodedToken.firstName || '',
-                        lastName: decodedToken.lastName || ''
-                    };
-
-                    setUserData(userData);
-
-                    // Cache the user data in sessionStorage for persistence across refreshes
-                    sessionStorage.setItem('userData', JSON.stringify(userData));
-                } else {
-                    // If token can't be decoded, could attempt API call to get user data
-                    throw new Error("Could not retrieve user information");
-                }
-                setError(null);
-            } catch (err) {
-                console.error("Error fetching user data:", err);
-                setError("Failed to load account information. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, []);
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
@@ -93,6 +40,7 @@ const Sidebar = ({ activePage }) => {
 
     const customerLinks = (
         <>
+            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
                 <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
@@ -110,6 +58,7 @@ const Sidebar = ({ activePage }) => {
 
     const technicianLinks = (
         <>
+            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
                 <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
@@ -139,6 +88,7 @@ const Sidebar = ({ activePage }) => {
 
     const adminLinks = (
         <>
+            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
                 <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
@@ -151,6 +101,7 @@ const Sidebar = ({ activePage }) => {
                     <span>Users</span>
                 </Link>
             </li>
+            <h2 className=" text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
             <li className="mb-1">
                 <Link to="/user-management" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <UserCog size={18} className="mr-3" />
@@ -163,6 +114,7 @@ const Sidebar = ({ activePage }) => {
                     <span>Roles & Permissions</span>
                 </Link>
             </li>
+            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>
             <li className="mb-1">
                 <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <BarChart3 size={18} className="mr-3" />
@@ -199,7 +151,7 @@ const Sidebar = ({ activePage }) => {
                 onClick={toggleLogoutMenu}
             >
                 <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
-                    <span>{userData.firstName.charAt(0)}{userData.lastName.charAt(0)}</span>
+                    <span>{(userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '')}</span>
                 </div>
                 <div>
                     <h3 className="text-sm font-semibold text-gray-800 m-0">
