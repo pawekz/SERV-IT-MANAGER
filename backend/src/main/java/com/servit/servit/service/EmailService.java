@@ -32,7 +32,8 @@ public class EmailService {
                 "    <div class='header' style='text-align: center;'>Account Verification</div>" +
                 "    <div class='content' style='text-align: center;'>" +
                 "      <h1>Welcome to <span style='color: #33e407;'>IO</span><span style='color: #000000;'>CONNECT</span>!</h1>" +
-                "      <p>Thank you for signing up. Please Log in again and use the OTP below to verify your account:</p>" +
+                "      <p>Thank you for signing up.</p>" +
+                "      <p>Please log in and use the OTP below to verify your account:</p>" +
                 "      <div class='otp-box'>" + otp + "</div>" +
                 "      <p>If you did not request this, please ignore this email.</p>" +
                 "    </div>" +
