@@ -1,5 +1,114 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Inline OTP Modal Component with 6 boxes
+const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
+    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+    const inputsRef = useRef([]);
+
+    // Auto-focus next/prev on input
+    const handleChange = (e, idx) => {
+        const value = e.target.value.replace(/\D/, ""); // Only digits
+        if (!value && idx > 0) {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = "";
+                return arr;
+            });
+            inputsRef.current[idx - 1].focus();
+            return;
+        }
+        if (value) {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = value;
+                return arr;
+            });
+            if (idx < 5) {
+                inputsRef.current[idx + 1].focus();
+            }
+        } else {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = "";
+                return arr;
+            });
+        }
+    };
+
+    const handleKeyDown = (e, idx) => {
+        if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
+            inputsRef.current[idx - 1].focus();
+        }
+    };
+
+    const handleVerify = () => {
+        onVerify(otpDigits.join(""));
+    };
+
+    // Reset on close
+    React.useEffect(() => {
+        if (!visible) {
+            setOtpDigits(["", "", "", "", "", ""]);
+        }
+    }, [visible]);
+
+    if (!visible) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+            <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
+                <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                    onClick={onClose}
+                >
+                    &times;
+                </button>
+                <h2 className="text-lg font-semibold mb-4 text-center">Enter OTP</h2>
+                <p className="text-gray-600 text-sm mb-4 text-center">
+                    A 6-digit code has been sent to your email.
+                </p>
+
+                {/* Error message */}
+                {error && (
+                    <div className="mb-4 p-2 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <div className="flex justify-center gap-2 mb-4">
+                    {otpDigits.map((digit, idx) => (
+                        <input
+                            key={idx}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            ref={el => inputsRef.current[idx] = el}
+                            onChange={e => handleChange(e, idx)}
+                            onKeyDown={e => handleKeyDown(e, idx)}
+                            className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] transition-colors"
+                        />
+                    ))}
+                </div>
+                <button
+                    onClick={handleVerify}
+                    disabled={loading || otpDigits.some(d => d === "")}
+                    className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 mb-2"
+                >
+                    {loading ? "Verifying..." : "Verify"}
+                </button>
+                <button
+                    onClick={onResend}
+                    disabled={loading}
+                    className="w-full text-[#33e407] text-sm hover:underline"
+                >
+                    Resend OTP
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -11,6 +120,12 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // OTP modal states
+    const [showOTPModal, setShowOTPModal] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+    const [otpError, setOtpError] = useState('');
+
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -20,6 +135,23 @@ const LoginPage = () => {
     // Toggle password visibility
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    // Extract user info from JWT token
+    const parseJwt = (token) => {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join('')
+            );
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error("Error parsing JWT token:", e);
+            return {};
+        }
     };
 
     const handleLogin = async (e) => {
@@ -60,17 +192,139 @@ const LoginPage = () => {
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
 
-            // Redirect based on role
-            if (data.role === 'ADMIN') {
-                navigate('/admin/dashboard');
+            // Extract user email and verification status from token
+            const tokenData = parseJwt(data.token);
+            setUserEmail(tokenData.sub || formData.username);
+
+            // Check if account is verified
+            if (tokenData.isVerified === true) {
+                // If verified, redirect directly based on user role
+                if (data.role === 'ADMIN') {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/accountinformation');
+                }
             } else {
-                navigate('/accountinformation');
+                // If not verified, show OTP modal
+                setShowOTPModal(true);
             }
+
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
             console.error('Login error:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Updated OTP verification with better error handling
+    const handleVerifyOTP = async (otp) => {
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            // Debug info
+            console.log('OTP Verification Data:', {
+                email: userEmail,
+                otp: otp
+            });
+
+            const token = localStorage.getItem('authToken');
+            console.log('Token exists:', !!token);
+
+            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Only include Authorization if token exists
+                    ...(token ? {'Authorization': `Bearer ${token}`} : {})
+                },
+                body: JSON.stringify({
+                    email: userEmail,
+                    otp: otp
+                }),
+            });
+
+            // Get response text for better error handling
+            const responseText = await response.text();
+            console.log('Response status:', response.status);
+            console.log('Response text:', responseText);
+
+            if (!response.ok) {
+                // Try to parse as JSON if possible
+                let errorMessage = 'OTP verification failed';
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (e) {
+                    // If not JSON, use the text
+                    if (responseText) errorMessage = responseText;
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            // OTP verified successfully
+            setShowOTPModal(false);
+
+            // Redirect based on user role
+            const userRole = localStorage.getItem('userRole');
+            if (userRole === 'ADMIN') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/accountinformation');
+            }
+
+        } catch (err) {
+            setOtpError(err.message || 'OTP verification failed');
+            console.error('OTP verification error:', err);
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    // Updated resend OTP with better error handling
+    const handleResendOTP = async () => {
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            const token = localStorage.getItem('authToken');
+            console.log('Resending OTP for email:', userEmail);
+
+            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(userEmail)}`, {
+                method: 'POST',
+                headers: {
+                    ...(token ? {'Authorization': `Bearer ${token}`} : {})
+                }
+            });
+
+            // Get response text for better error handling
+            const responseText = await response.text();
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to resend OTP';
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (e) {
+                    if (responseText) errorMessage = responseText;
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            alert('OTP has been resent to your email.');
+
+        } catch (err) {
+            setOtpError(err.message || 'Failed to resend OTP');
+            console.error('Resend OTP error:', err);
+        } finally {
+            setOtpLoading(false);
         }
     };
 
@@ -181,45 +435,23 @@ const LoginPage = () => {
                         <div className="flex-1 h-px bg-gray-200"></div>
                     </div>
 
-                    {/* Google Login Button */}
-                    {/*<button*/}
-                    {/*    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"*/}
-                    {/*    onClick={() => alert("Google login is not implemented yet")}*/}
-                    {/*>*/}
-                    {/*    <svg*/}
-                    {/*        className="w-4 h-4"*/}
-                    {/*        viewBox="0 0 24 24"*/}
-                    {/*        xmlns="http://www.w3.org/2000/svg"*/}
-                    {/*    >*/}
-                    {/*        <path*/}
-                    {/*            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"*/}
-                    {/*            fill="#4285F4"*/}
-                    {/*        />*/}
-                    {/*        <path*/}
-                    {/*            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"*/}
-                    {/*            fill="#34A853"*/}
-                    {/*        />*/}
-                    {/*        <path*/}
-                    {/*            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"*/}
-                    {/*            fill="#FBBC05"*/}
-                    {/*        />*/}
-                    {/*        <path*/}
-                    {/*            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"*/}
-                    {/*            fill="#EA4335"*/}
-                    {/*        />*/}
-                    {/*    </svg>*/}
-                    {/*    Login with Google*/}
-                    {/*</button>*/}
-
                     {/* Sign Up Link */}
                     <div className="text-center mt-4 text-sm text-gray-600">
                         Don't have an account? <a href="/signup" className="text-[#33e407] font-medium hover:underline">Sign Up</a>
                     </div>
                 </div>
             </div>
+            {/* OTP Modal */}
+            <OTPModal
+                visible={showOTPModal}
+                onClose={() => setShowOTPModal(false)}
+                onVerify={handleVerifyOTP}
+                onResend={handleResendOTP}
+                loading={otpLoading}
+                error={otpError}
+            />
         </div>
     );
 };
 
 export default LoginPage;
-
