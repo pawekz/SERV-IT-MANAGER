@@ -30,25 +30,25 @@ const UserManagement = () => {
             id: 2,
             name: "Jane Smith",
             email: "jane.smith@ioconnect.com",
-            role: "Manager"
+            role: "Customer"
         },
         {
             id: 3,
             name: "Robert Johnson",
             email: "robert.johnson@ioconnect.com",
-            role: "User"
+            role: "Technician"
         },
         {
             id: 4,
             name: "Emily Davis",
             email: "emily.davis@ioconnect.com",
-            role: "Guest"
+            role: "Customer"
         },
         {
             id: 5,
             name: "Michael Wilson",
             email: "michael.wilson@ioconnect.com",
-            role: "User"
+            role: "Technician"
         }
     ]);
     
@@ -221,9 +221,8 @@ const UserManagement = () => {
                             >
                                 <option>All Roles</option>
                                 <option>Admin</option>
-                                <option>Manager</option>
-                                <option>User</option>
-                                <option>Guest</option>
+                                <option>Customer</option>
+                                <option>Technician</option>
                             </select>
                         </div>
                     </div>
@@ -259,9 +258,8 @@ const UserManagement = () => {
                                                 <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
                                                     <option>{user.role}</option>
                                                     <option>Admin</option>
-                                                    <option>Manager</option>
-                                                    <option>User</option>
-                                                    <option>Guest</option>
+                                                    <option>Customer</option>
+                                                    <option>Technician</option>
                                                 </select>
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
@@ -306,4 +304,3 @@ const UserManagement = () => {
 }
 
 export default UserManagement
-
