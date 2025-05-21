@@ -162,13 +162,6 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyEmailOtp(OtpVerificationRequestDTO req) {
-        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
-            throw new IllegalArgumentException("Invalid or expired OTP");
-        }
-    }
-
-    @Transactional
     public void resetPassword(ResetPasswordRequestDTO req) {
         UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
