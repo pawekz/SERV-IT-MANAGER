@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const SignUpPage = () => {
     const navigate = useNavigate();
-    // State for form inputs
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -11,7 +10,6 @@ const SignUpPage = () => {
         phoneNumber: '',
         email: '',
         password: ''
-
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,24 +17,32 @@ const SignUpPage = () => {
     const [isPasswordValid, setIsPasswordValid] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // OTP modal state
+    const [showOTPModal, setShowOTPModal] = useState(false);
+    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otpError, setOtpError] = useState('');
+    const inputsRef = useRef([]);
+
+    // Success modal state
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Password regex
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
+
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
         setFormData({ ...formData, [id]: value });
-        
-        // Check password validity when password field changes
         if (id === 'password') {
             setIsPasswordValid(passwordRegex.test(value));
         }
     };
 
-    // Add this new function to handle phone number input
+    // Phone number input
     const handlePhoneInput = (e) => {
         const { value } = e.target;
-        // Remove non-numeric characters from input
         const numericValue = value.replace(/\D/g, '');
-        
-        // Format the phone number with spaces (905 123 4567)
         let formattedValue = '';
         if (numericValue.length > 0) {
             formattedValue = numericValue.slice(0, 3);
@@ -47,21 +53,18 @@ const SignUpPage = () => {
                 formattedValue += ' ' + numericValue.slice(6, 10);
             }
         }
-
         setFormData({ ...formData, phoneNumber: formattedValue });
     };
 
-    // Handle name input - only allow letters
+    // Name input - letters only
     const handleNameInput = (e) => {
         const { id, value } = e.target;
-        // Only accept letters, spaces, hyphens, and apostrophes for names
-        // Regex pattern: only letters (including accented), spaces, hyphens, apostrophes
         if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']*$/.test(value) || value === '') {
             setFormData({ ...formData, [id]: value });
         }
     };
 
-    // Calculate password strength percentage
+    // Password strength for bar
     const getPasswordProgress = () => {
         if (!formData.password) return 0;
         const progress = Math.min(formData.password.length / 8 * 100, 100);
@@ -73,36 +76,25 @@ const SignUpPage = () => {
         setShowPassword(!showPassword);
     };
 
-    // Password validation regex
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
-
-    // Update the handleSubmit function
+    // Submit registration
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        // Basic validation (remains the same)
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.phoneNumber || !formData.username) {
             setError('All fields are required');
             setLoading(false);
             return;
         }
-
         if (!passwordRegex.test(formData.password)) {
             setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
             setLoading(false);
             return;
         }
 
-        // Format phone number correctly before sending (remove spaces)
         const formattedPhoneNumber = formData.phoneNumber.replace(/\s/g, '');
-
-        // Create the request payload
-        const requestData = {
-            ...formData,
-            phoneNumber: formattedPhoneNumber
-        };
+        const requestData = { ...formData, phoneNumber: formattedPhoneNumber };
 
         try {
             const response = await fetch('http://localhost:8080/user/register', {
@@ -111,14 +103,12 @@ const SignUpPage = () => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                credentials: 'include', // Include cookies if your backend uses sessions
+                credentials: 'include',
                 body: JSON.stringify(requestData),
             });
 
-            // Rest of the function remains the same
             const contentType = response.headers.get("content-type");
             let data = null;
-
             if (contentType && contentType.includes("application/json") && response.status !== 204) {
                 try {
                     data = await response.json();
@@ -131,21 +121,12 @@ const SignUpPage = () => {
                 throw new Error(data?.message || `Registration failed with status: ${response.status}`);
             }
 
-            // Registration successful
             setSuccess(true);
-            setFormData({
-                firstName: '',
-                lastName: '',
-                username: '',
-                phoneNumber: '',
-                email: '',
-                password: ''
-            });
+            // Reset OTP digits and show OTP modal
+            setOtpDigits(["", "", "", "", "", ""]);
+            setOtpError('');
+            setShowOTPModal(true);
 
-            // Redirect to login page after a brief delay
-            setTimeout(() => {
-                navigate('/login');
-            }, 1500);
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
             console.error("Registration error:", err);
@@ -154,48 +135,146 @@ const SignUpPage = () => {
         }
     };
 
+    // OTP input handlers
+    const handleOtpChange = (e, idx) => {
+        const value = e.target.value.replace(/\D/, "");
+        if (!value && idx > 0) {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = "";
+                return arr;
+            });
+            inputsRef.current[idx - 1].focus();
+            return;
+        }
+        if (value) {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = value;
+                return arr;
+            });
+            if (idx < 5) {
+                inputsRef.current[idx + 1].focus();
+            }
+        } else {
+            setOtpDigits((prev) => {
+                const arr = [...prev];
+                arr[idx] = "";
+                return arr;
+            });
+        }
+    };
+
+    const handleOtpKeyDown = (e, idx) => {
+        if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
+            inputsRef.current[idx - 1].focus();
+        }
+    };
+
+    // Verify OTP
+    const handleVerifyOTP = async () => {
+        const otp = otpDigits.join("");
+        if (otp.length !== 6) {
+            setOtpError('Please enter a valid 6-digit OTP');
+            return;
+        }
+
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    otp: otp
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                if (response.status === 401) {
+                    throw new Error('OTP code is expired or invalid. Please try again or request a new code.');
+                } else {
+                    throw new Error(errorData?.message || `Verification failed: ${response.status}`);
+                }
+            }
+
+            // Show success modal instead of immediately navigating
+            setShowOTPModal(false);
+            setShowSuccessModal(true);
+
+            // Redirect after 3 seconds
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/login');
+            }, 3000);
+
+        } catch (err) {
+            setOtpError(err.message || 'OTP verification failed. Please try again.');
+            console.error("OTP verification error:", err);
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    // Resend OTP
+    const handleResendOTP = async () => {
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(formData.email)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || `Failed to resend OTP: ${response.status}`);
+            }
+
+            alert('OTP has been resent to your email.');
+        } catch (err) {
+            setOtpError(err.message || 'Failed to resend OTP. Please try again.');
+            console.error("Resend OTP error:", err);
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
             <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-md relative overflow-hidden">
-                {/* Green accent border on the left */}
                 <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
-
-                {/* Logo */}
                 <div className="text-center mb-2">
                     <div className="text-2xl font-bold text-gray-800 tracking-wide">
                         IO<span className="text-[#33e407]">CONNECT</span>
                     </div>
                 </div>
 
-                {/* Form Title */}
                 <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
                     Create your account
                 </h1>
-
-                {/* Success message */}
                 {success && (
                     <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded">
-                        Registration successful! You can now log in.
+                        Registration successful! Please verify OTP.
                     </div>
                 )}
-
-                {/* Error message */}
                 {error && (
                     <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded">
                         {error}
                     </div>
                 )}
-
-                {/* Signup Form */}
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
-                            <label
-                                htmlFor="firstName"
-                                className="block mb-2 text-sm font-medium text-gray-600"
-                            >
-                                First Name
-                            </label>
+                            <label htmlFor="firstName" className="block mb-2 text-sm font-medium text-gray-600">First Name</label>
                             <input
                                 type="text"
                                 id="firstName"
@@ -207,12 +286,7 @@ const SignUpPage = () => {
                             />
                         </div>
                         <div>
-                            <label
-                                htmlFor="lastName"
-                                className="block mb-2 text-sm font-medium text-gray-600"
-                            >
-                                Last Name
-                            </label>
+                            <label htmlFor="lastName" className="block mb-2 text-sm font-medium text-gray-600">Last Name</label>
                             <input
                                 type="text"
                                 id="lastName"
@@ -224,14 +298,8 @@ const SignUpPage = () => {
                             />
                         </div>
                     </div>
-
                     <div className="mb-5">
-                        <label
-                            htmlFor="username"
-                            className="block mb-2 text-sm font-medium text-gray-600"
-                        >
-                            Username
-                        </label>
+                        <label htmlFor="username" className="block mb-2 text-sm font-medium text-gray-600">Username</label>
                         <input
                             type="text"
                             id="username"
@@ -242,14 +310,8 @@ const SignUpPage = () => {
                             required
                         />
                     </div>
-
                     <div className="mb-5">
-                        <label
-                            htmlFor="email"
-                            className="block mb-2 text-sm font-medium text-gray-600"
-                        >
-                            Email
-                        </label>
+                        <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-600">Email</label>
                         <input
                             type="email"
                             id="email"
@@ -260,14 +322,8 @@ const SignUpPage = () => {
                             required
                         />
                     </div>
-                    {/*this is for the phone number input text box*/}
                     <div className="mb-5">
-                        <label
-                            htmlFor="phoneNumber"
-                            className="block mb-2 text-sm font-medium text-gray-600"
-                        >
-                            Phone Number
-                        </label>
+                        <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-600">Phone Number</label>
                         <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
                             <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
                                 <img
@@ -289,14 +345,8 @@ const SignUpPage = () => {
                             />
                         </div>
                     </div>
-
                     <div className="mb-5">
-                        <label
-                            htmlFor="password"
-                            className="block mb-2 text-sm font-medium text-gray-600"
-                        >
-                            Password
-                        </label>
+                        <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-600">Password</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -304,16 +354,15 @@ const SignUpPage = () => {
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-3 text-sm border rounded-md focus:outline-none transition-colors ${
-                                    formData.password ? 
-                                        isPasswordValid ? 
-                                            'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 
-                                            'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' 
+                                    formData.password ?
+                                        isPasswordValid ?
+                                            'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' :
+                                            'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                                         : 'border-gray-200 focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]'
                                 }`}
                                 placeholder="Create a password"
                                 required
                             />
-                            {/* Password validation icon */}
                             {formData.password && (
                                 <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
                                     {isPasswordValid ? (
@@ -327,7 +376,6 @@ const SignUpPage = () => {
                                     )}
                                 </div>
                             )}
-                            {/* Password visibility toggle button */}
                             <button
                                 type="button"
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -347,19 +395,16 @@ const SignUpPage = () => {
                                 )}
                             </button>
                         </div>
-                        
-                        {/* Password progress animation */}
                         {formData.password && (
                             <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                     className={`h-full transition-all duration-300 ease-out ${
                                         isPasswordValid ? 'bg-green-500' : 'bg-amber-500'
-                                    }`} 
+                                    }`}
                                     style={{ width: `${getPasswordProgress()}%` }}
                                 ></div>
                             </div>
                         )}
-                        
                         <div className="flex justify-between items-center">
                             {!formData.password && (
                                 <div className="text-xs mt-1.5 text-gray-400">
@@ -387,7 +432,6 @@ const SignUpPage = () => {
                             )}
                         </div>
                     </div>
-
                     <button
                         type="submit"
                         disabled={loading}
@@ -396,49 +440,106 @@ const SignUpPage = () => {
                         {loading ? 'Signing Up...' : 'Sign Up'}
                     </button>
                 </form>
-
-                {/* Divider */}
                 <div className="flex items-center my-6 text-gray-400 text-sm">
                     <div className="flex-1 h-px bg-gray-200"></div>
                     <div className="px-4">OR</div>
                     <div className="flex-1 h-px bg-gray-200"></div>
                 </div>
-
-                {/* Google Sign Up Button */}
-                {/*<button className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">*/}
-                {/*    <svg*/}
-                {/*        className="w-4 h-4"*/}
-                {/*        viewBox="0 0 24 24"*/}
-                {/*        xmlns="http://www.w3.org/2000/svg"*/}
-                {/*    >*/}
-                {/*        <path*/}
-                {/*            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"*/}
-                {/*            fill="#4285F4"*/}
-                {/*        />*/}
-                {/*        <path*/}
-                {/*            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"*/}
-                {/*            fill="#34A853"*/}
-                {/*        />*/}
-                {/*        <path*/}
-                {/*            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"*/}
-                {/*            fill="#FBBC05"*/}
-                {/*        />*/}
-                {/*        <path*/}
-                {/*            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"*/}
-                {/*            fill="#EA4335"*/}
-                {/*        />*/}
-                {/*    </svg>*/}
-                {/*    Sign up with Google*/}
-                {/*</button>*/}
-
-                {/* Login Link */}
                 <div className="text-center mt-4 text-sm text-gray-600">
                     Already have an account? <a href="/login" className="text-[#33e407] font-medium hover:underline">Login</a>
                 </div>
             </div>
+
+            {/* OTP Verification Modal */}
+            {showOTPModal && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
+                        <button
+                            onClick={() => setShowOTPModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                            Email Verification
+                        </h2>
+                        <p className="text-gray-600 text-sm mb-6 text-center">
+                            A 6-digit code has been sent to your email: {formData.email}
+                        </p>
+
+                        {otpError && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                                {otpError}
+                            </div>
+                        )}
+
+                        <div className="flex justify-center gap-2 mb-6">
+                            {otpDigits.map((digit, idx) => (
+                                <input
+                                    key={idx}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    ref={el => inputsRef.current[idx] = el}
+                                    onChange={e => handleOtpChange(e, idx)}
+                                    onKeyDown={e => handleOtpKeyDown(e, idx)}
+                                    className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] transition-colors"
+                                />
+                            ))}
+                        </div>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleVerifyOTP}
+                                disabled={otpLoading || otpDigits.some(d => d === "")}
+                                className="w-full bg-[#33e407] text-white rounded py-3 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
+                            >
+                                {otpLoading ? "Verifying..." : "Verify Email"}
+                            </button>
+
+                            <button
+                                onClick={handleResendOTP}
+                                disabled={otpLoading}
+                                className="w-full text-[#33e407] text-sm py-2 hover:underline"
+                            >
+                                Resend OTP Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-sm relative text-center">
+                        <div className="mb-4 flex justify-center">
+                            <div className="rounded-full bg-green-100 p-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                            Registration Successful!
+                        </h2>
+                        <p className="text-gray-600 mb-6">
+                            Your account has been created successfully. Redirecting to login page...
+                        </p>
+
+                        <div className="flex justify-center">
+                            <div className="w-8 h-8 border-t-2 border-b-2 border-[#33e407] rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default SignUpPage;
-
