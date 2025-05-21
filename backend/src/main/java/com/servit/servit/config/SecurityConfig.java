@@ -40,7 +40,11 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/user/register",
                                 "/auth/login",
-                                "/user/verifyOtp"
+                                "/user/verifyOtp",
+                                "/user/resendOtp",
+                                "/user/forgotPassword",
+                                "/user/resetPassword",
+                                "/user/verifyResetPasswordOTP"
                         ).permitAll()
                         .requestMatchers(
                                 "/user/getCurrentUser",

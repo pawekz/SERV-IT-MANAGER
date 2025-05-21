@@ -70,11 +70,12 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendOtpEmail(req.getEmail(), otp);
+
     }
 
     @Transactional
     public void verifyOtp(OtpVerificationRequestDTO req) {
-        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
 
@@ -92,6 +93,8 @@ public class UserService {
         if (user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
+
+        otpService.invalidateOtp(email);
 
         String otp = otpService.generateOtp(email);
         emailService.sendOtpEmail(email, otp);
@@ -139,6 +142,31 @@ public class UserService {
         UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setUsername(req.getNewUsername());
+        userRepo.save(user);
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDTO req) throws MessagingException {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String otp = otpService.generateOtp(req.getEmail());
+        emailService.sendForgotPasswordEmail(req.getEmail(), otp);
+    }
+
+    @Transactional
+    public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
+        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         userRepo.save(user);
     }
 

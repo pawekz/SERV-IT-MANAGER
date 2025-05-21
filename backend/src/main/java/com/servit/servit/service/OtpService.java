@@ -14,7 +14,7 @@ public class OtpService {
 
     public String generateOtp(String email) {
         String otp = String.format("%06d", new Random().nextInt(999999));
-        otpStore.put(email, new OtpDetails(otp, LocalDateTime.now().plusHours(24)));
+        otpStore.put(email, new OtpDetails(otp, LocalDateTime.now().plusMinutes(1)));
         return otp;
     }
 
@@ -22,13 +22,17 @@ public class OtpService {
         OtpDetails details = otpStore.get(email);
         if (details == null || details.expirationTime().isBefore(LocalDateTime.now())) {
             otpStore.remove(email);
-            return false;
+            return true;
         }
         boolean isValid = details.otp().equals(otp);
         if (isValid) {
             otpStore.remove(email);
         }
-        return isValid;
+        return !isValid;
+    }
+
+    public void invalidateOtp(String email) {
+        otpStore.remove(email);
     }
 
     private record OtpDetails(String otp, LocalDateTime expirationTime) {
