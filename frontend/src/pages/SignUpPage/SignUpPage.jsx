@@ -10,7 +10,8 @@ const SignUpPage = () => {
         username: '',
         phoneNumber: '',
         email: '',
-        password: '',
+        password: ''
+
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);

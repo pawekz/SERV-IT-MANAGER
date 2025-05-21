@@ -9,6 +9,7 @@ const AccountInformation = () => {
     const [userData, setUserData] = useState({
         firstName: '',
         lastName: '',
+        username: '',
         email: '',
         password: '********' // Placeholder for security
     });
@@ -19,7 +20,7 @@ const AccountInformation = () => {
     const [editFormData, setEditFormData] = useState({
         firstName: '',
         lastName: '',
-        email: ''
+        username: ''
     });
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +62,7 @@ const AccountInformation = () => {
                     const userData = {
                         firstName: decodedToken.firstName || '',
                         lastName: decodedToken.lastName || '',
+                        username: decodedToken.username || decodedToken.sub || '',
                         email: decodedToken.email || decodedToken.sub || '',
                         password: '********' // Mask password for security
                     };
@@ -91,7 +93,7 @@ const AccountInformation = () => {
             setEditFormData({
                 firstName: userData.firstName,
                 lastName: userData.lastName,
-                email: userData.email
+                username: userData.username
             });
         }
     }, [userData]);
@@ -119,7 +121,7 @@ const AccountInformation = () => {
         setEditFormData({
             firstName: userData.firstName,
             lastName: userData.lastName,
-            email: userData.email
+            username: userData.username
         });
     };
 
@@ -163,7 +165,7 @@ const AccountInformation = () => {
                 body: JSON.stringify({
                     firstName: editFormData.firstName,
                     lastName: editFormData.lastName,
-                    email: editFormData.email
+                    username: editFormData.username
                 })
             });
 
@@ -187,7 +189,8 @@ const AccountInformation = () => {
                     setUserData({
                         firstName: decodedToken.firstName || editFormData.firstName,
                         lastName: decodedToken.lastName || editFormData.lastName,
-                        email: decodedToken.email || decodedToken.sub || editFormData.email,
+                        username: decodedToken.username || editFormData.username,
+                        email: decodedToken.email || decodedToken.sub,
                         password: '********' // Keep password masked
                     });
                 }
@@ -197,7 +200,7 @@ const AccountInformation = () => {
                     ...userData,
                     firstName: editFormData.firstName,
                     lastName: editFormData.lastName,
-                    email: editFormData.email
+                    username: editFormData.username
                 });
             }
 
@@ -205,6 +208,7 @@ const AccountInformation = () => {
             sessionStorage.setItem('userData', JSON.stringify({
                 firstName: editFormData.firstName,
                 lastName: editFormData.lastName,
+                username: editFormData.username,
                 email: editFormData.email,
                 password: '********'
             }));
@@ -315,6 +319,26 @@ const AccountInformation = () => {
                                                 }}
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <label htmlFor="username" className="block text-sm font-medium text-gray-600 mb-2">
+                                            Username
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="username"
+                                            name="username"
+                                            value={userData.username}
+                                            readOnly
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
+                                            style={{
+                                                "&:focus": {
+                                                    borderColor: "#33e407",
+                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
+                                                }
+                                            }}
+                                        />
                                     </div>
 
                                     <div className="mb-6">
@@ -444,14 +468,14 @@ const AccountInformation = () => {
                             </div>
 
                             <div className="mb-6">
-                                <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email Address
+                                <label htmlFor="edit-username" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Username
                                 </label>
                                 <input
-                                    type="email"
-                                    id="edit-email"
-                                    name="email"
-                                    value={editFormData.email}
+                                    type="text"
+                                    id="edit-username"
+                                    name="username"
+                                    value={editFormData.username}
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"

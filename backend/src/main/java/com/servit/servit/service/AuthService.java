@@ -24,16 +24,16 @@ public class AuthService {
     }
 
     public AuthResponseDTO authenticate(LoginRequestDTO req) {
-        UserEntity u = userRepo.findByEmail(req.getIdentifier())
+        UserEntity user = userRepo.findByEmail(req.getIdentifier())
                 .or(() -> userRepo.findByUsername(req.getIdentifier()))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
-        if (!encoder.matches(req.getPassword(), u.getPassword())) {
+        if (!encoder.matches(req.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        String token = jwtUtil.generateToken(u.getUsername(), u.getRole().name(), u.getFirstName(), u.getLastName(), u.getEmail());
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
         System.out.println("Token:" + token);
-        return new AuthResponseDTO(token, u.getRole().name());
+        return new AuthResponseDTO(token, user.getRole().name());
     }
 }

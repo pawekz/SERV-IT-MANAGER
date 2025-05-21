@@ -2,6 +2,7 @@ package com.servit.servit.controller;
 
 import com.servit.servit.dto.*;
 import com.servit.servit.service.UserService;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +23,21 @@ public class UserController {
     // USER SIDE
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegistrationRequestDTO req) {
+    public ResponseEntity<Void> register(@RequestBody RegistrationRequestDTO req) throws MessagingException {
         userSvc.register(req);
         return ResponseEntity.status(201).build();
+    }
+
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<Void> verifyOtp(@RequestBody OtpVerificationRequestDTO req) {
+        userSvc.verifyOtp(req);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/resendOtp")
+    public ResponseEntity<Void> resendOtp(@RequestParam String email) throws MessagingException {
+        userSvc.resendOtp(email);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/getCurrentUser")

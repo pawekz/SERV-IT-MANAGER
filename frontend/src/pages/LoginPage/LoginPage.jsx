@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const LoginPage = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        email: '',
+        username: '',
         password: ''
     });
     const [error, setError] = useState('');
@@ -28,7 +28,7 @@ const LoginPage = () => {
         setLoading(true);
 
         // Basic validation
-        if (!formData.email || !formData.password) {
+        if (!formData.username || !formData.password) {
             setError('Email and password are required');
             setLoading(false);
             return;
@@ -41,7 +41,7 @@ const LoginPage = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email: formData.email,
+                    identifier: formData.username,
                     password: formData.password,
                 }),
             });
@@ -77,7 +77,7 @@ const LoginPage = () => {
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center">
             <div className="w-full max-w-md bg-white rounded-xl shadow-md relative overflow-hidden">
-                {/* Green accent border on the left */}
+                {/* Green accent border */}
                 <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
 
                 <div className="p-10">
@@ -104,15 +104,15 @@ const LoginPage = () => {
                     <form onSubmit={handleLogin}>
                         <div className="mb-5">
                             <label
-                                htmlFor="email"
+                                htmlFor="username"
                                 className="block mb-2 text-sm font-medium text-gray-600"
                             >
-                                Email
+                                Username
                             </label>
                             <input
-                                type="email"
-                                id="email"
-                                value={formData.email}
+                                type="text"
+                                id="username"
+                                value={formData.username}
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                                 placeholder="Enter your email"
