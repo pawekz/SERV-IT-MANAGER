@@ -235,17 +235,8 @@ const AccountInformation = () => {
             <Sidebar activePage="settings" />
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-                <div className="relative w-full max-w-3xl mx-4 bg-white rounded-lg shadow-sm overflow-hidden">
-                    {/* Custom color matching #33e407 */}
-                    <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: "#33e407" }}></div>
 
                     <div className="px-10 py-8">
-                        <div className="text-center mb-8">
-                            <h1 className="text-2xl font-bold text-gray-800">
-                                IO<span style={{ color: "#33e407" }}>CONNECT</span>
-                            </h1>
-                        </div>
-
                         {loading ? (
                             <div className="text-center py-8">
                                 <p>Loading account information...</p>
@@ -369,8 +360,8 @@ const AccountInformation = () => {
                             </Link>
                         </div>
                     </div>
-                </div>
             </div>
+
 
             {/* Edit Profile Modal */}
             {isEditing && (
