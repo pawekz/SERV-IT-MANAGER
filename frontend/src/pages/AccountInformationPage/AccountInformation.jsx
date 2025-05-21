@@ -206,16 +206,16 @@ const AccountInformation = () => {
                 email: editFormData.email,
                 password: '********'
             }));
-            
+
             setUpdateStatus({
                 success: true,
                 message: "Profile updated successfully!"
             });
-            
+
             setTimeout(() => {
                 setIsEditing(false);
             }, 2000);
-            
+
         } catch (err) {
             console.error("Error updating profile:", err);
             setUpdateStatus({
@@ -251,7 +251,7 @@ const AccountInformation = () => {
                         ) : error ? (
                             <div className="text-center py-8 text-red-500">
                                 <p>{error}</p>
-                                <button 
+                                <button
                                     onClick={() => window.location.reload()}
                                     className="mt-4 text-blue-500 underline"
                                 >
@@ -346,14 +346,14 @@ const AccountInformation = () => {
 
                                     {/*Phone number change this later john to phone and replace the email for phone*/}
                                     <div className="mb-6">
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-2">
+                                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-600 mb-2">
                                             Phone Number
                                         </label>
                                         <input
-                                            type="email"
-                                            id="email"
-                                            name="email"
-                                            value={"+63123234412"}
+                                            type="tel"
+                                            id="phoneNumber"
+                                            name="phoneNumber"
+                                            pattern="[0-9\s]+"
                                             readOnly
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
                                             style={{
