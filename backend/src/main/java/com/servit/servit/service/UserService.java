@@ -75,7 +75,7 @@ public class UserService {
 
     @Transactional
     public void verifyOtp(OtpVerificationRequestDTO req) {
-        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
 
@@ -156,14 +156,14 @@ public class UserService {
 
     @Transactional
     public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
-        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
     }
 
     @Transactional
     public void verifyEmailOtp(OtpVerificationRequestDTO req) {
-        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
     }
