@@ -32,16 +32,27 @@ public class UserController {
         return ResponseEntity.ok(userSvc.getCurrentUser());
     }
 
-    // Optional
-    @PatchMapping("/updateCurrentUser")
-    public ResponseEntity<Void> updateCurrentUser(@RequestBody UpdateCurrentUserRequestDTO req) {
-        userSvc.updateCurrentUser(req);
+    @PatchMapping("/changeCurrentUserPassword")
+    public ResponseEntity<Void> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
+        userSvc.changeCurrentUserPassword(req);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/changeCurrentUserPassword")
-    public ResponseEntity<Void> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
-        userSvc.changePassword(req);
+    @PatchMapping("/updateCurrentUserFullName")
+    public ResponseEntity<Void> updateCurrentUserFullName(@RequestBody UpdateFullNameRequestDTO req) {
+        userSvc.updateCurrentUserFullName(req);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/changeCurrentUserPhoneNumber")
+    public ResponseEntity<Void> changeCurrentUserPhoneNumber(@RequestBody ChangePhoneNumberDTO req) {
+        userSvc.changeCurrentUserPhoneNumber(req);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/updateCurrentUsername")
+    public ResponseEntity<Void> updateCurrentUsername(@RequestBody UpdateUsernameRequestDTO req) {
+        userSvc.updateCurrentUsername(req);
         return ResponseEntity.noContent().build();
     }
 
@@ -76,15 +87,15 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/updateFirstName/{id}")
-    public ResponseEntity<Void> updateFirstName(@PathVariable Integer id, @RequestBody UpdateFirstNameRequestDTO req) {
-        userSvc.updateFirstName(id, req.getNewFirstName());
+    @PatchMapping("/changePhoneNumber/{id}")
+    public ResponseEntity<Void> changePhoneNumber(@PathVariable Integer id, @RequestBody ChangePhoneNumberDTO req) {
+        userSvc.changePhoneNumber(id, req.getNewPhoneNumber());
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/updateLastName/{id}")
-    public ResponseEntity<Void> updateLastName(@PathVariable Integer id, @RequestBody UpdateLastNameRequestDTO req) {
-        userSvc.updateLastName(id, req.getNewLastName());
+    @PatchMapping("/updateUsername/{id}")
+    public ResponseEntity<Void> updateUsername(@PathVariable Integer id, @RequestBody UpdateUsernameRequestDTO req) {
+        userSvc.updateUsername(id, req.getNewUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -94,10 +105,9 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // OPTIONAL ra ni, mo update ni ang both first and last name in one request
-    @PatchMapping("/updateName/{id}")
-    public ResponseEntity<Void> updateName(@PathVariable Integer id, @RequestBody UpdateNameRequestDTO req) {
-        userSvc.updateName(id, req.getNewFirstName(), req.getNewLastName());
+    @PatchMapping("/updateFullName/{id}")
+    public ResponseEntity<Void> updateFullName(@PathVariable Integer id, @RequestBody UpdateFullNameRequestDTO req) {
+        userSvc.updateFullName(id, req.getNewFirstName(), req.getNewLastName());
         return ResponseEntity.noContent().build();
     }
 
