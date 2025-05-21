@@ -8,7 +8,8 @@ const SignUpPage = () => {
         firstName: '',
         lastName: '',
         email: '',
-        password: ''
+        password: '',
+        phoneNumber: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -29,11 +30,23 @@ const SignUpPage = () => {
 
     // Add this new function to handle phone number input
     const handlePhoneInput = (e) => {
-        const { id, value } = e.target;
-        // Only allow numeric values
-        if (/^\d*$/.test(value) || value === '') {
-            setFormData({ ...formData, [id]: value });
+        const { value } = e.target;
+        // Remove non-numeric characters from input
+        const numericValue = value.replace(/\D/g, '');
+        
+        // Format the phone number with spaces (905 123 4567)
+        let formattedValue = '';
+        if (numericValue.length > 0) {
+            formattedValue = numericValue.slice(0, 3);
+            if (numericValue.length > 3) {
+                formattedValue += ' ' + numericValue.slice(3, 6);
+            }
+            if (numericValue.length > 6) {
+                formattedValue += ' ' + numericValue.slice(6, 10);
+            }
         }
+
+        setFormData({ ...formData, phoneNumber: formattedValue });
     };
 
     // Handle name input - only allow letters
@@ -211,7 +224,7 @@ const SignUpPage = () => {
                             required
                         />
                     </div>
-{/*for phone number*/}
+                    {/*this is for the phone number input text box*/}
                     <div className="mb-5">
                         <label
                             htmlFor="phoneNumber"
@@ -219,16 +232,26 @@ const SignUpPage = () => {
                         >
                             Phone Number
                         </label>
-                        <input
-                            maxLength={13}
-                            type="tel"
-                            id="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={handlePhoneInput}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                            placeholder="Enter your phone number"
-                            required
-                        />
+                        <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                            <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                <img
+                                    src="https://flagcdn.com/16x12/ph.png"
+                                    alt="Philippine flag"
+                                    className="mr-2 w-5 h-auto"
+                                />
+                                <span className="text-sm text-gray-600">+63</span>
+                            </div>
+                            <input
+                                maxLength={13}
+                                type="tel"
+                                id="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={handlePhoneInput}
+                                className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                placeholder="905 123 4567"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div className="mb-5">
