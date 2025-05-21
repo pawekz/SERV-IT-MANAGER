@@ -7,7 +7,7 @@ const SignUpPage = () => {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        userName: '',
+        username: '',
         phoneNumber: '',
         email: '',
         password: ''
@@ -112,7 +112,8 @@ const SignUpPage = () => {
             setFormData({
                 firstName: '',
                 lastName: '',
-                userName: '',
+                username: '',
+                phoneNumber: '',
                 email: '',
                 password: ''
             });
@@ -202,15 +203,15 @@ const SignUpPage = () => {
 
                     <div className="mb-5">
                         <label
-                            htmlFor="userName"
+                            htmlFor="username"
                             className="block mb-2 text-sm font-medium text-gray-600"
                         >
                             Username
                         </label>
                         <input
                             type="text"
-                            id="userName"
-                            value={formData.userName}
+                            id="username"
+                            value={formData.username}
                             onChange={handleChange}
                             className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
                             placeholder="Enter your username"
