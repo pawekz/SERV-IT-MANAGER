@@ -9,11 +9,13 @@ import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagemen
 import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
+import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LoginPage />} />
