@@ -142,6 +142,31 @@ public class UserService {
         userRepo.save(user);
     }
 
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDTO req) throws MessagingException {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String otp = otpService.generateOtp(req.getEmail());
+        emailService.sendForgotPasswordEmail(req.getEmail(), otp);
+    }
+
+    @Transactional
+    public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
+        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepo.save(user);
+    }
+
     // ADMIN SIDE
 
     @Transactional

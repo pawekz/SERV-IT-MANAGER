@@ -69,6 +69,24 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/forgotPassword")
+    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequestDTO req) throws MessagingException {
+        userSvc.forgotPassword(req);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/verifyResetPasswordOTP")
+    public ResponseEntity<Void> verifyResetPasswordOTP(@RequestBody VerifyResetPasswordOtpRequestDTO req) {
+        userSvc.verifyResetPasswordOTP(req);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/resetPassword")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequestDTO req) {
+        userSvc.resetPassword(req);
+        return ResponseEntity.ok().build();
+    }
+
     // ADMIN SIDE
 
     @GetMapping("/getAllUsers")
