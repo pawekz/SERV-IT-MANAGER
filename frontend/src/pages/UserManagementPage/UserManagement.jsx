@@ -142,12 +142,12 @@ const UserManagement = () => {
                                 <option>User</option>
                                 <option>Guest</option>
                             </select>
-                            <select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                <option>All Status</option>
-                                <option>Active</option>
-                                <option>Inactive</option>
-                                <option>Pending</option>
-                            </select>
+                            {/*<select className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
+                            {/*    <option>All Status</option>*/}
+                            {/*    <option>Active</option>*/}
+                            {/*    <option>Inactive</option>*/}
+                            {/*    <option>Pending</option>*/}
+                            {/*</select>*/}
                         </div>
                     </div>
 
@@ -164,136 +164,138 @@ const UserManagement = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/*<tr>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">John Doe</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">john.doe@ioconnect.com</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Admin</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                                {/*            <option>Admin</option>*/}
-                                {/*            <option>Manager</option>*/}
-                                {/*            <option>User</option>*/}
-                                {/*            <option>Guest</option>*/}
-                                {/*        </select>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <div className="flex gap-2">*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">*/}
-                                {/*                <PenLine size={16} />*/}
-                                {/*            </button>*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">*/}
-                                {/*                <Trash2 size={16} />*/}
-                                {/*            </button>*/}
-                                {/*        </div>*/}
-                                {/*    </td>*/}
-                                {/*</tr>*/}
-                                {/*<tr>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Jane Smith</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">jane.smith@ioconnect.com</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Manager</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                                {/*            <option>Manager</option>*/}
-                                {/*            <option>Admin</option>*/}
-                                {/*            <option>User</option>*/}
-                                {/*            <option>Guest</option>*/}
-                                {/*        </select>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <div className="flex gap-2">*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">*/}
-                                {/*                <PenLine size={16} />*/}
-                                {/*            </button>*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">*/}
-                                {/*                <Trash2 size={16} />*/}
-                                {/*            </button>*/}
-                                {/*        </div>*/}
-                                {/*    </td>*/}
-                                {/*</tr>*/}
-                                {/*<tr>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Robert Johnson</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">robert.johnson@ioconnect.com</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inactive</span>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">User</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                                {/*            <option>User</option>*/}
-                                {/*            <option>Admin</option>*/}
-                                {/*            <option>Manager</option>*/}
-                                {/*            <option>Guest</option>*/}
-                                {/*        </select>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <div className="flex gap-2">*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">*/}
-                                {/*                <PenLine size={16} />*/}
-                                {/*            </button>`*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">*/}
-                                {/*                <Trash2 size={16} />*/}
-                                {/*            </button>*/}
-                                {/*        </div>*/}
-                                {/*    </td>*/}
-                                {/*</tr>*/}
-                                {/*<tr>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Emily Davis</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">emily.davis@ioconnect.com</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-500">Pending</span>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200 text-gray-800">Guest</td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                                {/*            <option>Guest</option>*/}
-                                {/*            <option>Admin</option>*/}
-                                {/*            <option>Manager</option>*/}
-                                {/*            <option>User</option>*/}
-                                {/*        </select>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 border-b border-gray-200">*/}
-                                {/*        <div className="flex gap-2">*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">*/}
-                                {/*                <PenLine size={16} />*/}
-                                {/*            </button>*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">*/}
-                                {/*                <Trash2 size={16} />*/}
-                                {/*            </button>*/}
-                                {/*        </div>*/}
-                                {/*    </td>*/}
-                                {/*</tr>*/}
-                                {/*<tr>*/}
-                                {/*    <td className="p-4 text-gray-800">Michael Wilson</td>*/}
-                                {/*    <td className="p-4 text-gray-800">michael.wilson@ioconnect.com</td>*/}
-                                {/*    <td className="p-4">*/}
-                                {/*        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4 text-gray-800">User</td>*/}
-                                {/*    <td className="p-4">*/}
-                                {/*        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">*/}
-                                {/*            <option>User</option>*/}
-                                {/*            <option>Admin</option>*/}
-                                {/*            <option>Manager</option>*/}
-                                {/*            <option>Guest</option>*/}
-                                {/*        </select>*/}
-                                {/*    </td>*/}
-                                {/*    <td className="p-4">*/}
-                                {/*        <div className="flex gap-2">*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">*/}
-                                {/*                <PenLine size={16} />*/}
-                                {/*            </button>*/}
-                                {/*            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">*/}
-                                {/*                <Trash2 size={16} />*/}
-                                {/*            </button>*/}
-                                {/*        </div>*/}
-                                {/*    </td>*/}
-                                {/*</tr>*/}
+
+                                {/*This is just static for the displaying of stuff */}
+                                <tr>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">John Doe</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">john.doe@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Admin</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                            <option>Admin</option>
+                                            <option>Manager</option>
+                                            <option>User</option>
+                                            <option>Guest</option>
+                                        </select>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                <PenLine size={16} />
+                                            </button>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Jane Smith</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">jane.smith@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Manager</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                            <option>Manager</option>
+                                            <option>Admin</option>
+                                            <option>User</option>
+                                            <option>Guest</option>
+                                        </select>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                <PenLine size={16} />
+                                            </button>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Robert Johnson</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">robert.johnson@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inactive</span>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">User</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                            <option>User</option>
+                                            <option>Admin</option>
+                                            <option>Manager</option>
+                                            <option>Guest</option>
+                                        </select>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                <PenLine size={16} />
+                                            </button>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Emily Davis</td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">emily.davis@ioconnect.com</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-500">Pending</span>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200 text-gray-800">Guest</td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                            <option>Guest</option>
+                                            <option>Admin</option>
+                                            <option>Manager</option>
+                                            <option>User</option>
+                                        </select>
+                                    </td>
+                                    <td className="p-4 border-b border-gray-200">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                <PenLine size={16} />
+                                            </button>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4 text-gray-800">Michael Wilson</td>
+                                    <td className="p-4 text-gray-800">michael.wilson@ioconnect.com</td>
+                                    <td className="p-4">
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e6f9e6] text-[#33e407]">Active</span>
+                                    </td>
+                                    <td className="p-4 text-gray-800">User</td>
+                                    <td className="p-4">
+                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                            <option>User</option>
+                                            <option>Admin</option>
+                                            <option>Manager</option>
+                                            <option>Guest</option>
+                                        </select>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex gap-2">
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
+                                                <PenLine size={16} />
+                                            </button>
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
