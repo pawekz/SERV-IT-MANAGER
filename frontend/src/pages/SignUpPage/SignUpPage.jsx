@@ -220,6 +220,7 @@ const SignUpPage = () => {
                             Phone Number
                         </label>
                         <input
+                            maxLength={13}
                             type="tel"
                             id="phoneNumber"
                             value={formData.phoneNumber}
