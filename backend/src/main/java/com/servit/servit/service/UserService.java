@@ -58,6 +58,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setPhoneNumber(req.getPhoneNumber());
         user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
+        user.setVerified(false);
         userRepo.save(user);
         System.out.print("User registered: " + user.getEmail());
     }
