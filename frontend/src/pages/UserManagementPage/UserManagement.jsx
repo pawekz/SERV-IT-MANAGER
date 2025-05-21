@@ -24,35 +24,30 @@ const UserManagement = () => {
             id: 1,
             name: "John Doe",
             email: "john.doe@ioconnect.com",
-            status: "Active",
             role: "Admin"
         },
         {
             id: 2,
             name: "Jane Smith",
             email: "jane.smith@ioconnect.com",
-            status: "Active",
             role: "Manager"
         },
         {
             id: 3,
             name: "Robert Johnson",
             email: "robert.johnson@ioconnect.com",
-            status: "Inactive",
             role: "User"
         },
         {
             id: 4,
             name: "Emily Davis",
             email: "emily.davis@ioconnect.com",
-            status: "Pending",
             role: "Guest"
         },
         {
             id: 5,
             name: "Michael Wilson",
             email: "michael.wilson@ioconnect.com",
-            status: "Active",
             role: "User"
         }
     ]);
@@ -223,7 +218,6 @@ const UserManagement = () => {
                                 <tr>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Current Role</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Assign Role</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
@@ -232,7 +226,7 @@ const UserManagement = () => {
                             <tbody className="relative">
                                 {filteredUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="p-4 text-center text-gray-500">
+                                        <td colSpan="5" className="p-4 text-center text-gray-500">
                                             No users matching your search criteria
                                         </td>
                                     </tr>
@@ -241,14 +235,6 @@ const UserManagement = () => {
                                         <tr key={user.id}>
                                             <td className="p-4 border-b border-gray-200 text-gray-800">{user.name}</td>
                                             <td className="p-4 border-b border-gray-200 text-gray-800">{user.email}</td>
-                                            <td className="p-4 border-b border-gray-200">
-                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium 
-                                                    ${user.status === "Active" ? "bg-[#e6f9e6] text-[#33e407]" : 
-                                                      user.status === "Inactive" ? "bg-gray-100 text-gray-500" : 
-                                                      "bg-orange-50 text-orange-500"}`}>
-                                                    {user.status}
-                                                </span>
-                                            </td>
                                             <td className="p-4 border-b border-gray-200 text-gray-800">{user.role}</td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
@@ -299,3 +285,4 @@ const UserManagement = () => {
 }
 
 export default UserManagement
+
