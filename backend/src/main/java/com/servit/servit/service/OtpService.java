@@ -20,32 +20,18 @@ public class OtpService {
 
     public boolean validateOtp(String email, String otp) {
         OtpDetails details = otpStore.get(email);
-        if (details == null || details.getExpirationTime().isBefore(LocalDateTime.now())) {
+        if (details == null || details.expirationTime().isBefore(LocalDateTime.now())) {
             otpStore.remove(email);
             return false;
         }
-        boolean isValid = details.getOtp().equals(otp);
+        boolean isValid = details.otp().equals(otp);
         if (isValid) {
             otpStore.remove(email);
         }
         return isValid;
     }
 
-    private static class OtpDetails {
-        private final String otp;
-        private final LocalDateTime expirationTime;
+    private record OtpDetails(String otp, LocalDateTime expirationTime) {
 
-        public OtpDetails(String otp, LocalDateTime expirationTime) {
-            this.otp = otp;
-            this.expirationTime = expirationTime;
-        }
-
-        public String getOtp() {
-            return otp;
-        }
-
-        public LocalDateTime getExpirationTime() {
-            return expirationTime;
-        }
     }
 }
