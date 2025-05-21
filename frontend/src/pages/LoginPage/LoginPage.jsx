@@ -1,5 +1,30 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Toast Notification Component
+const Toast = ({ message, visible, onClose }) => {
+    useEffect(() => {
+        if (visible) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [visible, onClose]);
+
+    if (!visible) return null;
+
+    return (
+        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs animate-fade-in-up flex items-center z-50">
+            <div className="bg-green-100 p-2 rounded-full mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+            </div>
+            <p className="text-gray-700">{message}</p>
+        </div>
+    );
+};
 
 // Inline OTP Modal Component with 6 boxes
 const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
@@ -126,6 +151,10 @@ const LoginPage = () => {
     const [userEmail, setUserEmail] = useState('');
     const [otpError, setOtpError] = useState('');
 
+    // Toast notification state
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -135,6 +164,12 @@ const LoginPage = () => {
     // Toggle password visibility
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    // Show toast notification
+    const showToast = (message) => {
+        setToastMessage(message);
+        setToastVisible(true);
     };
 
     // Extract user info from JWT token
@@ -161,7 +196,7 @@ const LoginPage = () => {
 
         // Basic validation
         if (!formData.username || !formData.password) {
-            setError('Email and password are required');
+            setError('Username and password are required');
             setLoading(false);
             return;
         }
@@ -179,7 +214,7 @@ const LoginPage = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Invalid email or password');
+                throw new Error('Invalid username or password');
             }
 
             const data = await response.json();
@@ -192,9 +227,15 @@ const LoginPage = () => {
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
 
-            // Extract user email and verification status from token
+            // Get user info from token
             const tokenData = parseJwt(data.token);
-            setUserEmail(tokenData.sub || formData.username);
+
+            // Store email from response or token
+            const userEmail = data.email || tokenData.email || tokenData.sub;
+            setUserEmail(userEmail);
+            localStorage.setItem('userEmail', userEmail);
+
+            console.log("Login successful. Using email:", userEmail);
 
             // Check if account is verified
             if (tokenData.isVerified === true) {
@@ -217,41 +258,40 @@ const LoginPage = () => {
         }
     };
 
-    // Updated OTP verification with better error handling
+    // OTP verification without requiring authentication
     const handleVerifyOTP = async (otp) => {
         setOtpLoading(true);
         setOtpError('');
 
         try {
-            // Debug info
+            const email = localStorage.getItem('userEmail');
+
+            if (!email) {
+                throw new Error('No email found for OTP verification');
+            }
+
             console.log('OTP Verification Data:', {
-                email: userEmail,
+                email: email,
                 otp: otp
             });
 
-            const token = localStorage.getItem('authToken');
-            console.log('Token exists:', !!token);
-
+            // Don't include Authorization header for OTP verification
             const response = await fetch('http://localhost:8080/user/verifyOtp', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    // Only include Authorization if token exists
-                    ...(token ? {'Authorization': `Bearer ${token}`} : {})
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    email: userEmail,
+                    email: email,
                     otp: otp
                 }),
             });
 
-            // Get response text for better error handling
             const responseText = await response.text();
             console.log('Response status:', response.status);
             console.log('Response text:', responseText);
 
             if (!response.ok) {
-                // Try to parse as JSON if possible
                 let errorMessage = 'OTP verification failed';
                 try {
                     if (responseText) {
@@ -259,7 +299,6 @@ const LoginPage = () => {
                         errorMessage = errorData.message || errorData.error || errorMessage;
                     }
                 } catch (e) {
-                    // If not JSON, use the text
                     if (responseText) errorMessage = responseText;
                 }
 
@@ -285,23 +324,28 @@ const LoginPage = () => {
         }
     };
 
-    // Updated resend OTP with better error handling
+    // Resend OTP without requiring authentication
     const handleResendOTP = async () => {
         setOtpLoading(true);
         setOtpError('');
 
         try {
-            const token = localStorage.getItem('authToken');
-            console.log('Resending OTP for email:', userEmail);
+            const email = localStorage.getItem('userEmail');
 
-            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(userEmail)}`, {
+            if (!email) {
+                throw new Error('No email found for OTP resend');
+            }
+
+            console.log('Resending OTP for email:', email);
+
+            // Don't include Authorization header for resending OTP
+            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(email)}`, {
                 method: 'POST',
                 headers: {
-                    ...(token ? {'Authorization': `Bearer ${token}`} : {})
+                    'Content-Type': 'application/json'
                 }
             });
 
-            // Get response text for better error handling
             const responseText = await response.text();
 
             if (!response.ok) {
@@ -318,7 +362,8 @@ const LoginPage = () => {
                 throw new Error(errorMessage);
             }
 
-            alert('OTP has been resent to your email.');
+            // Show toast notification instead of alert
+            showToast('OTP has been resent to your email.');
 
         } catch (err) {
             setOtpError(err.message || 'Failed to resend OTP');
@@ -369,7 +414,7 @@ const LoginPage = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                                placeholder="Enter your email"
+                                placeholder="Enter your username"
                                 required
                             />
                         </div>
@@ -441,6 +486,7 @@ const LoginPage = () => {
                     </div>
                 </div>
             </div>
+
             {/* OTP Modal */}
             <OTPModal
                 visible={showOTPModal}
@@ -449,6 +495,13 @@ const LoginPage = () => {
                 onResend={handleResendOTP}
                 loading={otpLoading}
                 error={otpError}
+            />
+
+            {/* Toast notification */}
+            <Toast
+                message={toastMessage}
+                visible={toastVisible}
+                onClose={() => setToastVisible(false)}
             />
         </div>
     );

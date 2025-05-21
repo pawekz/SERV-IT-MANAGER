@@ -76,13 +76,13 @@ const SignUpPage = () => {
     // Password validation regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
 
-    // Handle form submission
+    // Update the handleSubmit function
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        // Basic validation
+        // Basic validation (remains the same)
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.phoneNumber || !formData.username) {
             setError('All fields are required');
             setLoading(false);
@@ -95,19 +95,30 @@ const SignUpPage = () => {
             return;
         }
 
+        // Format phone number correctly before sending (remove spaces)
+        const formattedPhoneNumber = formData.phoneNumber.replace(/\s/g, '');
+
+        // Create the request payload
+        const requestData = {
+            ...formData,
+            phoneNumber: formattedPhoneNumber
+        };
+
         try {
             const response = await fetch('http://localhost:8080/user/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                credentials: 'include', // Include cookies if your backend uses sessions
+                body: JSON.stringify(requestData),
             });
 
-            // Check if response has content before parsing JSON
+            // Rest of the function remains the same
             const contentType = response.headers.get("content-type");
             let data = null;
-            
+
             if (contentType && contentType.includes("application/json") && response.status !== 204) {
                 try {
                     data = await response.json();
@@ -130,7 +141,7 @@ const SignUpPage = () => {
                 email: '',
                 password: ''
             });
-            
+
             // Redirect to login page after a brief delay
             setTimeout(() => {
                 navigate('/login');
