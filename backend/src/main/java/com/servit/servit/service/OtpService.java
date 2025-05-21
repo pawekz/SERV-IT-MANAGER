@@ -26,7 +26,7 @@ public class OtpService {
         }
         boolean isValid = details.getOtp().equals(otp);
         if (isValid) {
-            otpStore.remove(email); // OTP is single-use
+            otpStore.remove(email);
         }
         return isValid;
     }

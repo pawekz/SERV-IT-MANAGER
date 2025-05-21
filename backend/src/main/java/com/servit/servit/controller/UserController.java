@@ -34,6 +34,12 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/resendOtp")
+    public ResponseEntity<Void> resendOtp(@RequestParam String email) throws MessagingException {
+        userSvc.resendOtp(email);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/getCurrentUser")
     public ResponseEntity<GetUserResponseDTO> getCurrentUser() {
         return ResponseEntity.ok(userSvc.getCurrentUser());

@@ -85,6 +85,19 @@ public class UserService {
     }
 
     @Transactional
+    public void resendOtp(String email) throws MessagingException {
+        UserEntity user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getVerified()) {
+            throw new IllegalArgumentException("User is already verified");
+        }
+
+        String otp = otpService.generateOtp(email);
+        emailService.sendOtpEmail(email, otp);
+    }
+
+    @Transactional
     public void changeCurrentUserPassword(ChangeCurrentUserPasswordRequestDTO req) {
         String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
