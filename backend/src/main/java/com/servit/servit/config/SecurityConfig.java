@@ -42,14 +42,23 @@ public class SecurityConfig {
                                 "/auth/login"
                         ).permitAll()
                         .requestMatchers(
+                                "/user/getCurrentUser",
+                                "/user/changeCurrentUserPassword",
+                                "/user/updateCurrentUserFullName",
+                                "/user/changeCurrentUserPhoneNumber",
+                                "/user/updateCurrentUsername"
+                        ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
+                        .requestMatchers(
                                 "/user/changeRole/*",
                                 "/user/getAllUsers",
                                 "/user/getUser/*",
                                 "/user/changePassword/*",
                                 "/user/updateEmail/*",
                                 "/user/updateFullName/*",
-                                "/user/deleteUser/*"
-                        ).hasRole("ADMIN")
+                                "/user/deleteUser/*",
+                                "/user/updatePhoneNuber/*",
+                                "/user/updateUsername/*"
+                        ).hasAnyRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())
