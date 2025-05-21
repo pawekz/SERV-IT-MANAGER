@@ -158,7 +158,7 @@ const PasswordManagement = () => {
                                         <span className="text-xs text-gray-500">
                                             {charactersRemaining > 0 ? 
                                                 `${charactersRemaining} more character${charactersRemaining !== 1 ? 's' : ''} needed` : 
-                                                'Minimum length reached'
+                                                'Password must be at least 8 characters long ✓'
                                             }
                                         </span>
                                     </div>
