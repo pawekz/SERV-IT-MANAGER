@@ -47,6 +47,6 @@ public class UserEntity {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
-    @Column(name = "verified", nullable = false)
-    private Boolean verified;
+    @Column(name = "is_verified", nullable = false)
+    private Boolean isVerified;
 }

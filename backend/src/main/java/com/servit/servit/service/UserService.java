@@ -65,7 +65,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setPhoneNumber(req.getPhoneNumber());
         user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
-        user.setVerified(false);
+        user.setIsVerified(false);
         userRepo.save(user);
 
         String otp = otpService.generateOtp(req.getEmail());
@@ -80,7 +80,7 @@ public class UserService {
 
         UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setVerified(true);
+        user.setIsVerified(true);
         userRepo.save(user);
     }
 
@@ -89,7 +89,7 @@ public class UserService {
         UserEntity user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (user.getVerified()) {
+        if (user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
 
