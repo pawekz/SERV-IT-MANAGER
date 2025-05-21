@@ -40,13 +40,15 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(String username, String role, String firstName, String lastName, String email) {
+    public String generateToken(String username, String role, String firstName, String lastName, String email, String phoneNumber, Boolean isVerified) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         claims.put("username", username);
         claims.put("firstName", firstName);
         claims.put("lastName", lastName);
         claims.put("email", email);
+        claims.put("phoneNumber", phoneNumber);
+        claims.put("isVerified", isVerified);
         return createToken(claims, username);
     }
 
