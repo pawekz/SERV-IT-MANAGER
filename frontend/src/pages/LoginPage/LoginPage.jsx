@@ -77,7 +77,7 @@ const LoginPage = () => {
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center">
             <div className="w-full max-w-md bg-white rounded-xl shadow-md relative overflow-hidden">
-                {/* Green accent border on the left */}
+                {/* Green accent border */}
                 <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
 
                 <div className="p-10">
