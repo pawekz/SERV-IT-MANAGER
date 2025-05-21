@@ -266,9 +266,11 @@ const UserManagement = () => {
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <div className="flex gap-2">
+                                                    {/*Edit button*/}
                                                     <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
                                                         <PenLine size={16} />
                                                     </button>
+                                                    {/*Delete button*/}
                                                     <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
                                                         <Trash2 size={16} />
                                                     </button>
