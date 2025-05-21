@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { Link, useNavigate } from "react-router-dom";
+import {FolderKanban, LayoutGrid, Users} from "lucide-react";
+import Sidebar from "../../components/SideBar/SIdebar.jsx";
 
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
@@ -228,11 +230,11 @@ const AccountInformation = () => {
     };
 
     return (
-        <div className="font-sans bg-gray-50 min-h-screen">
+        <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
-            <Navbar />
+            <Sidebar activePage="settings" />
 
-            <main className="mt-20 py-8 flex justify-center">
+            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
                 <div className="relative w-full max-w-3xl mx-4 bg-white rounded-lg shadow-sm overflow-hidden">
                     {/* Custom color matching #33e407 */}
                     <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: "#33e407" }}></div>
@@ -368,7 +370,7 @@ const AccountInformation = () => {
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
 
             {/* Edit Profile Modal */}
             {isEditing && (
@@ -376,7 +378,7 @@ const AccountInformation = () => {
                     <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 className="text-xl font-semibold text-gray-800">Edit Profile</h3>
-                            <button 
+                            <button
                                 onClick={handleCloseEdit}
                                 className="text-gray-400 hover:text-gray-600 focus:outline-none"
                             >
@@ -385,14 +387,14 @@ const AccountInformation = () => {
                                 </svg>
                             </button>
                         </div>
-                        
+
                         <form onSubmit={handleSubmit} className="px-6 py-4">
                             {updateStatus.message && (
                                 <div className={`mb-4 p-3 rounded ${updateStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                     {updateStatus.message}
                                 </div>
                             )}
-                            
+
                             <div className="mb-4">
                                 <label htmlFor="edit-firstName" className="block text-sm font-medium text-gray-700 mb-1">
                                     First Name
@@ -410,7 +412,7 @@ const AccountInformation = () => {
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>
-                            
+
                             <div className="mb-4">
                                 <label htmlFor="edit-lastName" className="block text-sm font-medium text-gray-700 mb-1">
                                     Last Name
@@ -428,7 +430,7 @@ const AccountInformation = () => {
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>
-                            
+
                             <div className="mb-6">
                                 <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">
                                     Email Address
@@ -443,7 +445,7 @@ const AccountInformation = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                                 />
                             </div>
-                            
+
                             <div className="flex justify-end gap-3">
                                 <button
                                     type="button"
@@ -465,8 +467,6 @@ const AccountInformation = () => {
                     </div>
                 </div>
             )}
-
-            <Footer />
 
         </div>
     );
