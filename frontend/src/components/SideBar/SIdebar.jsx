@@ -91,23 +91,6 @@ const Sidebar = ({ activePage }) => {
                 : 'text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
         }`;
 
-    const commonLinks = (
-        <>
-            <li className="mb-1">
-                <Link to="/accountinformation" className={linkClass('settings')}>
-                    <Settings size={18} className="mr-3" />
-                    <span>Settings</span>
-                </Link>
-            </li>
-            <li className="mb-1">
-                <Link to="/accountinformation" className={linkClass('logout')}>
-                    <LogOut size={18} className="mr-3" />
-                    <span>Logout</span>
-                </Link>
-            </li>
-        </>
-    );
-
     const customerLinks = (
         <>
             <li className="mb-1">
@@ -169,7 +152,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/user-management" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
+                <Link to="/user-management" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <UserCog size={18} className="mr-3" />
                     <span>User Management</span>
                 </Link>
@@ -203,7 +186,6 @@ const Sidebar = ({ activePage }) => {
                     IO<span className="text-[#33e407]">CONNECT</span>
                 </h1>
             </div>
-//recommit
             <nav className="flex-1 py-4 overflow-y-auto">
                 <ul>
                     {role === 'admin' && adminLinks}

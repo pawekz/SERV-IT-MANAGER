@@ -11,6 +11,7 @@ const AccountInformation = () => {
         lastName: '',
         username: '',
         email: '',
+        phoneNumber:'',
         password: '********' // Placeholder for security
     });
     const [loading, setLoading] = useState(true);
@@ -20,7 +21,8 @@ const AccountInformation = () => {
     const [editFormData, setEditFormData] = useState({
         firstName: '',
         lastName: '',
-        username: ''
+        username: '',
+        phoneNumber:'',
     });
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +66,7 @@ const AccountInformation = () => {
                         lastName: decodedToken.lastName || '',
                         username: decodedToken.username || decodedToken.sub || '',
                         email: decodedToken.email || decodedToken.sub || '',
+                        phoneNumber: decodedToken.phoneNumber || '',
                         password: '********' // Mask password for security
                     };
 
@@ -93,7 +96,8 @@ const AccountInformation = () => {
             setEditFormData({
                 firstName: userData.firstName,
                 lastName: userData.lastName,
-                username: userData.username
+                username: userData.username,
+                phoneNumber: userData.phoneNumber
             });
         }
     }, [userData]);
@@ -121,7 +125,8 @@ const AccountInformation = () => {
         setEditFormData({
             firstName: userData.firstName,
             lastName: userData.lastName,
-            username: userData.username
+            username: userData.username,
+            phoneNumber: userData.phoneNumber
         });
     };
 
@@ -165,7 +170,8 @@ const AccountInformation = () => {
                 body: JSON.stringify({
                     firstName: editFormData.firstName,
                     lastName: editFormData.lastName,
-                    username: editFormData.username
+                    username: editFormData.username,
+                    phoneNumber: editFormData.phoneNumber
                 })
             });
 
@@ -190,6 +196,7 @@ const AccountInformation = () => {
                         firstName: decodedToken.firstName || editFormData.firstName,
                         lastName: decodedToken.lastName || editFormData.lastName,
                         username: decodedToken.username || editFormData.username,
+                        phoneNumber: decodedToken.phoneNumber || editFormData.phoneNumber,
                         email: decodedToken.email || decodedToken.sub,
                         password: '********' // Keep password masked
                     });
@@ -200,7 +207,8 @@ const AccountInformation = () => {
                     ...userData,
                     firstName: editFormData.firstName,
                     lastName: editFormData.lastName,
-                    username: editFormData.username
+                    username: editFormData.username,
+                    phoneNumber: editFormData.phoneNumber
                 });
             }
 
@@ -210,6 +218,7 @@ const AccountInformation = () => {
                 lastName: editFormData.lastName,
                 username: editFormData.username,
                 email: editFormData.email,
+                phoneNumber: editFormData.phoneNumber,
                 password: '********'
             }));
 
@@ -370,6 +379,7 @@ const AccountInformation = () => {
                                             type="tel"
                                             id="phoneNumber"
                                             name="phoneNumber"
+                                            value={userData.phoneNumber}
                                             pattern="[0-9\s]+"
                                             readOnly
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
@@ -476,6 +486,21 @@ const AccountInformation = () => {
                                     id="edit-username"
                                     name="username"
                                     value={editFormData.username}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                            </div>
+
+                            <div className="mb-6">
+                                <label htmlFor="edit-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Phone Number
+                                </label>
+                                <input
+                                    type="text"
+                                    id="edit-phoneNumber"
+                                    name="phoneNumber"
+                                    value={editFormData.phoneNumber}
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
