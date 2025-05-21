@@ -43,4 +43,7 @@ public class UserEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
 }

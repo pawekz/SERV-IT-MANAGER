@@ -47,9 +47,7 @@ public class SecurityConfig {
                                 "/user/getUser/*",
                                 "/user/changePassword/*",
                                 "/user/updateEmail/*",
-                                "/user/updateFirstName/*",
-                                "/user/updateLastName/*",
-                                "/user/updateName/*",
+                                "/user/updateFullName/*",
                                 "/user/deleteUser/*"
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated()
