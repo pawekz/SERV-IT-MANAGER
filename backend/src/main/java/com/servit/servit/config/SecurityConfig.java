@@ -39,7 +39,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
                                 "/user/register",
-                                "/auth/login"
+                                "/auth/login",
+                                "/user/verifyOtp"
                         ).permitAll()
                         .requestMatchers(
                                 "/user/getCurrentUser",

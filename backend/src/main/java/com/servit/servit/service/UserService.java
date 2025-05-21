@@ -4,6 +4,7 @@ import com.servit.servit.dto.*;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.enumeration.UserRoleEnum;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,12 @@ public class UserService {
 
     @Autowired
     private final UserRepository userRepo;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private EmailService emailService;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -41,7 +48,7 @@ public class UserService {
     }
 
     @Transactional
-    public void register(RegistrationRequestDTO req) {
+    public void register(RegistrationRequestDTO req) throws MessagingException {
         if (userRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
@@ -60,7 +67,21 @@ public class UserService {
         user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         user.setVerified(false);
         userRepo.save(user);
-        System.out.print("User registered: " + user.getEmail());
+
+        String otp = otpService.generateOtp(req.getEmail());
+        emailService.sendOtpEmail(req.getEmail(), otp);
+    }
+
+    @Transactional
+    public void verifyOtp(OtpVerificationRequestDTO req) {
+        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setVerified(true);
+        userRepo.save(user);
     }
 
     @Transactional
