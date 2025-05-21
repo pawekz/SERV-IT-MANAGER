@@ -3,7 +3,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { Link, useNavigate } from "react-router-dom";
 import {FolderKanban, LayoutGrid, Users} from "lucide-react";
-import Sidebar from "../../components/SideBar/SIdebar.jsx";
+import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
