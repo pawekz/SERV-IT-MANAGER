@@ -14,7 +14,7 @@ public class OtpService {
 
     public String generateOtp(String email) {
         String otp = String.format("%06d", new Random().nextInt(999999));
-        otpStore.put(email, new OtpDetails(otp, LocalDateTime.now().plusMinutes(1)));
+        otpStore.put(email, new OtpDetails(otp, LocalDateTime.now().plusMinutes(5)));
         return otp;
     }
 
