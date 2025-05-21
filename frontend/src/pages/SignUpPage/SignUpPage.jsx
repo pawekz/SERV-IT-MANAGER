@@ -73,7 +73,7 @@ const SignUpPage = () => {
     };
 
     // Password validation regex
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
 
     // Handle form submission
     const handleSubmit = async (e) => {
@@ -368,8 +368,8 @@ const SignUpPage = () => {
                                     <div className={`${/\d/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
                                         {/\d/.test(formData.password) ? '✓' : '✗'} At least one number
                                     </div>
-                                    <div className={`${/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
-                                        {/[@$!%*?&]/.test(formData.password) ? '✓' : '✗'} At least one special character (@$!%*?&)
+                                    <div className={`${/[@$!%*?&#^_+]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
+                                        {/[@$!%*?&#^_+]/.test(formData.password) ? '✓' : '✗'} At least one special character (@$!%*?&#^_+)
                                     </div>
                                 </div>
                             )}
