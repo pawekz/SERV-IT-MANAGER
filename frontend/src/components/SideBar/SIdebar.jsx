@@ -8,7 +8,7 @@ import {
     ShieldCheck,
     Settings,
     BarChart3,
-    ClipboardList,
+    ClipboardList, LogOut,
 } from 'lucide-react';
 
 
@@ -20,6 +20,7 @@ const Sidebar = ({ activePage }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     
     useEffect(() => {
         const fetchUserData = async () => {
@@ -71,6 +72,18 @@ const Sidebar = ({ activePage }) => {
         fetchUserData();
     }, []);
 
+    const toggleLogoutMenu = () => {
+        setShowLogoutMenu(prev => !prev);
+    };
+
+    const handleLogout = () => {
+
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRole');
+        sessionStorage.removeItem('userData');
+        window.location.href = '/login';
+    };
+
     const linkClass = (page) =>
         `flex items-center px-6 py-3 transition-all duration-200 ${
             activePage === page
@@ -84,6 +97,12 @@ const Sidebar = ({ activePage }) => {
                 <Link to="/accountinformation" className={linkClass('settings')}>
                     <Settings size={18} className="mr-3" />
                     <span>Settings</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="/accountinformation" className={linkClass('logout')}>
+                    <LogOut size={18} className="mr-3" />
+                    <span>Logout</span>
                 </Link>
             </li>
         </>
@@ -190,18 +209,48 @@ const Sidebar = ({ activePage }) => {
                     {role === 'admin' && adminLinks}
                     {role === 'customer' && customerLinks}
                     {role === 'technician' && technicianLinks}
-                    {commonLinks}
                 </ul>
             </nav>
 
-            <div className="p-4 border-t border-gray-200 flex items-center">
+            <div
+                className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
+                onClick={toggleLogoutMenu}
+            >
                 <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
                     <span>{userData.firstName.charAt(0)}{userData.lastName.charAt(0)}</span>
                 </div>
                 <div>
-                    <h3 className="text-sm font-semibold text-gray-800 m-0"> {userData.firstName} {userData.lastName}</h3>
-                    <p className="text-xs text-gray-500 m-0">{role.charAt(0).toUpperCase() + role.slice(1)}</p>
+                    <h3 className="text-sm font-semibold text-gray-800 m-0">
+                        {userData.firstName} {userData.lastName}
+                    </h3>
+                    <p className="text-xs text-gray-500 m-0">
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </p>
                 </div>
+
+                {showLogoutMenu && (
+                    <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
+                        <Link
+                            to="/accountinformation"
+                            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                            onClick={() => setShowLogoutMenu(false)}
+                        >
+                            <div className="flex items-center">
+                                <Settings size={16} className="mr-2" />
+                                Settings
+                            </div>
+                        </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                        >
+                            <div className="flex items-center">
+                                <LogOut size={16} className="mr-2" />
+                                Logout
+                            </div>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
