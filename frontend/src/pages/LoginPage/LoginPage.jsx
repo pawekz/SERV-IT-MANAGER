@@ -31,13 +31,17 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const inputsRef = useRef([]);
 
+    console.log("OTPModal: Props received", { visible, loading, error });
+
     // Auto-focus next/prev on input
     const handleChange = (e, idx) => {
+        console.log(`OTPModal: handleChange - Index: ${idx}, Value: ${e.target.value}`);
         const value = e.target.value.replace(/\D/, ""); // Only digits
         if (!value && idx > 0) {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
+                console.table({ step: "handleChange - clear and focus prev", index: idx, newOtpDigits: arr });
                 return arr;
             });
             inputsRef.current[idx - 1].focus();
@@ -47,6 +51,7 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = value;
+                console.table({ step: "handleChange - set digit and focus next", index: idx, newOtpDigits: arr });
                 return arr;
             });
             if (idx < 5) {
@@ -56,25 +61,32 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
+                console.table({ step: "handleChange - clear current digit", index: idx, newOtpDigits: arr });
                 return arr;
             });
         }
     };
 
     const handleKeyDown = (e, idx) => {
+        console.log(`OTPModal: handleKeyDown - Key: ${e.key}, Index: ${idx}, Current OTP Digit: ${otpDigits[idx]}`);
         if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
             inputsRef.current[idx - 1].focus();
         }
     };
 
     const handleVerify = () => {
-        onVerify(otpDigits.join(""));
+        const otpValue = otpDigits.join("");
+        console.log("OTPModal: handleVerify - OTP to verify:", otpValue);
+        console.table({ step: "handleVerify", otpDigits, otpValue });
+        onVerify(otpValue);
     };
 
     // Reset on close
     React.useEffect(() => {
+        console.log("OTPModal: useEffect - Visible changed:", visible);
         if (!visible) {
             setOtpDigits(["", "", "", "", "", ""]);
+            console.table({ step: "useEffect - reset otpDigits on close", newOtpDigits: ["", "", "", "", "", ""] });
         }
     }, [visible]);
 
@@ -189,15 +201,70 @@ const LoginPage = () => {
         }
     };
 
+    // Request OTP for verification
+    const requestOTP = async (email) => {
+        console.log('LoginPage: requestOTP - Requesting OTP for email:', email);
+        console.table({ step: "requestOTP start", email });
+        try {
+            const authToken = localStorage.getItem('authToken');
+
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${authToken}`  // Add auth token
+                },
+                body: JSON.stringify({
+                    email: email,
+                    type: 1  // Type 1 for login/register
+                })
+            });
+
+            const responseText = await response.text();
+            console.log('LoginPage: requestOTP - Response status:', response.status);
+            console.log('LoginPage: requestOTP - Response text:', responseText);
+            console.table({ step: "requestOTP response", status: response.status, responseText });
+
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to send OTP';
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (e) {
+                    if (responseText) errorMessage = responseText;
+                }
+
+                console.error('LoginPage: requestOTP - OTP request failed:', errorMessage);
+                showToast('Failed to send verification code. Please try again.');
+                return false;
+            }
+
+            console.log('LoginPage: requestOTP - OTP sent successfully');
+            return true;
+
+        } catch (err) {
+            console.error('LoginPage: requestOTP - Error requesting OTP:', err);
+            showToast('Failed to send verification code. Please try again.');
+            return false;
+        }
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        console.log("LoginPage: handleLogin - Initiated");
+        console.table({ step: "handleLogin start", formData });
+
 
         // Basic validation
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
+            console.warn("LoginPage: handleLogin - Validation failed: Username and password are required");
             return;
         }
 
@@ -212,33 +279,49 @@ const LoginPage = () => {
                     password: formData.password,
                 }),
             });
+            console.log("LoginPage: handleLogin - Login API call made");
+
 
             if (!response.ok) {
-                throw new Error('Invalid username or password');
+                const errorText = await response.text();
+                console.error("LoginPage: handleLogin - Login API error response:", errorText);
+                throw new Error(JSON.parse(errorText).message || 'Invalid username or password');
             }
 
             const data = await response.json();
+            console.log("LoginPage: handleLogin - Login API success response data:", data);
+            console.table({ step: "handleLogin API success", data });
+
 
             if (!data || !data.token) {
-                throw new Error('No response from server');
+                console.error("LoginPage: handleLogin - No token in response");
+                throw new Error('No response from server or token missing');
             }
 
             // Store the authentication token
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
+            console.log("LoginPage: handleLogin - Token and role stored in localStorage");
+
 
             // Get user info from token
             const tokenData = parseJwt(data.token);
+            console.log("LoginPage: handleLogin - Parsed JWT token data:", tokenData);
+            console.table({ step: "handleLogin parsed JWT", tokenData });
+
 
             // Store email from response or token
-            const userEmail = data.email || tokenData.email || tokenData.sub;
-            setUserEmail(userEmail);
-            localStorage.setItem('userEmail', userEmail);
+            const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
+            setUserEmail(resolvedUserEmail);
+            localStorage.setItem('userEmail', resolvedUserEmail);
 
-            console.log("Login successful. Using email:", userEmail);
+            console.log("LoginPage: handleLogin - Login successful. Using email:", resolvedUserEmail);
+            console.table({ step: "handleLogin email set", email: resolvedUserEmail });
+
 
             // Check if account is verified
             if (tokenData.isVerified === true) {
+                console.log("LoginPage: handleLogin - Account is verified. Navigating...");
                 // If verified, redirect directly based on user role
                 if (data.role === 'ADMIN') {
                     navigate('/admin/dashboard');
@@ -246,50 +329,69 @@ const LoginPage = () => {
                     navigate('/accountinformation');
                 }
             } else {
-                // If not verified, show OTP modal
-                setShowOTPModal(true);
+                console.log("LoginPage: handleLogin - Account NOT verified. Requesting OTP.");
+                // If not verified, request an OTP first, then show OTP modal
+                const otpRequested = await requestOTP(resolvedUserEmail);
+                if (otpRequested) {
+                    setShowOTPModal(true);
+                    console.log("LoginPage: handleLogin - OTP Modal shown.");
+                    console.table({ step: "handleLogin show OTP modal", showOTPModal: true });
+                } else {
+                    setError("Failed to initiate OTP process. Please try logging in again.");
+                }
             }
 
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
-            console.error('Login error:', err);
+            console.error('LoginPage: handleLogin - Login error:', err);
         } finally {
             setLoading(false);
+            console.log("LoginPage: handleLogin - Finished");
         }
     };
 
-    // OTP verification without requiring authentication
+// OTP verification for login/register (type 1)
     const handleVerifyOTP = async (otp) => {
         setOtpLoading(true);
         setOtpError('');
+        console.log("LoginPage: handleVerifyOTP - Initiated with OTP:", otp);
+        console.table({ step: "handleVerifyOTP start", otp });
+
 
         try {
             const email = localStorage.getItem('userEmail');
+            console.log("LoginPage: handleVerifyOTP - Email from localStorage:", email);
+
 
             if (!email) {
+                console.error("LoginPage: handleVerifyOTP - No email found in localStorage");
                 throw new Error('No email found for OTP verification');
             }
 
-            console.log('OTP Verification Data:', {
+            const requestBody = {
                 email: email,
-                otp: otp
-            });
+                otp: otp,
+                type: 1  // Type 1 for login/register
+            };
+            console.log('LoginPage: handleVerifyOTP - OTP Verification Request Body:', requestBody);
+            console.table({ step: "handleVerifyOTP request body", requestBody });
 
-            // Don't include Authorization header for OTP verification
+
+            // Send verification request without auth token
             const response = await fetch('http://localhost:8080/user/verifyOtp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
+                    // Removed Authorization header
                 },
-                body: JSON.stringify({
-                    email: email,
-                    otp: otp
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const responseText = await response.text();
-            console.log('Response status:', response.status);
-            console.log('Response text:', responseText);
+            console.log('LoginPage: handleVerifyOTP - Response status:', response.status);
+            console.log('LoginPage: handleVerifyOTP - Response text:', responseText);
+            console.table({ step: "handleVerifyOTP response", status: response.status, responseText });
+
 
             if (!response.ok) {
                 let errorMessage = 'OTP verification failed';
@@ -301,15 +403,36 @@ const LoginPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-
+                console.error("LoginPage: handleVerifyOTP - API error:", errorMessage);
                 throw new Error(errorMessage);
+            }
+
+            // Process successful response and update token if available
+            try {
+                if (responseText) {
+                    const responseData = JSON.parse(responseText);
+                    console.log("LoginPage: handleVerifyOTP - Parsed response data:", responseData);
+                    console.table({ step: "handleVerifyOTP parsed response", responseData });
+                    if (responseData.token) {
+                        localStorage.setItem('authToken', responseData.token);
+                        console.log("LoginPage: handleVerifyOTP - New auth token stored from OTP verification.");
+                    }
+                }
+            } catch (e) {
+                console.warn("LoginPage: handleVerifyOTP - Could not parse responseText, but proceeding as OTP might be verified without new token:", e);
+                // Continue even if parsing fails, backend might just send success message
             }
 
             // OTP verified successfully
             setShowOTPModal(false);
+            showToast('Account verified successfully.');
+            console.log("LoginPage: handleVerifyOTP - OTP verified successfully. Modal closed, toast shown.");
+            console.table({ step: "handleVerifyOTP success", showOTPModal: false });
+
 
             // Redirect based on user role
             const userRole = localStorage.getItem('userRole');
+            console.log("LoginPage: handleVerifyOTP - User role for navigation:", userRole);
             if (userRole === 'ADMIN') {
                 navigate('/admin/dashboard');
             } else {
@@ -318,35 +441,53 @@ const LoginPage = () => {
 
         } catch (err) {
             setOtpError(err.message || 'OTP verification failed');
-            console.error('OTP verification error:', err);
+            console.error('LoginPage: handleVerifyOTP - OTP verification error:', err);
         } finally {
             setOtpLoading(false);
+            console.log("LoginPage: handleVerifyOTP - Finished");
         }
     };
 
-    // Resend OTP without requiring authentication
+    // Resend OTP for login/register (type 1)
     const handleResendOTP = async () => {
         setOtpLoading(true);
         setOtpError('');
+        console.log("LoginPage: handleResendOTP - Initiated");
+        console.table({ step: "handleResendOTP start" });
 
         try {
             const email = localStorage.getItem('userEmail');
+            const authToken = localStorage.getItem('authToken'); // Auth token might be needed if resend requires logged-in state
+            console.log("LoginPage: handleResendOTP - Email from localStorage:", email);
+            console.log("LoginPage: handleResendOTP - AuthToken from localStorage:", authToken);
+
 
             if (!email) {
+                console.error("LoginPage: handleResendOTP - No email found for OTP resend");
                 throw new Error('No email found for OTP resend');
             }
 
-            console.log('Resending OTP for email:', email);
+            console.log('LoginPage: handleResendOTP - Resending OTP for email:', email);
+            const requestBody = {
+                email: email,
+                type: 1  // Type 1 for login/register
+            };
+            console.table({ step: "handleResendOTP request body", requestBody });
 
-            // Don't include Authorization header for resending OTP
-            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(email)}`, {
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${authToken}` // Consider if this is needed or if it should be removed like in requestOTP
+                },
+                body: JSON.stringify(requestBody)
             });
 
             const responseText = await response.text();
+            console.log('LoginPage: handleResendOTP - Response status:', response.status);
+            console.log('LoginPage: handleResendOTP - Response text:', responseText);
+            console.table({ step: "handleResendOTP response", status: response.status, responseText });
+
 
             if (!response.ok) {
                 let errorMessage = 'Failed to resend OTP';
@@ -358,20 +499,22 @@ const LoginPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-
+                console.error("LoginPage: handleResendOTP - API error:", errorMessage);
                 throw new Error(errorMessage);
             }
 
-            // Show toast notification instead of alert
             showToast('OTP has been resent to your email.');
+            console.log("LoginPage: handleResendOTP - OTP resent successfully, toast shown.");
 
         } catch (err) {
             setOtpError(err.message || 'Failed to resend OTP');
-            console.error('Resend OTP error:', err);
+            console.error('LoginPage: handleResendOTP - Resend OTP error:', err);
         } finally {
             setOtpLoading(false);
+            console.log("LoginPage: handleResendOTP - Finished");
         }
     };
+    console.log("LoginPage: Rendering. OTP Modal State:", { showOTPModal, otpLoading, otpError });
 
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -444,13 +587,13 @@ const LoginPage = () => {
                                 >
                                     {showPassword ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                                            <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                                         </svg>
                                     ) : (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                            <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                                            <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
                                         </svg>
                                     )}
                                 </button>
@@ -490,7 +633,10 @@ const LoginPage = () => {
             {/* OTP Modal */}
             <OTPModal
                 visible={showOTPModal}
-                onClose={() => setShowOTPModal(false)}
+                onClose={() => {
+                    console.log("LoginPage: OTPModal onClose triggered");
+                    setShowOTPModal(false);
+                }}
                 onVerify={handleVerifyOTP}
                 onResend={handleResendOTP}
                 loading={otpLoading}
