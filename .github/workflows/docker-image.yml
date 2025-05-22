@@ -2,7 +2,7 @@ name: Docker Image CI/CD Pipeline
 
 on:
   push:
-    branches: [ "feature_docker" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
