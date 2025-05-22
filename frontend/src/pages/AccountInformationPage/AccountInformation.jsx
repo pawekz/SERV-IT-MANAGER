@@ -105,7 +105,7 @@ const AccountInformation = () => {
     // Generate initials for avatar
     const getInitials = () => {
         if (userData.firstName && userData.lastName) {
-            return `${userData.firstName.charAt(0)}${userData.lastName.charAt(0)}`;
+            return `${userData.firstName.charAt(0).toUpperCase()}${userData.lastName.charAt(0).toUpperCase()}`;
         }
         return "U";  // Default if no name available
     };
@@ -157,27 +157,67 @@ const AccountInformation = () => {
 
         try {
             const token = localStorage.getItem('authToken');
+            console.log(token);
             if (!token) {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch('http://localhost:8080/user/updateCurrentUser', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    firstName: editFormData.firstName,
-                    lastName: editFormData.lastName,
-                    username: editFormData.username,
-                    phoneNumber: editFormData.phoneNumber
-                })
-            });
+            if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
+                const response = await fetch('http://localhost:8080/user/updateCurrentUserFullName', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        firstName: editFormData.firstName,
+                        lastName: editFormData.lastName,
+                        username: editFormData.username
+                    })
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update profile");
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update profile");
+                }
+            }
+
+            if (userData.phoneNumber !== editFormData.phoneNumber) {
+                const response = await fetch('http://localhost:8080/user/changeCurrentUserPhoneNumber', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: editFormData.phoneNumber,
+                        username: editFormData.username
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update profile");
+                }
+            }
+
+            if (userData.username !== editFormData.username) {
+                const response = await fetch('http://localhost:8080/user/updateCurrentUsername', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        newUsername: editFormData.username,
+                        username: userData.username
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update profile");
+                }
             }
 
             const data = await response.text();
@@ -187,18 +227,15 @@ const AccountInformation = () => {
                 const newToken = data.split("Token:")[1].trim();
                 localStorage.setItem('authToken', newToken);
 
-                // Parse the new token to get updated user data
                 const decodedToken = parseJwt(newToken);
-
                 if (decodedToken) {
-                    // Update userData state with the information from the new token
                     setUserData({
                         firstName: decodedToken.firstName || editFormData.firstName,
                         lastName: decodedToken.lastName || editFormData.lastName,
                         username: decodedToken.username || editFormData.username,
                         phoneNumber: decodedToken.phoneNumber || editFormData.phoneNumber,
                         email: decodedToken.email || decodedToken.sub,
-                        password: '********' // Keep password masked
+                        password: '********'
                     });
                 }
             } else {
