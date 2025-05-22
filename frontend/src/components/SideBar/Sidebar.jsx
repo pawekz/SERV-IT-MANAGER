@@ -96,24 +96,24 @@ const Sidebar = ({ activePage }) => {
             <div className="mb-6 mt-6">
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                 <ul>
-                    <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
-                            <UserCog size={18} className="mr-3" />
-                            <span>User Management</span>
-                        </Link>
-                    </li>
+                    {/*<li className="mb-1">*/}
+                    {/*    <Link to="#" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">*/}
+                    {/*        <UserCog size={18} className="mr-3" />*/}
+                    {/*        <span>User Management</span>*/}
+                    {/*    </Link>*/}
+                    {/*</li>*/}
                     <li className="mb-1">
                         <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                             <Inbox size={18} className="mr-3" />
                             <span>Inventory</span>
                         </Link>
                     </li>
-                    <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                            <FolderClock size={18} className="mr-3" />
-                            <span>Backup & Restore</span>
-                        </Link>
-                    </li>
+                    {/*<li className="mb-1">*/}
+                    {/*    <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+                    {/*        <FolderClock size={18} className="mr-3" />*/}
+                    {/*        <span>Backup & Restore</span>*/}
+                    {/*    </Link>*/}
+                    {/*</li>*/}
                 </ul>
             </div>
 
