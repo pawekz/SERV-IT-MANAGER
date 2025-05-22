@@ -66,5 +66,6 @@ const DeviceCard = () => {
     )
 }
 
+
 export default DeviceCard
 
