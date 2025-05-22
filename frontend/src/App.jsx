@@ -13,6 +13,7 @@ import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage
 import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
 import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
 import Sidebar from "./components/SideBar/Sidebar.jsx";
+import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
+        <Route  path="/inventory" element={<InventoryAssignmentPanel />} />
       </Routes>
     </Router>
   )
