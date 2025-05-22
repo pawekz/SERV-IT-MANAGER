@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, ChevronDown, Wrench, User, Package, ChevronLeft, ChevronRight, X,  CuboidIcon as Cube } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
@@ -6,6 +6,43 @@ const InventoryAssignmentPanel = () => {
     const [selectedParts, setSelectedParts] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Function to decode JWT token - needed for sidebar functionality
+    const parseJwt = (token) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            try {
+                // Check if token exists
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error("Not authenticated. Please log in.");
+                }
+                
+                // Validate token by trying to parse it
+                const decodedToken = parseJwt(token);
+                if (!decodedToken) {
+                    throw new Error("Invalid token. Please log in again.");
+                }
+                
+                setLoading(false);
+            } catch (err) {
+                console.error("Authentication error:", err);
+                setError("Authentication failed. Please log in again.");
+                setLoading(false);
+            }
+        };
+
+        checkAuthentication();
+    }, []);
 
     // Sample data
     const repairInfo = {
@@ -170,13 +207,13 @@ const InventoryAssignmentPanel = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50">
-            {/* Sidebar */}
-            {/*<Sidebar/>*/}
+        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+            {/* Sidebar - now uncommented */}
+            <Sidebar />
 
-            {/* Main Content */}
-            <div className="flex-1 ml-64 transition-all duration-300">
-                <div className="p-6 max-w-7xl mx-auto">
+            {/* Main Content - adjusted to match AccountInformation structure */}
+            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+                <div className="px-10 py-8">
                     {/* Header */}
                     <div className="mb-6">
                         <h1 className="text-2xl font-bold text-gray-800">Inventory Assignment</h1>
@@ -508,3 +545,4 @@ const InventoryAssignmentPanel = () => {
 };
 
 export default InventoryAssignmentPanel;
+
