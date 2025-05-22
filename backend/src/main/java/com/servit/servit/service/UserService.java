@@ -105,19 +105,14 @@ public class UserService {
             throw new IllegalArgumentException("User is already verified");
         }
 
+        String newOtp = otpService.generateOtp(req.getEmail());
+        otpService.invalidateOtp(req.getEmail());
+
         if (req.getType() == 1) {
-            otpService.invalidateOtp(req.getEmail());
-            String otp = otpService.generateOtp(req.getEmail());
-
-            emailService.sendOtpEmail(req.getEmail(), otp);
-        }
-        else if (req.getType() == 2){
-            otpService.invalidateOtp(req.getEmail());
-            String otp = otpService.generateOtp(req.getEmail());
-
-            emailService.sendForgotPasswordEmail(req.getEmail(), otp);
-        }
-        else{
+            emailService.sendOtpEmail(req.getEmail(), newOtp);
+        } else if (req.getType() == 2) {
+            emailService.sendForgotPasswordEmail(req.getEmail(), newOtp);
+        } else {
             throw new IllegalArgumentException("Invalid type");
         }
     }
