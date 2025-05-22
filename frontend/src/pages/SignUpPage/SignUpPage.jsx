@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'; // Added useEffect
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const SignUpPage = () => {
@@ -30,14 +30,9 @@ const SignUpPage = () => {
     // Password regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
 
-    console.log("SignUpPage: Initial render/re-render. OTP Modal State:", { showOTPModal, otpLoading, otpError, otpDigits });
-    console.table({ step: "SignUpPage initial state", formData, error, loading, success, showOTPModal, otpLoading, otpError });
-
-
     // Handle input changes
     const handleChange = (e) => {
         const { id, value } = e.target;
-        console.log(`SignUpPage: handleChange - ID: ${id}, Value: ${value}`);
         setFormData({ ...formData, [id]: value });
         if (id === 'password') {
             setIsPasswordValid(passwordRegex.test(value));
@@ -58,7 +53,6 @@ const SignUpPage = () => {
                 formattedValue += ' ' + numericValue.slice(6, 10);
             }
         }
-        console.log(`SignUpPage: handlePhoneInput - Value: ${value}, Formatted: ${formattedValue}`);
         setFormData({ ...formData, phoneNumber: formattedValue });
     };
 
@@ -66,7 +60,6 @@ const SignUpPage = () => {
     const handleNameInput = (e) => {
         const { id, value } = e.target;
         if (/^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']*$/.test(value) || value === '') {
-            console.log(`SignUpPage: handleNameInput - ID: ${id}, Value: ${value}`);
             setFormData({ ...formData, [id]: value });
         }
     };
@@ -81,7 +74,6 @@ const SignUpPage = () => {
     // Toggle password visibility
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
-        console.log("SignUpPage: togglePasswordVisibility - New showPassword state:", !showPassword);
     };
 
     // Submit registration
@@ -89,27 +81,20 @@ const SignUpPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        console.log("SignUpPage: handleSubmit - Initiated");
-        console.table({ step: "handleSubmit start", formData });
 
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.phoneNumber || !formData.username) {
             setError('All fields are required');
             setLoading(false);
-            console.warn("SignUpPage: handleSubmit - Validation failed: All fields are required");
             return;
         }
         if (!passwordRegex.test(formData.password)) {
             setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
             setLoading(false);
-            console.warn("SignUpPage: handleSubmit - Validation failed: Password complexity");
             return;
         }
 
         const formattedPhoneNumber = formData.phoneNumber.replace(/\s/g, '');
         const requestData = { ...formData, phoneNumber: formattedPhoneNumber };
-        console.log("SignUpPage: handleSubmit - Request data prepared:", requestData);
-        console.table({ step: "handleSubmit requestData", requestData });
-
 
         try {
             const response = await fetch('http://localhost:8080/user/register', {
@@ -119,13 +104,8 @@ const SignUpPage = () => {
                 },
                 body: JSON.stringify(requestData),
             });
-            console.log("SignUpPage: handleSubmit - Registration API call made");
 
-            const responseText = await response.text(); // Read text first for better error handling
-            console.log('SignUpPage: handleSubmit - Response status:', response.status);
-            console.log('SignUpPage: handleSubmit - Response text:', responseText);
-            console.table({ step: "handleSubmit response", status: response.status, responseText });
-
+            const responseText = await response.text();
 
             if (!response.ok) {
                 let errorMessage = `Registration failed with status: ${response.status}`;
@@ -136,39 +116,28 @@ const SignUpPage = () => {
                     }
                 } catch (parseError) {
                     if (responseText) errorMessage = responseText;
-                    console.warn("SignUpPage: handleSubmit - Could not parse error response JSON:", parseError);
                 }
-                console.error("SignUpPage: handleSubmit - API error:", errorMessage);
                 throw new Error(errorMessage);
             }
 
             setSuccess(true);
-            // Reset OTP digits and show OTP modal
             setOtpDigits(["", "", "", "", "", ""]);
             setOtpError('');
             setShowOTPModal(true);
-            console.log("SignUpPage: handleSubmit - Registration successful. OTP Modal shown.");
-            console.table({ step: "handleSubmit success, show OTP modal", success: true, showOTPModal: true, otpDigits: ["", "", "", "", "", ""], otpError: '' });
-
-
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
-            console.error("SignUpPage: handleSubmit - Registration error:", err);
         } finally {
             setLoading(false);
-            console.log("SignUpPage: handleSubmit - Finished");
         }
     };
 
     // OTP input handlers
     const handleOtpChange = (e, idx) => {
-        console.log(`SignUpPage: handleOtpChange - Index: ${idx}, Value: ${e.target.value}`);
         const value = e.target.value.replace(/\D/, "");
         if (!value && idx > 0) {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
-                console.table({ step: "handleOtpChange - clear and focus prev", index: idx, newOtpDigits: arr });
                 return arr;
             });
             inputsRef.current[idx - 1].focus();
@@ -178,7 +147,6 @@ const SignUpPage = () => {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = value;
-                console.table({ step: "handleOtpChange - set digit and focus next", index: idx, newOtpDigits: arr });
                 return arr;
             });
             if (idx < 5) {
@@ -188,14 +156,12 @@ const SignUpPage = () => {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
-                console.table({ step: "handleOtpChange - clear current digit", index: idx, newOtpDigits: arr });
                 return arr;
             });
         }
     };
 
     const handleOtpKeyDown = (e, idx) => {
-        console.log(`SignUpPage: handleOtpKeyDown - Key: ${e.key}, Index: ${idx}, Current OTP Digit: ${otpDigits[idx]}`);
         if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
             inputsRef.current[idx - 1].focus();
         }
@@ -204,27 +170,21 @@ const SignUpPage = () => {
     // Verify OTP
     const handleVerifyOTP = async () => {
         const otp = otpDigits.join("");
-        console.log("SignUpPage: handleVerifyOTP - Initiated with OTP:", otp);
-        console.table({ step: "handleVerifyOTP start", otp, currentOtpDigits: otpDigits });
 
         if (otp.length !== 6) {
             setOtpError('Please enter a valid 6-digit OTP');
-            console.warn("SignUpPage: handleVerifyOTP - Validation failed: OTP length not 6");
             return;
         }
 
         setOtpLoading(true);
         setOtpError('');
-        console.log("SignUpPage: handleVerifyOTP - Loading set to true, error cleared.");
 
         try {
             const payload = {
                 email: formData.email,
                 otp: otp,
-                type: 1  // Using type 1 for login/signup OTP verification
+                type: 1
             };
-            console.log('SignUpPage: handleVerifyOTP - OTP Verification Request Body:', payload);
-            console.table({ step: "handleVerifyOTP request body", payload });
 
             const response = await fetch('http://localhost:8080/user/verifyOtp', {
                 method: 'POST',
@@ -235,9 +195,6 @@ const SignUpPage = () => {
             });
 
             const responseText = await response.text();
-            console.log('SignUpPage: handleVerifyOTP - Response status:', response.status);
-            console.log('SignUpPage: handleVerifyOTP - Response text:', responseText);
-            console.table({ step: "handleVerifyOTP response", status: response.status, responseText });
 
             if (!response.ok) {
                 let errorMessage = `Verification failed (${response.status})`;
@@ -249,35 +206,25 @@ const SignUpPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-                console.error("SignUpPage: handleVerifyOTP - API error:", errorMessage);
-                setOtpError(errorMessage); // Set specific error from API
-                // Do not return immediately if 401, let it fall through to setOtpError
-                if (response.status === 401 && !errorMessage.includes('Invalid or expired')) { // Be more specific if needed
+                setOtpError(errorMessage);
+                if (response.status === 401 && !errorMessage.includes('Invalid or expired')) {
                     setOtpError('Invalid or expired OTP code. Please try again or request a new one.');
                 }
-                return; // Return after setting error
+                return;
             }
 
-            // Success path
             setShowOTPModal(false);
             setShowSuccessModal(true);
-            console.log("SignUpPage: handleVerifyOTP - OTP verified successfully. Modals updated.");
-            console.table({ step: "handleVerifyOTP success", showOTPModal: false, showSuccessModal: true });
 
-
-            // After 5 seconds, redirect to login page
             setTimeout(() => {
-                console.log("SignUpPage: handleVerifyOTP - Timeout: Navigating to /login");
                 setShowSuccessModal(false);
                 navigate('/login');
             }, 5000);
 
         } catch (err) {
             setOtpError(err.message || 'OTP verification failed. Please try again.');
-            console.error("SignUpPage: handleVerifyOTP - OTP verification error:", err);
         } finally {
             setOtpLoading(false);
-            console.log("SignUpPage: handleVerifyOTP - Finished. OTP Loading:", otpLoading);
         }
     };
 
@@ -285,17 +232,12 @@ const SignUpPage = () => {
     const handleResendOTP = async () => {
         setOtpLoading(true);
         setOtpError('');
-        console.log("SignUpPage: handleResendOTP - Initiated");
-        console.table({ step: "handleResendOTP start" });
 
         try {
             const payload = {
                 email: formData.email,
-                type: 1  // Using type 1 for login/signup OTP resend
+                type: 1
             };
-            console.log('SignUpPage: handleResendOTP - Resend OTP Request Body:', payload);
-            console.table({ step: "handleResendOTP request body", payload });
-
 
             const response = await fetch('http://localhost:8080/user/resendOtp', {
                 method: 'POST',
@@ -306,10 +248,6 @@ const SignUpPage = () => {
             });
 
             const responseText = await response.text();
-            console.log('SignUpPage: handleResendOTP - Response status:', response.status);
-            console.log('SignUpPage: handleResendOTP - Response text:', responseText);
-            console.table({ step: "handleResendOTP response", status: response.status, responseText });
-
 
             if (!response.ok) {
                 let errorMessage = `Failed to resend OTP (${response.status})`;
@@ -321,47 +259,35 @@ const SignUpPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-                console.error("SignUpPage: handleResendOTP - API error:", errorMessage);
-                setOtpError(errorMessage); // Set specific error from API
+                setOtpError(errorMessage);
                 if (response.status === 401 && !errorMessage.includes('Invalid request')) {
                     setOtpError('Invalid request. Please try registering again.');
                 }
-                return; // Return after setting error
+                return;
             }
 
-            // Reset OTP digits and show success message (using alert as per original code)
             setOtpDigits(["", "", "", "", "", ""]);
-            alert('OTP has been resent to your email.'); // Consider replacing alert with a toast or inline message
-            console.log("SignUpPage: handleResendOTP - OTP resent successfully. OTP digits reset.");
-            console.table({ step: "handleResendOTP success", otpDigits: ["", "", "", "", "", ""] });
+            alert('OTP has been resent to your email.');
 
-
-            // Focus on first input field
             if (inputsRef.current[0]) {
                 inputsRef.current[0].focus();
-                console.log("SignUpPage: handleResendOTP - Focused on first OTP input.");
             }
 
         } catch (err) {
             setOtpError(err.message || 'Failed to resend OTP. Please try again.');
-            console.error("SignUpPage: handleResendOTP - Resend OTP error:", err);
         } finally {
             setOtpLoading(false);
-            console.log("SignUpPage: handleResendOTP - Finished. OTP Loading:", otpLoading);
         }
     };
 
     // Effect to log OTP modal state changes
     useEffect(() => {
-        console.log("SignUpPage: useEffect - OTP Modal visibility changed:", showOTPModal);
         if (!showOTPModal) {
             // Optionally reset OTP fields when modal is closed externally, if desired
             // setOtpDigits(["", "", "", "", "", ""]);
             // setOtpError('');
-            // console.table({ step: "useEffect - OTP modal closed, fields potentially reset" });
         }
     }, [showOTPModal]);
-
 
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
@@ -498,7 +424,7 @@ const SignUpPage = () => {
                             >
                                 {showPassword ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
                                 ) : (
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -571,7 +497,6 @@ const SignUpPage = () => {
                     <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
                         <button
                             onClick={() => {
-                                console.log("SignUpPage: OTPModal close button clicked");
                                 setShowOTPModal(false);
                             }}
                             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -661,3 +586,4 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
+
