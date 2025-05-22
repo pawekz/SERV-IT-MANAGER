@@ -11,6 +11,7 @@ import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerati
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
 import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
 import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
+import Sidebar from "./components/SideBar/Sidebar.jsx";
 
 function App() {
   return (
@@ -29,7 +30,7 @@ function App() {
         {/* <Route path="*" element={<LandingPage />} /> */}
         <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/repaircheckin" element={<RepairCheckInForm />} />
-
+        <Route path="sidebar" element={<Sidebar />} />
       </Routes>
     </Router>
   )

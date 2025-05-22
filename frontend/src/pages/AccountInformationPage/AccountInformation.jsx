@@ -245,7 +245,8 @@ const AccountInformation = () => {
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
-            <Sidebar activePage="settings" />
+            {/*<Sidebar activePage="settings" />*/}
+            <Sidebar/>
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
 
