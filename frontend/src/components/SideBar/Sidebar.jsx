@@ -4,7 +4,6 @@ import {
     LayoutGrid,
     UserCog,
     Settings,
-    BarChart3,
     Truck,
     ShieldCheck,
     ClipboardList,
