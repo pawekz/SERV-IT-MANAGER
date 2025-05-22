@@ -56,10 +56,10 @@ const DeviceCard = () => {
                         <div className="border-b border-dashed border-gray-400 h-10 mb-1"></div>
                         <p className="text-center text-sm">Customer Signature</p>
                     </div>
-                    <div className="w-[45%]">
-                        <div className="border-b border-dashed border-gray-400 h-10 mb-1"></div>
-                        <p className="text-center text-sm">Technician Signature</p>
-                    </div>
+                    {/*<div className="w-[45%]">*/}
+                    {/*    <div className="border-b border-dashed border-gray-400 h-10 mb-1"></div>*/}
+                    {/*    <p className="text-center text-sm">Technician Signature</p>*/}
+                    {/*</div>*/}
                 </div>
             </div>
         </div>

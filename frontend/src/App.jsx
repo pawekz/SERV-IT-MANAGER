@@ -10,12 +10,12 @@ import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
 import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
+import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -27,6 +27,9 @@ function App() {
         <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         <Route path="/backup" element={<BackUpPage />} />
         {/* <Route path="*" element={<LandingPage />} /> */}
+        <Route path="/devicecard" element={<DeviceCard />} />
+        <Route path="/repaircheckin" element={<RepairCheckInForm />} />
+
       </Routes>
     </Router>
   )
