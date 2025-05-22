@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar/Navbar";
-import Footer from "../../components/Footer/Footer";
 import { Link, useNavigate } from "react-router-dom";
-import {FolderKanban, LayoutGrid, Users} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const AccountInformation = () => {
@@ -317,9 +314,9 @@ const AccountInformation = () => {
                                                 {`${userData.firstName} ${userData.lastName}`}
                                             </h3>
                                             <p className="text-gray-600 mb-4">{userData.email}</p>
-                                            <button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">
-                                                Change Profile Picture
-                                            </button>
+                                            {/*<button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">*/}
+                                            {/*    Change Profile Picture*/}
+                                            {/*</button>*/}
                                         </div>
                                     </div>
                                 </section>
