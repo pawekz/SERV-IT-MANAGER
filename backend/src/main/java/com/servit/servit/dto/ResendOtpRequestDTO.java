@@ -3,7 +3,7 @@ package com.servit.servit.dto;
 import lombok.Data;
 
 @Data
-public class OtpVerificationRequestDTO {
+public class ResendOtpRequestDTO {
     private String email;
-    private String otp;
+    private Integer type;
 }
