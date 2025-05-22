@@ -58,8 +58,8 @@ public class UserService {
         }
 
         UserEntity user = new UserEntity();
-        user.setFirstName(req.getFirstName());
-        user.setLastName(req.getLastName());
+        user.setFirstName(formatName(req.getFirstName()));
+        user.setLastName(formatName(req.getLastName()));
         user.setEmail(req.getEmail());
         user.setUsername(req.getUsername());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
@@ -70,34 +70,51 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendOtpEmail(req.getEmail(), otp);
+    }
 
+    private String formatName(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        return name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
     }
 
     @Transactional
-    public void verifyOtp(OtpVerificationRequestDTO req) {
-        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
+    public void verifyOtp(VerifyOtpRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
 
-        UserEntity user = userRepo.findByEmail(req.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setIsVerified(true);
-        userRepo.save(user);
+        if (req.getType() == 1) {
+            user.setIsVerified(true);
+            userRepo.save(user);
+        } else if (req.getType() != 2) {
+            throw new IllegalArgumentException("Invalid type");
+        }
     }
 
     @Transactional
-    public void resendOtp(String email) throws MessagingException {
-        UserEntity user = userRepo.findByEmail(email)
+    public void resendOtp(ResendOtpRequestDTO req) throws MessagingException {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
 
-        otpService.invalidateOtp(email);
+        String newOtp = otpService.generateOtp(req.getEmail());
+        otpService.invalidateOtp(req.getEmail());
 
-        String otp = otpService.generateOtp(email);
-        emailService.sendOtpEmail(email, otp);
+        if (req.getType() == 1) {
+            emailService.sendOtpEmail(req.getEmail(), newOtp);
+        } else if (req.getType() == 2) {
+            emailService.sendForgotPasswordEmail(req.getEmail(), newOtp);
+        } else {
+            throw new IllegalArgumentException("Invalid type");
+        }
     }
 
     @Transactional
@@ -120,8 +137,8 @@ public class UserService {
                 .getAuthentication().getName();
         UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setFirstName(req.getNewFirstName());
-        user.setLastName(req.getNewLastName());
+        user.setFirstName(formatName(req.getNewFirstName()));
+        user.setLastName(formatName(req.getNewLastName()));
         userRepo.save(user);
     }
 
@@ -152,13 +169,6 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendForgotPasswordEmail(req.getEmail(), otp);
-    }
-
-    @Transactional
-    public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
-        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
-            throw new IllegalArgumentException("Invalid or expired OTP");
-        }
     }
 
     @Transactional
@@ -221,8 +231,8 @@ public class UserService {
     public void updateFullName(Integer userId, String newFirstName, String newLastName) {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setFirstName(newFirstName);
-        user.setLastName(newLastName);
+        user.setFirstName(formatName(newFirstName));
+        user.setLastName(formatName(newLastName));
         userRepo.save(user);
     }
 

@@ -2,15 +2,15 @@ import React, {useEffect, useState} from 'react';
 import { Link } from 'react-router-dom';
 import {
     LayoutGrid,
-    Users,
-    FolderKanban,
     UserCog,
-    DatabaseBackup,
     Settings,
-    BarChart3,
-    ClipboardList, LogOut,
-} from 'lucide-react';
+    ShieldCheck,
+    ClipboardList,
+    LogOut,
+    FolderClock,
+    Inbox,
 
+} from 'lucide-react';
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
@@ -42,15 +42,21 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/repairs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
-                    <span>Repair Tickets</span>
+                    <span>Repair Queue</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                    <ShieldCheck size={18} className="mr-3" />
+                    <span>Warranty Request</span>
                 </Link>
             </li>
         </>
@@ -60,29 +66,36 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/customers" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <Users size={18} className="mr-3" />
-                    <span>Customers</span>
-                </Link>
-            </li>
-            <li className="mb-1">
-                <Link to="/repairs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
-                    <span>Repair Tickets</span>
+                    <span>Repair Queue</span>
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/inventory" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <FolderKanban size={18} className="mr-3" />
-                    <span>Inventory</span>
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                    <ShieldCheck size={18} className="mr-3" />
+                    <span>Warranty Request</span>
                 </Link>
             </li>
+
+
+            <div className="mb-6 mt-6">
+                <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
+                <ul>
+                    <li className="mb-1">
+                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                            <Inbox size={18} className="mr-3" />
+                            <span>Inventory</span>
+                        </Link>
+                    </li>
+                </ul>
+            </div>
         </>
     );
 
@@ -90,38 +103,48 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
-            <h2 className=" text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
             <li className="mb-1">
-                <Link to="/user-management" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <UserCog size={18} className="mr-3" />
-                    <span>User Management</span>
-                </Link>
-            </li>
-            <li className="mb-1">
-
-                <Link to="/backup" className={linkClass('backup')}>
-                    < DatabaseBackup size={18} className="mr-3" />
-                    <span>Backup & Recovery</span>
-                </Link>
-            </li>
-            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>
-            <li className="mb-1">
-                <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <BarChart3 size={18} className="mr-3" />
-                    <span>Analytics</span>
-                </Link>
-            </li>
-            <li className="mb-1">
-                <Link to="/audit-logs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
-                    <span>Audit Logs</span>
+                    <span>Repair Queue</span>
                 </Link>
             </li>
+            <li className="mb-1">
+                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                    <ShieldCheck size={18} className="mr-3" />
+                    <span>Warranty Request</span>
+                </Link>
+            </li>
+
+
+            <div className="mb-6 mt-6">
+                <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
+                <ul>
+                    <li className="mb-1">
+                        <Link to="#" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
+                            <UserCog size={18} className="mr-3" />
+                            <span>User Management</span>
+                        </Link>
+                    </li>
+                    <li className="mb-1">
+                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                            <Inbox size={18} className="mr-3" />
+                            <span>Inventory</span>
+                        </Link>
+                    </li>
+                    <li className="mb-1">
+                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                            <FolderClock size={18} className="mr-3" />
+                            <span>Backup & Restore</span>
+                        </Link>
+                    </li>
+                </ul>
+            </div>
         </>
     );
 
