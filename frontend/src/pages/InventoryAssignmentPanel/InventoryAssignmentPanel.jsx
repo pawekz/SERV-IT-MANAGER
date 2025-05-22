@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, ChevronDown, Wrench, User, Package, LayoutDashboard, Smartphone, Users, Settings, ChevronLeft, ChevronRight, X, Menu, CuboidIcon as Cube } from 'lucide-react';
+import { Search, ChevronDown, Wrench, User, Package, ChevronLeft, ChevronRight, X,  CuboidIcon as Cube } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const InventoryAssignmentPanel = () => {
