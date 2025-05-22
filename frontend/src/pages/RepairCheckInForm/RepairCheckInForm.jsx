@@ -183,7 +183,7 @@ export default function RepairCheckinForm() {
                                     </label>
                                     <textarea
                                         id="technicianObservations"
-                                        placeholder="To be filled by technician"
+                                        placeholder="To be filled by technician (Optional)"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
                                     ></textarea>
                                 </div>
@@ -237,7 +237,7 @@ export default function RepairCheckinForm() {
                                     required
                                 />
                                 <label htmlFor="terms" className="text-sm text-gray-600">
-                                    I have read and agree to the repair terms and conditions
+                                    I have read and agree to the repair <span>terms and conditions</span>
                                 </label>
                             </div>
                         </div>
