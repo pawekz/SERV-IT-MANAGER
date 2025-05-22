@@ -9,6 +9,7 @@ import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagemen
 import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
+import Sidebar from "./components/SideBar/Sidebar.jsx";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         <Route path="/backup" element={<BackUpPage />} />
         {/* <Route path="*" element={<LandingPage />} /> */}
+        <Route path="sidebar" element={<Sidebar />} />
       </Routes>
     </Router>
   )
