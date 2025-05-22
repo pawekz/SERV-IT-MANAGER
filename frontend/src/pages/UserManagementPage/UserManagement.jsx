@@ -2,14 +2,6 @@ import { Link } from "react-router-dom"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import { useState, useEffect } from "react"
 import {
-    LayoutGrid,
-    Users,
-    FolderKanban,
-    UserCog,
-    ShieldCheck,
-    Settings,
-    BarChart3,
-    ClipboardList,
     Search,
     ChevronLeft,
     ChevronRight,
@@ -129,7 +121,7 @@ const UserManagement = () => {
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
-            <Sidebar/>
+            <Sidebar activePage={"usermanagement"}/>
 
 
             {/*this is the sidebar i made but above it is the sidebar component */}

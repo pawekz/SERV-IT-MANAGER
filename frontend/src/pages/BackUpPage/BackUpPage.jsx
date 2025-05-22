@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {Database} from "lucide-react";
+import {HardDriveDownload } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
 
@@ -27,7 +27,19 @@ const BackUpPage = () => {
             <Sidebar activePage="backup" />
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-
+                <div className="flex justify-between">
+                <div className="mb-4">
+                    <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Recovery</h1>
+                    <p className="text-gray-600 text-base max-w-3xl">
+                        Configure automated backup schedules, destinations, and security settings.
+                    </p>
+                </div>
+                <div className=" w-64 shrink right-0 -mr-5">
+                    <button className=" flex py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-white bg-[#33e407] hover:bg-[#2bc706]">
+                        <HardDriveDownload className="mr-2"/>  Manual Back Up
+                    </button>
+                </div>
+                </div>
                 <div className="px-10 py-8">
                     {loading ? (
                         <div className="text-center py-8">
@@ -45,19 +57,7 @@ const BackUpPage = () => {
                         </div>
                     ) : (
                         <>
-                            <section className="mb-10">
-                                <div className="flex justify-between">
-                                    <div className="col">
-                                        <h1 className="text-xl font-semibold text-gray-800">Back Up and Recovery</h1>
-                                        <p className="mb-6 text-gray-400">Configure automated backup schedules, destinations, and security settings.</p>
-                                    </div>
-                                    <div className=" w-64 shrink right-0 -mr-20">
-                                        <button
-                                            className=" py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-white bg-[#33e407] hover:bg-[#2bc706]">
-                                            Manual Back Up
-                                        </button>
-                                    </div>
-                                </div>
+                            <section className="mb-8 -ml-10">
                                     <div className="bg-white rounded-lg shadow-md p-6">
                                     <div className="flex flex-wrap border-b border-gray-300 mb-6 ">
                                         {tabTitles.map((title) => (
