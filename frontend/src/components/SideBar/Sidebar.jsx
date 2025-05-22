@@ -10,7 +10,8 @@ import {
     ClipboardList,
     LogOut,
     FolderClock,
-    Inbox
+    Inbox,
+    FileClock,
 } from 'lucide-react';
 
 const Sidebar = ({ activePage }) => {
@@ -55,9 +56,15 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/warranty" className={linkClass('warranty')}>
+                <Link to="#" className={linkClass('warranty')}>
                     <Truck size={18} className="mr-3" />
                     <span>Warranty Request</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
                 </Link>
             </li>
         </>
@@ -82,6 +89,12 @@ const Sidebar = ({ activePage }) => {
                 <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
                 </Link>
             </li>
 
@@ -116,9 +129,15 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/warranty" className={linkClass('warranty')}>
+                <Link to="#" className={linkClass('warranty')}>
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
                 </Link>
             </li>
 
