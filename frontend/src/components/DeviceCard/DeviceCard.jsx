@@ -5,7 +5,7 @@ const DeviceCard = () => {
                 {/* Person Info */}
                 <div className="mb-4">
                     <h2 className="text-xl font-bold">Kyle Matthew</h2>
-                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                    <div className="flex gap-4 text-sm text-gray-500 mt-1">
                         <span>kyle@gmail.com</span>
                         <span>+63961999</span>
                     </div>
@@ -67,3 +67,4 @@ const DeviceCard = () => {
 }
 
 export default DeviceCard
+
