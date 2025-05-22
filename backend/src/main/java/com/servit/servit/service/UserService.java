@@ -80,30 +80,46 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyOtp(OtpVerificationRequestDTO req) {
-        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
+    public void verifyOtp(VerifyOtpRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
 
-        UserEntity user = userRepo.findByEmail(req.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setIsVerified(true);
-        userRepo.save(user);
+        if (req.getType() == 1) {
+            user.setIsVerified(true);
+            userRepo.save(user);
+        } else if (req.getType() != 2) {
+            throw new IllegalArgumentException("Invalid type");
+        }
     }
 
     @Transactional
-    public void resendOtp(String email) throws MessagingException {
-        UserEntity user = userRepo.findByEmail(email)
+    public void resendOtp(ResendOtpRequestDTO req) throws MessagingException {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
 
-        otpService.invalidateOtp(email);
+        if (req.getType() == 1) {
+            otpService.invalidateOtp(req.getEmail());
+            String otp = otpService.generateOtp(req.getEmail());
 
-        String otp = otpService.generateOtp(email);
-        emailService.sendOtpEmail(email, otp);
+            emailService.sendOtpEmail(req.getEmail(), otp);
+        }
+        else if (req.getType() == 2){
+            otpService.invalidateOtp(req.getEmail());
+            String otp = otpService.generateOtp(req.getEmail());
+
+            emailService.sendForgotPasswordEmail(req.getEmail(), otp);
+        }
+        else{
+            throw new IllegalArgumentException("Invalid type");
+        }
     }
 
     @Transactional
@@ -158,13 +174,6 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendForgotPasswordEmail(req.getEmail(), otp);
-    }
-
-    @Transactional
-    public void verifyResetPasswordOTP(VerifyResetPasswordOtpRequestDTO req) {
-        if (otpService.validateOtp(req.getEmail(), req.getOtp())) {
-            throw new IllegalArgumentException("Invalid or expired OTP");
-        }
     }
 
     @Transactional

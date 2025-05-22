@@ -29,14 +29,14 @@ public class UserController {
     }
 
     @PostMapping("/verifyOtp")
-    public ResponseEntity<Void> verifyOtp(@RequestBody OtpVerificationRequestDTO req) {
+    public ResponseEntity<Void> verifyOtp(@RequestBody VerifyOtpRequestDTO req) {
         userSvc.verifyOtp(req);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resendOtp")
-    public ResponseEntity<Void> resendOtp(@RequestParam String email) throws MessagingException {
-        userSvc.resendOtp(email);
+    public ResponseEntity<Void> resendOtp(@RequestBody ResendOtpRequestDTO req) throws MessagingException {
+        userSvc.resendOtp(req);
         return ResponseEntity.ok().build();
     }
 
@@ -72,12 +72,6 @@ public class UserController {
     @PostMapping("/forgotPassword")
     public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequestDTO req) throws MessagingException {
         userSvc.forgotPassword(req);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/verifyResetPasswordOTP")
-    public ResponseEntity<Void> verifyResetPasswordOTP(@RequestBody VerifyResetPasswordOtpRequestDTO req) {
-        userSvc.verifyResetPasswordOTP(req);
         return ResponseEntity.ok().build();
     }
 
