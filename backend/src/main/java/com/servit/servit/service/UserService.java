@@ -58,8 +58,8 @@ public class UserService {
         }
 
         UserEntity user = new UserEntity();
-        user.setFirstName(req.getFirstName());
-        user.setLastName(req.getLastName());
+        user.setFirstName(formatName(req.getFirstName()));
+        user.setLastName(formatName(req.getLastName()));
         user.setEmail(req.getEmail());
         user.setUsername(req.getUsername());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
@@ -70,7 +70,13 @@ public class UserService {
 
         String otp = otpService.generateOtp(req.getEmail());
         emailService.sendOtpEmail(req.getEmail(), otp);
+    }
 
+    private String formatName(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        return name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
     }
 
     @Transactional
@@ -120,8 +126,8 @@ public class UserService {
                 .getAuthentication().getName();
         UserEntity user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setFirstName(req.getNewFirstName());
-        user.setLastName(req.getNewLastName());
+        user.setFirstName(formatName(req.getNewFirstName()));
+        user.setLastName(formatName(req.getNewLastName()));
         userRepo.save(user);
     }
 
@@ -221,8 +227,8 @@ public class UserService {
     public void updateFullName(Integer userId, String newFirstName, String newLastName) {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setFirstName(newFirstName);
-        user.setLastName(newLastName);
+        user.setFirstName(formatName(newFirstName));
+        user.setLastName(formatName(newLastName));
         userRepo.save(user);
     }
 
