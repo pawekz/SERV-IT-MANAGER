@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import { useState, useEffect } from "react"
 import {
     LayoutGrid,
@@ -117,6 +118,7 @@ const UserManagement = () => {
                 return 'bg-green-100 text-green-700';
             case 'Pending':
                 return 'bg-gray-100 text-gray-700 ';
+                return 'bg-orange-100 text-orange-700';
             case 'Inactive':
                 return 'bg-red-100 text-red-700';
             default:
@@ -126,92 +128,101 @@ const UserManagement = () => {
 
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
-            {/* Sidebar */}
-            <div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">
-                <div className="p-6 border-b border-gray-200">
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        IO<span className="text-[#33e407]">CONNECT</span>
-                    </h1>
-                </div>
 
-                <nav className="flex-1 py-4 overflow-y-auto">
-                    <div className="mb-6">
-                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
-                        <ul>
-                            <li className="mb-1">
-                                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <LayoutGrid size={18} className="mr-3" />
-                                    <span>Dashboard</span>
-                                </Link>
-                            </li>
-                            <li className="mb-1">
-                                <Link to="/users" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <Users size={18} className="mr-3" />
-                                    <span>Users</span>
-                                </Link>
-                            </li>
-                            <li className="mb-1">
-                                <Link to="/projects" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <FolderKanban size={18} className="mr-3" />
-                                    <span>Projects</span>
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
+            <Sidebar/>
 
-                    <div className="mb-6">
-                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
-                        <ul>
-                            <li className="mb-1">
-                                <Link to="/user-management" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
-                                    <UserCog size={18} className="mr-3" />
-                                    <span>User Management</span>
-                                </Link>
-                            </li>
-                            <li className="mb-1">
-                                <Link to="/roles" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <ShieldCheck size={18} className="mr-3" />
-                                    <span>Roles & Permissions</span>
-                                </Link>
-                            </li>
-                            <li className="mb-1">
-                                <Link to="/settings" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <Settings size={18} className="mr-3" />
-                                    <span>Settings</span>
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
 
-                    <div className="mb-6">
-                        <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>
-                        <ul>
-                            <li className="mb-1">
-                                <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <BarChart3 size={18} className="mr-3" />
-                                    <span>Analytics</span>
-                                </Link>
-                            </li>
-                            <li className="mb-1">
-                                <Link to="/audit-logs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                                    <ClipboardList size={18} className="mr-3" />
-                                    <span>Audit Logs</span>
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
+            {/*this is the sidebar i made but above it is the sidebar component */}
 
-                <div className="p-4 border-t border-gray-200 flex items-center">
-                    <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
-                        <span>AD</span>
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-800 m-0">Admin User</h3>
-                        <p className="text-xs text-gray-500 m-0">Administrator</p>
-                    </div>
-                </div>
-            </div>
+
+
+            {/*<div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">*/}
+            {/*    <div className="p-6 border-b border-gray-200">*/}
+            {/*        <h1 className="text-2xl font-bold text-gray-800">*/}
+            {/*            IO<span className="text-[#33e407]">CONNECT</span>*/}
+            {/*        </h1>*/}
+            {/*    </div>*/}
+
+
+
+            {/*    <nav className="flex-1 py-4 overflow-y-auto">*/}
+            {/*        <div className="mb-6">*/}
+            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>*/}
+            {/*            <ul>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <LayoutGrid size={18} className="mr-3" />*/}
+            {/*                        <span>Dashboard</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/users" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <Users size={18} className="mr-3" />*/}
+            {/*                        <span>Users</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/projects" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <FolderKanban size={18} className="mr-3" />*/}
+            {/*                        <span>Projects</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*            </ul>*/}
+            {/*        </div>*/}
+
+            {/*        <div className="mb-6">*/}
+            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>*/}
+            {/*            <ul>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/user-management" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">*/}
+            {/*                        <UserCog size={18} className="mr-3" />*/}
+            {/*                        <span>User Management</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/roles" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <ShieldCheck size={18} className="mr-3" />*/}
+            {/*                        <span>Roles & Permissions</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/settings" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <Settings size={18} className="mr-3" />*/}
+            {/*                        <span>Settings</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*            </ul>*/}
+            {/*        </div>*/}
+
+            {/*        <div className="mb-6">*/}
+            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>*/}
+            {/*            <ul>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <BarChart3 size={18} className="mr-3" />*/}
+            {/*                        <span>Analytics</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*                <li className="mb-1">*/}
+            {/*                    <Link to="/audit-logs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
+            {/*                        <ClipboardList size={18} className="mr-3" />*/}
+            {/*                        <span>Audit Logs</span>*/}
+            {/*                    </Link>*/}
+            {/*                </li>*/}
+            {/*            </ul>*/}
+            {/*        </div>*/}
+            {/*    </nav>*/}
+
+            {/*    <div className="p-4 border-t border-gray-200 flex items-center">*/}
+            {/*        <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">*/}
+            {/*            <span>AD</span>*/}
+            {/*        </div>*/}
+            {/*        <div>*/}
+            {/*            <h3 className="text-sm font-semibold text-gray-800 m-0">Admin User</h3>*/}
+            {/*            <p className="text-xs text-gray-500 m-0">Administrator</p>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Main Content */}
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
