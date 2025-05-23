@@ -60,8 +60,13 @@ const DashboardPage = () => {
             <Sidebar/>
 
 
+            {/*Given Sidebar length*/}
+            <div className="w-60  bg-gray-50 shadow-md">
+
+            </div>
+
             {/* Main Content */}
-            <div className="flex-2 overflow-auto">
+            <div className="flex-1 overflow-auto">
                 {/* Header */}
                 <header className="bg-white shadow-sm p-4">
                     <div className="flex justify-between items-center">
@@ -185,7 +190,7 @@ const DashboardPage = () => {
                             </div>
 
                             {/* X-axis labels */}
-                            <div className="ml-10 mt-2 flex justify-between text-xs text-gray-500">
+                            <div className="ml-10  flex justify-between text-xs text-gray-500">
                                 {chartData.months.map((month, index) => (
                                     <span key={index}>{month}</span>
                                 ))}

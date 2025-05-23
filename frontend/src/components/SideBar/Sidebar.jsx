@@ -43,7 +43,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -71,7 +71,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -116,7 +116,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
