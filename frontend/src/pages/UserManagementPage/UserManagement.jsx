@@ -8,6 +8,7 @@ import {
     PenLine,
     Trash2,
     CheckCheck,
+    Activity
 } from "lucide-react"
 
 const UserManagement = () => {
@@ -26,44 +27,53 @@ const UserManagement = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 10;
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+    const [selectedUser, setSelectedUser] = useState({
+        firstName: '',
+        lastName: '',
+        userId:''
+    });
     const [editFormData, setEditFormData] = useState({
         firstName: '',
         lastName: '',
-        email: '',
         userId:''
     });
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                console.log(token);
-                if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
-                }
-
-                const response = await fetch('http://localhost:8080/user/getAllUsers',{
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log("Fetched users:", data);
-                setUsers(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+    const fetchUsers = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Not authenticated. Please log in.");
             }
-        };
 
+            const response = await fetch('http://localhost:8080/user/getAllUsers', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setUsers(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    useEffect(() => {
         fetchUsers();
     }, []);
 
@@ -87,14 +97,13 @@ const UserManagement = () => {
         // First filter by search term
         if (searchTerm.trim() !== '') {
             filtered = filtered.filter(user =>
-                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         // Then filter by role if not "All Roles"
         if (selectedRole !== 'All Roles') {
-            filtered = filtered.filter(user => user.role === selectedRole);
+            filtered = filtered.filter(user => user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1) === selectedRole);
         }
 
         // Filter by status if not "All Status"
@@ -122,16 +131,80 @@ const UserManagement = () => {
 
     // Handle details selection change
     const handleEdit = (row, index) => {
+        setIsEditing(true);
         setEditIndex(index);
+        setSelectedUser({ ...row });
         setEditFormData({
             firstName: row.firstName,
             lastName: row.lastName,
-            email: row.email,
             userId: row.userId
         });
     };
-    const handleDelete = (row, index) => {
-        setStatus("Inactive");
+
+    // Handle deactive account
+    const handleDelete = async (row) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Not authenticated. Please log in.");
+            }
+
+            const response = await fetch(`http://localhost:8080/user/updateStatus/${row.userId}`, {
+                method: 'PATCH', // Use PATCH or PUT for updates
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    status: "Inactive"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Optional: refetch all users to refresh the list
+            fetchUsers();
+
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle reactivating account
+    const handleReactivate = async (row) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Not authenticated. Please log in.");
+            }
+
+            const response = await fetch(`http://localhost:8080/user/updateStatus/${row.userId}`, {
+                method: 'PATCH', // Use PATCH or PUT for updates
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    status: "Active"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Optional: refetch all users to refresh the list
+            fetchUsers();
+
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -163,32 +236,68 @@ const UserManagement = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch(`http://localhost:8080/user/updateFullName/${editFormData.userId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    newFirstName: editFormData.firstName,
-                    newLastName: editFormData.lastName
-                })
-            });
+            // Track update success
+            let nameUpdated = false;
+            let roleUpdated = false;
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || "Failed to update profile");
+            // Update name if changed
+            console.log("checking change");
+
+            if (
+                selectedUser.firstName !== editFormData.firstName ||
+                selectedUser.lastName !== editFormData.lastName
+            ) {
+                const nameResponse = await fetch(`http://localhost:8080/user/updateFullName/${editFormData.userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        newFirstName: editFormData.firstName,
+                        newLastName: editFormData.lastName
+                    })
+                });
+
+                if (!nameResponse.ok) {
+                    const errorText = await nameResponse.text();
+                    throw new Error(errorText || "Failed to update name");
+                }
+                nameUpdated = true;
+                console.log("name changed");
+
             }
 
-            const data = await response.text();
+            // Only update role if changed
+            if (selectedUser.role.toUpperCase() !== editFormData.role.toUpperCase()) {
+                const roleResponse = await fetch(`http://localhost:8080/user/changeRole/${editFormData.userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        role: editFormData.role.toUpperCase()
+                    })
+                });
 
-            if (data && data.includes("Token:")) {
-                const newToken = data.split("Token:")[1].trim();
-                localStorage.setItem('authToken', newToken);
+                if (!roleResponse.ok) {
+                    const errorText = await roleResponse.text();
+                    throw new Error(errorText || "Failed to update role");
+                }
+                console.log("role changed");
+                roleUpdated = true;
             }
 
-            setUpdateStatus({ success: true, message: "Profile updated successfully" });
-            setIsEditing(false);
+
+            if (!nameUpdated && !roleUpdated) {
+                console.log("no changed");
+                setUpdateStatus({ success: true, message: "No changes to update." });
+            } else {
+                console.log("something changed");
+                setUpdateStatus({ success: true, message: "Profile updated successfully." });
+            }
+            // <-- Exit edit mode
         } catch (err) {
             setUpdateStatus({
                 success: false,
@@ -196,6 +305,9 @@ const UserManagement = () => {
             });
         } finally {
             setIsSubmitting(false);
+            fetchUsers();
+            setIsEditing(false);
+            setEditIndex(null);
         }
     };
 
@@ -222,7 +334,7 @@ const UserManagement = () => {
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
                                 type="text"
-                                placeholder="Search by name or email..."
+                                placeholder="Search by email..."
                                 value={searchTerm}
                                 onChange={handleSearch}
                                 className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
@@ -274,8 +386,8 @@ const UserManagement = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredUsers.map((user, index) => (
-                                        <tr key={user.userId}>
+                                    filteredUsers.map((currentUsers, index) => (
+                                        <tr key={currentUsers.userId}>
                                             <td className="p-4 border-b border-gray-200">
                                                 <div className="flex">
                                                 {editIndex === index ? (
@@ -287,7 +399,7 @@ const UserManagement = () => {
                                                         className="border rounded px-2 py-1 w-50"
                                                     />
                                                 ) : (
-                                                   <span>{user.firstName}</span>
+                                                   <span>{currentUsers.firstName}</span>
                                                 )}
                                                 {editIndex === index ? (
                                                     <input
@@ -298,47 +410,41 @@ const UserManagement = () => {
                                                         className="border rounded px-2 py-1 w-50"
                                                     />
                                                 ) : (
-                                                    <span className="pl-2">{user.lastName}</span>
+                                                    <span className="pl-2">{currentUsers.lastName}</span>
                                                 )}
                                                 </div>
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
-                                                {editIndex === index ? (
-                                                    <input
-                                                        type="email"
-                                                        name="email"
-                                                        value={editFormData.email}
-                                                        onChange={handleInputChange}
-                                                        className="border rounded px-2 py-1 w-full"
-                                                    />
-                                                ) : (
-                                                    user.email
-                                                )}
+                                                {currentUsers.email}
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
-                                                    {user.status}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(currentUsers.status)}`}>
+                                                    {currentUsers.status}
                                                 </span>
                                             </td>
                                             <td className="p-4 border-b border-gray-200 text-gray-800">
                                                 {editIndex === index ? (
-                                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                                        <select  name="role"
+                                                                 value={editFormData.role}
+                                                                 onChange={handleInputChange}
+                                                                 className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                                        >
                                                             <option hidden>
-                                                                {user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1)}
+                                                                {currentUsers.role.charAt(0).toUpperCase()+currentUsers.role.toLowerCase().slice(1)}
                                                             </option>
                                                             <option>Admin</option>
                                                             <option>Customer</option>
                                                             <option>Technician</option>
                                                         </select>
                                                 ) : (
-                                                    user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1)
+                                                    currentUsers.role.charAt(0).toUpperCase()+currentUsers.role.toLowerCase().slice(1)
                                                 )}
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <div className="flex gap-2">
                                                     {/*Edit button*/}
                                                     {editIndex === index ? (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(user, index)} >
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(user, index)} >
                                                             <CheckCheck size={16} />
                                                         </button>
 
@@ -348,12 +454,25 @@ const UserManagement = () => {
                                                         </button>
                                                     )}
                                                     {/*Delete button*/}
-                                                    {user.status === "Inactive" ? (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100" onClick={() => handleDelete(user, index)}>
+                                                    {currentUsers.status === "Inactive" ? (
+                                                        <button
+                                                            className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-red-100"
+                                                            onClick={() => handleReactivate(user)}
+                                                        >
                                                             <Activity size={16} />
                                                         </button>
-                                                    ):(
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100" onClick={() => handleDelete(user, index)}>
+                                                    ) : currentUsers.status === "Active" ? (
+                                                        <button
+                                                            className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
+                                                            onClick={() => handleDelete(user)}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-gray-700 border-none cursor-pointer transition-all hover:bg-red-100"
+                                                            disabled
+                                                        >
                                                             <Trash2 size={16} />
                                                         </button>
                                                     )}
@@ -368,16 +487,50 @@ const UserManagement = () => {
 
                     <div className="flex justify-between items-center py-4">
                         <div className="text-gray-600 text-sm">
-                            <span>Showing {filteredUsers.length > 0 ? '1' : '0'} to {filteredUsers.length} of {users.length} entries</span>
+                            <span>
+                              Showing {filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0} to{' '}
+                                {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} entries
+                            </span>
                         </div>
                         <div className="flex gap-1">
-                            <button disabled className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm opacity-50 cursor-not-allowed">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
+                                    currentPage === 1
+                                        ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
+                                        : 'bg-white text-gray-600 hover:border-[#33e407] hover:text-[#33e407]'
+                                }`}
+                            >
                                 <ChevronLeft size={16} />
                             </button>
-                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-none bg-[#33e407] text-white text-sm cursor-pointer">1</button>
-                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">2</button>
-                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">3</button>
-                            <button className="flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 bg-white text-gray-600 text-sm cursor-pointer hover:border-[#33e407] hover:text-[#33e407]">
+
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNum = index + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`flex items-center justify-center min-w-8 h-8 rounded text-sm ${
+                                            currentPage === pageNum
+                                                ? 'bg-[#33e407] text-white border-none'
+                                                : 'bg-white text-gray-600 border border-gray-300 hover:border-[#33e407] hover:text-[#33e407]'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
+                                    currentPage === totalPages
+                                        ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
+                                        : 'bg-white text-gray-600 hover:border-[#33e407] hover:text-[#33e407]'
+                                }`}
+                            >
                                 <ChevronRight size={16} />
                             </button>
                         </div>

@@ -30,7 +30,6 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/accountinformation" element={<AccountInformation />} />
         <Route path="/passwordmanagement" element={<PasswordManagement />} />
-        <Route path="/usermanagement" element={<UserManagement />} />
         <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         <Route path="/backup" element={<BackUpPage />} />
         <Route path="/warranty" element={<WarrantyRequestPage />} />
@@ -38,7 +37,6 @@ function App() {
         <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
-
         <Route path="/inventory" element={<InventoryAssignmentPanel />} />
         <Route path="/termseditor" element={<TermsEditor />} />
         <Route path="/signature" element={<SignatureCapturePad />} />
