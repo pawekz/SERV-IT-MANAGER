@@ -2,8 +2,10 @@
 
 import { useState } from "react"
 import { Upload } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export default function RepairCheckinForm() {
+    const navigate = useNavigate()
     const [ticketNumber] = useState(
         `TKT-${Math.floor(Math.random() * 10000)
             .toString()
@@ -17,12 +19,6 @@ export default function RepairCheckinForm() {
         }
     }
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        // Handle form submission logic here
-        alert("Form submitted successfully!")
-    }
-
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
             <div className="border-2 border-gray-200 shadow-lg rounded-lg overflow-hidden">
@@ -31,7 +27,7 @@ export default function RepairCheckinForm() {
                     <p className="text-center text-gray-600">Repair Check-In Form</p>
                 </div>
                 <div className="p-6">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={(e) => e.preventDefault()}>
                         {/* Header with Ticket Number */}
                         <div className="flex flex-col md:flex-row justify-between mb-6">
                             <div className="text-xl font-semibold text-gray-800">Customer Check-In</div>
@@ -245,7 +241,8 @@ export default function RepairCheckinForm() {
                         {/* Submit Button */}
                         <div className="flex justify-end">
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={() => navigate('/signature')}
                                 className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                             >
                                 Submit Repair Request
@@ -259,4 +256,3 @@ export default function RepairCheckinForm() {
 }
 
 // /test/
-
