@@ -46,7 +46,7 @@ public class UserService {
         System.out.println("User found: " + user.getEmail());
 
         return new GetUserResponseDTO(
-                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber()
+                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()
         );
     }
 
@@ -106,6 +106,7 @@ public class UserService {
                     throw new IllegalArgumentException("User is already verified");
                 }
                 user.setIsVerified(true);
+                user.setStatus("Active");
                 userRepo.save(user);
                 logger.debug("User verified successfully: {}", user.getEmail());
                 break;
@@ -123,7 +124,7 @@ public class UserService {
         UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (user.getIsVerified()) {
+        if (req.getType() == 1 && user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
 
@@ -216,7 +217,7 @@ public class UserService {
         return userRepo.findAll().stream()
                 .map(user -> new GetUserResponseDTO(
                         user.getUserId(), user.getFirstName(), user.getLastName(),
-                        user.getEmail(), user.getRole().name(), user.getPhoneNumber()))
+                        user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
                 .toList();
     }
 
@@ -225,7 +226,7 @@ public class UserService {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return new GetUserResponseDTO(
-                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber()
+                user.getUserId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()
         );
     }
 

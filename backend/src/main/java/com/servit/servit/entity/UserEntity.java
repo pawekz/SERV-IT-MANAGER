@@ -49,4 +49,7 @@ public class UserEntity {
 
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified;
+
+    @Column(name = "status", nullable = false)
+    private String status = "Pending";
 }
