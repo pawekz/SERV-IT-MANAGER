@@ -118,6 +118,11 @@ const PasswordManagement = () => {
                     newPassword: '',
                     confirmPassword: ''
                 });
+                // Remove token and redirect to login page after a short delay
+                localStorage.removeItem('authToken');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500); // 1.5 seconds delay for user to see success message
             } else {
                 // Error handling
                 let errorMessage = `Error ${response.status}: ${response.statusText}`;
@@ -346,3 +351,4 @@ const PasswordManagement = () => {
 };
 
 export default PasswordManagement;
+

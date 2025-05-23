@@ -52,7 +52,6 @@ const Sidebar = ({ activePage }) => {
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
-            </li>
             <li className="mb-1">
                 <Link to="#" className={linkClass('warranty')}>
                     <Truck size={18} className="mr-3" />
