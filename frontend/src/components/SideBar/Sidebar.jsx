@@ -85,7 +85,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repairqueue" className={linkClass('repairqueue')}>
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
                 </Link>
@@ -128,7 +128,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('warranty')}>
+                <Link to="/warranty" className={linkClass('warranty')}>
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
                 </Link>
@@ -145,7 +145,7 @@ const Sidebar = ({ activePage }) => {
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                 <ul>
                     <li className="mb-1">
-                        <Link to="/usermanagement" className={linkClass('usermanagement')}>
+                        <Link to="/profilemanage" className={linkClass('usermanagement')}>
                             <UserCog size={18} className="mr-3" />
                             <span>User Management</span>
                         </Link>
@@ -157,7 +157,7 @@ const Sidebar = ({ activePage }) => {
                         </Link>
                     </li>
                     <li className="mb-1">
-                        <Link to="#" className={linkClass('backup')}>
+                        <Link to="/backup" className={linkClass('backup')}>
                             <FolderClock size={18} className="mr-3" />
                             <span>Backup & Restore</span>
                         </Link>
