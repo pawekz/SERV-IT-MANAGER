@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
@@ -393,24 +393,23 @@ const AccountInformation = () => {
                                     </div>
 
                                     {/*Phone number change this later john to phone and replace the email for phone*/}
-                                    <div className="mb-6">
-                                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Phone Number
-                                        </label>
+                                    <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                        <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                            <img
+                                                src="https://flagcdn.com/16x12/ph.png"
+                                                alt="Philippine flag"
+                                                className="mr-2 w-5 h-auto"
+                                            />
+                                            <span className="text-sm text-gray-600">+63</span>
+                                        </div>
                                         <input
+                                            maxLength={13}
                                             type="tel"
                                             id="phoneNumber"
-                                            name="phoneNumber"
                                             value={userData.phoneNumber}
-                                            pattern="[0-9\s]+"
-                                            readOnly
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
-                                            style={{
-                                                "&:focus": {
-                                                    borderColor: "#33e407",
-                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                }
-                                            }}
+                                            className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                            placeholder="905 123 4567"
+                                            required
                                         />
                                     </div>
                                 </section>
@@ -515,18 +514,35 @@ const AccountInformation = () => {
                             </div>
 
                             <div className="mb-6">
-                                <label htmlFor="edit-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="edit-phonenumber" className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone Number
                                 </label>
+                            <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                    <img
+                                        src="https://flagcdn.com/16x12/ph.png"
+                                        alt="Philippine flag"
+                                        className="mr-2 w-5 h-auto"
+                                    />
+                                    <span className="text-sm text-gray-600">+63</span>
+                                </div>
                                 <input
+                                    maxLength={10}
                                     type="text"
-                                    id="edit-phoneNumber"
+                                    id="phoneNumber"
                                     name="phoneNumber"
                                     value={editFormData.phoneNumber}
                                     onChange={handleInputChange}
+                                    className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                    placeholder="9051234567"
                                     required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                 />
+                                </div>
+                            </div>
+                            <div>
+
                             </div>
 
                             <div className="flex justify-end gap-3">
