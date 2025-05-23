@@ -444,12 +444,12 @@ const UserManagement = () => {
                                                 <div className="flex gap-2">
                                                     {/*Edit button*/}
                                                     {editIndex === index ? (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(user, index)} >
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(currentUsers, index)} >
                                                             <CheckCheck size={16} />
                                                         </button>
 
                                                     ) : (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleEdit(user, index)} >
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleEdit(currentUsers, index)} >
                                                             <PenLine size={16} />
                                                         </button>
                                                     )}
@@ -457,14 +457,14 @@ const UserManagement = () => {
                                                     {currentUsers.status === "Inactive" ? (
                                                         <button
                                                             className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-red-100"
-                                                            onClick={() => handleReactivate(user)}
+                                                            onClick={() => handleReactivate(currentUsers)}
                                                         >
                                                             <Activity size={16} />
                                                         </button>
                                                     ) : currentUsers.status === "Active" ? (
                                                         <button
                                                             className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
-                                                            onClick={() => handleDelete(user)}
+                                                            onClick={() => handleDelete(currentUsers)}
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
