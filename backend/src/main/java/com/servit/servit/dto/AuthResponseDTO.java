@@ -8,4 +8,5 @@ import lombok.Data;
 public class AuthResponseDTO {
     private String token;
     private String role;
+    private Boolean isVerified;
 }
