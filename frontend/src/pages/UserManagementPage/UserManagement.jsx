@@ -1,60 +1,72 @@
 import { Link } from "react-router-dom"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Search,
     ChevronLeft,
     ChevronRight,
     PenLine,
     Trash2,
-    Plus,
+    CheckCheck,
 } from "lucide-react"
 
 const UserManagement = () => {
     // Sample users data - in a real app this would come from an API
-    const [users, setUsers] = useState([
-        {
-            id: 1,
-            name: "John Doe",
-            email: "john.doe@ioconnect.com",
-            role: "Admin",
-            status: "Active"
-        },
-        {
-            id: 2,
-            name: "Jane Smith",
-            email: "jane.smith@ioconnect.com",
-            role: "Customer",
-            status: "Active"
-        },
-        {
-            id: 3,
-            name: "Robert Johnson",
-            email: "robert.johnson@ioconnect.com",
-            role: "Technician",
-            status: "Pending"
-        },
-        {
-            id: 4,
-            name: "Emily Davis",
-            email: "emily.davis@ioconnect.com",
-            role: "Customer",
-            status: "Inactive"
-        },
-        {
-            id: 5,
-            name: "Michael Wilson",
-            email: "michael.wilson@ioconnect.com",
-            role: "Technician",
-            status: "Active"
-        }
-    ]);
-
+    const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('All Roles');
     const [selectedStatus, setSelectedStatus] = useState('All Status');
     const [filteredUsers, setFilteredUsers] = useState(users);
     const [tableMinHeight, setTableMinHeight] = useState("auto");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const currentUserEmail = userData.email;
+    const [editIndex, setEditIndex] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        userId:''
+    });
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                console.log(token);
+                if (!token) {
+                    throw new Error("Not authenticated. Please log in.");
+                }
+
+                const response = await fetch('http://localhost:8080/user/getAllUsers',{
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Fetched users:", data);
+                setUsers(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
 
     // Set initial table height on component mount
     useEffect(() => {
@@ -66,6 +78,11 @@ const UserManagement = () => {
     // Filter users based on search term, selected role, and status
     useEffect(() => {
         let filtered = users;
+
+        // Exclude current logged-in user
+        if (currentUserEmail) {
+            filtered = filtered.filter(user => user.email !== currentUserEmail);
+        }
 
         // First filter by search term
         if (searchTerm.trim() !== '') {
@@ -103,13 +120,31 @@ const UserManagement = () => {
         setSelectedStatus(e.target.value);
     };
 
+    // Handle details selection change
+    const handleEdit = (row, index) => {
+        setEditIndex(index);
+        setEditFormData({
+            firstName: row.firstName,
+            lastName: row.lastName,
+            email: row.email,
+            userId: row.userId
+        });
+    };
+    const handleDelete = (row, index) => {
+        setStatus("Inactive");
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({ ...editFormData, [name]: value });
+    };
+
     // Status styling based on status value
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Active':
                 return 'bg-green-100 text-green-700';
             case 'Pending':
-                return 'bg-gray-100 text-gray-700 ';
                 return 'bg-orange-100 text-orange-700';
             case 'Inactive':
                 return 'bg-red-100 text-red-700';
@@ -118,103 +153,57 @@ const UserManagement = () => {
         }
     };
 
+    const handleSubmit = async (e) => {
+        setIsSubmitting(true);
+        setUpdateStatus({ success: false, message: '' });
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Not authenticated. Please log in.");
+            }
+
+            const response = await fetch(`http://localhost:8080/user/updateFullName/${editFormData.userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    newFirstName: editFormData.firstName,
+                    newLastName: editFormData.lastName
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Failed to update profile");
+            }
+
+            const data = await response.text();
+
+            if (data && data.includes("Token:")) {
+                const newToken = data.split("Token:")[1].trim();
+                localStorage.setItem('authToken', newToken);
+            }
+
+            setUpdateStatus({ success: true, message: "Profile updated successfully" });
+            setIsEditing(false);
+        } catch (err) {
+            setUpdateStatus({
+                success: false,
+                message: err.message || "Failed to update profile. Please try again."
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
             <Sidebar activePage={"usermanagement"}/>
-
-
-            {/*this is the sidebar i made but above it is the sidebar component */}
-
-
-
-            {/*<div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">*/}
-            {/*    <div className="p-6 border-b border-gray-200">*/}
-            {/*        <h1 className="text-2xl font-bold text-gray-800">*/}
-            {/*            IO<span className="text-[#33e407]">CONNECT</span>*/}
-            {/*        </h1>*/}
-            {/*    </div>*/}
-
-
-
-            {/*    <nav className="flex-1 py-4 overflow-y-auto">*/}
-            {/*        <div className="mb-6">*/}
-            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>*/}
-            {/*            <ul>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <LayoutGrid size={18} className="mr-3" />*/}
-            {/*                        <span>Dashboard</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/users" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <Users size={18} className="mr-3" />*/}
-            {/*                        <span>Users</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/projects" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <FolderKanban size={18} className="mr-3" />*/}
-            {/*                        <span>Projects</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*            </ul>*/}
-            {/*        </div>*/}
-
-            {/*        <div className="mb-6">*/}
-            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>*/}
-            {/*            <ul>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/user-management" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">*/}
-            {/*                        <UserCog size={18} className="mr-3" />*/}
-            {/*                        <span>User Management</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/roles" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <ShieldCheck size={18} className="mr-3" />*/}
-            {/*                        <span>Roles & Permissions</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/settings" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <Settings size={18} className="mr-3" />*/}
-            {/*                        <span>Settings</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*            </ul>*/}
-            {/*        </div>*/}
-
-            {/*        <div className="mb-6">*/}
-            {/*            <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">REPORTS</h2>*/}
-            {/*            <ul>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/analytics" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <BarChart3 size={18} className="mr-3" />*/}
-            {/*                        <span>Analytics</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*                <li className="mb-1">*/}
-            {/*                    <Link to="/audit-logs" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-            {/*                        <ClipboardList size={18} className="mr-3" />*/}
-            {/*                        <span>Audit Logs</span>*/}
-            {/*                    </Link>*/}
-            {/*                </li>*/}
-            {/*            </ul>*/}
-            {/*        </div>*/}
-            {/*    </nav>*/}
-
-            {/*    <div className="p-4 border-t border-gray-200 flex items-center">*/}
-            {/*        <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">*/}
-            {/*            <span>AD</span>*/}
-            {/*        </div>*/}
-            {/*        <div>*/}
-            {/*            <h3 className="text-sm font-semibold text-gray-800 m-0">Admin User</h3>*/}
-            {/*            <p className="text-xs text-gray-500 m-0">Administrator</p>*/}
-            {/*        </div>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
 
             {/* Main Content */}
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
@@ -227,13 +216,6 @@ const UserManagement = () => {
                 </div>
 
                 <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-semibold text-gray-800 m-0">Users</h2>
-                        <button className="flex items-center bg-[#33e407] text-white border-none rounded px-4 py-2 font-medium cursor-pointer transition-colors hover:bg-[#2bc706]">
-                            <Plus size={16} className="mr-2" />
-                            <span>Add User</span>
-                        </button>
-                    </div>
 
                     <div className="flex justify-between mb-4">
                         <div className="relative flex-1 max-w-md">
@@ -280,8 +262,7 @@ const UserManagement = () => {
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Current Role</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Assign Role</th>
+                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Role</th>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
                                 </tr>
                             </thead>
@@ -293,34 +274,89 @@ const UserManagement = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredUsers.map(user => (
-                                        <tr key={user.id}>
-                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.name}</td>
-                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.email}</td>
+                                    filteredUsers.map((user, index) => (
+                                        <tr key={user.userId}>
+                                            <td className="p-4 border-b border-gray-200">
+                                                <div className="flex">
+                                                {editIndex === index ? (
+                                                    <input
+                                                        type="text"
+                                                        name="firstName"
+                                                        value={editFormData.firstName}
+                                                        onChange={handleInputChange}
+                                                        className="border rounded px-2 py-1 w-50"
+                                                    />
+                                                ) : (
+                                                   <span>{user.firstName}</span>
+                                                )}
+                                                {editIndex === index ? (
+                                                    <input
+                                                        type="text"
+                                                        name="lastName"
+                                                        value={editFormData.lastName}
+                                                        onChange={handleInputChange}
+                                                        className="border rounded px-2 py-1 w-50"
+                                                    />
+                                                ) : (
+                                                    <span className="pl-2">{user.lastName}</span>
+                                                )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 border-b border-gray-200">
+                                                {editIndex === index ? (
+                                                    <input
+                                                        type="email"
+                                                        name="email"
+                                                        value={editFormData.email}
+                                                        onChange={handleInputChange}
+                                                        className="border rounded px-2 py-1 w-full"
+                                                    />
+                                                ) : (
+                                                    user.email
+                                                )}
+                                            </td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
                                                     {user.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 border-b border-gray-200 text-gray-800">{user.role}</td>
-                                            <td className="p-4 border-b border-gray-200">
-                                                <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
-                                                    {/*<option>{user.role}</option>*/}
-                                                    <option>Admin</option>
-                                                    <option>Customer</option>
-                                                    <option>Technician</option>
-                                                </select>
+                                            <td className="p-4 border-b border-gray-200 text-gray-800">
+                                                {editIndex === index ? (
+                                                        <select className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]">
+                                                            <option hidden>
+                                                                {user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1)}
+                                                            </option>
+                                                            <option>Admin</option>
+                                                            <option>Customer</option>
+                                                            <option>Technician</option>
+                                                        </select>
+                                                ) : (
+                                                    user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1)
+                                                )}
                                             </td>
                                             <td className="p-4 border-b border-gray-200">
                                                 <div className="flex gap-2">
                                                     {/*Edit button*/}
-                                                    <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200">
-                                                        <PenLine size={16} />
-                                                    </button>
+                                                    {editIndex === index ? (
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(user, index)} >
+                                                            <CheckCheck size={16} />
+                                                        </button>
+
+                                                    ) : (
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleEdit(user, index)} >
+                                                            <PenLine size={16} />
+                                                        </button>
+                                                    )}
                                                     {/*Delete button*/}
-                                                    <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100">
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {user.status === "Inactive" ? (
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100" onClick={() => handleDelete(user, index)}>
+                                                            <Activity size={16} />
+                                                        </button>
+                                                    ):(
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100" onClick={() => handleDelete(user, index)}>
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
