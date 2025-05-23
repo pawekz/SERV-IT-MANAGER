@@ -1,6 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Reusable Spinner component
+const Spinner = ({ size = "normal" }) => {
+    const sizeClasses = {
+        small: "w-5 h-5 border-t-2 border-b-2",
+        normal: "w-8 h-8 border-t-3 border-b-3",
+        large: "w-16 h-16 border-t-4 border-b-4"
+    };
+
+    return (
+        <div className={`${sizeClasses[size]} border-[#33e407] rounded-full animate-spin`}></div>
+    );
+};
+
 const SignUpPage = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -13,15 +26,21 @@ const SignUpPage = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [signupProcessing, setSignupProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [isPasswordValid, setIsPasswordValid] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Toast notification state
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
 
     // OTP modal state
     const [showOTPModal, setShowOTPModal] = useState(false);
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const [otpLoading, setOtpLoading] = useState(false);
     const [otpError, setOtpError] = useState('');
+    const [resendCooldown, setResendCooldown] = useState(0);
     const inputsRef = useRef([]);
 
     // Success modal state
@@ -29,6 +48,28 @@ const SignUpPage = () => {
 
     // Password regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
+
+    // Toast effect - auto-hide after 3 seconds
+    useEffect(() => {
+        let timer;
+        if (showToast) {
+            timer = setTimeout(() => {
+                setShowToast(false);
+            }, 3000);
+        }
+        return () => clearTimeout(timer);
+    }, [showToast]);
+
+    // Cooldown timer effect
+    useEffect(() => {
+        let timer;
+        if (resendCooldown > 0) {
+            timer = setTimeout(() => {
+                setResendCooldown(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [resendCooldown]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -81,15 +122,18 @@ const SignUpPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        setSignupProcessing(true); // Start the full-screen loading
 
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.phoneNumber || !formData.username) {
             setError('All fields are required');
             setLoading(false);
+            setSignupProcessing(false); // Stop loading if validation fails
             return;
         }
         if (!passwordRegex.test(formData.password)) {
             setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
             setLoading(false);
+            setSignupProcessing(false); // Stop loading if validation fails
             return;
         }
 
@@ -123,11 +167,13 @@ const SignUpPage = () => {
             setSuccess(true);
             setOtpDigits(["", "", "", "", "", ""]);
             setOtpError('');
+            setResendCooldown(0);
             setShowOTPModal(true);
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
+            setSignupProcessing(false); // Stop the loading screen
         }
     };
 
@@ -230,6 +276,8 @@ const SignUpPage = () => {
 
     // Resend OTP
     const handleResendOTP = async () => {
+        if (resendCooldown > 0) return; // Prevent resend if cooldown is active
+
         setOtpLoading(true);
         setOtpError('');
 
@@ -267,7 +315,9 @@ const SignUpPage = () => {
             }
 
             setOtpDigits(["", "", "", "", "", ""]);
-            alert('OTP has been resent to your email.');
+            setToastMessage('OTP has been resent to your email.');
+            setShowToast(true);
+            setResendCooldown(60); // Set cooldown timer to 60 seconds
 
             if (inputsRef.current[0]) {
                 inputsRef.current[0].focus();
@@ -313,7 +363,6 @@ const SignUpPage = () => {
                     </div>
                 )}
                 <form onSubmit={handleSubmit}>
-                    {/* ... form fields ... */}
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
                             <label htmlFor="firstName" className="block mb-2 text-sm font-medium text-gray-600">First Name</label>
@@ -478,7 +527,12 @@ const SignUpPage = () => {
                         disabled={loading}
                         className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Signing Up...' : 'Sign Up'}
+                        {loading ? (
+                            <span className="flex items-center justify-center">
+                                <Spinner size="small" />
+                                <span className="ml-2">Signing Up...</span>
+                            </span>
+                        ) : 'Sign Up'}
                     </button>
                 </form>
                 <div className="flex items-center my-6 text-gray-400 text-sm">
@@ -541,15 +595,20 @@ const SignUpPage = () => {
                                 disabled={otpLoading || otpDigits.some(d => d === "")}
                                 className="w-full bg-[#33e407] text-white rounded py-3 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
                             >
-                                {otpLoading ? "Verifying..." : "Verify Email"}
+                                {otpLoading ? (
+                                    <span className="flex items-center justify-center">
+                                        <Spinner size="small" />
+                                        <span className="ml-2">Verifying...</span>
+                                    </span>
+                                ) : "Verify Email"}
                             </button>
 
                             <button
                                 onClick={handleResendOTP}
-                                disabled={otpLoading}
-                                className="w-full text-[#33e407] text-sm py-2 hover:underline"
+                                disabled={otpLoading || resendCooldown > 0}
+                                className="w-full text-[#33e407] text-sm py-2 hover:underline disabled:text-gray-400 disabled:no-underline"
                             >
-                                Resend OTP Code
+                                {resendCooldown > 0 ? `Resend OTP Code (${resendCooldown}s)` : "Resend OTP Code"}
                             </button>
                         </div>
                     </div>
@@ -576,7 +635,30 @@ const SignUpPage = () => {
                         </p>
 
                         <div className="flex justify-center">
-                            <div className="w-8 h-8 border-t-2 border-b-2 border-[#33e407] rounded-full animate-spin"></div>
+                            <Spinner size="normal" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast notification */}
+            {showToast && (
+                <div className="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center z-50 animate-fade-in">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    {toastMessage}
+                </div>
+            )}
+
+            {/* Full-screen Loading Overlay */}
+            {signupProcessing && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl text-center">
+                        <div className="flex flex-col items-center">
+                            <Spinner size="large" />
+                            <h3 className="text-lg font-medium text-gray-800 mt-4">Setting up your account</h3>
+                            <p className="text-sm text-gray-600 mt-2">Please wait while we process your registration...</p>
                         </div>
                     </div>
                 </div>
@@ -586,4 +668,3 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
-

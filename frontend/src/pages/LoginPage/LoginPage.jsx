@@ -1,6 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Reusable Spinner component
+const Spinner = ({ size = "normal" }) => {
+    const sizeClasses = {
+        small: "w-5 h-5 border-t-2 border-b-2",
+        normal: "w-8 h-8 border-t-3 border-b-3",
+        large: "w-16 h-16 border-t-4 border-b-4"
+    };
+
+    return (
+        <div className={`${sizeClasses[size]} border-[#33e407] rounded-full animate-spin`}></div>
+    );
+};
+
 // Toast Notification Component
 const Toast = ({ message, visible, onClose }) => {
     useEffect(() => {
@@ -27,7 +40,7 @@ const Toast = ({ message, visible, onClose }) => {
 };
 
 // OTP Modal Component
-const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
+const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldown = 0 }) => {
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const inputsRef = useRef([]);
 
@@ -124,14 +137,19 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
                     disabled={loading || otpDigits.some(d => d === "")}
                     className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 mb-2"
                 >
-                    {loading ? "Verifying..." : "Verify"}
+                    {loading ? (
+                        <span className="flex items-center justify-center">
+                            <Spinner size="small" />
+                            <span className="ml-2">Verifying...</span>
+                        </span>
+                    ) : "Verify"}
                 </button>
                 <button
                     onClick={onResend}
-                    disabled={loading}
-                    className="w-full text-[#33e407] text-sm hover:underline"
+                    disabled={loading || cooldown > 0}
+                    className="w-full text-[#33e407] text-sm hover:underline disabled:text-gray-400 disabled:no-underline"
                 >
-                    Resend OTP
+                    {cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
                 </button>
             </div>
         </div>
@@ -183,7 +201,12 @@ const ForgotPasswordModal = ({
                         className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
                         disabled={loading || !email}
                     >
-                        {loading ? "Sending..." : "Send OTP"}
+                        {loading ? (
+                            <span className="flex items-center justify-center">
+                                <Spinner size="small" />
+                                <span className="ml-2">Sending...</span>
+                            </span>
+                        ) : "Send OTP"}
                     </button>
                 </form>
             </div>
@@ -245,7 +268,12 @@ const NewPasswordModal = ({
                         className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
                         disabled={loading || !password || !confirmPassword}
                     >
-                        {loading ? "Saving..." : "Save Password"}
+                        {loading ? (
+                            <span className="flex items-center justify-center">
+                                <Spinner size="small" />
+                                <span className="ml-2">Saving...</span>
+                            </span>
+                        ) : "Save Password"}
                     </button>
                 </form>
             </div>
@@ -261,6 +289,7 @@ const LoginPage = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loginProcessing, setLoginProcessing] = useState(false); // New state for loading overlay
     const [showPassword, setShowPassword] = useState(false);
 
     // OTP modal states (for login/initial verification)
@@ -268,6 +297,7 @@ const LoginPage = () => {
     const [otpLoading, setOtpLoading] = useState(false);
     const [userEmail, setUserEmail] = useState(''); // Stores email for OTP verification after login if needed
     const [otpError, setOtpError] = useState('');
+    const [resendCooldown, setResendCooldown] = useState(0);
 
     // Toast notification state
     const [toastVisible, setToastVisible] = useState(false);
@@ -281,11 +311,34 @@ const LoginPage = () => {
     const [showForgotOTPModal, setShowForgotOTPModal] = useState(false);
     const [forgotOTPError, setForgotOTPError] = useState('');
     const [forgotOTPLoading, setForgotOTPLoading] = useState(false);
+    const [forgotResendCooldown, setForgotResendCooldown] = useState(0);
     const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [newPasswordLoading, setNewPasswordLoading] = useState(false);
     const [newPasswordError, setNewPasswordError] = useState('');
+
+    // Cooldown effects for account verification OTP resend
+    useEffect(() => {
+        let timer;
+        if (resendCooldown > 0) {
+            timer = setTimeout(() => {
+                setResendCooldown(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [resendCooldown]);
+
+    // Cooldown effects for forgot password OTP resend
+    useEffect(() => {
+        let timer;
+        if (forgotResendCooldown > 0) {
+            timer = setTimeout(() => {
+                setForgotResendCooldown(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [forgotResendCooldown]);
 
     // Handle input changes for login form
     const handleLoginChange = (e) => {
@@ -349,6 +402,7 @@ const LoginPage = () => {
                 return false;
             }
             showToast('Verification code sent to your email.');
+            setResendCooldown(60); // Set cooldown timer
             setOtpLoading(false);
             return true;
         } catch (err) {
@@ -362,10 +416,12 @@ const LoginPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        setLoginProcessing(true); // Show full-screen loading
 
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
+            setLoginProcessing(false); // Hide loading on validation failure
             return;
         }
 
@@ -415,14 +471,16 @@ const LoginPage = () => {
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
 
-            // FIX: Only show OTP if the user is explicitly NOT verified (isVerified === false)
+            // Only show OTP if the user is explicitly NOT verified (isVerified === false)
             if (data.isVerified === false) {
                 // Only request OTP if user is explicitly marked as not verified
                 const otpRequested = await requestAccountVerificationOTP(resolvedUserEmail);
                 if (otpRequested) {
+                    setLoginProcessing(false); // Hide loading when showing OTP modal
                     setShowOTPModal(true);
                 } else {
                     setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
+                    setLoginProcessing(false);
                 }
             } else {
                 // User is verified or verification status wasn't explicitly returned as false
@@ -434,6 +492,7 @@ const LoginPage = () => {
             }
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
+            setLoginProcessing(false);
         } finally {
             setLoading(false);
         }
@@ -501,8 +560,10 @@ const LoginPage = () => {
         }
     };
 
-    // FIXED: Resend OTP for account verification (login/registration)
+    // Resend OTP for account verification with cooldown
     const handleResendAccountOTP = async () => {
+        if (resendCooldown > 0) return; // Prevent resend if cooldown is active
+
         setOtpLoading(true);
         setOtpError('');
         try {
@@ -537,6 +598,7 @@ const LoginPage = () => {
             }
 
             showToast('A new verification code has been sent to your email.');
+            setResendCooldown(60); // Set 60 seconds cooldown
         } catch (err) {
             setOtpError(err.message || 'Failed to resend OTP');
         } finally {
@@ -568,6 +630,7 @@ const LoginPage = () => {
                 setShowForgotModal(false);
                 setShowForgotOTPModal(true); // Show OTP modal for forgot password
                 showToast('OTP sent to your email for password reset.');
+                setForgotResendCooldown(60); // Set cooldown for forgot password flow
             }
         } catch (err) {
             setForgotError(err.message || 'Failed to send OTP. Please try again.');
@@ -606,13 +669,16 @@ const LoginPage = () => {
         }
     };
 
+    // Resend forgot password OTP with cooldown
     const handleResendForgotOTP = async () => {
+        if (forgotResendCooldown > 0) return; // Prevent resend if cooldown is active
+
         setForgotOTPLoading(true);
         setForgotOTPError('');
         try {
             if (!forgotEmail) {
                 setForgotOTPError('Email is required to resend OTP.');
-                showToast('Email is required to resend OTP.'); // Also show toast for this
+                showToast('Email is required to resend OTP.');
                 setForgotOTPLoading(false);
                 return;
             }
@@ -642,6 +708,7 @@ const LoginPage = () => {
                 throw new Error(errorMessage);
             }
             showToast('A new OTP has been sent to your email.');
+            setForgotResendCooldown(60); // Set 60 seconds cooldown
         } catch (err) {
             setForgotOTPError(err.message || 'Failed to resend OTP. Please try again.');
         } finally {
@@ -758,7 +825,12 @@ const LoginPage = () => {
                             disabled={loading}
                             className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#33e407] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Logging in...' : 'Login'}
+                            {loading ? (
+                                <span className="flex items-center justify-center">
+                                    <Spinner size="small" />
+                                    <span className="ml-2">Logging in...</span>
+                                </span>
+                            ) : 'Login'}
                         </button>
                         <button
                             type="button"
@@ -796,6 +868,7 @@ const LoginPage = () => {
                 onResend={handleResendAccountOTP}
                 loading={otpLoading}
                 error={otpError}
+                cooldown={resendCooldown}
             />
 
             {/* Forgot Password: Enter Email Modal */}
@@ -823,6 +896,7 @@ const LoginPage = () => {
                 onResend={handleResendForgotOTP}
                 loading={forgotOTPLoading}
                 error={forgotOTPError}
+                cooldown={forgotResendCooldown}
             />
 
             {/* Forgot Password: New Password Modal */}
@@ -847,6 +921,19 @@ const LoginPage = () => {
                 visible={toastVisible}
                 onClose={() => setToastVisible(false)}
             />
+
+            {/* Full-screen Loading Overlay */}
+            {loginProcessing && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl text-center">
+                        <div className="flex flex-col items-center">
+                            <Spinner size="large" />
+                            <h3 className="text-lg font-medium text-gray-800 mt-4">Logging in</h3>
+                            <p className="text-sm text-gray-600 mt-2">Please wait while we verify your credentials...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
