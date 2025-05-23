@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const SignUpPage = () => {
@@ -101,35 +101,31 @@ const SignUpPage = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                 },
-                credentials: 'include',
                 body: JSON.stringify(requestData),
             });
 
-            const contentType = response.headers.get("content-type");
-            let data = null;
-            if (contentType && contentType.includes("application/json") && response.status !== 204) {
-                try {
-                    data = await response.json();
-                } catch (parseError) {
-                    console.warn("Response couldn't be parsed as JSON:", parseError);
-                }
-            }
+            const responseText = await response.text();
 
             if (!response.ok) {
-                throw new Error(data?.message || `Registration failed with status: ${response.status}`);
+                let errorMessage = `Registration failed with status: ${response.status}`;
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorMessage;
+                    }
+                } catch (parseError) {
+                    if (responseText) errorMessage = responseText;
+                }
+                throw new Error(errorMessage);
             }
 
             setSuccess(true);
-            // Reset OTP digits and show OTP modal
             setOtpDigits(["", "", "", "", "", ""]);
             setOtpError('');
             setShowOTPModal(true);
-
         } catch (err) {
             setError(err.message || 'Something went wrong. Please try again.');
-            console.error("Registration error:", err);
         } finally {
             setLoading(false);
         }
@@ -174,6 +170,7 @@ const SignUpPage = () => {
     // Verify OTP
     const handleVerifyOTP = async () => {
         const otp = otpDigits.join("");
+
         if (otp.length !== 6) {
             setOtpError('Please enter a valid 6-digit OTP');
             return;
@@ -183,39 +180,49 @@ const SignUpPage = () => {
         setOtpError('');
 
         try {
+            const payload = {
+                email: formData.email,
+                otp: otp,
+                type: 1
+            };
+
             const response = await fetch('http://localhost:8080/user/verifyOtp', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    email: formData.email,
-                    otp: otp
-                }),
+                body: JSON.stringify(payload)
             });
 
+            const responseText = await response.text();
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                if (response.status === 401) {
-                    throw new Error('OTP code is expired or invalid. Please try again or request a new code.');
-                } else {
-                    throw new Error(errorData?.message || `Verification failed: ${response.status}`);
+                let errorMessage = `Verification failed (${response.status})`;
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (e) {
+                    if (responseText) errorMessage = responseText;
                 }
+                setOtpError(errorMessage);
+                if (response.status === 401 && !errorMessage.includes('Invalid or expired')) {
+                    setOtpError('Invalid or expired OTP code. Please try again or request a new one.');
+                }
+                return;
             }
 
-            // Show success modal instead of immediately navigating
             setShowOTPModal(false);
             setShowSuccessModal(true);
 
-            // Redirect after 3 seconds
             setTimeout(() => {
                 setShowSuccessModal(false);
                 navigate('/login');
-            }, 3000);
+            }, 5000);
 
         } catch (err) {
             setOtpError(err.message || 'OTP verification failed. Please try again.');
-            console.error("OTP verification error:", err);
         } finally {
             setOtpLoading(false);
         }
@@ -227,26 +234,60 @@ const SignUpPage = () => {
         setOtpError('');
 
         try {
-            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(formData.email)}`, {
+            const payload = {
+                email: formData.email,
+                type: 1
+            };
+
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                }
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
 
+            const responseText = await response.text();
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.message || `Failed to resend OTP: ${response.status}`);
+                let errorMessage = `Failed to resend OTP (${response.status})`;
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (e) {
+                    if (responseText) errorMessage = responseText;
+                }
+                setOtpError(errorMessage);
+                if (response.status === 401 && !errorMessage.includes('Invalid request')) {
+                    setOtpError('Invalid request. Please try registering again.');
+                }
+                return;
             }
 
+            setOtpDigits(["", "", "", "", "", ""]);
             alert('OTP has been resent to your email.');
+
+            if (inputsRef.current[0]) {
+                inputsRef.current[0].focus();
+            }
+
         } catch (err) {
             setOtpError(err.message || 'Failed to resend OTP. Please try again.');
-            console.error("Resend OTP error:", err);
         } finally {
             setOtpLoading(false);
         }
     };
+
+    // Effect to log OTP modal state changes
+    useEffect(() => {
+        if (!showOTPModal) {
+            // Optionally reset OTP fields when modal is closed externally, if desired
+            // setOtpDigits(["", "", "", "", "", ""]);
+            // setOtpError('');
+        }
+    }, [showOTPModal]);
 
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
@@ -261,9 +302,9 @@ const SignUpPage = () => {
                 <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
                     Create your account
                 </h1>
-                {success && (
+                {success && !showOTPModal && ( // Only show this if OTP modal is not up
                     <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded">
-                        Registration successful! Please verify OTP.
+                        Please check your email to verify your account.
                     </div>
                 )}
                 {error && (
@@ -272,6 +313,7 @@ const SignUpPage = () => {
                     </div>
                 )}
                 <form onSubmit={handleSubmit}>
+                    {/* ... form fields ... */}
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
                             <label htmlFor="firstName" className="block mb-2 text-sm font-medium text-gray-600">First Name</label>
@@ -355,9 +397,7 @@ const SignUpPage = () => {
                                 onChange={handleChange}
                                 className={`w-full px-4 py-3 text-sm border rounded-md focus:outline-none transition-colors ${
                                     formData.password ?
-                                        isPasswordValid ?
-                                            'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' :
-                                            'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                                        (isPasswordValid ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500')
                                         : 'border-gray-200 focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]'
                                 }`}
                                 placeholder="Create a password"
@@ -367,11 +407,11 @@ const SignUpPage = () => {
                                 <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
                                     {isPasswordValid ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
                                     ) : (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                         </svg>
                                     )}
                                 </div>
@@ -383,14 +423,13 @@ const SignUpPage = () => {
                                 tabIndex="-1"
                             >
                                 {showPassword ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                                        <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
                                 ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
                                 )}
                             </button>
@@ -399,7 +438,9 @@ const SignUpPage = () => {
                             <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full transition-all duration-300 ease-out ${
-                                        isPasswordValid ? 'bg-green-500' : 'bg-amber-500'
+                                        getPasswordProgress() < 40 ? 'bg-red-500' :
+                                            getPasswordProgress() < 80 ? 'bg-yellow-500' :
+                                                'bg-green-500'
                                     }`}
                                     style={{ width: `${getPasswordProgress()}%` }}
                                 ></div>
@@ -414,19 +455,19 @@ const SignUpPage = () => {
                             {formData.password && !isPasswordValid && (
                                 <div className="mt-2 space-y-1 text-xs">
                                     <div className={`${formData.password.length >= 8 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {formData.password.length >= 8 ? '✓' : '✗'} At least 8 characters
+                                        • At least 8 characters
                                     </div>
                                     <div className={`${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
-                                        {/[A-Z]/.test(formData.password) ? '✓' : '✗'} At least one uppercase letter
+                                        • At least one uppercase letter
                                     </div>
                                     <div className={`${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
-                                        {/[a-z]/.test(formData.password) ? '✓' : '✗'} At least one lowercase letter
+                                        • At least one lowercase letter
                                     </div>
                                     <div className={`${/\d/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
-                                        {/\d/.test(formData.password) ? '✓' : '✗'} At least one number
+                                        • At least one number
                                     </div>
                                     <div className={`${/[@$!%*?&#^_+]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}`}>
-                                        {/[@$!%*?&#^_+]/.test(formData.password) ? '✓' : '✗'} At least one special character (@$!%*?&#^_+)
+                                        • At least one special character (@$!%*?&#^_+)
                                     </div>
                                 </div>
                             )}
@@ -455,7 +496,9 @@ const SignUpPage = () => {
                 <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
                     <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
                         <button
-                            onClick={() => setShowOTPModal(false)}
+                            onClick={() => {
+                                setShowOTPModal(false);
+                            }}
                             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -541,5 +584,6 @@ const SignUpPage = () => {
         </div>
     );
 };
-//FF
+
 export default SignUpPage;
+

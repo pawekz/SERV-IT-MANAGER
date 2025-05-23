@@ -23,9 +23,20 @@ public class UserController {
     // USER SIDE
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegistrationRequestDTO req) throws MessagingException {
-        userSvc.register(req);
-        return ResponseEntity.status(201).build();
+    public ResponseEntity<?> register(@RequestBody RegistrationRequestDTO req) throws MessagingException {
+        try {
+            userSvc.register(req);
+            return ResponseEntity.status(201).build();
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if ("Email already in use".equals(message)) {
+                return ResponseEntity.badRequest().body("Email Already Used");
+            } else if ("Username already in use".equals(message)) {
+                return ResponseEntity.badRequest().body("Username Already Used");
+            } else {
+                return ResponseEntity.badRequest().body(message);
+            }
+        }
     }
 
     @PostMapping("/verifyOtp")

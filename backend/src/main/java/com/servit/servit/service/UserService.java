@@ -5,6 +5,8 @@ import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.enumeration.UserRoleEnum;
 import jakarta.mail.MessagingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class UserService {
     private EmailService emailService;
 
     private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     public UserService(UserRepository userRepo, PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
@@ -81,18 +84,37 @@ public class UserService {
 
     @Transactional
     public void verifyOtp(VerifyOtpRequestDTO req) {
+        logger.debug("OTP verification request: email={}, otp={}, type={}",
+                req.getEmail(), req.getOtp(), req.getType());
+
         UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        logger.debug("User found: {}", user.getUsername());
 
-        if (!otpService.validateOtp(req.getEmail(), req.getOtp())) {
+        boolean otpValid = otpService.validateOtp(req.getEmail(), req.getOtp());
+        logger.debug("OTP validation result: {}", otpValid);
+
+        if (!otpValid) {
+            logger.error("Invalid or expired OTP for email: {}", req.getEmail());
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
 
-        if (req.getType() == 1) {
-            user.setIsVerified(true);
-            userRepo.save(user);
-        } else if (req.getType() != 2) {
-            throw new IllegalArgumentException("Invalid type");
+        switch (req.getType()) {
+            case 1: // Registration verification
+                if (user.getIsVerified()) {
+                    logger.warn("User already verified: {}", user.getEmail());
+                    throw new IllegalArgumentException("User is already verified");
+                }
+                user.setIsVerified(true);
+                userRepo.save(user);
+                logger.debug("User verified successfully: {}", user.getEmail());
+                break;
+            case 2: // Forgot password
+                logger.debug("OTP verified for forgot password: {}", user.getEmail());
+                break;
+            default:
+                logger.error("Invalid type value: {}", req.getType());
+                throw new IllegalArgumentException("Invalid type");
         }
     }
 
@@ -106,7 +128,7 @@ public class UserService {
         }
 
         String newOtp = otpService.generateOtp(req.getEmail());
-        otpService.invalidateOtp(req.getEmail());
+        /*otpService.invalidateOtp(req.getEmail());*/
 
         if (req.getType() == 1) {
             emailService.sendOtpEmail(req.getEmail(), newOtp);

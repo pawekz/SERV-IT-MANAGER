@@ -26,15 +26,15 @@ const Toast = ({ message, visible, onClose }) => {
     );
 };
 
-// Inline OTP Modal Component with 6 boxes
+// OTP Modal Component
 const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const inputsRef = useRef([]);
 
     // Auto-focus next/prev on input
     const handleChange = (e, idx) => {
-        const value = e.target.value.replace(/\D/, ""); // Only digits
-        if (!value && idx > 0) {
+        const value = e.target.value.replace(/\D/, "");
+        if (!value && idx > 0) { // If value is deleted and not the first input
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
@@ -43,16 +43,16 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
             inputsRef.current[idx - 1].focus();
             return;
         }
-        if (value) {
+        if (value) { // If a digit is entered
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = value;
                 return arr;
             });
-            if (idx < 5) {
+            if (idx < 5) { // If not the last input, focus next
                 inputsRef.current[idx + 1].focus();
             }
-        } else {
+        } else { // If value is deleted (e.g. backspace on an already filled input)
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
@@ -68,13 +68,18 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
     };
 
     const handleVerify = () => {
-        onVerify(otpDigits.join(""));
+        const otpValue = otpDigits.join("");
+        onVerify(otpValue);
     };
 
-    // Reset on close
-    React.useEffect(() => {
+    useEffect(() => {
         if (!visible) {
-            setOtpDigits(["", "", "", "", "", ""]);
+            setOtpDigits(["", "", "", "", "", ""]); // Reset OTP digits when modal is closed
+        } else {
+            // Focus the first input when modal becomes visible
+            if(inputsRef.current[0]) {
+                inputsRef.current[0].focus();
+            }
         }
     }, [visible]);
 
@@ -84,8 +89,9 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
             <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
                 <button
-                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
                     onClick={onClose}
+                    aria-label="Close OTP modal"
                 >
                     &times;
                 </button>
@@ -93,26 +99,23 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
                 <p className="text-gray-600 text-sm mb-4 text-center">
                     A 6-digit code has been sent to your email.
                 </p>
-
-                {/* Error message */}
                 {error && (
                     <div className="mb-4 p-2 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
                         {error}
                     </div>
                 )}
-
                 <div className="flex justify-center gap-2 mb-4">
                     {otpDigits.map((digit, idx) => (
                         <input
                             key={idx}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
                             ref={el => inputsRef.current[idx] = el}
-                            onChange={e => handleChange(e, idx)}
-                            onKeyDown={e => handleKeyDown(e, idx)}
-                            className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] transition-colors"
+                            type="text"
+                            maxLength="1"
+                            value={digit}
+                            onChange={(e) => handleChange(e, idx)}
+                            onKeyDown={(e) => handleKeyDown(e, idx)}
+                            className="w-10 h-10 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407]"
+                            disabled={loading}
                         />
                     ))}
                 </div>
@@ -135,6 +138,121 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error }) => {
     );
 };
 
+// Forgot Password Modal
+const ForgotPasswordModal = ({
+                                 visible,
+                                 onClose,
+                                 onSend,
+                                 loading,
+                                 error,
+                                 email,
+                                 setEmail
+                             }) => {
+    if (!visible) return null;
+    return (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+            <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
+                <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                    onClick={onClose}
+                    aria-label="Close forgot password modal"
+                >
+                    &times;
+                </button>
+                <h2 className="text-lg font-semibold mb-4 text-center">Forgot Password</h2>
+                <p className="text-gray-600 text-sm mb-4 text-center">
+                    Enter your registered email. We will send you a reset OTP.
+                </p>
+                {error && (
+                    <div className="mb-4 p-2 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                        {error}
+                    </div>
+                )}
+                <form onSubmit={e => { e.preventDefault(); onSend(); }}>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407]"
+                        placeholder="Enter your email"
+                        required
+                        disabled={loading}
+                    />
+                    <button
+                        type="submit"
+                        className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
+                        disabled={loading || !email}
+                    >
+                        {loading ? "Sending..." : "Send OTP"}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// New Password Modal
+const NewPasswordModal = ({
+                              visible,
+                              onClose,
+                              onSubmit,
+                              loading,
+                              error,
+                              password,
+                              setPassword,
+                              confirmPassword,
+                              setConfirmPassword
+                          }) => {
+    if (!visible) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+            <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
+                <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                    onClick={onClose}
+                    aria-label="Close new password modal"
+                >
+                    &times;
+                </button>
+                <h2 className="text-lg font-semibold mb-4 text-center">Set New Password</h2>
+                {error && (
+                    <div className="mb-4 p-2 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                        {error}
+                    </div>
+                )}
+                <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407]"
+                        placeholder="New password"
+                        required
+                        disabled={loading}
+                    />
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407]"
+                        placeholder="Confirm new password"
+                        required
+                        disabled={loading}
+                    />
+                    <button
+                        type="submit"
+                        className="w-full bg-[#33e407] text-white rounded py-2 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
+                        disabled={loading || !password || !confirmPassword}
+                    >
+                        {loading ? "Saving..." : "Save Password"}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const LoginPage = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -145,18 +263,32 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // OTP modal states
+    // OTP modal states (for login/initial verification)
     const [showOTPModal, setShowOTPModal] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
-    const [userEmail, setUserEmail] = useState('');
+    const [userEmail, setUserEmail] = useState(''); // Stores email for OTP verification after login if needed
     const [otpError, setOtpError] = useState('');
 
     // Toast notification state
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
-    // Handle input changes
-    const handleChange = (e) => {
+    // Forgot Password flow states
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState(''); // Email used in forgot password flow
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotError, setForgotError] = useState('');
+    const [showForgotOTPModal, setShowForgotOTPModal] = useState(false);
+    const [forgotOTPError, setForgotOTPError] = useState('');
+    const [forgotOTPLoading, setForgotOTPLoading] = useState(false);
+    const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [newPasswordLoading, setNewPasswordLoading] = useState(false);
+    const [newPasswordError, setNewPasswordError] = useState('');
+
+    // Handle input changes for login form
+    const handleLoginChange = (e) => {
         const { id, value } = e.target;
         setFormData({ ...formData, [id]: value });
     };
@@ -184,8 +316,45 @@ const LoginPage = () => {
             );
             return JSON.parse(jsonPayload);
         } catch (e) {
-            console.error("Error parsing JWT token:", e);
+            console.error("Failed to parse JWT:", e);
             return {};
+        }
+    };
+
+    // Request OTP for account verification (after login if not verified)
+    const requestAccountVerificationOTP = async (emailForOTP) => {
+        setOtpLoading(true); // Use the main OTP loading state
+        try {
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: emailForOTP,
+                    type: 1 // Type 1 for account verification
+                })
+            });
+            const responseText = await response.text();
+            if (!response.ok) {
+                let errorMessage = 'Failed to send verification code.';
+                try {
+                    if(responseText){
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch(e) { if(responseText) errorMessage = responseText; }
+                showToast(errorMessage);
+                setOtpLoading(false);
+                return false;
+            }
+            showToast('Verification code sent to your email.');
+            setOtpLoading(false);
+            return true;
+        } catch (err) {
+            showToast(err.message || 'Failed to send verification code. Please try again.');
+            setOtpLoading(false);
+            return false;
         }
     };
 
@@ -194,7 +363,6 @@ const LoginPage = () => {
         setError('');
         setLoading(true);
 
-        // Basic validation
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
@@ -213,84 +381,86 @@ const LoginPage = () => {
                 }),
             });
 
+            const responseText = await response.text();
+
             if (!response.ok) {
-                throw new Error('Invalid username or password');
+                let errorMessage = 'Invalid username or password';
+                try {
+                    if (responseText) {
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (parseError) {
+                    if (responseText && responseText.length < 200) errorMessage = responseText;
+                }
+                throw new Error(errorMessage);
             }
 
-            const data = await response.json();
+            const data = JSON.parse(responseText);
 
             if (!data || !data.token) {
-                throw new Error('No response from server');
+                throw new Error('No response from server or token missing');
             }
 
-            // Store the authentication token
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
 
-            // Get user info from token
             const tokenData = parseJwt(data.token);
+            const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
 
-            // Store email from response or token
-            const userEmail = data.email || tokenData.email || tokenData.sub;
-            setUserEmail(userEmail);
-            localStorage.setItem('userEmail', userEmail);
+            if (!resolvedUserEmail) {
+                console.error("Email could not be resolved from token or login response.");
+                throw new Error("Login failed: User email not found.");
+            }
+            setUserEmail(resolvedUserEmail);
+            localStorage.setItem('userEmail', resolvedUserEmail);
 
-            console.log("Login successful. Using email:", userEmail);
-
-            // Check if account is verified
-            if (tokenData.isVerified === true) {
-                // If verified, redirect directly based on user role
+            // FIX: Only show OTP if the user is explicitly NOT verified (isVerified === false)
+            if (data.isVerified === false) {
+                // Only request OTP if user is explicitly marked as not verified
+                const otpRequested = await requestAccountVerificationOTP(resolvedUserEmail);
+                if (otpRequested) {
+                    setShowOTPModal(true);
+                } else {
+                    setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
+                }
+            } else {
+                // User is verified or verification status wasn't explicitly returned as false
                 if (data.role === 'ADMIN') {
                     navigate('/admin/dashboard');
                 } else {
                     navigate('/accountinformation');
                 }
-            } else {
-                // If not verified, show OTP modal
-                setShowOTPModal(true);
             }
-
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
-            console.error('Login error:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    // OTP verification without requiring authentication
-    const handleVerifyOTP = async (otp) => {
+    // OTP verification for account (login/registration)
+    const handleVerifyAccountOTP = async (otp) => {
         setOtpLoading(true);
         setOtpError('');
-
         try {
-            const email = localStorage.getItem('userEmail');
-
-            if (!email) {
-                throw new Error('No email found for OTP verification');
+            const emailForVerification = userEmail || localStorage.getItem('userEmail');
+            if (!emailForVerification) {
+                throw new Error('No email found for OTP verification. Please login again.');
             }
-
-            console.log('OTP Verification Data:', {
-                email: email,
-                otp: otp
-            });
-
-            // Don't include Authorization header for OTP verification
+            const requestBody = {
+                email: emailForVerification,
+                otp: otp,
+                type: 1 // Type 1 for account verification
+            };
             const response = await fetch('http://localhost:8080/user/verifyOtp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    email: email,
-                    otp: otp
-                }),
+                body: JSON.stringify(requestBody),
             });
-
             const responseText = await response.text();
-            console.log('Response status:', response.status);
-            console.log('Response text:', responseText);
-
             if (!response.ok) {
                 let errorMessage = 'OTP verification failed';
                 try {
@@ -299,55 +469,166 @@ const LoginPage = () => {
                         errorMessage = errorData.message || errorData.error || errorMessage;
                     }
                 } catch (e) {
-                    if (responseText) errorMessage = responseText;
+                    if(responseText) errorMessage = responseText;
                 }
-
                 throw new Error(errorMessage);
             }
 
-            // OTP verified successfully
-            setShowOTPModal(false);
+            // If backend sends a new token upon verification, update it
+            try {
+                if (responseText) {
+                    const responseData = JSON.parse(responseText);
+                    if (responseData.token) {
+                        localStorage.setItem('authToken', responseData.token);
+                    }
+                }
+            } catch (e) {
+                console.log("OTP verification response was not JSON or did not contain a new token:", responseText);
+            }
 
-            // Redirect based on user role
+            setShowOTPModal(false);
+            showToast('Account verified successfully.');
             const userRole = localStorage.getItem('userRole');
             if (userRole === 'ADMIN') {
                 navigate('/admin/dashboard');
             } else {
                 navigate('/accountinformation');
             }
-
         } catch (err) {
             setOtpError(err.message || 'OTP verification failed');
-            console.error('OTP verification error:', err);
         } finally {
             setOtpLoading(false);
         }
     };
 
-    // Resend OTP without requiring authentication
-    const handleResendOTP = async () => {
+    // FIXED: Resend OTP for account verification (login/registration)
+    const handleResendAccountOTP = async () => {
         setOtpLoading(true);
         setOtpError('');
-
         try {
-            const email = localStorage.getItem('userEmail');
-
-            if (!email) {
-                throw new Error('No email found for OTP resend');
+            const emailForResend = userEmail || localStorage.getItem('userEmail');
+            if (!emailForResend) {
+                throw new Error('No email found for OTP resend. Please login again.');
             }
 
-            console.log('Resending OTP for email:', email);
-
-            // Don't include Authorization header for resending OTP
-            const response = await fetch(`http://localhost:8080/user/resendOtp?email=${encodeURIComponent(email)}`, {
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: emailForResend,
+                    type: 1  // Type 1 for account verification
+                })
             });
 
             const responseText = await response.text();
+            if (!response.ok) {
+                let errorMessage = 'Failed to resend verification code.';
+                try {
+                    if(responseText){
+                        const errorData = JSON.parse(responseText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch(e) {
+                    if(responseText) errorMessage = responseText;
+                }
+                throw new Error(errorMessage);
+            }
 
+            showToast('A new verification code has been sent to your email.');
+        } catch (err) {
+            setOtpError(err.message || 'Failed to resend OTP');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    // FORGOT PASSWORD FLOW
+    const handleForgotPasswordRequest = async () => {
+        setForgotError('');
+        setForgotLoading(true);
+        try {
+            const response = await fetch('http://localhost:8080/user/forgotPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail }), // forgotEmail is set by ForgotPasswordModal
+            });
+            const responseText = await response.text();
+            if (!response.ok) {
+                let msg = 'Failed to send OTP.';
+                try {
+                    if(responseText){
+                        const errorData = JSON.parse(responseText);
+                        msg = errorData.message || errorData.error || msg;
+                    }
+                } catch(e){ if(responseText) msg = responseText; }
+                setForgotError(msg);
+            } else {
+                setShowForgotModal(false);
+                setShowForgotOTPModal(true); // Show OTP modal for forgot password
+                showToast('OTP sent to your email for password reset.');
+            }
+        } catch (err) {
+            setForgotError(err.message || 'Failed to send OTP. Please try again.');
+        } finally {
+            setForgotLoading(false);
+        }
+    };
+
+    const handleVerifyForgotOTP = async (otpValue) => {
+        setForgotOTPLoading(true);
+        setForgotOTPError('');
+        try {
+            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail, otp: otpValue, type: 2 }), // Type 2 for password reset OTP verification
+            });
+            const responseText = await response.text();
+            if (!response.ok) {
+                let msg = 'Invalid OTP.';
+                try {
+                    if(responseText){
+                        const errorData = JSON.parse(responseText);
+                        msg = errorData.message || errorData.error || msg;
+                    }
+                } catch(e){ if(responseText) msg = responseText; }
+                setForgotOTPError(msg);
+            } else {
+                setShowForgotOTPModal(false);
+                setShowNewPasswordModal(true); // Proceed to set new password
+            }
+        } catch (err) {
+            setForgotOTPError(err.message || 'OTP verification failed. Please try again.');
+        } finally {
+            setForgotOTPLoading(false);
+        }
+    };
+
+    const handleResendForgotOTP = async () => {
+        setForgotOTPLoading(true);
+        setForgotOTPError('');
+        try {
+            if (!forgotEmail) {
+                setForgotOTPError('Email is required to resend OTP.');
+                showToast('Email is required to resend OTP.'); // Also show toast for this
+                setForgotOTPLoading(false);
+                return;
+            }
+
+            const response = await fetch('http://localhost:8080/user/resendOtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: forgotEmail,
+                    type: 2 // Type 2 for password reset OTP resend
+                })
+            });
+
+            const responseText = await response.text();
             if (!response.ok) {
                 let errorMessage = 'Failed to resend OTP';
                 try {
@@ -358,67 +639,93 @@ const LoginPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-
                 throw new Error(errorMessage);
             }
-
-            // Show toast notification instead of alert
-            showToast('OTP has been resent to your email.');
-
+            showToast('A new OTP has been sent to your email.');
         } catch (err) {
-            setOtpError(err.message || 'Failed to resend OTP');
-            console.error('Resend OTP error:', err);
+            setForgotOTPError(err.message || 'Failed to resend OTP. Please try again.');
         } finally {
-            setOtpLoading(false);
+            setForgotOTPLoading(false);
+        }
+    };
+
+    const handleSaveNewPassword = async () => {
+        setNewPasswordError('');
+        if (!newPassword || !confirmPassword) {
+            setNewPasswordError("Please enter and confirm your new password.");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setNewPasswordError("Passwords do not match.");
+            return;
+        }
+        setNewPasswordLoading(true);
+        try {
+            const response = await fetch('http://localhost:8080/user/resetPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail, newPassword: newPassword }),
+            });
+            const responseText = await response.text();
+            if (!response.ok) {
+                let msg = 'Failed to reset password.';
+                try {
+                    if(responseText){
+                        const errorData = JSON.parse(responseText);
+                        msg = errorData.message || errorData.error || msg;
+                    }
+                } catch(e){ if(responseText) msg = responseText; }
+                setNewPasswordError(msg);
+            } else {
+                setShowNewPasswordModal(false);
+                setNewPassword('');
+                setConfirmPassword('');
+                setForgotEmail(''); // Clear forgotEmail after successful password reset
+                showToast('Password has been reset successfully. You may now log in.');
+            }
+        } catch (err) {
+            setNewPasswordError(err.message || 'Failed to reset password. Please try again.');
+        } finally {
+            setNewPasswordLoading(false);
         }
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-md relative overflow-hidden">
-                {/* Green accent border */}
-                <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
-
-                <div className="p-10">
-                    {/* Logo */}
+        <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-2xl relative overflow-hidden">
+                <div className="absolute left-0 top-0 w-1.5 h-full bg-[#33e407]"></div> {/* Accent line */}
+                <div className="p-8 md:p-10">
                     <div className="text-center mb-8">
-                        <div className="text-2xl font-bold text-gray-800">
+                        <div className="text-3xl font-bold text-gray-800">
                             IO<span className="text-[#33e407]">CONNECT</span>
                         </div>
                     </div>
-
-                    {/* Form Title */}
-                    <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                    <h1 className="text-xl font-semibold text-gray-700 mb-6 text-center">
                         Login to your account
                     </h1>
-
-                    {/* Error message */}
                     {error && (
                         <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
                             {error}
                         </div>
                     )}
-
-                    {/* Login Form */}
                     <form onSubmit={handleLogin}>
                         <div className="mb-5">
                             <label
                                 htmlFor="username"
                                 className="block mb-2 text-sm font-medium text-gray-600"
                             >
-                                Username
+                                Username or Email
                             </label>
                             <input
                                 type="text"
                                 id="username"
                                 value={formData.username}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
-                                placeholder="Enter your username"
+                                onChange={handleLoginChange}
+                                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]"
+                                placeholder="Enter your username or email"
                                 required
                             />
                         </div>
-
                         <div className="mb-5">
                             <label
                                 htmlFor="password"
@@ -431,70 +738,107 @@ const LoginPage = () => {
                                     type={showPassword ? "text" : "password"}
                                     id="password"
                                     value={formData.password}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                    onChange={handleLoginChange}
+                                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]"
                                     placeholder="Enter your password"
                                     required
                                 />
                                 <button
                                     type="button"
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
                                     onClick={togglePasswordVisibility}
-                                    tabIndex="-1"
+                                    className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-500 hover:text-[#33e407]"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
-                                    {showPassword ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                                            <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-                                        </svg>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                        </svg>
-                                    )}
+                                    {showPassword ? "Hide" : "Show"}
                                 </button>
                             </div>
                         </div>
-
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#33e407] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Logging in...' : 'Login'}
                         </button>
-
-                        <a
-                            href="#"
-                            className="block text-center mt-4 text-sm font-medium text-[#33e407] hover:underline"
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setForgotError('');
+                                setForgotEmail('');
+                                setShowForgotModal(true);
+                                setShowForgotOTPModal(false);
+                                setShowNewPasswordModal(false);
+                            }}
+                            className="block w-full text-center mt-4 text-sm font-medium text-[#33e407] hover:underline bg-transparent border-none p-0"
                         >
                             Forgot password?
-                        </a>
+                        </button>
                     </form>
-
-                    {/* Divider */}
                     <div className="flex items-center my-6 text-gray-400 text-sm">
                         <div className="flex-1 h-px bg-gray-200"></div>
                         <div className="px-4">OR</div>
                         <div className="flex-1 h-px bg-gray-200"></div>
                     </div>
-
-                    {/* Sign Up Link */}
                     <div className="text-center mt-4 text-sm text-gray-600">
                         Don't have an account? <a href="/signup" className="text-[#33e407] font-medium hover:underline">Sign Up</a>
                     </div>
                 </div>
             </div>
 
-            {/* OTP Modal */}
+            {/* OTP Modal for account verification (after login) */}
             <OTPModal
                 visible={showOTPModal}
-                onClose={() => setShowOTPModal(false)}
-                onVerify={handleVerifyOTP}
-                onResend={handleResendOTP}
+                onClose={() => {
+                    setShowOTPModal(false);
+                    setOtpError(''); // Clear error when closing
+                }}
+                onVerify={handleVerifyAccountOTP}
+                onResend={handleResendAccountOTP}
                 loading={otpLoading}
                 error={otpError}
+            />
+
+            {/* Forgot Password: Enter Email Modal */}
+            <ForgotPasswordModal
+                visible={showForgotModal}
+                onClose={() => {
+                    setShowForgotModal(false);
+                    setForgotError('');
+                }}
+                onSend={handleForgotPasswordRequest}
+                loading={forgotLoading}
+                error={forgotError}
+                email={forgotEmail}
+                setEmail={setForgotEmail}
+            />
+
+            {/* Forgot Password: Enter OTP Modal (uses generic OTPModal) */}
+            <OTPModal
+                visible={showForgotOTPModal}
+                onClose={() => {
+                    setShowForgotOTPModal(false);
+                    setForgotOTPError('');
+                }}
+                onVerify={handleVerifyForgotOTP}
+                onResend={handleResendForgotOTP}
+                loading={forgotOTPLoading}
+                error={forgotOTPError}
+            />
+
+            {/* Forgot Password: New Password Modal */}
+            <NewPasswordModal
+                visible={showNewPasswordModal}
+                onClose={() => {
+                    setShowNewPasswordModal(false);
+                    setNewPasswordError('');
+                }}
+                onSubmit={handleSaveNewPassword}
+                loading={newPasswordLoading}
+                error={newPasswordError}
+                password={newPassword}
+                setPassword={setNewPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
             />
 
             {/* Toast notification */}

@@ -2,20 +2,16 @@ import React, {useEffect, useState} from 'react';
 import { Link } from 'react-router-dom';
 import {
     LayoutGrid,
-    Users,
-    FolderKanban,
     UserCog,
-    DatabaseBackup,
     Settings,
-    BarChart3,
+    Truck,
     ShieldCheck,
     ClipboardList,
     LogOut,
     FolderClock,
     Inbox,
-
+    FileClock,
 } from 'lucide-react';
-
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
@@ -59,14 +55,17 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-                    <ShieldCheck size={18} className="mr-3" />
+                <Link to="#" className={linkClass('warranty')}>
+                    <Truck size={18} className="mr-3" />
                     <span>Warranty Request</span>
                 </Link>
             </li>
-
-
-
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
+                </Link>
+            </li>
         </>
     );
 
@@ -91,33 +90,25 @@ const Sidebar = ({ activePage }) => {
                     <span>Warranty Request</span>
                 </Link>
             </li>
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
+                </Link>
+            </li>
 
 
             <div className="mb-6 mt-6">
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                 <ul>
-                    {/*<li className="mb-1">*/}
-                    {/*    <Link to="#" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">*/}
-                    {/*        <UserCog size={18} className="mr-3" />*/}
-                    {/*        <span>User Management</span>*/}
-                    {/*    </Link>*/}
-                    {/*</li>*/}
                     <li className="mb-1">
                         <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                             <Inbox size={18} className="mr-3" />
                             <span>Inventory</span>
                         </Link>
                     </li>
-                    {/*<li className="mb-1">*/}
-                    {/*    <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">*/}
-                    {/*        <FolderClock size={18} className="mr-3" />*/}
-                    {/*        <span>Backup & Restore</span>*/}
-                    {/*    </Link>*/}
-                    {/*</li>*/}
                 </ul>
             </div>
-
-
         </>
     );
 
@@ -137,9 +128,15 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="#" className={linkClass('warranty')}>
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
+                </Link>
+            </li>
+            <li className="mb-1">
+                <Link to="#" className={linkClass('history')}>
+                    <FileClock   size={18} className="mr-3" />
+                    <span>History</span>
                 </Link>
             </li>
 
@@ -148,7 +145,7 @@ const Sidebar = ({ activePage }) => {
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                 <ul>
                     <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 bg-[rgba(51,228,7,0.1)] text-[#33e407] font-medium border-l-3 border-[#33e407]">
+                        <Link to="/usermanagement" className={linkClass('usermanagement')}>
                             <UserCog size={18} className="mr-3" />
                             <span>User Management</span>
                         </Link>
@@ -160,7 +157,7 @@ const Sidebar = ({ activePage }) => {
                         </Link>
                     </li>
                     <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                        <Link to="/backup" className={linkClass('backup')}>
                             <FolderClock size={18} className="mr-3" />
                             <span>Backup & Restore</span>
                         </Link>

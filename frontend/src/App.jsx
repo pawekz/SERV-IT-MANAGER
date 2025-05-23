@@ -9,7 +9,11 @@ import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagemen
 import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
+import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
+import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
+import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
 import Sidebar from "./components/SideBar/Sidebar.jsx";
+import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx";
 
 function App() {
   return (
@@ -25,8 +29,13 @@ function App() {
         <Route path="/usermanagement" element={<UserManagement />} />
         <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         <Route path="/backup" element={<BackUpPage />} />
+        <Route path="/warranty" element={<WarrantyRequestPage />} />
         {/* <Route path="*" element={<LandingPage />} /> */}
+        <Route path="/devicecard" element={<DeviceCard />} />
+        <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
+        <Route  path="/inventory" element={<InventoryAssignmentPanel />} />
+        <Route path="/profilemanage" element={<UserManagement/>} />
       </Routes>
     </Router>
   )

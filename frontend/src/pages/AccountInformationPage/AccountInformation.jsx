@@ -1,8 +1,5 @@
-import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar/Navbar";
-import Footer from "../../components/Footer/Footer";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {FolderKanban, LayoutGrid, Users} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const AccountInformation = () => {
@@ -105,7 +102,7 @@ const AccountInformation = () => {
     // Generate initials for avatar
     const getInitials = () => {
         if (userData.firstName && userData.lastName) {
-            return `${userData.firstName.charAt(0)}${userData.lastName.charAt(0)}`;
+            return `${userData.firstName.charAt(0).toUpperCase()}${userData.lastName.charAt(0).toUpperCase()}`;
         }
         return "U";  // Default if no name available
     };
@@ -161,78 +158,102 @@ const AccountInformation = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch('http://localhost:8080/user/updateCurrentUser', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    firstName: editFormData.firstName,
-                    lastName: editFormData.lastName,
-                    username: editFormData.username,
-                    phoneNumber: editFormData.phoneNumber
-                })
-            });
+            // Track if username was changed
+            let usernameChanged = false;
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update profile");
-            }
-
-            const data = await response.text();
-
-            // Update localStorage with new token if it's returned
-            if (data && data.includes("Token:")) {
-                const newToken = data.split("Token:")[1].trim();
-                localStorage.setItem('authToken', newToken);
-
-                // Parse the new token to get updated user data
-                const decodedToken = parseJwt(newToken);
-
-                if (decodedToken) {
-                    // Update userData state with the information from the new token
-                    setUserData({
-                        firstName: decodedToken.firstName || editFormData.firstName,
-                        lastName: decodedToken.lastName || editFormData.lastName,
-                        username: decodedToken.username || editFormData.username,
-                        phoneNumber: decodedToken.phoneNumber || editFormData.phoneNumber,
-                        email: decodedToken.email || decodedToken.sub,
-                        password: '********' // Keep password masked
-                    });
-                }
-            } else {
-                // Even if no token is returned, update the user data with form values
-                setUserData({
-                    ...userData,
-                    firstName: editFormData.firstName,
-                    lastName: editFormData.lastName,
-                    username: editFormData.username,
-                    phoneNumber: editFormData.phoneNumber
+            // Update full name if changed
+            if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
+                const response = await fetch('http://localhost:8080/user/updateCurrentUserFullName', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        newFirstName: editFormData.firstName,
+                        newLastName: editFormData.lastName
+                    })
                 });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update full name");
+                }
             }
 
-            // Store updated user data in sessionStorage for persistence across refreshes
+            // Update phone number if changed
+            if (userData.phoneNumber !== editFormData.phoneNumber) {
+                const response = await fetch('http://localhost:8080/user/changeCurrentUserPhoneNumber', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        newPhoneNumber: editFormData.phoneNumber
+                    })
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update phone number");
+                }
+            }
+
+            // Update username if changed
+            if (userData.username !== editFormData.username) {
+                const response = await fetch('http://localhost:8080/user/updateCurrentUsername', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        newUsername: editFormData.username
+                    })
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to update username");
+                }
+                usernameChanged = true;
+            }
+
+            // Update local state and sessionStorage
+            setUserData({
+                ...userData,
+                firstName: editFormData.firstName,
+                lastName: editFormData.lastName,
+                username: editFormData.username,
+                phoneNumber: editFormData.phoneNumber
+            });
             sessionStorage.setItem('userData', JSON.stringify({
                 firstName: editFormData.firstName,
                 lastName: editFormData.lastName,
                 username: editFormData.username,
-                email: editFormData.email,
+                email: editFormData.email || userData.email,
                 phoneNumber: editFormData.phoneNumber,
                 password: '********'
             }));
 
             setUpdateStatus({
                 success: true,
-                message: "Profile updated successfully!"
+                message: usernameChanged
+                    ? "Username updated. Please log in again."
+                    : "Profile updated successfully!"
             });
 
-            setTimeout(() => {
-                setIsEditing(false);
-            }, 2000);
-
+            // If username changed, force logout and redirect to login after short delay
+            if (usernameChanged) {
+                setTimeout(() => {
+                    localStorage.removeItem('authToken');
+                    sessionStorage.removeItem('userData');
+                    navigate('/login');
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    setIsEditing(false);
+                }, 2000);
+            }
         } catch (err) {
-            console.error("Error updating profile:", err);
             setUpdateStatus({
                 success: false,
                 message: err.message || "Failed to update profile. Please try again."
@@ -280,9 +301,9 @@ const AccountInformation = () => {
                                                 {`${userData.firstName} ${userData.lastName}`}
                                             </h3>
                                             <p className="text-gray-600 mb-4">{userData.email}</p>
-                                            <button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">
-                                                Change Profile Picture
-                                            </button>
+                                            {/*<button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">*/}
+                                            {/*    Change Profile Picture*/}
+                                            {/*</button>*/}
                                         </div>
                                     </div>
                                 </section>
@@ -372,24 +393,23 @@ const AccountInformation = () => {
                                     </div>
 
                                     {/*Phone number change this later john to phone and replace the email for phone*/}
-                                    <div className="mb-6">
-                                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Phone Number
-                                        </label>
+                                    <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                        <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                            <img
+                                                src="https://flagcdn.com/16x12/ph.png"
+                                                alt="Philippine flag"
+                                                className="mr-2 w-5 h-auto"
+                                            />
+                                            <span className="text-sm text-gray-600">+63</span>
+                                        </div>
                                         <input
+                                            maxLength={13}
                                             type="tel"
                                             id="phoneNumber"
-                                            name="phoneNumber"
                                             value={userData.phoneNumber}
-                                            pattern="[0-9\s]+"
-                                            readOnly
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
-                                            style={{
-                                                "&:focus": {
-                                                    borderColor: "#33e407",
-                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                }
-                                            }}
+                                            className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                            placeholder="905 123 4567"
+                                            required
                                         />
                                     </div>
                                 </section>
@@ -494,18 +514,35 @@ const AccountInformation = () => {
                             </div>
 
                             <div className="mb-6">
-                                <label htmlFor="edit-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="edit-phonenumber" className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone Number
                                 </label>
+                            <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                    <img
+                                        src="https://flagcdn.com/16x12/ph.png"
+                                        alt="Philippine flag"
+                                        className="mr-2 w-5 h-auto"
+                                    />
+                                    <span className="text-sm text-gray-600">+63</span>
+                                </div>
                                 <input
+                                    maxLength={10}
                                     type="text"
-                                    id="edit-phoneNumber"
+                                    id="phoneNumber"
                                     name="phoneNumber"
                                     value={editFormData.phoneNumber}
                                     onChange={handleInputChange}
+                                    className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                    placeholder="9051234567"
                                     required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                 />
+                                </div>
+                            </div>
+                            <div>
+
                             </div>
 
                             <div className="flex justify-end gap-3">
