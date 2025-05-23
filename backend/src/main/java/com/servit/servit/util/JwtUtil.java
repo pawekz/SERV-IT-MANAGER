@@ -48,7 +48,6 @@ public class JwtUtil {
         claims.put("lastName", lastName);
         claims.put("email", email);
         claims.put("phoneNumber", phoneNumber);
-        claims.put("isVerified", isVerified);
         return createToken(claims, username);
     }
 
