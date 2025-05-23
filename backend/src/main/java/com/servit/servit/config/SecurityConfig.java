@@ -53,6 +53,10 @@ public class SecurityConfig {
                                 "/user/updateCurrentUsername"
                         ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                         .requestMatchers(
+                                "/repairTicket/checkInRepairTicket",
+                                "/repairTicket/getRepairTicket/*"
+                        ).hasAnyRole("ADMIN", "TECHNICIAN")
+                        .requestMatchers(
                                 "/user/changeRole/*",
                                 "/user/getAllUsers",
                                 "/user/getUser/*",
