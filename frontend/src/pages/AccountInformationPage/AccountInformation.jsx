@@ -154,11 +154,14 @@ const AccountInformation = () => {
 
         try {
             const token = localStorage.getItem('authToken');
-            console.log(token);
             if (!token) {
                 throw new Error("Not authenticated. Please log in.");
             }
 
+            // Track if username was changed
+            let usernameChanged = false;
+
+            // Update full name if changed
             if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
                 const response = await fetch('http://localhost:8080/user/updateCurrentUserFullName', {
                     method: 'PATCH',
@@ -167,18 +170,17 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        firstName: editFormData.firstName,
-                        lastName: editFormData.lastName,
-                        username: editFormData.username
+                        newFirstName: editFormData.firstName,
+                        newLastName: editFormData.lastName
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update full name");
                 }
             }
 
+            // Update phone number if changed
             if (userData.phoneNumber !== editFormData.phoneNumber) {
                 const response = await fetch('http://localhost:8080/user/changeCurrentUserPhoneNumber', {
                     method: 'PATCH',
@@ -187,17 +189,16 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        phoneNumber: editFormData.phoneNumber,
-                        username: editFormData.username
+                        newPhoneNumber: editFormData.phoneNumber
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update phone number");
                 }
             }
 
+            // Update username if changed
             if (userData.username !== editFormData.username) {
                 const response = await fetch('http://localhost:8080/user/updateCurrentUsername', {
                     method: 'PATCH',
@@ -206,67 +207,53 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        newUsername: editFormData.username,
-                        username: userData.username
+                        newUsername: editFormData.username
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update username");
                 }
+                usernameChanged = true;
             }
 
-            const data = await response.text();
-
-            // Update localStorage with new token if it's returned
-            if (data && data.includes("Token:")) {
-                const newToken = data.split("Token:")[1].trim();
-                localStorage.setItem('authToken', newToken);
-
-                const decodedToken = parseJwt(newToken);
-                if (decodedToken) {
-                    setUserData({
-                        firstName: decodedToken.firstName || editFormData.firstName,
-                        lastName: decodedToken.lastName || editFormData.lastName,
-                        username: decodedToken.username || editFormData.username,
-                        phoneNumber: decodedToken.phoneNumber || editFormData.phoneNumber,
-                        email: decodedToken.email || decodedToken.sub,
-                        password: '********'
-                    });
-                }
-            } else {
-                // Even if no token is returned, update the user data with form values
-                setUserData({
-                    ...userData,
-                    firstName: editFormData.firstName,
-                    lastName: editFormData.lastName,
-                    username: editFormData.username,
-                    phoneNumber: editFormData.phoneNumber
-                });
-            }
-
-            // Store updated user data in sessionStorage for persistence across refreshes
+            // Update local state and sessionStorage
+            setUserData({
+                ...userData,
+                firstName: editFormData.firstName,
+                lastName: editFormData.lastName,
+                username: editFormData.username,
+                phoneNumber: editFormData.phoneNumber
+            });
             sessionStorage.setItem('userData', JSON.stringify({
                 firstName: editFormData.firstName,
                 lastName: editFormData.lastName,
                 username: editFormData.username,
-                email: editFormData.email,
+                email: editFormData.email || userData.email,
                 phoneNumber: editFormData.phoneNumber,
                 password: '********'
             }));
 
             setUpdateStatus({
                 success: true,
-                message: "Profile updated successfully!"
+                message: usernameChanged
+                    ? "Username updated. Please log in again."
+                    : "Profile updated successfully!"
             });
 
-            setTimeout(() => {
-                setIsEditing(false);
-            }, 2000);
-
+            // If username changed, force logout and redirect to login after short delay
+            if (usernameChanged) {
+                setTimeout(() => {
+                    localStorage.removeItem('authToken');
+                    sessionStorage.removeItem('userData');
+                    navigate('/login');
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    setIsEditing(false);
+                }, 2000);
+            }
         } catch (err) {
-            console.error("Error updating profile:", err);
             setUpdateStatus({
                 success: false,
                 message: err.message || "Failed to update profile. Please try again."
