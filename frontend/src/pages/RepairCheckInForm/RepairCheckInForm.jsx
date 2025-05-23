@@ -237,7 +237,7 @@ export default function RepairCheckinForm() {
                                     required
                                 />
                                 <label className="text-sm text-gray-600">
-                                    I have read and agree to the repair <a href="#" className="text-blue-600 underline cursor-pointer hover:text-blue-800">terms and conditions</a>
+                                    I have read and agree to the repair <a href="/termseditor" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline cursor-pointer hover:text-blue-800">terms and conditions</a>
                                 </label>
                             </div>
                         </div>
