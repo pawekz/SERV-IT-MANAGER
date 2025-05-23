@@ -14,7 +14,10 @@ import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
 import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
 import Sidebar from "./components/SideBar/Sidebar.jsx";
 import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx";
+import TermsEditor from "./pages/TermsEditor/TermsEditor.jsx";
+import SignatureCapturePad from "./pages/SignatureCapturePad/SignatureCapturePad.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
+
 
 function App() {
   return (
@@ -35,7 +38,10 @@ function App() {
         <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
-        <Route  path="/inventory" element={<InventoryAssignmentPanel />} />
+
+        <Route path="/inventory" element={<InventoryAssignmentPanel />} />
+        <Route path="/termseditor" element={<TermsEditor />} />
+        <Route path="/signature" element={<SignatureCapturePad />} />
         <Route  path="/repairqueue" element={<RepairQueue />} />
         <Route path="/profilemanage" element={<UserManagement/>} />
       </Routes>
