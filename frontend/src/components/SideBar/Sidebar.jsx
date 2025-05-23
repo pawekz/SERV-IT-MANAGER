@@ -49,7 +49,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repairqueue" className={linkClass('repairqueue')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
@@ -79,7 +79,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repairqueue" className={linkClass('repairqueue')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
