@@ -1,12 +1,14 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 const SignatureCapturePad = () => {
     const canvasRef = useRef(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [context, setContext] = useState(null)
     const [isEmpty, setIsEmpty] = useState(true)
+    const navigate = useNavigate()
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -110,8 +112,7 @@ const SignatureCapturePad = () => {
     }
 
     const handleBack = () => {
-        // Handle back button functionality
-        console.log("Back button clicked")
+        navigate("/repaircheckin")
     }
 
     const handleNext = () => {
