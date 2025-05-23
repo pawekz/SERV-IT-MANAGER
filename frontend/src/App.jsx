@@ -17,6 +17,7 @@ import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/Inventory
 import TermsEditor from "./pages/TermsEditor/TermsEditor.jsx";
 import SignatureCapturePad from "./pages/SignatureCapturePad/SignatureCapturePad.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
+import DashboardPage from "./pages/DashboardPage/DashboardPage.jsx";
 
 
 function App() {
@@ -33,15 +34,15 @@ function App() {
         <Route path="/automatedclaimformgeneration" element={<AutomatedClaimFormGenerationPage />} />
         <Route path="/backup" element={<BackUpPage />} />
         <Route path="/warranty" element={<WarrantyRequestPage />} />
-        {/* <Route path="*" element={<LandingPage />} /> */}
         <Route path="/devicecard" element={<DeviceCard />} />
         <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
         <Route path="/inventory" element={<InventoryAssignmentPanel />} />
         <Route path="/termseditor" element={<TermsEditor />} />
         <Route path="/signature" element={<SignatureCapturePad />} />
-        <Route  path="/repairqueue" element={<RepairQueue />} />
-        <Route path="/profilemanage" element={<UserManagement/>} />
+        <Route path="/repairqueue" element={<RepairQueue />} />
+        <Route path="/profilemanage" element={<UserManagement />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
     </Router>
   )
