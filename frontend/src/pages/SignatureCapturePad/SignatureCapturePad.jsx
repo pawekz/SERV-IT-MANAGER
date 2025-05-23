@@ -128,13 +128,13 @@ const SignatureCapturePad = () => {
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
                 {/* Green sidebar */}
                 <div className="flex w-full ">
-                    <div className="w-1 bg-green-500 "></div>
+                    <div className="w-1 bg-[#33e407] "></div>
                     <div className="flex-1 p-8">
                         {/* Header */}
                         <div className="text-center mb-6">
                             <h1 className="text-2xl font-bold">
                                 <span className="text-gray-800">IO</span>
-                                <span className="text-green-500">CONNECT</span>
+                                <span className="text-[#33e407]">CONNECT</span>
                             </h1>
                             <h2 className="text-xl font-semibold text-gray-800 mt-4">Digital Signature</h2>
                             <p className="text-gray-600 mt-1">Sign using mouse, touch, or stylus</p>
@@ -184,7 +184,7 @@ const SignatureCapturePad = () => {
                                 </button>
                                 <button
                                     onClick={saveSignature}
-                                    className="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors"
+                                    className="flex items-center px-4 py-2 bg-[#33e407] hover:bg-[#2dc406] text-white rounded-md transition-colors"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -214,9 +214,9 @@ const SignatureCapturePad = () => {
                                 </button>
                                 <button
                                     onClick={handleNext}
-                                    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2dc406]  text-white rounded-md transition-colors"
                                 >
-                                    Next
+                                    Submit
                                 </button>
                             </div>
                         </div>

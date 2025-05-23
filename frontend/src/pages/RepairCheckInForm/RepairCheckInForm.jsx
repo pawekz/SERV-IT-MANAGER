@@ -245,7 +245,7 @@ export default function RepairCheckinForm() {
                                 onClick={() => navigate('/signature')}
                                 className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                             >
-                                Submit Repair Request
+                                Submit
                             </button>
                         </div>
                     </form>
