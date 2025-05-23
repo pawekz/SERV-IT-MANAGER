@@ -236,8 +236,8 @@ export default function RepairCheckinForm() {
                                     className="mt-1 h-4 w-4 rounded border-gray-300 text-[#33e407] focus:ring-[#33e407]"
                                     required
                                 />
-                                <label htmlFor="terms" className="text-sm text-gray-600">
-                                    I have read and agree to the repair <span>terms and conditions</span>
+                                <label className="text-sm text-gray-600">
+                                    I have read and agree to the repair <a href="#" className="text-blue-600 underline cursor-pointer hover:text-blue-800">terms and conditions</a>
                                 </label>
                             </div>
                         </div>
@@ -259,3 +259,4 @@ export default function RepairCheckinForm() {
 }
 
 // /test/
+

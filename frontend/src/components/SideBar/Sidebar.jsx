@@ -49,7 +49,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
@@ -79,7 +79,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
@@ -102,7 +102,7 @@ const Sidebar = ({ activePage }) => {
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
                 <ul>
                     <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                        <Link to="/inventory" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                             <Inbox size={18} className="mr-3" />
                             <span>Inventory</span>
                         </Link>
@@ -122,7 +122,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
@@ -151,13 +151,13 @@ const Sidebar = ({ activePage }) => {
                         </Link>
                     </li>
                     <li className="mb-1">
-                        <Link to="#" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                        <Link to="/inventory" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
                             <Inbox size={18} className="mr-3" />
                             <span>Inventory</span>
                         </Link>
                     </li>
                     <li className="mb-1">
-                        <Link to="/backup" className={linkClass('backup')}>
+                        <Link to="#" className={linkClass('backup')}>
                             <FolderClock size={18} className="mr-3" />
                             <span>Backup & Restore</span>
                         </Link>
