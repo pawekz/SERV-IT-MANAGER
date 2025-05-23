@@ -2,6 +2,8 @@
 
 import { useRef, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx";
+import { PDFViewer } from '@react-pdf/renderer';
 
 const SignatureCapturePad = () => {
     const canvasRef = useRef(null)
@@ -9,6 +11,8 @@ const SignatureCapturePad = () => {
     const [context, setContext] = useState(null)
     const [isEmpty, setIsEmpty] = useState(true)
     const navigate = useNavigate()
+    const [signatureDataURL, setSignatureDataURL] = useState(null);
+    const [showPDF, setShowPDF] = useState(false);
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -24,7 +28,7 @@ const SignatureCapturePad = () => {
         canvas.height = canvas.offsetHeight
 
         // Clear canvas with white background
-        ctx.fillStyle = "#ffffff"
+        ctx.fillStyle = "#fafafa"
         ctx.fillRect(0, 0, canvas.width, canvas.height)
 
         setContext(ctx)
@@ -34,7 +38,7 @@ const SignatureCapturePad = () => {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
             canvas.width = canvas.offsetWidth
             canvas.height = canvas.offsetHeight
-            ctx.fillStyle = "#ffffff"
+            ctx.fillStyle = "#fafafa"
             ctx.fillRect(0, 0, canvas.width, canvas.height)
             ctx.putImageData(imageData, 0, 0)
             ctx.lineWidth = 2
@@ -91,7 +95,7 @@ const SignatureCapturePad = () => {
 
     const clearSignature = () => {
         const canvas = canvasRef.current
-        context.fillStyle = "#ffffff"
+        context.fillStyle = "#fafafa"
         context.fillRect(0, 0, canvas.width, canvas.height)
         setIsEmpty(true)
     }
@@ -108,6 +112,7 @@ const SignatureCapturePad = () => {
         // Here you can handle the signature data as needed
         // For example, you could save it to state, send to a server, etc.
         console.log("Signature saved:", dataUrl)
+        setSignatureDataURL(dataUrl);
         alert("Signature saved successfully!")
     }
 
@@ -122,6 +127,7 @@ const SignatureCapturePad = () => {
             return
         }
         console.log("Next button clicked")
+        setShowPDF(true);
     }
 
     return (
@@ -266,7 +272,13 @@ const SignatureCapturePad = () => {
                     </div>
                 </div>
             </div>
+            {showPDF && (
+                <PDFViewer width="100%" height="600">
+                    <PdfDocument signatureDataURL={signatureDataURL} />
+                </PDFViewer>
+            )}
         </div>
+
     )
 }
 
