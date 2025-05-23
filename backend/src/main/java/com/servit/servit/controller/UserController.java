@@ -147,4 +147,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/updateStatus/{id}")
+    public ResponseEntity<Void> updateStatus(@PathVariable Integer id, @RequestBody UpdateUserStatusRequestDTO req) {
+        userSvc.updateStatus(id, req.getStatus());
+        return ResponseEntity.noContent().build();
+    }
+
 }

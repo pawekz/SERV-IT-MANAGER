@@ -282,6 +282,14 @@ public class UserService {
     public void deleteUser(Integer userId) {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        userRepo.delete(user);
+        updateStatus(userId, "Inactive");
+    }
+
+    @Transactional
+    public void updateStatus(Integer userId, String status) {
+        UserEntity user = userRepo.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setStatus(status);
+        userRepo.save(user);
     }
 }
