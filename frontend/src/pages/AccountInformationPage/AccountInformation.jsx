@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
@@ -154,11 +154,14 @@ const AccountInformation = () => {
 
         try {
             const token = localStorage.getItem('authToken');
-            console.log(token);
             if (!token) {
                 throw new Error("Not authenticated. Please log in.");
             }
 
+            // Track if username was changed
+            let usernameChanged = false;
+
+            // Update full name if changed
             if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
                 const response = await fetch('http://localhost:8080/user/updateCurrentUserFullName', {
                     method: 'PATCH',
@@ -167,18 +170,17 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        firstName: editFormData.firstName,
-                        lastName: editFormData.lastName,
-                        username: editFormData.username
+                        newFirstName: editFormData.firstName,
+                        newLastName: editFormData.lastName
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update full name");
                 }
             }
 
+            // Update phone number if changed
             if (userData.phoneNumber !== editFormData.phoneNumber) {
                 const response = await fetch('http://localhost:8080/user/changeCurrentUserPhoneNumber', {
                     method: 'PATCH',
@@ -187,17 +189,16 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        phoneNumber: editFormData.phoneNumber,
-                        username: editFormData.username
+                        newPhoneNumber: editFormData.phoneNumber
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update phone number");
                 }
             }
 
+            // Update username if changed
             if (userData.username !== editFormData.username) {
                 const response = await fetch('http://localhost:8080/user/updateCurrentUsername', {
                     method: 'PATCH',
@@ -206,67 +207,53 @@ const AccountInformation = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        newUsername: editFormData.username,
-                        username: userData.username
+                        newUsername: editFormData.username
                     })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update profile");
+                    throw new Error(errorText || "Failed to update username");
                 }
+                usernameChanged = true;
             }
 
-            const data = await response.text();
-
-            // Update localStorage with new token if it's returned
-            if (data && data.includes("Token:")) {
-                const newToken = data.split("Token:")[1].trim();
-                localStorage.setItem('authToken', newToken);
-
-                const decodedToken = parseJwt(newToken);
-                if (decodedToken) {
-                    setUserData({
-                        firstName: decodedToken.firstName || editFormData.firstName,
-                        lastName: decodedToken.lastName || editFormData.lastName,
-                        username: decodedToken.username || editFormData.username,
-                        phoneNumber: decodedToken.phoneNumber || editFormData.phoneNumber,
-                        email: decodedToken.email || decodedToken.sub,
-                        password: '********'
-                    });
-                }
-            } else {
-                // Even if no token is returned, update the user data with form values
-                setUserData({
-                    ...userData,
-                    firstName: editFormData.firstName,
-                    lastName: editFormData.lastName,
-                    username: editFormData.username,
-                    phoneNumber: editFormData.phoneNumber
-                });
-            }
-
-            // Store updated user data in sessionStorage for persistence across refreshes
+            // Update local state and sessionStorage
+            setUserData({
+                ...userData,
+                firstName: editFormData.firstName,
+                lastName: editFormData.lastName,
+                username: editFormData.username,
+                phoneNumber: editFormData.phoneNumber
+            });
             sessionStorage.setItem('userData', JSON.stringify({
                 firstName: editFormData.firstName,
                 lastName: editFormData.lastName,
                 username: editFormData.username,
-                email: editFormData.email,
+                email: editFormData.email || userData.email,
                 phoneNumber: editFormData.phoneNumber,
                 password: '********'
             }));
 
             setUpdateStatus({
                 success: true,
-                message: "Profile updated successfully!"
+                message: usernameChanged
+                    ? "Username updated. Please log in again."
+                    : "Profile updated successfully!"
             });
 
-            setTimeout(() => {
-                setIsEditing(false);
-            }, 2000);
-
+            // If username changed, force logout and redirect to login after short delay
+            if (usernameChanged) {
+                setTimeout(() => {
+                    localStorage.removeItem('authToken');
+                    sessionStorage.removeItem('userData');
+                    navigate('/login');
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    setIsEditing(false);
+                }, 2000);
+            }
         } catch (err) {
-            console.error("Error updating profile:", err);
             setUpdateStatus({
                 success: false,
                 message: err.message || "Failed to update profile. Please try again."
@@ -406,24 +393,23 @@ const AccountInformation = () => {
                                     </div>
 
                                     {/*Phone number change this later john to phone and replace the email for phone*/}
-                                    <div className="mb-6">
-                                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Phone Number
-                                        </label>
+                                    <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                        <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                            <img
+                                                src="https://flagcdn.com/16x12/ph.png"
+                                                alt="Philippine flag"
+                                                className="mr-2 w-5 h-auto"
+                                            />
+                                            <span className="text-sm text-gray-600">+63</span>
+                                        </div>
                                         <input
+                                            maxLength={13}
                                             type="tel"
                                             id="phoneNumber"
-                                            name="phoneNumber"
                                             value={userData.phoneNumber}
-                                            pattern="[0-9\s]+"
-                                            readOnly
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
-                                            style={{
-                                                "&:focus": {
-                                                    borderColor: "#33e407",
-                                                    boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                }
-                                            }}
+                                            className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                            placeholder="905 123 4567"
+                                            required
                                         />
                                     </div>
                                 </section>
@@ -528,18 +514,35 @@ const AccountInformation = () => {
                             </div>
 
                             <div className="mb-6">
-                                <label htmlFor="edit-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="edit-phonenumber" className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone Number
                                 </label>
+                            <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                    <img
+                                        src="https://flagcdn.com/16x12/ph.png"
+                                        alt="Philippine flag"
+                                        className="mr-2 w-5 h-auto"
+                                    />
+                                    <span className="text-sm text-gray-600">+63</span>
+                                </div>
                                 <input
+                                    maxLength={10}
                                     type="text"
-                                    id="edit-phoneNumber"
+                                    id="phoneNumber"
                                     name="phoneNumber"
                                     value={editFormData.phoneNumber}
                                     onChange={handleInputChange}
+                                    className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                    placeholder="9051234567"
                                     required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                 />
+                                </div>
+                            </div>
+                            <div>
+
                             </div>
 
                             <div className="flex justify-end gap-3">

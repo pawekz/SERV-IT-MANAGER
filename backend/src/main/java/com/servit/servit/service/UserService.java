@@ -124,7 +124,7 @@ public class UserService {
         UserEntity user = userRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (user.getIsVerified()) {
+        if (req.getType() == 1 && user.getIsVerified()) {
             throw new IllegalArgumentException("User is already verified");
         }
 

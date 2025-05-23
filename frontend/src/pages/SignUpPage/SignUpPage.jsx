@@ -304,7 +304,7 @@ const SignUpPage = () => {
                 </h1>
                 {success && !showOTPModal && ( // Only show this if OTP modal is not up
                     <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded">
-                        Registration successful! Please check your email to verify your account.
+                        Please check your email to verify your account.
                     </div>
                 )}
                 {error && (

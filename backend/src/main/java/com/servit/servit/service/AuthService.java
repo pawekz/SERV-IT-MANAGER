@@ -33,7 +33,6 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
-        System.out.println("Token:" + token);
-        return new AuthResponseDTO(token, user.getRole().name());
+        return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified());
     }
 }

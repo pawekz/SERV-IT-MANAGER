@@ -37,6 +37,7 @@ function App() {
         <Route path="sidebar" element={<Sidebar />} />
         <Route  path="/inventory" element={<InventoryAssignmentPanel />} />
         <Route  path="/repairqueue" element={<RepairQueue />} />
+        <Route path="/profilemanage" element={<UserManagement/>} />
       </Routes>
     </Router>
   )
