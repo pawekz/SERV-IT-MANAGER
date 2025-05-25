@@ -67,6 +67,8 @@ public class SecurityConfig {
                                 "/user/updatePhoneNuber/*",
                                 "/user/updateUsername/*"
                         ).hasAnyRole("ADMIN")
+                        //Allen testing
+                        .requestMatchers("/parts/create").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())
