@@ -5,13 +5,14 @@ import com.servit.servit.dto.GetRepairTicketResponseDTO;
 import com.servit.servit.entity.DigitalSignatureEntity;
 import com.servit.servit.entity.RepairPhotoEntity;
 import com.servit.servit.entity.RepairTicketEntity;
+import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.RepairTicketRepository;
+import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -25,10 +26,14 @@ public class RepairTicketService {
     private final RepairTicketRepository repairTicketRepository;
 
     @Autowired
+    private final UserRepository userRepository;
+
+    @Autowired
     private FileUtil fileUtil;
 
-    public RepairTicketService(RepairTicketRepository repairTicketRepository) {
+    public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
+        this.userRepository = userRepository;
     }
 
     public GetRepairTicketResponseDTO getRepairTicket(String ticketNumber) {
@@ -52,6 +57,9 @@ public class RepairTicketService {
         getRepairTicketResponseDTO.setDeviceBrand(repairTicket.getDeviceBrand());
         getRepairTicketResponseDTO.setDevicePassword(repairTicket.getDevicePassword());
         getRepairTicketResponseDTO.setReportedIssue(repairTicket.getReportedIssue());
+        getRepairTicketResponseDTO.setTechnicianEmail(repairTicket.getTechnicianEmail().getEmail());
+        getRepairTicketResponseDTO.setAccessories(repairTicket.getAccessories());
+        getRepairTicketResponseDTO.setObservations(repairTicket.getObservations());
         getRepairTicketResponseDTO.setStatus(repairTicket.getStatus());
         getRepairTicketResponseDTO.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
 
@@ -61,7 +69,7 @@ public class RepairTicketService {
                 .map(RepairPhotoEntity::getPhotoUrl)
                 .collect(Collectors.toList()));
 
-        System.out.println("Repair ticket successfully retrieved.");
+        System.out.println("Successfully retrieved repair ticket: " + getRepairTicketResponseDTO.getTicketNumber());
 
         return getRepairTicketResponseDTO;
     }
@@ -70,6 +78,9 @@ public class RepairTicketService {
         if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null || req.getDeviceModel() == null) {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
         }
+
+        UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
 
         RepairTicketEntity repairTicket = new RepairTicketEntity();
         repairTicket.setCustomerName(req.getCustomerName());
@@ -80,11 +91,13 @@ public class RepairTicketService {
         repairTicket.setDeviceBrand(req.getDeviceBrand());
         repairTicket.setDeviceType(req.getDeviceType());
         repairTicket.setReportedIssue(req.getReportedIssue());
+        repairTicket.setTechnicianEmail(technician);
+        repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+        repairTicket.setAccessories(req.getAccessories());
+        repairTicket.setObservations(req.getObservations());
         repairTicket.setStatus("CHECKED-IN");
         repairTicket.setCheckInDate(LocalDateTime.now());
-        repairTicket.setTicketNumber(generateTicketNumber());
-
-        System.out.println("Ticket number generated: " + repairTicket.getTicketNumber());
+        repairTicket.setTicketNumber(req.getTicketNumber());
 
         repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
                 .map(photo -> {
@@ -101,9 +114,9 @@ public class RepairTicketService {
                 })
                 .collect(Collectors.toList()));
 
-        System.out.println("Repair photos successfully captured and saved.");
-
         String digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
+
+        System.out.println("Successfully saved digital signature for repair ticket: " + repairTicket.getTicketNumber());
 
         DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
         digitalSignature.setImageUrl(digitalSignaturePath);
@@ -111,30 +124,13 @@ public class RepairTicketService {
 
         repairTicket.setDigitalSignature(digitalSignature);
 
-        System.out.println("Digital signature successfully captured and saved.");
+        System.out.println("Successfully created repair ticket: " + repairTicket.getTicketNumber());
 
-        RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
-
-        System.out.println("Repair ticket successfully checked in.");
-
-        return savedTicket;
+        return repairTicketRepository.save(repairTicket);
     }
 
-    private String generateTicketNumber() {
-        return "IORT-" + String.format("%06d", (int) (Math.random() * 1_000_000));
-    }
-
-    public void uploadClaimForm(String ticketNumber, MultipartFile file) throws IOException {
-        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
-
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
-        }
-
-        String pdfPath = fileUtil.saveClaimForm(file, ticketNumber);
-        repairTicket.setClaimFormPath(pdfPath);
-
-        repairTicketRepository.save(repairTicket);
+    public String generateRepairTicketNumber() {
+        Long nextId = repairTicketRepository.getNextRepairTicketId();
+        return "IORT-" + String.format("%06d", nextId);
     }
 }

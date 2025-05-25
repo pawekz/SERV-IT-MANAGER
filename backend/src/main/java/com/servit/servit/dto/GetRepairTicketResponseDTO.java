@@ -17,6 +17,10 @@ public class GetRepairTicketResponseDTO {
     private String deviceModel;
     private String deviceBrand;
     private String devicePassword;
+    private String technicianEmail;
+    private String technicianName;
+    private String accessories;
+    private String observations;
     private String reportedIssue;
     private String status;
     private LocalDate checkInDate;
