@@ -27,10 +27,4 @@ public class GetRepairTicketResponseDTO {
 
     private String digitalSignatureImageUrl;
     private List<String> repairPhotosUrls;
-
-    private boolean isSignatureLinked;
-
-    public boolean isSignatureLinked() {
-        return digitalSignatureImageUrl != null && !digitalSignatureImageUrl.isEmpty();
-    }
 }
