@@ -13,7 +13,8 @@ import java.util.List;
 public class RepairTicketEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long repair_ticket_id;
+    @Column(name = "repair_ticket_id")
+    private Long repairTicketId;
 
     @Column(name = "ticket_number", nullable = false)
     private String ticketNumber;
