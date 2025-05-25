@@ -130,7 +130,14 @@ public class RepairTicketService {
     }
 
     public String generateRepairTicketNumber() {
-        Long nextId = repairTicketRepository.getNextRepairTicketId();
+        String lastTicketNumber = repairTicketRepository.findLastTicketNumber();
+        int nextId = 1;
+
+        if (lastTicketNumber != null && lastTicketNumber.startsWith("IORT-")) {
+            String numericPart = lastTicketNumber.substring(5);
+            nextId = Integer.parseInt(numericPart) + 1;
+        }
+
         return "IORT-" + String.format("%06d", nextId);
     }
 }
