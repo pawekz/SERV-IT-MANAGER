@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/repairTicket")
@@ -49,16 +48,13 @@ public class RepairTicketController {
         }
     }
 
-    @PostMapping("/uploadClaimForm/{ticketNumber}")
-    public ResponseEntity<Void> uploadClaimForm(@PathVariable String ticketNumber,
-                                                @RequestParam("file") MultipartFile file) {
+    @GetMapping("/generateRepairTicketNumber")
+    public ResponseEntity<String> generateRepairTicketNumber() {
         try {
-            repairTicketService.uploadClaimForm(ticketNumber, file);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            String ticketNumber = repairTicketService.generateRepairTicketNumber();
+            return ResponseEntity.ok(ticketNumber);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate ticket number");
         }
     }
 }
