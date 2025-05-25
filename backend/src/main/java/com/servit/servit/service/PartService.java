@@ -1,11 +1,14 @@
 package com.servit.servit.service;
 
-import com.servit.servit.entity.Part;
+import com.servit.servit.entity.PartEntity;
 import com.servit.servit.repository.PartRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.servit.servit.dto.CreatePartRequestDTO;
+import com.servit.servit.dto.PartResponseDTO;
+import com.servit.servit.dto.UpdatePartRequestDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,41 +33,64 @@ public class PartService {
 
     /**
      * Creates a new part in the system.
-     * @param part The part to create
-     * @return The created part
+     * @param partDto The DTO containing part information to create
+     * @return The created part as a DTO
      * @throws IllegalArgumentException if part number already exists
      */
-    public Part createPart(Part part) {
-        if (partRepository.findByPartNumber(part.getPartNumber()).isPresent()) {
+    public PartResponseDTO createPart(CreatePartRequestDTO partDto) {
+        if (partRepository.findByPartNumber(partDto.getPartNumber()).isPresent()) {
             throw new IllegalArgumentException("Part number already exists");
         }
-        return partRepository.save(part);
+        PartEntity partEntity = new PartEntity();
+        partEntity.setPartNumber(partDto.getPartNumber());
+        partEntity.setName(partDto.getName());
+        partEntity.setDescription(partDto.getDescription());
+        partEntity.setUnitCost(partDto.getUnitCost());
+        partEntity.setCurrentStock(partDto.getCurrentStock());
+        partEntity.setLowStockThreshold(partDto.getLowStockThreshold());
+        partEntity.setSerialNumber(partDto.getSerialNumber());
+        partEntity.setDateAdded(partDto.getDateAdded());
+        partEntity.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
+        partEntity.setWarrantyExpiration(partDto.getWarrantyExpiration());
+        partEntity.setAddedBy(partDto.getAddedBy());
+
+        PartEntity savedPartEntity = partRepository.save(partEntity);
+        return convertToDto(savedPartEntity);
     }
 
     /**
      * Updates an existing part.
      * @param id The ID of the part to update
-     * @param part The updated part information
-     * @return The updated part
+     * @param partDto The DTO containing updated part information
+     * @return The updated part as a DTO
      * @throws EntityNotFoundException if part not found
      * @throws IllegalArgumentException if new part number conflicts with existing parts
      */
-    public Part updatePart(Long id, Part part) {
-        Part existingPart = partRepository.findById(id)
+    public PartResponseDTO updatePart(Long id, UpdatePartRequestDTO partDto) {
+        PartEntity existingPartEntity = partRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + id));
 
-        if (!existingPart.getPartNumber().equals(part.getPartNumber()) &&
-            partRepository.findByPartNumber(part.getPartNumber()).isPresent()) {
+        if (partDto.getPartNumber() != null && !existingPartEntity.getPartNumber().equals(partDto.getPartNumber()) &&
+            partRepository.findByPartNumber(partDto.getPartNumber()).isPresent()) {
             throw new IllegalArgumentException("Part number already exists");
         }
 
-        existingPart.setName(part.getName());
-        existingPart.setDescription(part.getDescription());
-        existingPart.setUnitCost(part.getUnitCost());
-        existingPart.setMinimumStock(part.getMinimumStock());
-        existingPart.setSerialNumber(part.getSerialNumber());
+        // Update fields from DTO if they are not null (partial update support)
+        if (partDto.getPartNumber() != null) existingPartEntity.setPartNumber(partDto.getPartNumber());
+        if (partDto.getName() != null) existingPartEntity.setName(partDto.getName());
+        if (partDto.getDescription() != null) existingPartEntity.setDescription(partDto.getDescription());
+        if (partDto.getUnitCost() != null) existingPartEntity.setUnitCost(partDto.getUnitCost());
+        if (partDto.getCurrentStock() != null) existingPartEntity.setCurrentStock(partDto.getCurrentStock());
+        if (partDto.getLowStockThreshold() != null) existingPartEntity.setLowStockThreshold(partDto.getLowStockThreshold());
+        if (partDto.getSerialNumber() != null) existingPartEntity.setSerialNumber(partDto.getSerialNumber());
+        if (partDto.getActive() != null) existingPartEntity.setActive(partDto.getActive());
+        if (partDto.getDateAdded() != null) existingPartEntity.setDateAdded(partDto.getDateAdded());
+        if (partDto.getDatePurchasedByCustomer() != null) existingPartEntity.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
+        if (partDto.getWarrantyExpiration() != null) existingPartEntity.setWarrantyExpiration(partDto.getWarrantyExpiration());
+        if (partDto.getAddedBy() != null) existingPartEntity.setAddedBy(partDto.getAddedBy());
 
-        return partRepository.save(existingPart);
+        PartEntity updatedPartEntity = partRepository.save(existingPartEntity);
+        return convertToDto(updatedPartEntity);
     }
 
     /**
@@ -73,10 +99,10 @@ public class PartService {
      * @throws EntityNotFoundException if part not found
      */
     public void deletePart(Long id) {
-        Part part = partRepository.findById(id)
+        PartEntity partEntity = partRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + id));
-        part.setActive(false);
-        partRepository.save(part);
+        partEntity.setActive(false);
+        partRepository.save(partEntity);
     }
 
     // ================ Search Operations ================
@@ -84,80 +110,81 @@ public class PartService {
     /**
      * Retrieves a part by its ID.
      * @param id The ID of the part to find
-     * @return Optional containing the part if found
+     * @return Optional containing the part as a DTO if found
      */
     @Transactional(readOnly = true)
-    public Optional<Part> getPartById(Long id) {
-        return partRepository.findById(id);
+    public Optional<PartResponseDTO> getPartById(Long id) {
+        return partRepository.findById(id).map(this::convertToDto);
     }
 
     /**
      * Retrieves a part by its part number.
      * @param partNumber The part number to search for
-     * @return Optional containing the part if found
+     * @return Optional containing the part as a DTO if found
      */
     @Transactional(readOnly = true)
-    public Optional<Part> getPartByPartNumber(String partNumber) {
-        return partRepository.findByPartNumber(partNumber);
+    public Optional<PartResponseDTO> getPartByPartNumber(String partNumber) {
+        return partRepository.findByPartNumber(partNumber).map(this::convertToDto);
     }
 
     /**
      * Retrieves a part by its serial number.
      * @param serialNumber The serial number to search for
-     * @return Optional containing the part if found
+     * @return Optional containing the part as a DTO if found
      */
     @Transactional(readOnly = true)
-    public Optional<Part> getPartBySerialNumber(String serialNumber) {
-        return partRepository.findBySerialNumber(serialNumber);
+    public Optional<PartResponseDTO> getPartBySerialNumber(String serialNumber) {
+        return partRepository.findBySerialNumber(serialNumber).map(this::convertToDto);
     }
 
     /**
      * Searches for parts based on a search term.
      * @param searchTerm The term to search for
-     * @return List of matching parts
+     * @return List of matching parts as DTOs
      */
     @Transactional(readOnly = true)
-    public List<Part> searchParts(String searchTerm) {
-        return partRepository.searchParts(searchTerm);
+    public List<PartResponseDTO> searchParts(String searchTerm) {
+        return partRepository.searchParts(searchTerm).stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     // ================ List Operations ================
 
     /**
      * Retrieves all active parts.
-     * @return List of active parts
+     * @return List of active parts as DTOs
      */
     @Transactional(readOnly = true)
-    public List<Part> getAllActiveParts() {
-        return partRepository.findByActiveTrue();
+    public List<PartResponseDTO> getAllActiveParts() {
+        return partRepository.findByActiveTrue().stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     /**
      * Retrieves all parts (including inactive).
-     * @return List of all parts
+     * @return List of all parts as DTOs
      */
     @Transactional(readOnly = true)
-    public List<Part> getAllParts() {
-        return partRepository.findAll();
+    public List<PartResponseDTO> getAllParts() {
+        return partRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     /**
      * Retrieves all parts with available stock.
-     * @return List of parts with stock > 0
+     * @return List of parts with stock > 0 as DTOs
      */
-    public List<Part> getAvailableParts() {
+    public List<PartResponseDTO> getAvailableParts() {
         return partRepository.findByActiveTrue().stream()
-                .filter(part -> part.getCurrentStock() > 0)
+                .filter(partEntity -> partEntity.getCurrentStock() > 0)
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     /**
      * Retrieves all parts with low stock.
-     * @return List of parts with stock <= minimum stock
+     * @return List of parts with stock <= minimum stock as DTOs
      */
     @Transactional(readOnly = true)
-    public List<Part> getLowStockParts() {
-        return partRepository.findLowStockParts();
+    public List<PartResponseDTO> getLowStockParts() {
+        return partRepository.findLowStockParts().stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     // ================ Stock Management ================
@@ -170,16 +197,17 @@ public class PartService {
      * @throws IllegalArgumentException if resulting stock would be negative
      */
     public void updateStock(Long partId, int quantity) {
-        Part part = partRepository.findById(partId)
+        PartEntity partEntity = partRepository.findById(partId)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
         
-        int newStock = part.getCurrentStock() + quantity;
+        int newStock = partEntity.getCurrentStock() + quantity;
         if (newStock < 0) {
-            throw new IllegalArgumentException("Insufficient stock for part: " + part.getPartNumber());
+            throw new IllegalArgumentException("Insufficient stock for part: " + partEntity.getPartNumber());
         }
         
-        part.setCurrentStock(newStock);
-        partRepository.save(part);
+        partEntity.setCurrentStock(newStock);
+        partRepository.save(partEntity);
+        checkAndTriggerLowStockAlert(partId); // Check low stock after updating stock
     }
 
     /**
@@ -191,25 +219,26 @@ public class PartService {
      * @throws IllegalArgumentException if operation type is invalid or resulting stock would be negative
      */
     public void adjustStock(Long partId, int quantity, String operationType) {
-        Part part = partRepository.findById(partId)
+        PartEntity partEntity = partRepository.findById(partId)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
 
         switch (operationType.toLowerCase()) {
             case "add":
-                part.setCurrentStock(part.getCurrentStock() + quantity);
+                partEntity.setCurrentStock(partEntity.getCurrentStock() + quantity);
                 break;
             case "subtract":
-                int newStock = part.getCurrentStock() - quantity;
+                int newStock = partEntity.getCurrentStock() - quantity;
                 if (newStock < 0) {
-                    throw new IllegalArgumentException("Insufficient stock for part: " + part.getPartNumber());
+                    throw new IllegalArgumentException("Insufficient stock for part: " + partEntity.getPartNumber());
                 }
-                part.setCurrentStock(newStock);
+                partEntity.setCurrentStock(newStock);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid operation type: " + operationType);
         }
 
-        partRepository.save(part);
+        partRepository.save(partEntity);
+        checkAndTriggerLowStockAlert(partId); // Check low stock after adjusting stock
     }
 
     /**
@@ -219,11 +248,12 @@ public class PartService {
      * @throws EntityNotFoundException if part not found
      */
     public void releaseReservedStock(Long partId, int quantity) {
-        Part part = partRepository.findById(partId)
+        PartEntity partEntity = partRepository.findById(partId)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
         
-        part.setCurrentStock(part.getCurrentStock() + quantity);
-        partRepository.save(part);
+        partEntity.setCurrentStock(partEntity.getCurrentStock() + quantity);
+        partRepository.save(partEntity);
+        checkAndTriggerLowStockAlert(partId); // Check low stock after releasing stock
     }
 
     /**
@@ -232,13 +262,33 @@ public class PartService {
      * @throws EntityNotFoundException if part not found
      */
     public void checkAndTriggerLowStockAlert(Long partId) {
-        Part part = partRepository.findById(partId)
+        PartEntity partEntity = partRepository.findById(partId)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
         
-        if (part.getCurrentStock() <= part.getMinimumStock()) {
+        if (partEntity.getCurrentStock() <= partEntity.getLowStockThreshold()) {
             // TODO: Implement actual low stock alert notification logic
-            System.out.println("LOW STOCK ALERT for Part ID: " + part.getPartNumber() + 
-                             " (" + part.getName() + "). Current Stock: " + part.getCurrentStock());
+            System.out.println("LOW STOCK ALERT for Part ID: " + partEntity.getPartNumber() + 
+                             " (" + partEntity.getName() + "). Current Stock: " + partEntity.getCurrentStock());
         }
+    }
+    
+    // Helper method to convert Part entity to PartResponseDTO
+    private PartResponseDTO convertToDto(PartEntity partEntity) {
+        PartResponseDTO dto = new PartResponseDTO();
+        dto.setId(partEntity.getId());
+        dto.setPartNumber(partEntity.getPartNumber());
+        dto.setName(partEntity.getName());
+        dto.setDescription(partEntity.getDescription());
+        dto.setUnitCost(partEntity.getUnitCost());
+        dto.setCurrentStock(partEntity.getCurrentStock());
+        dto.setLowStockThreshold(partEntity.getLowStockThreshold());
+        dto.setSerialNumber(partEntity.getSerialNumber());
+        dto.setActive(partEntity.isActive());
+        dto.setCreatedAt(partEntity.getCreatedAt());
+        dto.setDateAdded(partEntity.getDateAdded());
+        dto.setDatePurchasedByCustomer(partEntity.getDatePurchasedByCustomer());
+        dto.setWarrantyExpiration(partEntity.getWarrantyExpiration());
+        dto.setAddedBy(partEntity.getAddedBy());
+        return dto;
     }
 } 

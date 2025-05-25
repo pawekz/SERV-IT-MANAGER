@@ -1,16 +1,19 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.entity.Part;
+import com.servit.servit.entity.PartEntity;
 import com.servit.servit.service.PartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.servit.servit.dto.CreatePartRequestDTO;
+import com.servit.servit.dto.PartResponseDTO;
+import com.servit.servit.dto.UpdatePartRequestDTO;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/parts")
+@RequestMapping("/part")
 public class PartController {
 
     private final PartService partService;
@@ -18,21 +21,21 @@ public class PartController {
     @Autowired
     public PartController(PartService partService) {this.partService = partService;}
 
-    @PostMapping("/create")
-    public ResponseEntity<Part> createPart(@RequestBody Part part) {
-        return ResponseEntity.ok(partService.createPart(part));
+    @PostMapping("/addPart")
+    public ResponseEntity<PartResponseDTO> createPart(@RequestBody CreatePartRequestDTO partDto) {
+        return ResponseEntity.ok(partService.createPart(partDto));
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<Part> updatePart(@PathVariable Long id, @RequestBody Part part) {
+    @PatchMapping("/updatePart/{id}")
+    public ResponseEntity<PartResponseDTO> updatePart(@PathVariable Long id, @RequestBody UpdatePartRequestDTO partDto) {
         try {
-            return ResponseEntity.ok(partService.updatePart(id, part));
+            return ResponseEntity.ok(partService.updatePart(id, partDto));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/deletePart/{id}")
     public ResponseEntity<Void> deletePart(@PathVariable Long id) {
         try {
             partService.deletePart(id);
@@ -43,43 +46,43 @@ public class PartController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Part> getPartById(@PathVariable Long id) {
+    public ResponseEntity<PartResponseDTO> getPartById(@PathVariable Long id) {
         return partService.getPartById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/number/{partNumber}")
-    public ResponseEntity<Part> getPartByPartNumber(@PathVariable String partNumber) {
+    public ResponseEntity<PartResponseDTO> getPartByPartNumber(@PathVariable String partNumber) {
         return partService.getPartByPartNumber(partNumber)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/serial/{serialNumber}")
-    public ResponseEntity<Part> getPartBySerialNumber(@PathVariable String serialNumber) {
+    public ResponseEntity<PartResponseDTO> getPartBySerialNumber(@PathVariable String serialNumber) {
         return partService.getPartBySerialNumber(serialNumber)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<List<Part>> getAllParts() {
+    public ResponseEntity<List<PartResponseDTO>> getAllParts() {
         return ResponseEntity.ok(partService.getAllParts());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Part>> searchParts(@RequestParam String searchTerm) {
+    public ResponseEntity<List<PartResponseDTO>> searchParts(@RequestParam String searchTerm) {
         return ResponseEntity.ok(partService.searchParts(searchTerm));
     }
 
     @GetMapping("/available")
-    public ResponseEntity<List<Part>> getAvailableParts() {
+    public ResponseEntity<List<PartResponseDTO>> getAvailableParts() {
         return ResponseEntity.ok(partService.getAvailableParts());
     }
 
     @GetMapping("/low-stock")
-    public ResponseEntity<List<Part>> getLowStockParts() {
+    public ResponseEntity<List<PartResponseDTO>> getLowStockParts() {
         return ResponseEntity.ok(partService.getLowStockParts());
     }
 
@@ -121,8 +124,8 @@ public class PartController {
     // Admin & Technician - Get All Parts (or paginated/filtered list)
     // This endpoint can serve both roles, with the service handling access control if needed
     @GetMapping("/all")
-    public ResponseEntity<List<Part>> getAllActiveParts() {
-        List<Part> parts = partService.getAllActiveParts();
+    public ResponseEntity<List<PartResponseDTO>> getAllActiveParts() {
+        List<PartResponseDTO> parts = partService.getAllActiveParts();
         return new ResponseEntity<>(parts, HttpStatus.OK);
     }
 

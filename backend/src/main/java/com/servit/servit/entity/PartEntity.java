@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * Entity class representing a part/inventory item in the system.
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "parts")
-public class Part {
+public class PartEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,7 +34,7 @@ public class Part {
     private Integer currentStock;
 
     @Column(nullable = false)
-    private Integer minimumStock;
+    private Integer lowStockThreshold;
 
     @Column(nullable = false)
     private String serialNumber;
@@ -41,19 +42,19 @@ public class Part {
     @Column(nullable = false)
     private boolean active = true;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column
+    private LocalDateTime dateAdded;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Column
+    private LocalDateTime datePurchasedByCustomer;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Column
+    private LocalDateTime warrantyExpiration;
+
+    @Column
+    private String addedBy;
 } 

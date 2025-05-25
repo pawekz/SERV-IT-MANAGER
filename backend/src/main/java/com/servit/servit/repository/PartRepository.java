@@ -1,6 +1,6 @@
 package com.servit.servit.repository;
 
-import com.servit.servit.entity.Part;
+import com.servit.servit.entity.PartEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,22 +10,22 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PartRepository extends JpaRepository<Part, Long> {
+public interface PartRepository extends JpaRepository<PartEntity, Long> {
     // Spring Data JPA automatically provides basic CRUD operations (save, findById, findAll, delete, etc.)
 
     // You can add custom query methods here if needed, for example:
-    Optional<Part> findByPartNumber(String partNumber);
+    Optional<PartEntity> findByPartNumber(String partNumber);
     
-    Optional<Part> findBySerialNumber(String serialNumber);
+    Optional<PartEntity> findBySerialNumber(String serialNumber);
     
-    List<Part> findByActiveTrue();
+    List<PartEntity> findByActiveTrue();
     
-    @Query("SELECT p FROM Part p WHERE p.active = true AND " +
+    @Query("SELECT p FROM PartEntity p WHERE p.active = true AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(p.partNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    List<Part> searchParts(@Param("searchTerm") String searchTerm);
+    List<PartEntity> searchParts(@Param("searchTerm") String searchTerm);
     
-    @Query("SELECT p FROM Part p WHERE p.active = true AND p.currentStock <= p.minimumStock")
-    List<Part> findLowStockParts();
+    @Query("SELECT p FROM PartEntity p WHERE p.active = true AND p.currentStock <= p.lowStockThreshold")
+    List<PartEntity> findLowStockParts();
 } 
