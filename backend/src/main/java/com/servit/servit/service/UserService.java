@@ -69,6 +69,7 @@ public class UserService {
         user.setPhoneNumber(req.getPhoneNumber());
         user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         user.setIsVerified(false);
+        user.setStatus("Pending");
         userRepo.save(user);
 
         String otp = otpService.generateOtp(req.getEmail());
