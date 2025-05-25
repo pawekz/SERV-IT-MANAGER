@@ -11,21 +11,18 @@ import java.util.Optional;
 
 @Repository
 public interface PartRepository extends JpaRepository<PartEntity, Long> {
-    // Spring Data JPA automatically provides basic CRUD operations (save, findById, findAll, delete, etc.)
-
-    // You can add custom query methods here if needed, for example:
     Optional<PartEntity> findByPartNumber(String partNumber);
     
     Optional<PartEntity> findBySerialNumber(String serialNumber);
-    
-    List<PartEntity> findByActiveTrue();
-    
-    @Query("SELECT p FROM PartEntity p WHERE p.active = true AND " +
-           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(p.partNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+
+    List<PartEntity> findByIsDeletedFalse();
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.partNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     List<PartEntity> searchParts(@Param("searchTerm") String searchTerm);
-    
-    @Query("SELECT p FROM PartEntity p WHERE p.active = true AND p.currentStock <= p.lowStockThreshold")
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND p.currentStock <= p.lowStockThreshold")
     List<PartEntity> findLowStockParts();
 } 

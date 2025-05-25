@@ -6,7 +6,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.servit.servit.dto.CreatePartRequestDTO;
+import com.servit.servit.dto.AddPartRequestDTO;
 import com.servit.servit.dto.PartResponseDTO;
 import com.servit.servit.dto.UpdatePartRequestDTO;
 
@@ -37,7 +37,7 @@ public class PartService {
      * @return The created part as a DTO
      * @throws IllegalArgumentException if part number already exists
      */
-    public PartResponseDTO createPart(CreatePartRequestDTO partDto) {
+    public PartResponseDTO addpart(AddPartRequestDTO partDto) {
         if (partRepository.findByPartNumber(partDto.getPartNumber()).isPresent()) {
             throw new IllegalArgumentException("Part number already exists");
         }
@@ -83,7 +83,7 @@ public class PartService {
         if (partDto.getCurrentStock() != null) existingPartEntity.setCurrentStock(partDto.getCurrentStock());
         if (partDto.getLowStockThreshold() != null) existingPartEntity.setLowStockThreshold(partDto.getLowStockThreshold());
         if (partDto.getSerialNumber() != null) existingPartEntity.setSerialNumber(partDto.getSerialNumber());
-        if (partDto.getActive() != null) existingPartEntity.setActive(partDto.getActive());
+        if (partDto.getIsDeleted() != null) existingPartEntity.setIsDeleted(partDto.getIsDeleted());
         if (partDto.getDateAdded() != null) existingPartEntity.setDateAdded(partDto.getDateAdded());
         if (partDto.getDatePurchasedByCustomer() != null) existingPartEntity.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
         if (partDto.getWarrantyExpiration() != null) existingPartEntity.setWarrantyExpiration(partDto.getWarrantyExpiration());
@@ -94,14 +94,14 @@ public class PartService {
     }
 
     /**
-     * Soft deletes a part by marking it as inactive.
+     * Soft deletes a part by marking it as true.
      * @param id The ID of the part to delete
      * @throws EntityNotFoundException if part not found
      */
     public void deletePart(Long id) {
         PartEntity partEntity = partRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + id));
-        partEntity.setActive(false);
+        partEntity.setIsDeleted(true);
         partRepository.save(partEntity);
     }
 
@@ -150,21 +150,14 @@ public class PartService {
     // ================ List Operations ================
 
     /**
-     * Retrieves all active parts.
-     * @return List of active parts as DTOs
-     */
-    @Transactional(readOnly = true)
-    public List<PartResponseDTO> getAllActiveParts() {
-        return partRepository.findByActiveTrue().stream().map(this::convertToDto).collect(Collectors.toList());
-    }
-
-    /**
-     * Retrieves all parts (including inactive).
-     * @return List of all parts as DTOs
+     * Retrieves all parts.
+     * @return List of parts as DTOs
      */
     @Transactional(readOnly = true)
     public List<PartResponseDTO> getAllParts() {
-        return partRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
+        return partRepository.findByIsDeletedFalse().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -172,7 +165,7 @@ public class PartService {
      * @return List of parts with stock > 0 as DTOs
      */
     public List<PartResponseDTO> getAvailableParts() {
-        return partRepository.findByActiveTrue().stream()
+        return partRepository.findByIsDeletedFalse().stream()
                 .filter(partEntity -> partEntity.getCurrentStock() > 0)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -275,7 +268,7 @@ public class PartService {
     // Helper method to convert Part entity to PartResponseDTO
     private PartResponseDTO convertToDto(PartEntity partEntity) {
         PartResponseDTO dto = new PartResponseDTO();
-        dto.setId(partEntity.getId());
+        dto.setId(partEntity.getPartId());
         dto.setPartNumber(partEntity.getPartNumber());
         dto.setName(partEntity.getName());
         dto.setDescription(partEntity.getDescription());
@@ -283,8 +276,7 @@ public class PartService {
         dto.setCurrentStock(partEntity.getCurrentStock());
         dto.setLowStockThreshold(partEntity.getLowStockThreshold());
         dto.setSerialNumber(partEntity.getSerialNumber());
-        dto.setActive(partEntity.isActive());
-        dto.setCreatedAt(partEntity.getCreatedAt());
+        dto.setIsDeleted(partEntity.getIsDeleted() != null ? partEntity.getIsDeleted() : false);
         dto.setDateAdded(partEntity.getDateAdded());
         dto.setDatePurchasedByCustomer(partEntity.getDatePurchasedByCustomer());
         dto.setWarrantyExpiration(partEntity.getWarrantyExpiration());

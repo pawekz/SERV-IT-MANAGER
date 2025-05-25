@@ -6,55 +6,49 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 
-/**
- * Entity class representing a part/inventory item in the system.
- * Maps to the 'parts' table in the database.
- */
 @Data
 @Entity
-@Table(name = "parts")
+@Table(name = "part")
 public class PartEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "part_id")
+    private Long partId;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "partNumber", nullable = false, unique = true)
     private String partNumber;
 
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(length = 1000)
+    @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "unit_cost", nullable = false)
     private BigDecimal unitCost;
 
-    @Column(nullable = false)
+    @Column(name = "current_stock", nullable = false)
     private Integer currentStock;
 
-    @Column(nullable = false)
+    @Column(name = "low_stock_threshold", nullable = false)
     private Integer lowStockThreshold;
 
-    @Column(nullable = false)
+    @Column(name = "serial_number", nullable = false)
     private String serialNumber;
 
-    @Column(nullable = false)
-    private boolean active = true;
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isDeleted = false;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column
+    @Column(name = "date_added", nullable = false)
     private LocalDateTime dateAdded;
 
-    @Column
+    @Column(name = "date_purchased_by_customer")
     private LocalDateTime datePurchasedByCustomer;
 
-    @Column
+    @Column(name = "warranty_expiration")
     private LocalDateTime warrantyExpiration;
 
-    @Column
+    @Column(name = "added_by", nullable = false)
     private String addedBy;
 } 

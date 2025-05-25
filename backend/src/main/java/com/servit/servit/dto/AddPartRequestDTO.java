@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class CreatePartRequestDTO {
+public class AddPartRequestDTO {
     private String partNumber;
     private String name;
     private String description;
@@ -17,5 +17,4 @@ public class CreatePartRequestDTO {
     private LocalDateTime datePurchasedByCustomer;
     private LocalDateTime warrantyExpiration;
     private String addedBy;
-    // 'active', 'createdAt', 'updatedAt', 'id' are managed by backend/database
 } 

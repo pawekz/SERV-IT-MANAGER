@@ -11,11 +11,11 @@ public class UpdatePartRequestDTO {
     private String description;
     private BigDecimal unitCost;
     private Integer currentStock;
-    private Integer lowStockThreshold; // Renamed from minimumStock
+    private Integer lowStockThreshold;
     private String serialNumber;
-    private Boolean active; // Allow updating active status
-    private LocalDateTime dateAdded; // Added dateAdded
-    private LocalDateTime datePurchasedByCustomer; // Added datePurchasedByCustomer
-    private LocalDateTime warrantyExpiration; // Added warrantyExpiration
-    private String addedBy; // Added addedBy
+    private Boolean isDeleted;
+    private LocalDateTime dateAdded;
+    private LocalDateTime datePurchasedByCustomer;
+    private LocalDateTime warrantyExpiration;
+    private String addedBy;
 } 

@@ -14,8 +14,7 @@ public class PartResponseDTO {
     private Integer currentStock;
     private Integer lowStockThreshold;
     private String serialNumber;
-    private boolean active;
-    private LocalDateTime createdAt;
+    private Boolean isDeleted;
     private LocalDateTime dateAdded;
     private LocalDateTime datePurchasedByCustomer;
     private LocalDateTime warrantyExpiration;
