@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity, Integer> {
     Optional<RepairTicketEntity> findByTicketNumber(String ticketNumber);
 
-    @Query(value = "SELECT nextval('repair_ticket_seq')", nativeQuery = true)
+    @Query(value = "SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'repair_ticket'", nativeQuery = true)
     Long getNextRepairTicketId();
 }
