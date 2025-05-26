@@ -61,6 +61,10 @@ public class RepairTicketService {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
         }
 
+        if (req.getRepairPhotos() != null && req.getRepairPhotos().size() > 3) {
+            throw new IllegalArgumentException("You can upload a maximum of 3 repair photos.");
+        }
+
         UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
 
