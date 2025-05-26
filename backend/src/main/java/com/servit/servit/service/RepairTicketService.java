@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class RepairTicketService {
 
@@ -34,6 +37,8 @@ public class RepairTicketService {
 
     @Autowired
     private FileUtil fileUtil;
+
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
 
     public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
@@ -93,7 +98,7 @@ public class RepairTicketService {
 
         String digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
 
-        System.out.println("Successfully saved digital signature for repair ticket: " + repairTicket.getTicketNumber());
+        logger.info("Successfully saved digital signature for repair ticket: {}", repairTicket.getTicketNumber());
 
         DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
         digitalSignature.setImageUrl(digitalSignaturePath);
@@ -101,7 +106,7 @@ public class RepairTicketService {
 
         repairTicket.setDigitalSignature(digitalSignature);
 
-        System.out.println("Successfully created repair ticket: " + repairTicket.getTicketNumber());
+        logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
 
         return repairTicketRepository.save(repairTicket);
     }
