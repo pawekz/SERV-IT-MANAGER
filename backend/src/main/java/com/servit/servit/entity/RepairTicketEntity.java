@@ -1,5 +1,6 @@
 package com.servit.servit.entity;
 
+import com.servit.servit.enumeration.RepairTicketDeviceType;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,8 +29,9 @@ public class RepairTicketEntity {
     @Column(name = "customer_phone_number", nullable = false)
     private String customerPhoneNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "device_type", nullable = false)
-    private String deviceType;
+    private RepairTicketDeviceType deviceType;
 
     @Column(name = "device_color", nullable = false)
     private String deviceColor;
