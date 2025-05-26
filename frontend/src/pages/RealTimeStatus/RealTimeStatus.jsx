@@ -82,9 +82,9 @@ const RealTimeStatus = () => {
 
     return (
         <div className="flex min-h-screen bg-gray-50">
-            {/*<Sidebar />*/}
+            <Sidebar />
 
-            <div className="flex-1 p-6">
+            <div className="flex-1 ml-[250px] p-6">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">My Repairs Status Dashboard</h1>
@@ -93,7 +93,7 @@ const RealTimeStatus = () => {
 
                 {/* Filters */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Search Repairs</label>
                             <input
@@ -146,7 +146,7 @@ const RealTimeStatus = () => {
                 </div>
 
                 {/* Repair Cards */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filteredRepairs.map((repair) => (
                         <div
                             key={repair.id}
