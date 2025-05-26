@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown,  Package, ChevronLeft, ChevronRight, X, } from 'lucide-react';
+import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash, Plus } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const Inventory = () => {
@@ -195,9 +195,17 @@ const Inventory = () => {
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
                 <div className="px-10 py-8">
                     {/* Header */}
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
-                        <p className="text-gray-600">Manage parts inventory and link items directly to repair jobs.</p>
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
+                            <p className="text-gray-600">Manage parts inventory and link items directly to repair jobs.</p>
+                        </div>
+                        <button 
+                            className="px-4 py-2 bg-[#33e407] hover:bg-opacity-80 text-white rounded-md font-medium flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            Add Part
+                        </button>
                     </div>
 
                     {/* Available Inventory */}
@@ -294,17 +302,14 @@ const Inventory = () => {
                                             <span className="text-sm font-medium text-gray-900">{item.location}</span>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <button
-                                                className={`px-3 py-1 text-xs font-medium rounded-md ${
-                                                    selectedParts.some(part => part.id === item.id)
-                                                        ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                        : "bg-green-100 text-green-600 hover:bg-green-200"
-                                                }`}
-                                                onClick={() => togglePartSelection(item)}
-                                                disabled={item.availability.status === "OUT OF STOCK"}
-                                            >
-                                                {selectedParts.some(part => part.id === item.id) ? "Remove" : "Add"}
-                                            </button>
+                                            <div className="flex space-x-2">
+                                                <button className="p-1 text-blue-600 hover:text-blue-800">
+                                                    <Pen size={16} />
+                                                </button>
+                                                <button className="p-1 text-red-600 hover:text-red-800">
+                                                    <Trash size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -405,20 +410,20 @@ const Inventory = () => {
                         </div>
 
                         {/* Notes */}
-                        <div className="p-5 border-t border-gray-100">
-                            <h3 className="font-medium text-gray-700 mb-3">Notes</h3>
-                            <textarea
-                                className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                rows={3}
-                                placeholder="Add any notes about this parts assignment..."
-                            ></textarea>
-                        </div>
+                        {/*<div className="p-5 border-t border-gray-100">*/}
+                        {/*    <h3 className="font-medium text-gray-700 mb-3">Notes</h3>*/}
+                        {/*    <textarea*/}
+                        {/*        className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"*/}
+                        {/*        rows={3}*/}
+                        {/*        placeholder="Add any notes about this parts assignment..."*/}
+                        {/*    ></textarea>*/}
+                        {/*</div>*/}
 
                         {/* Footer */}
                         <div className="p-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
-                                Assigning parts to a repair ticket will reserve them in inventory and make them unavailable for other repairs.
-                            </div>
+                            {/*<div className="text-sm text-gray-600">*/}
+                            {/*    Assigning parts to a repair ticket will reserve them in inventory and make them unavailable for other repairs.*/}
+                            {/*</div>*/}
                             <div className="flex items-center gap-3">
                                 <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-medium flex items-center gap-2">
                                     <X size={16} />
