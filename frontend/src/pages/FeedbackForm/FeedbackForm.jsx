@@ -94,60 +94,60 @@ const FeedbackForm = () => {
                     {/* Information Panels */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         {/* Repair Information */}
-                        <div className="bg-white rounded-lg p-6 border border-gray-200">
-                            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                <span className="text-gray-400">🔧</span>
-                                Repair Information
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Ticket ID:</span>
-                                    <span className="font-medium">#RT-2305</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Device:</span>
-                                    <span className="font-medium">iPhone 13 Pro</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Repair Type:</span>
-                                    <span className="font-medium">Screen Replacement</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Status:</span>
-                                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">COMPLETED</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Completed On:</span>
-                                    <span className="font-medium">Mar 25, 2025</span>
-                                </div>
-                            </div>
-                        </div>
+                        {/*<div className="bg-white rounded-lg p-6 border border-gray-200">*/}
+                        {/*    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">*/}
+                        {/*        <span className="text-gray-400">🔧</span>*/}
+                        {/*        Repair Information*/}
+                        {/*    </h3>*/}
+                        {/*    <div className="space-y-3">*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Ticket ID:</span>*/}
+                        {/*            <span className="font-medium">#RT-2305</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Device:</span>*/}
+                        {/*            <span className="font-medium">iPhone 13 Pro</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Repair Type:</span>*/}
+                        {/*            <span className="font-medium">Screen Replacement</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Status:</span>*/}
+                        {/*            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">COMPLETED</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Completed On:</span>*/}
+                        {/*            <span className="font-medium">Mar 25, 2025</span>*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
 
                         {/* Customer Information */}
-                        <div className="bg-white rounded-lg p-6 border border-gray-200">
-                            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                <span className="text-gray-400">👤</span>
-                                Customer Information
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Name:</span>
-                                    <span className="font-medium">James Wilson</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Email:</span>
-                                    <span className="font-medium">j.wilson@example.com</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Phone:</span>
-                                    <span className="font-medium">(555) 123-4567</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Technician:</span>
-                                    <span className="font-medium">Sarah Johnson</span>
-                                </div>
-                            </div>
-                        </div>
+                        {/*<div className="bg-white rounded-lg p-6 border border-gray-200">*/}
+                        {/*    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">*/}
+                        {/*        <span className="text-gray-400">👤</span>*/}
+                        {/*        Customer Information*/}
+                        {/*    </h3>*/}
+                        {/*    <div className="space-y-3">*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Name:</span>*/}
+                        {/*            <span className="font-medium">James Wilson</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Email:</span>*/}
+                        {/*            <span className="font-medium">j.wilson@example.com</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Phone:</span>*/}
+                        {/*            <span className="font-medium">(555) 123-4567</span>*/}
+                        {/*        </div>*/}
+                        {/*        <div className="flex justify-between">*/}
+                        {/*            <span className="text-gray-600">Technician:</span>*/}
+                        {/*            <span className="font-medium">Sarah Johnson</span>*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
                     </div>
 
                     {/* Rating Section */}
@@ -185,14 +185,14 @@ const FeedbackForm = () => {
                                 <StarRating rating={ratings.timeliness} onRatingChange={handleRatingChange} category="timeliness" />
                             </div>
 
-                            <div className="flex justify-between items-center">
-                                <span className="font-medium text-gray-900">Value for Money</span>
-                                <StarRating
-                                    rating={ratings.valueForMoney}
-                                    onRatingChange={handleRatingChange}
-                                    category="valueForMoney"
-                                />
-                            </div>
+                            {/*<div className="flex justify-between items-center">*/}
+                            {/*    <span className="font-medium text-gray-900">Value for Money</span>*/}
+                            {/*    <StarRating*/}
+                            {/*        rating={ratings.valueForMoney}*/}
+                            {/*        onRatingChange={handleRatingChange}*/}
+                            {/*        category="valueForMoney"*/}
+                            {/*    />*/}
+                            {/*</div>*/}
 
                             <div className="flex justify-between items-center">
                                 <span className="font-medium text-gray-900">Overall Satisfaction</span>
@@ -220,53 +220,53 @@ const FeedbackForm = () => {
                     </div>
 
                     {/* Improvement Section */}
-                    <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-2">How Can We Improve?</h3>
-                        <p className="text-gray-600 text-sm mb-4">
-                            Let us know if there's anything we could have done better during your repair experience.
-                        </p>
-                        <textarea
-                            value={improvementSuggestions}
-                            onChange={(e) => setImprovementSuggestions(e.target.value)}
-                            placeholder="Your suggestions for improvement..."
-                            className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
+                    {/*<div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">*/}
+                    {/*    <h3 className="font-semibold text-gray-900 mb-2">How Can We Improve?</h3>*/}
+                    {/*    <p className="text-gray-600 text-sm mb-4">*/}
+                    {/*        Let us know if there's anything we could have done better during your repair experience.*/}
+                    {/*    </p>*/}
+                    {/*    <textarea*/}
+                    {/*        value={improvementSuggestions}*/}
+                    {/*        onChange={(e) => setImprovementSuggestions(e.target.value)}*/}
+                    {/*        placeholder="Your suggestions for improvement..."*/}
+                    {/*        className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"*/}
+                    {/*    />*/}
+                    {/*</div>*/}
 
                     {/* Checkboxes */}
-                    <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
-                        <div className="space-y-4">
-                            <label className="flex items-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={submitAnonymously}
-                                    onChange={(e) => setSubmitAnonymously(e.target.checked)}
-                                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <div>
-                                    <span className="font-medium text-gray-900">Submit feedback anonymously</span>
-                                    <p className="text-gray-600 text-sm">
-                                        If checked, your name and contact information will not be associated with this feedback.
-                                    </p>
-                                </div>
-                            </label>
+                    {/*<div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">*/}
+                    {/*    <div className="space-y-4">*/}
+                    {/*        <label className="flex items-start gap-3">*/}
+                    {/*            <input*/}
+                    {/*                type="checkbox"*/}
+                    {/*                checked={submitAnonymously}*/}
+                    {/*                onChange={(e) => setSubmitAnonymously(e.target.checked)}*/}
+                    {/*                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"*/}
+                    {/*            />*/}
+                    {/*            <div>*/}
+                    {/*                <span className="font-medium text-gray-900">Submit feedback anonymously</span>*/}
+                    {/*                <p className="text-gray-600 text-sm">*/}
+                    {/*                    If checked, your name and contact information will not be associated with this feedback.*/}
+                    {/*                </p>*/}
+                    {/*            </div>*/}
+                    {/*        </label>*/}
 
-                            <label className="flex items-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={allowContact}
-                                    onChange={(e) => setAllowContact(e.target.checked)}
-                                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <div>
-                                    <span className="font-medium text-gray-900">IOCONNECT may contact me about my feedback</span>
-                                    <p className="text-gray-600 text-sm">
-                                        If checked, a representative may reach out to discuss your feedback in more detail.
-                                    </p>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
+                    {/*        <label className="flex items-start gap-3">*/}
+                    {/*            <input*/}
+                    {/*                type="checkbox"*/}
+                    {/*                checked={allowContact}*/}
+                    {/*                onChange={(e) => setAllowContact(e.target.checked)}*/}
+                    {/*                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"*/}
+                    {/*            />*/}
+                    {/*            <div>*/}
+                    {/*                <span className="font-medium text-gray-900">IOCONNECT may contact me about my feedback</span>*/}
+                    {/*                <p className="text-gray-600 text-sm">*/}
+                    {/*                    If checked, a representative may reach out to discuss your feedback in more detail.*/}
+                    {/*                </p>*/}
+                    {/*            </div>*/}
+                    {/*        </label>*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
 
                     {/* Footer Message */}
                     <div className="bg-gray-50 rounded-lg p-4 mb-6">
