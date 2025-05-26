@@ -43,7 +43,8 @@ public class SecurityConfig {
                                 "/user/verifyOtp",
                                 "/user/resendOtp",
                                 "/user/forgotPassword",
-                                "/user/resetPassword"
+                                "/user/resetPassword",
+                                "/feedback/submitFeedback"
                         ).permitAll()
                         .requestMatchers(
                                 "/user/getCurrentUser",

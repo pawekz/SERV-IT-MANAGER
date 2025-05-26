@@ -1,13 +1,110 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown,  Package, ChevronLeft, ChevronRight, X, } from 'lucide-react';
+import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash, Plus, CheckCircle } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
+import axios from "axios";
 
 const Inventory = () => {
-    const [selectedParts, setSelectedParts] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [inventoryItems, setInventoryItems] = useState([]);
+    const [addPartLoading, setAddPartLoading] = useState(false);
+    const [addPartSuccess, setAddPartSuccess] = useState(false);
+    const [addPartError, setAddPartError] = useState(null);
+    const [expandedDescriptionId, setExpandedDescriptionId] = useState(null);
+    const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+    const [selectedDescription, setSelectedDescription] = useState({ title: "", content: "" });
+    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [partToDelete, setPartToDelete] = useState(null);
+
+    // Edit functionality state variables
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editPart, setEditPart] = useState(null);
+    const [editLoading, setEditLoading] = useState(false);
+    const [editSuccess, setEditSuccess] = useState(false);
+    const [editError, setEditError] = useState(null);
+
+    // New part form state
+    const [newPart, setNewPart] = useState({
+        partNumber: "",
+        name: "",
+        description: "",
+        unitCost: 0,
+        currentStock: 0,
+        lowStockThreshold: 0,
+        serialNumber: "",
+        dateAdded: new Date().toISOString().split('T')[0] + "T00:00:00",
+        datePurchasedByCustomer: null,
+        warrantyExpiration: "",
+        addedBy: ""
+    });
+
+    // Show notification helper function
+    const showNotification = (message, type = 'success') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => {
+            setNotification({ show: false, message: '', type: '' });
+        }, 3000); // Auto-hide after 3 seconds
+    };
+
+    // Update this function to open the delete modal instead of using window.confirm
+    const handleDeletePart = (partId) => {
+        const part = inventoryItems.find(item => item.id === partId);
+        setPartToDelete(part);
+        setShowDeleteModal(true);
+    };
+
+    // Add a new function to handle the actual deletion
+    const confirmDeletePart = async () => {
+        try {
+            const freshToken = getAuthToken();
+            if (!freshToken) {
+                throw new Error("Authentication token not found. Please log in again.");
+            }
+
+            await axios.delete(`http://localhost:8080/part/deletePart/${partToDelete.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${freshToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // Update UI after successful deletion
+            setInventoryItems(prevItems => prevItems.filter(item => item.id !== partToDelete.id));
+
+            // Show notification instead of alert
+            showNotification("Part deleted successfully");
+
+        } catch (err) {
+            console.error("Error deleting part:", err);
+            showNotification("Failed to delete part. " + (err.response?.data?.message || "Please try again."), "error");
+        } finally {
+            // Close the delete modal
+            setShowDeleteModal(false);
+            setPartToDelete(null);
+        }
+    };
+
+    // Handle description click to show modal
+    const handleDescriptionClick = (item) => {
+        setSelectedDescription({
+            title: item.name || "Part Description",
+            content: item.description || "No description available"
+        });
+        setShowDescriptionModal(true);
+    };
+
+    // Toggle description expansion
+    const toggleDescriptionExpand = (id) => {
+        if (expandedDescriptionId === id) {
+            setExpandedDescriptionId(null);
+        } else {
+            setExpandedDescriptionId(id);
+        }
+    };
 
     // Function to decode JWT token - needed for sidebar functionality
     const parseJwt = (token) => {
@@ -18,22 +115,82 @@ const Inventory = () => {
         }
     };
 
+    // Get token from various storage locations
+    const getAuthToken = () => {
+        const authToken = localStorage.getItem('authToken') ||
+            localStorage.getItem('token') ||
+            sessionStorage.getItem('token') ||
+            sessionStorage.getItem('authToken');
+        return authToken;
+    };
+
+    const fetchInventory = async () => {
+        setLoading(true);
+        try {
+            const freshToken = getAuthToken();
+            if (!freshToken) {
+                throw new Error("Authentication token not found");
+            }
+
+            // Use the actual backend endpoint to get all parts
+            const response = await axios.get('http://localhost:8080/part/getAllParts', {
+                headers: {
+                    'Authorization': `Bearer ${freshToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // Transform API data to match the UI expectations
+            const transformedItems = response.data.map(item => ({
+                id: item.id,
+                name: item.name,
+                sku: item.partNumber || item.serialNumber,
+                category: item.category || "Uncategorized",
+                availability: {
+                    status: item.currentStock > 0
+                        ? (item.currentStock <= item.lowStockThreshold ? "Low Stock" : "In Stock")
+                        : "Out of Stock",
+                    quantity: item.currentStock
+                },
+                // Store full item data for editing
+                partNumber: item.partNumber,
+                description: item.description,
+                unitCost: item.unitCost,
+                currentStock: item.currentStock,
+                lowStockThreshold: item.lowStockThreshold,
+                serialNumber: item.serialNumber,
+                isDeleted: item.isDeleted,
+                dateAdded: item.dateAdded,
+                datePurchasedByCustomer: item.datePurchasedByCustomer,
+                warrantyExpiration: item.warrantyExpiration,
+                addedBy: item.addedBy
+            }));
+
+            setInventoryItems(transformedItems);
+            setLoading(false);
+        } catch (err) {
+            console.error("Error fetching inventory:", err);
+            setError("Failed to load inventory items");
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
-                // Check if token exists
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
+                // Get token from storage
+                const storedToken = getAuthToken();
+                if (!storedToken) {
+                    throw new Error("No authentication token found");
                 }
 
                 // Validate token by trying to parse it
-                const decodedToken = parseJwt(token);
+                const decodedToken = parseJwt(storedToken);
                 if (!decodedToken) {
-                    throw new Error("Invalid token. Please log in again.");
+                    throw new Error("Invalid authentication token");
                 }
 
-                setLoading(false);
+                await fetchInventory();
             } catch (err) {
                 console.error("Authentication error:", err);
                 setError("Authentication failed. Please log in again.");
@@ -44,120 +201,169 @@ const Inventory = () => {
         checkAuthentication();
     }, []);
 
-    // Sample data
-    const repairInfo = {
-        ticketId: "#RT-2305",
-        device: "iPhone 13 Pro",
-        repairType: "Screen Replacement",
-        status: "IN PROGRESS",
-        technician: "John Gabriel Cañal"
+    // Handle form input changes
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewPart(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
-    const customerInfo = {
-        name: "Kyle Paulo",
-        email: "Kyle@gmail.com",
-        phone: "+63 905 123 4567",
-        createdOn: "Mar 24, 2025"
+    // Handle edit button click
+    const handleEditClick = (item) => {
+        setEditPart({...item});
+        setShowEditModal(true);
     };
 
-    const inventoryItems = [
-        {
-            id: 1,
-            name: "HDMI CABLE",
-            sku: "IP13P-DISP-OEM",
-            category: "Display",
-            availability: { status: "IN STOCK", count: 15 },
-            location: "Shelf A1",
-            quantity: 1
-        },
-        {
-            id: 2,
-            name: "HP LAPTOP",
-            sku: "IP13P-DISP-AFT-P",
-            category: "Display",
-            availability: { status: "IN STOCK", count: 8 },
-            location: "Shelf A2",
-            quantity: 1
-        },
-        {
-            id: 3,
-            name: "PRINTER",
-            sku: "IP13P-DISP-AFT-S",
-            category: "Display",
-            availability: { status: "LOW STOCK", count: 3 },
-            location: "Shelf B1",
-            quantity: 1
-        },
-        {
-            id: 4,
-            name: "HP PRINTER",
-            sku: "IP13P-BAT-OEM",
-            category: "Battery",
-            availability: { status: "IN STOCK", count: 12 },
-            location: "Shelf B2",
-            quantity: 1
-        },
-        {
-            id: 5,
-            name: "WIRE",
-            sku: "IP13P-BAT-AFT-P",
-            category: "Battery",
-            availability: { status: "IN STOCK", count: 7 },
-            location: "Shelf B3",
-            quantity: 1
-        },
-        {
-            id: 6,
-            name: "LENOVO BATTERY",
-            sku: "IP13P-BAT-AFT-S",
-            category: "Battery",
-            availability: { status: "OUT OF STOCK", count: 0 },
-            location: "Shelf C1",
-            quantity: 0
-        },
-        {
-            id: 7,
-            name: "ASUS LAPTOP",
-            sku: "IP13P-CAM-REAR",
-            category: "Camera",
-            availability: { status: "IN STOCK", count: 5 },
-            location: "Shelf C2",
-            quantity: 1
-        },
-        {
-            id: 8,
-            name: "HDMI CABLE",
-            sku: "IP13P-CAM-FRONT",
-            category: "Camera",
-            availability: { status: "LOW STOCK", count: 2 },
-            location: "Shelf D1",
-            quantity: 1
-        },
-        {
-            id: 9,
-            name: "Razerblade Laptop",
-            sku: "IP13P-CHARGE-PORT",
-            category: "Laptop",
-            availability: { status: "IN STOCK", count: 9 },
-            location: "Shelf D2",
-            quantity: 1
-        },
-        {
-            id: 10,
-            name: "HP 13 Pro Wireless Charging Coil",
-            sku: "IP13P-CHARGE-COIL",
-            category: "Charging",
-            availability: { status: "LOW STOCK", count: 4 },
-            location: "Shelf E1",
-            quantity: 1
+    // Handle edit form input changes
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditPart(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Handle update part form submission
+    const handleUpdatePart = async (e) => {
+        e.preventDefault();
+        setEditLoading(true);
+        setEditError(null);
+        setEditSuccess(false);
+
+        try {
+            const freshToken = getAuthToken();
+            if (!freshToken) {
+                throw new Error("Authentication token not found. Please log in again.");
+            }
+
+            // Format the data for the API
+            const updateData = {
+                partNumber: editPart.partNumber || "",
+                name: editPart.name || "",
+                description: editPart.description || "",
+                unitCost: parseFloat(editPart.unitCost) || 0,
+                currentStock: parseInt(editPart.currentStock) || 0,
+                lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
+                serialNumber: editPart.serialNumber || "",
+                isDeleted: editPart.isDeleted || false,
+                dateAdded: editPart.dateAdded || "",
+                datePurchasedByCustomer: editPart.datePurchasedByCustomer || "",
+                warrantyExpiration: editPart.warrantyExpiration || "",
+                addedBy: editPart.addedBy || ""
+            };
+
+            // Make the PATCH request to update the part
+            const response = await axios.patch(
+                `http://localhost:8080/part/updatePart/${editPart.id}`,
+                updateData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${freshToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log("Update response:", response.data);
+            setEditSuccess(true);
+
+            // Refresh inventory to show updated data
+            await fetchInventory();
+
+            // Close modal after success
+            setTimeout(() => {
+                setShowEditModal(false);
+                setEditSuccess(false);
+            }, 1500);
+
+        } catch (err) {
+            console.error("Error updating part:", err);
+            setEditError(err.response?.data?.message || "Failed to update part");
+        } finally {
+            setEditLoading(false);
         }
-    ];
+    };
+
+    // Handle add part form submission
+    const handleAddPart = async (e) => {
+        e.preventDefault();
+        setAddPartLoading(true);
+        setAddPartError(null);
+        setAddPartSuccess(false);
+
+        try {
+            // Get a fresh token every time
+            const freshToken = getAuthToken();
+            if (!freshToken) {
+                throw new Error("Authentication token not found. Please log in again.");
+            }
+
+            // Format the data to match API expectations
+            const partData = {
+                ...newPart,
+                unitCost: parseFloat(newPart.unitCost),
+                currentStock: parseInt(newPart.currentStock),
+                lowStockThreshold: parseInt(newPart.lowStockThreshold),
+                addedBy: newPart.addedBy || "system"
+            };
+
+            // Make API call to add part with proper Bearer format
+            const response = await axios.post(
+                'http://localhost:8080/part/addPart',
+                partData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${freshToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log("API Response:", response.data);
+            setAddPartSuccess(true);
+
+            // Reset form
+            setNewPart({
+                partNumber: "",
+                name: "",
+                description: "",
+                unitCost: 0,
+                currentStock: 0,
+                lowStockThreshold: 0,
+                serialNumber: "",
+                dateAdded: new Date().toISOString().split('T')[0] + "T00:00:00",
+                datePurchasedByCustomer: null,
+                warrantyExpiration: "",
+                addedBy: ""
+            });
+
+            // Refresh inventory after successful add
+            await fetchInventory();
+
+            // Close modal after short delay
+            setTimeout(() => {
+                setShowAddModal(false);
+                setAddPartSuccess(false);
+            }, 1500);
+        } catch (err) {
+            console.error("Error adding part:", err);
+            if (err.response?.status === 401) {
+                setAddPartError("Authentication failed. Please log in again.");
+            } else {
+                setAddPartError(err.response?.data?.message || "Failed to add part. Please try again.");
+            }
+        } finally {
+            setAddPartLoading(false);
+        }
+    };
 
     // Filter items based on search query
     const filteredItems = inventoryItems.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Pagination
@@ -168,21 +374,9 @@ const Inventory = () => {
         currentPage * itemsPerPage
     );
 
-    // Handle part selection
-    const togglePartSelection = (item) => {
-        if (selectedParts.some(part => part.id === item.id)) {
-            setSelectedParts(selectedParts.filter(part => part.id !== item.id));
-        } else {
-            setSelectedParts([...selectedParts, item]);
-        }
-    };
-
-    // Calculate total items
-    const totalItems = selectedParts.length;
-
     // Status badge color mapping
     const getStatusColor = (status) => {
-        switch (status.toUpperCase()) {
+        switch (status?.toUpperCase()) {
             case "IN STOCK":
                 return "bg-green-100 text-green-600";
             case "LOW STOCK":
@@ -198,133 +392,71 @@ const Inventory = () => {
 
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
-            {/* Sidebar - now uncommented */}
+            {/* Sidebar */}
             <Sidebar />
 
-            {/* Main Content - adjusted to match AccountInformation structure */}
+            {/* Main Content */}
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
                 <div className="px-10 py-8">
                     {/* Header */}
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
-                        <p className="text-gray-600">Manage parts inventory and link items directly to repair jobs.</p>
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
+                            <p className="text-sm text-gray-600 mt-1">Manage your parts and inventory</p>
+                        </div>
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center hover:bg-blue-700 transition-colors"
+                        >
+                            <Plus size={16} className="mr-1" />
+                            Add New Part
+                        </button>
                     </div>
 
-                    {/* Repair Ticket Card */}
-                    {/*<div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">*/}
-                    {/*    <div className="p-5">*/}
-                    {/*        <div className="flex items-start gap-4">*/}
-                    {/*            <div className="p-3 bg-blue-50 rounded-lg">*/}
-                    {/*                <Cube size={24} className="text-blue-500" />*/}
-                    {/*            </div>*/}
-                    {/*            <div>*/}
-                    {/*                <h2 className="text-lg font-semibold text-gray-800">Assign Parts to Repair Ticket {repairInfo.ticketId}</h2>*/}
-                    {/*                <p className="text-gray-600 text-sm">Select parts from inventory to assign to this repair ticket.</p>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
+                    {/* Error Display */}
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-md">
+                            <p className="font-medium">{error}</p>
+                        </div>
+                    )}
 
-                    {/*    /!* Repair and Customer Info *!/*/}
-                    {/*    <div className="grid md:grid-cols-2 gap-6 p-5 border-t border-gray-100">*/}
-                    {/*        /!* Repair Information *!/*/}
-                    {/*        <div>*/}
-                    {/*            <div className="flex items-center mb-4">*/}
-                    {/*                <Wrench size={18} className="text-gray-500 mr-2" />*/}
-                    {/*                <h3 className="font-medium text-gray-700">Repair Information</h3>*/}
-                    {/*            </div>*/}
-                    {/*            <div className="grid grid-cols-2 gap-y-3 text-sm">*/}
-                    {/*                <div className="text-gray-500">Ticket ID:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.ticketId}</div>*/}
-
-                    {/*                <div className="text-gray-500">Device:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.device}</div>*/}
-
-                    {/*                <div className="text-gray-500">Repair Type:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.repairType}</div>*/}
-
-                    {/*                <div className="text-gray-500">Status:</div>*/}
-                    {/*                <div>*/}
-                    {/*<span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(repairInfo.status)}`}>*/}
-                    {/*  {repairInfo.status}*/}
-                    {/*</span>*/}
-                    {/*                </div>*/}
-
-                    {/*                <div className="text-gray-500">Technician:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.technician}</div>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-
-                    {/*        /!* Customer Information *!/*/}
-                    {/*        <div>*/}
-                    {/*            <div className="flex items-center mb-4">*/}
-                    {/*                <User size={18} className="text-gray-500 mr-2" />*/}
-                    {/*                <h3 className="font-medium text-gray-700">Customer Information</h3>*/}
-                    {/*            </div>*/}
-                    {/*            <div className="grid grid-cols-2 gap-y-3 text-sm">*/}
-                    {/*                <div className="text-gray-500">Name:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.name}</div>*/}
-
-                    {/*                <div className="text-gray-500">Email:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.email}</div>*/}
-
-                    {/*                <div className="text-gray-500">Phone:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.phone}</div>*/}
-
-                    {/*                <div className="text-gray-500">Created On:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.createdOn}</div>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
+                    {/* Loading Indicator */}
+                    {loading && (
+                        <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
+                            <p>Loading inventory data...</p>
+                        </div>
+                    )}
 
                     {/* Available Inventory */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
                         <div className="p-5 border-b border-gray-100">
-                            <div className="flex items-center gap-2">
-                                <Package size={20} className="text-gray-500" />
-                                <h2 className="text-lg font-semibold text-gray-800">Parts Inventory</h2>
-                            </div>
+                            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+                                <Package size={20} className="mr-2" />
+                                Available Inventory
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    {inventoryItems.length} items
+                                </span>
+                            </h2>
                         </div>
 
                         {/* Search and Filters */}
                         <div className="p-5 border-b border-gray-100">
-                            <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex items-center">
                                 <div className="relative flex-1">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Search size={18} className="text-gray-400" />
-                                    </div>
                                     <input
                                         type="text"
-                                        placeholder=""
-                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        placeholder="Search parts by name or SKU..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
+                                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                 </div>
-                                <div className="flex gap-3">
-                                    <div className="relative">
-                                        <select className="appearance-none bg-white border border-gray-300 rounded-md pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                            <option>All Categories</option>
-                                            <option>Display</option>
-                                            <option>Battery</option>
-                                            <option>Camera</option>
-                                            <option>Charging</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                            <ChevronDown size={16} className="text-gray-400" />
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <select className="appearance-none bg-white border border-gray-300 rounded-md pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                            <option>All Availability</option>
-                                            <option>In Stock</option>
-                                            <option>Low Stock</option>
-                                            <option>Out of Stock</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                            <ChevronDown size={16} className="text-gray-400" />
-                                        </div>
-                                    </div>
+                                <div className="ml-4">
+                                    <button className="px-3 py-2 border border-gray-300 rounded-md flex items-center text-gray-700 hover:bg-gray-50">
+                                        <span className="mr-1">Filters</span>
+                                        <ChevronDown size={16} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -333,203 +465,489 @@ const Inventory = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    <th className="w-10 px-5 py-3">
-                                        <input type="checkbox" className="rounded border-gray-300 text-green-500 focus:ring-green-500" />
-                                    </th>
-                                    {/*<th className="w-16 px-5 py-3">Image</th>*/}
-                                    <th className="px-5 py-3">Part ID</th>
-                                    <th className="px-5 py-3">Description</th>
-                                    <th className="px-5 py-3">Availability</th>
-                                    <th className="px-5 py-3">Location</th>
-                                    <th className="px-5 py-3">Quantity</th>
-                                    <th className="px-5 py-3">Action</th>
+                                <tr className="bg-gray-50">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200 bg-white">
-                                {paginatedItems.map((item) => (
-                                    <tr key={item.id} className="hover:bg-gray-50">
-                                        <td className="px-5 py-4">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
-                                                checked={selectedParts.some(part => part.id === item.id)}
-                                                onChange={() => togglePartSelection(item)}
-                                            />
-                                        </td>
-                                        {/*<td className="px-5 py-4">*/}
-                                        {/*    <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">*/}
-                                        {/*        {item.image.includes("display") && <div className="w-6 h-6 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*        {item.image.includes("battery") && <div className="w-6 h-4 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*        {item.image.includes("camera") && <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>}*/}
-                                        {/*        {item.image.includes("charging") && <div className="w-6 h-3 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*    </div>*/}
-                                        {/*</td>*/}
-                                        <td className="px-5 py-4">
-                                            <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                                            <div className="text-xs text-gray-500">SKU: {item.sku}</div>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-gray-700">{item.category}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.availability.status)}`}>
-                          {item.availability.status} {item.availability.count > 0 && `(${item.availability.count})`}
-                        </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm font-medium text-gray-900">{item.location}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-gray-700">{item.quantity}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <button
-                                                className={`px-3 py-1 text-xs font-medium rounded-md ${
-                                                    selectedParts.some(part => part.id === item.id)
-                                                        ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                        : "bg-green-100 text-green-600 hover:bg-green-200"
-                                                }`}
-                                                onClick={() => togglePartSelection(item)}
-                                                disabled={item.availability.status === "OUT OF STOCK"}
-                                            >
-                                                {selectedParts.some(part => part.id === item.id) ? "Remove" : "Add"}
-                                            </button>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {paginatedItems.length > 0 ? (
+                                    paginatedItems.map((item) => (
+                                        <tr key={item.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{item.sku || `#${item.id}`}</div>
+                                                <div className="text-xs text-gray-500">{item.category}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900 mb-1">{item.name}</div>
+                                                <div
+                                                    className={`text-xs text-gray-500 ${item.description && item.description.length > 50 ? 'cursor-pointer' : ''}`}
+                                                    onClick={() => item.description && item.description.length > 50 ? handleDescriptionClick(item) : null}
+                                                >
+                                                    {item.description ? (
+                                                        expandedDescriptionId === item.id
+                                                            ? item.description
+                                                            : `${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}`
+                                                    ) : (
+                                                        <span className="text-gray-400 italic">No description</span>
+                                                    )}
+                                                    {item.description && item.description.length > 50 && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); toggleDescriptionExpand(item.id); }}
+                                                            className="ml-1 text-blue-500 hover:text-blue-700"
+                                                        >
+                                                            {expandedDescriptionId === item.id ? 'Show less' : 'Show more'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.availability.status)}`}>
+                                                        {item.availability.status}
+                                                    </span>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {item.availability.quantity} in stock
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={() => handleEditClick(item)}
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        <Pen size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeletePart(item.id)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                            {searchQuery
+                                                ? "No parts match your search criteria."
+                                                : "No parts in inventory. Add some parts to get started."}
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                                 </tbody>
                             </table>
                         </div>
 
                         {/* Pagination */}
                         <div className="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-700">
-                                Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length} items
+                            <div>
+                                <p className="text-sm text-gray-700">
+                                    Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}-{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
+                                </p>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex space-x-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm ${
+                                        currentPage === 1
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}
                                 >
-                                    <ChevronLeft size={16} />
+                                    <ChevronLeft size={16} className="mr-1" />
+                                    Previous
                                 </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`w-8 h-8 rounded-md text-sm font-medium ${
-                                            currentPage === page
-                                                ? "bg-green-500 text-white"
-                                                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Selected Parts */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <div className="p-5 border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Package size={20} className="text-gray-500" />
-                                    <h2 className="text-lg font-semibold text-gray-800">Selected Parts</h2>
-                                </div>
-                                <div className="text-sm text-gray-500">{selectedParts.length} items</div>
-                            </div>
-                        </div>
-
-                        <div className="p-5">
-                            <h3 className="font-medium text-gray-700 mb-3">Parts to Assign</h3>
-
-                            {selectedParts.length > 0 ? (
-                                <div className="space-y-3 mb-5">
-                                    {selectedParts.map(part => (
-                                        <div key={part.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
-                                                    {part.image?.includes("display") && <div className="w-4 h-4 border border-gray-300 rounded-sm"></div>}
-                                                    {part.image?.includes("battery") && <div className="w-4 h-3 border border-gray-300 rounded-sm"></div>}
-                                                    {part.image?.includes("camera") && <div className="w-3 h-3 border-2 border-gray-300 rounded-full"></div>}
-                                                    {part.image?.includes("charging") && <div className="w-4 h-2 border border-gray-300 rounded-sm"></div>}
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{part.name}</div>
-                                                    <div className="text-xs text-gray-500">SKU: {part.sku}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-sm font-medium text-gray-900">{part.location}</div>
-                                                <button
-                                                    onClick={() => togglePartSelection(part)}
-                                                    className="text-gray-400 hover:text-red-500"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-md">
-                                    No parts selected. Add parts from the inventory above.
-                                </div>
-                            )}
-
-                            <div className="flex justify-between items-center py-3 border-t border-gray-200">
-                                <div className="font-medium text-gray-700">Total Items</div>
-                                <div className="text-lg font-bold text-gray-900">{totalItems}</div>
-                            </div>
-                        </div>
-
-                        {/* Notes */}
-                        <div className="p-5 border-t border-gray-100">
-                            <h3 className="font-medium text-gray-700 mb-3">Notes</h3>
-                            <textarea
-                                className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                rows={3}
-                                placeholder="Add any notes about this parts assignment..."
-                            ></textarea>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
-                                Assigning parts to a repair ticket will reserve them in inventory and make them unavailable for other repairs.
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-medium flex items-center gap-2">
-                                    <X size={16} />
-                                    Cancel
-                                </button>
-                                <button
-                                    className={`px-4 py-2 rounded-md text-white font-medium flex items-center gap-2 ${
-                                        selectedParts.length > 0
-                                            ? "bg-green-500 hover:bg-green-600"
-                                            : "bg-gray-400 cursor-not-allowed"
+                                    disabled={currentPage >= totalPages}
+                                    className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm ${
+                                        currentPage >= totalPages
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
                                     }`}
-                                    disabled={selectedParts.length === 0}
                                 >
-                                    <Package size={16} />
-                                    Assign Parts
+                                    Next
+                                    <ChevronRight size={16} className="ml-1" />
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Add Part Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold text-gray-800">Add New Part</h2>
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Success Message */}
+                        {addPartSuccess && (
+                            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md flex items-center">
+                                <CheckCircle size={20} className="mr-2" />
+                                Part added successfully!
+                            </div>
+                        )}
+
+                        {/* Error Message */}
+                        {addPartError && (
+                            <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+                                {addPartError}
+                            </div>
+                        )}
+
+                        {/* Add Part Form */}
+                        <form onSubmit={handleAddPart}>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Part Number</label>
+                                    <input
+                                        type="text"
+                                        name="partNumber"
+                                        value={newPart.partNumber}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter part number"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={newPart.name}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter part name"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-medium mb-1">Description</label>
+                                <textarea
+                                    name="description"
+                                    value={newPart.description}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter part description"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost ($)</label>
+                                    <input
+                                        type="number"
+                                        name="unitCost"
+                                        value={newPart.unitCost}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
+                                    <input
+                                        type="text"
+                                        name="serialNumber"
+                                        value={newPart.serialNumber}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter serial number (if applicable)"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>
+                                    <input
+                                        type="number"
+                                        name="currentStock"
+                                        value={newPart.currentStock}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>
+                                    <input
+                                        type="number"
+                                        name="lowStockThreshold"
+                                        value={newPart.lowStockThreshold}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0"
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-4 py-2 mr-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addPartLoading}
+                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
+                                        addPartLoading ? 'opacity-75 cursor-wait' : ''
+                                    }`}
+                                >
+                                    {addPartLoading ? 'Adding...' : 'Add Part'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Part Modal */}
+            {showEditModal && editPart && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold text-gray-800">Edit Part</h2>
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Success Message */}
+                        {editSuccess && (
+                            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md flex items-center">
+                                <CheckCircle size={20} className="mr-2" />
+                                Part updated successfully!
+                            </div>
+                        )}
+
+                        {/* Error Message */}
+                        {editError && (
+                            <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+                                {editError}
+                            </div>
+                        )}
+
+                        {/* Edit Part Form */}
+                        <form onSubmit={handleUpdatePart}>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Part Number</label>
+                                    <input
+                                        type="text"
+                                        name="partNumber"
+                                        value={editPart.partNumber || ""}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter part number"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={editPart.name || ""}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter part name"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-medium mb-1">Description</label>
+                                <textarea
+                                    name="description"
+                                    value={editPart.description || ""}
+                                    onChange={handleEditInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter part description"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost ($)</label>
+                                    <input
+                                        type="number"
+                                        name="unitCost"
+                                        value={editPart.unitCost || 0}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
+                                    <input
+                                        type="text"
+                                        name="serialNumber"
+                                        value={editPart.serialNumber || ""}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter serial number (if applicable)"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>
+                                    <input
+                                        type="number"
+                                        name="currentStock"
+                                        value={editPart.currentStock || 0}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>
+                                    <input
+                                        type="number"
+                                        name="lowStockThreshold"
+                                        value={editPart.lowStockThreshold || 0}
+                                        onChange={handleEditInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="0"
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="px-4 py-2 mr-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editLoading}
+                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
+                                        editLoading ? 'opacity-75 cursor-wait' : ''
+                                    }`}
+                                >
+                                    {editLoading ? 'Updating...' : 'Update Part'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Description Modal */}
+            {showDescriptionModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-xl w-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold text-gray-800">{selectedDescription.title}</h2>
+                            <button
+                                onClick={() => setShowDescriptionModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-md text-gray-700">
+                            {selectedDescription.content}
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowDescriptionModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && partToDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-md w-full">
+                        <div className="flex items-center mb-4 text-red-600">
+                            <Trash size={24} className="mr-2" />
+                            <h2 className="text-xl font-semibold">Delete Part</h2>
+                        </div>
+
+                        <p className="text-gray-700 mb-6">
+                            Are you sure you want to delete <strong>{partToDelete.name}</strong>? This action cannot be undone.
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeletePart}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Notification Toast */}
+            {notification.show && (
+                <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-md z-50 transition-all duration-300 flex items-center ${
+                    notification.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                }`}>
+                    <div className="flex items-center">
+                        {notification.type === 'error' ? (
+                            <X size={20} className="mr-2" />
+                        ) : (
+                            <CheckCircle size={20} className="mr-2" />
+                        )}
+                        <p>{notification.message}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

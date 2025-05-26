@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.servit.servit.dto.AddPartRequestDTO;
 import com.servit.servit.dto.PartResponseDTO;
 import com.servit.servit.dto.UpdatePartRequestDTO;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.util.List;
 
@@ -35,13 +36,20 @@ public class PartController {
         }
     }
 
-    @DeleteMapping("/deletePart/{id}")
-    public ResponseEntity<Void> deletePart(@PathVariable Long id) {
+    @DeleteMapping("/deletePart/{partId}")
+    public ResponseEntity<Void> deletePart(@PathVariable Long partId) {
         try {
-            partService.deletePart(id);
+            partService.deletePart(partId);
             return ResponseEntity.ok().build();
-        } catch (Exception e) {
+        } catch (EntityNotFoundException e) {
+            System.err.println("Error deleting part: " + e.getMessage());
             return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            System.err.println("Error deleting part: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            System.err.println("Unexpected error deleting part: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -121,4 +129,4 @@ public class PartController {
 
     // TODO: Add endpoint for triggering low stock alerts manually if needed,
     // although it's primarily an internal process triggered by stock changes.
-} 
+}
