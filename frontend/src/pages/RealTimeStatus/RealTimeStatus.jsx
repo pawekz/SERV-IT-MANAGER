@@ -47,13 +47,17 @@ const RealTimeStatus = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
+            case "Received":
+                return "bg-purple-100 text-purple-800 border-purple-200"
+            case "Diagnosing":
+                return "bg-blue-100 text-blue-800 border-blue-200"
+            case "Awaiting Parts":
+                return "bg-orange-100 text-orange-800 border-orange-200"
             case "Repairing":
                 return "bg-yellow-100 text-yellow-800 border-yellow-200"
             case "Ready for Pickup":
                 return "bg-green-100 text-green-800 border-green-200"
             case "Completed":
-                return "bg-blue-100 text-blue-800 border-blue-200"
-            case "Pending":
                 return "bg-gray-100 text-gray-800 border-gray-200"
             default:
                 return "bg-gray-100 text-gray-800 border-gray-200"
@@ -113,7 +117,9 @@ const RealTimeStatus = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
                             >
                                 <option value="All">All Statuses</option>
-                                <option value="Pending">Pending</option>
+                                <option value="Received">Received</option>
+                                <option value="Diagnosing">Diagnosing</option>
+                                <option value="Awaiting Parts">Awaiting Parts</option>
                                 <option value="Repairing">Repairing</option>
                                 <option value="Ready for Pickup">Ready for Pickup</option>
                                 <option value="Completed">Completed</option>
@@ -243,7 +249,3 @@ const RealTimeStatus = () => {
 }
 
 export default RealTimeStatus
-
-
-
-
