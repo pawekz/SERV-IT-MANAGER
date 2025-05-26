@@ -67,7 +67,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-OEM",
             category: "Display",
             availability: { status: "IN STOCK", count: 15 },
-            location: "Shelf A1"
+            // location: "Shelf A1"
         },
         {
             id: 2,
@@ -75,7 +75,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-P",
             category: "Display",
             availability: { status: "IN STOCK", count: 8 },
-            location: "Shelf A2"
+            // location: "Shelf A2"
         },
         {
             id: 3,
@@ -83,7 +83,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-S",
             category: "Display",
             availability: { status: "LOW STOCK", count: 3 },
-            location: "Shelf B1"
+            // location: "Shelf B1"
         },
         {
             id: 4,
@@ -91,7 +91,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-OEM",
             category: "Battery",
             availability: { status: "IN STOCK", count: 12 },
-            location: "Shelf B2"
+            // location: "Shelf B2"
         },
         {
             id: 5,
@@ -99,7 +99,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-P",
             category: "Battery",
             availability: { status: "IN STOCK", count: 7 },
-            location: "Shelf B3"
+            // location: "Shelf B3"
         },
         {
             id: 6,
@@ -107,7 +107,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-S",
             category: "Battery",
             availability: { status: "OUT OF STOCK", count: 0 },
-            location: "Shelf C1"
+            // location: "Shelf C1"
         },
         {
             id: 7,
@@ -115,7 +115,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-REAR",
             category: "Camera",
             availability: { status: "IN STOCK", count: 5 },
-            location: "Shelf C2"
+            // location: "Shelf C2"
         },
         {
             id: 8,
@@ -123,7 +123,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-FRONT",
             category: "Camera",
             availability: { status: "LOW STOCK", count: 2 },
-            location: "Shelf D1"
+            // location: "Shelf D1"
         },
         {
             id: 9,
@@ -131,7 +131,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-PORT",
             category: "Laptop",
             availability: { status: "IN STOCK", count: 9 },
-            location: "Shelf D2"
+            // location: "Shelf D2"
         },
         {
             id: 10,
@@ -139,7 +139,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-COIL",
             category: "Charging",
             availability: { status: "LOW STOCK", count: 4 },
-            location: "Shelf E1"
+            // location: "Shelf E1"
         }
     ];
 
@@ -271,7 +271,7 @@ const Inventory = () => {
                                     <th className="px-5 py-3">Part ID</th>
                                     <th className="px-5 py-3">Description</th>
                                     <th className="px-5 py-3">Availability</th>
-                                    <th className="px-5 py-3">Location</th>
+                                    {/* <th className="px-5 py-3">Location</th> */}
                                     <th className="px-5 py-3">Action</th>
                                 </tr>
                                 </thead>
@@ -298,9 +298,9 @@ const Inventory = () => {
                           {item.availability.status} {item.availability.count > 0 && `(${item.availability.count})`}
                         </span>
                                         </td>
-                                        <td className="px-5 py-4">
+                                        {/* <td className="px-5 py-4">
                                             <span className="text-sm font-medium text-gray-900">{item.location}</span>
-                                        </td>
+                                        </td> */}
                                         <td className="px-5 py-4">
                                             <div className="flex space-x-2">
                                                 <button className="p-1 text-blue-600 hover:text-blue-800">
@@ -386,7 +386,7 @@ const Inventory = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <div className="text-sm font-medium text-gray-900">{part.location}</div>
+                                                {/* <div className="text-sm font-medium text-gray-900">{part.location}</div> */}
                                                 <button
                                                     onClick={() => togglePartSelection(part)}
                                                     className="text-gray-400 hover:text-red-500"
