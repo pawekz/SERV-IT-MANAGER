@@ -11,7 +11,6 @@ import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerati
 import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
 import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
 import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
-import RepairCheckInForm from "./pages/RepairCheckInForm/RepairCheckInForm.jsx";
 import Sidebar from "./components/SideBar/Sidebar.jsx";
 import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx";
 import TermsEditor from "./pages/TermsEditor/TermsEditor.jsx";
@@ -21,6 +20,7 @@ import DashboardPage from "./pages/DashboardPage/DashboardPage.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
 import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
 import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
+import NewRepair from "./pages/NewRepair/NewRepair.jsx";
 
 
 function App() {
@@ -38,7 +38,6 @@ function App() {
         <Route path="/backup" element={<BackUpPage />} />
         <Route path="/warranty" element={<WarrantyRequestPage />} />
         <Route path="/devicecard" element={<DeviceCard />} />
-        <Route path="/repaircheckin" element={<RepairCheckInForm />} />
         <Route path="sidebar" element={<Sidebar />} />
         <Route path="/inventoryassignment" element={<InventoryAssignmentPanel />} />
         <Route path="/inventory" element={<Inventory />} />
@@ -49,6 +48,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/feedbackform" element={<Feedbackform />} />
         <Route path="/realtimestatus" element={<RealTimeStatus />} />
+        <Route path="/newrepair" element={<NewRepair />} />
       </Routes>
     </Router>
   )

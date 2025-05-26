@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {Package,TabletSmartphone,Computer, Headphones, Archive } from "lucide-react";
+import {Package, TabletSmartphone, Computer, Headphones, Archive, Search} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import RequestReturn from "../../components/RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
+import CheckWarranty from "../../components/CheckWarranty/CheckWarranty.jsx";
 
 
 
@@ -125,152 +126,183 @@ const WarrantyRequestPage = () => {
             <Sidebar activePage="warranty" />
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-                <div className="flex justify-between">
                     <div className="mb-4">
                         <h1 className="text-3xl font-semibold text-gray-800 mb-2">Warranty Return Request (RMA)</h1>
                         <p className="text-gray-600 text-base max-w-3xl">
-                            Configure automated backup schedules, destinations, and security settings.
+                            Check warranty left and warranty return request status for your devices.
                         </p>
                     </div>
-                    {role === "customer" && (
-                    <div className=" w-64 shrink right-0 -mr-5">
-                        <button onClick={() => setIsModalOpen(true)} className=" flex py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-gray-800 bg-[#33e407] hover:bg-[#2bc706]">
-                            <Package className="mr-2"/>  Request Return
-                        </button>
-                        < WarrantyRequest isOpen={isModalOpen} onClose={() => setIsModalOpen(false) } readonly={false} />
-                    </div>
-                    )}
-                </div>
-                <div className="px-10 py-8">
-                    {loading ? (
-                        <div className="text-center py-8">
-                            <p>Loading warranty requests...</p>
-                        </div>
-                    ) : error ? (
-                        <div className="text-center py-8 text-red-500">
-                            <p>{error}</p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="mt-4 text-blue-500 underline"
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    ) : (
-                        <section className="mb-8 -ml-10">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex justify-between items-end mb-6">
-                                    <h1 className="text-xl font-semibold text-gray-800">Pending Warranty</h1>
-
-                                    <div className="flex items-center gap-2">
-                                        <select
-                                            className=" text-sm text-gray-700 px-2 py-1 rounded-lg"
-                                            value={filterBy}
-                                            onChange={(e) => setFilterBy(e.target.value)}
-                                        >
-                                            <option value="serial">Serial Number</option>
-                                            <option value="tracking">Tracking Number</option>
-                                            <option value="device">Device Type</option>
-                                            <option value="customer">Customer Name</option>
-                                        </select>
-
-                                        <input
-                                            type="text"
-                                            className=" text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                            placeholder={`Search by ${filterByLabel}`}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                {warrantyRequests.length === 0 ? (
-                                        <p className="text-center text-gray-600">
-                                            No warranty return requests have been made yet.
-                                        </p>
-
-                                ) : (
-                                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                                        {warrantyRequests
-                                            .filter((request) => request.status === "Requested" || request.status === "Approved")
-                                            .map((request) => (
-                                                <div
-                                                    key={request.id}
-                                                    onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                <div className="flex justify-between">
+                    <div className="w-full">
+                        {loading ? (
+                            <div className="text-center py-8">
+                                <p>Loading warranty requests...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-8 text-red-500">
+                                <p>{error}</p>
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="mt-4 text-blue-500 underline"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Pending Warranty + Check Warranty Row */}
+                                <section className="flex flex-col lg:flex-row gap-6 mb-8">
+                                    {/* Pending Warranty */}
+                                    <div className="flex-1 bg-white rounded-lg shadow-md p-6">
+                                        <div className="flex justify-between items-end mb-6">
+                                            <h1 className="text-xl font-semibold text-gray-800">Pending Warranty</h1>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg"
+                                                    value={filterBy}
+                                                    onChange={(e) => setFilterBy(e.target.value)}
                                                 >
-                                                    <div className="mr-4 flex items-start">
-                                                        {getProductIcon(request.deviceType)}
-                                                    </div>
+                                                    <option value="serial">Serial Number</option>
+                                                    <option value="tracking">Tracking Number</option>
+                                                    <option value="device">Device Type</option>
+                                                    <option value="customer">Customer Name</option>
+                                                </select>
 
-                                                <div>
-                                                    <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                        {request.serialNumber}
-                                                    </h2>
-                                                    <p className="text-sm text-gray-600">
-                                                        <strong>Customer:</strong> {request.deviceType}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        <strong>Date:</strong> {request.purchaseDate}
-                                                    </p>
-                                                    <p className={`text-sm font-medium mt-1 ${request.status === "Requested" ? "text-yellow-600" : "text-green-600"}`}>
-                                                        Status: {request.status}
-                                                    </p>
-                                                </div>
+                                                <input
+                                                    type="text"
+                                                    className="text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                                    placeholder={`Search by ${filterByLabel}`}
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                />
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                                            {warrantyRequests
+                                                .filter((request) => request.status === "Approved" || request.status === "Requested")
+                                                .map((request) => (
+                                                    <div
+                                                        key={request.id}
+                                                        onClick={() => handleCardClick(request)}
+                                                        className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                    >
+                                                        <div className="mr-4 flex items-start">{getProductIcon(request.deviceType)}</div>
+                                                        <div>
+                                                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                                                                {request.serialNumber}
+                                                            </h2>
+                                                            <p className="text-sm text-gray-600">
+                                                                <strong>Device Type:</strong> {request.deviceType}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                <strong>Date:</strong> {request.purchaseDate}
+                                                            </p>
+                                                            <p
+                                                                className={`text-sm font-medium mt-1 ${
+                                                                    request.status === "Requested"
+                                                                        ? "text-yellow-600"
+                                                                        : "text-green-600"
+                                                                }`}
+                                                            >
+                                                                Status: {request.status}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                     </div>
-                                )}
 
-                                <h1 className="text-xl font-semibold text-gray-800 mb-6 mt-6"> Resolved Warranty </h1>
-                                {warrantyRequests.length === 0 ? (
-                                    <p className="text-center text-gray-600">
-                                        No warranty request has been resolved yet.
-                                    </p>
+                                    {/* Warranty Checker (Only for Customer) */}
+                                    {role === "customer" && (
+                                        <div className="lg:w-[30%] w-full bg-white rounded-lg shadow-md p-6 h-fit">
+                                            <CheckWarranty />
+                                            <WarrantyRequest
+                                                isOpen={isModalOpen}
+                                                onClose={() => setIsModalOpen(false)}
+                                                readonly={false}
+                                            />
+                                        </div>
+                                    )}
+                                </section>
 
-                                ) : (
-                                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                                        {warrantyRequests
-                                            .filter((request) => request.status === "Claimed" || request.status === "Denied")
-                                            .map((request) => (
-                                                <div
-                                                    key={request.id}
-                                                    onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                {/* Resolved Warranty Section */}
+                                <section className="bg-white rounded-lg shadow-md p-6 flex-col jus">
+                                        <div className="flex justify-between items-end mb-6">
+                                    <h1 className="text-xl font-semibold text-gray-800 mb-6">Resolved Warranty</h1>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg"
+                                                    value={filterBy}
+                                                    onChange={(e) => setFilterBy(e.target.value)}
                                                 >
-                                                    <div className="mr-4 flex items-start">
-                                                        {getProductIcon(request.deviceType)}
-                                                    </div>
+                                                    <option value="serial">Serial Number</option>
+                                                    <option value="tracking">Tracking Number</option>
+                                                    <option value="device">Device Type</option>
+                                                    <option value="customer">Customer Name</option>
+                                                </select>
 
-                                                    <div>
-                                                        <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.serialNumber}
-                                                        </h2>
-                                                        <p className="text-sm text-gray-600">
-                                                            <strong>Device Type:</strong> {request.deviceType}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            <strong>Date:</strong> {request.purchaseDate}
-                                                        </p>
-                                                        <p className={`text-sm font-medium mt-1 ${request.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}>
-                                                            Status: {request.status}
-                                                        </p>
+                                                <input
+                                                    type="text"
+                                                    className="text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                                    placeholder={`Search by ${filterByLabel}`}
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    {warrantyRequests.length === 0 ? (
+                                        <p className="text-center text-gray-600">
+                                            No warranty request has been resolved yet.
+                                        </p>
+                                    ) : (
+                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                                            {warrantyRequests
+                                                .filter((request) => request.status === "Claimed" || request.status === "Denied")
+                                                .map((request) => (
+                                                    <div
+                                                        key={request.id}
+                                                        onClick={() => handleCardClick(request)}
+                                                        className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                    >
+                                                        <div className="mr-4 flex items-start">{getProductIcon(request.deviceType)}</div>
+                                                        <div>
+                                                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                                                                {request.serialNumber}
+                                                            </h2>
+                                                            <p className="text-sm text-gray-600">
+                                                                <strong>Device Type:</strong> {request.deviceType}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                <strong>Date:</strong> {request.purchaseDate}
+                                                            </p>
+                                                            <p
+                                                                className={`text-sm font-medium mt-1 ${
+                                                                    request.status === "Denied"
+                                                                        ? "text-yellow-600"
+                                                                        : "text-green-600"
+                                                                }`}
+                                                            >
+                                                                Status: {request.status}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                )}
+                                                ))}
+                                        </div>
+                                    )}
+                                </section>
+
+                                {/* View-Only Modal */}
                                 <WarrantyRequest
                                     isOpen={modalOpen}
                                     onClose={() => setModalOpen(false)}
                                     data={selectedRequest}
                                     readonly={true}
                                 />
-                            </div>
-                        </section>
-                    )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-
         </div>
     );
 };

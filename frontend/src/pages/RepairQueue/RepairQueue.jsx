@@ -7,6 +7,7 @@ import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.js
 
 
 const RepairQueue = () => {
+    const navigate = useNavigate()
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [loading, setLoading] = useState(false);
@@ -121,7 +122,7 @@ const RepairQueue = () => {
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
-            <Sidebar activePage="repairqueue" />
+            <Sidebar activePage="repair" />
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
                 <div className="flex justify-between">
@@ -131,12 +132,11 @@ const RepairQueue = () => {
                             Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
                         </p>
                     </div>
-                    {role === "customer" && (
+                    {role === "technician" && (
                         <div className=" w-64 shrink right-0 -mr-5">
-                            <button onClick={() => setIsModalOpen(true)} className=" flex py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-gray-800 bg-[#33e407] hover:bg-[#2bc706]">
+                            <button onClick={() => navigate('/newrepair')} className=" flex py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-gray-800 bg-[#33e407] hover:bg-[#2bc706]">
                                 <Wrench  className="mr-2"/>  Start Repair
                             </button>
-                            < WarrantyRequest isOpen={isModalOpen} onClose={() => setIsModalOpen(false) } readonly={false} />
                         </div>
                     )}
                 </div>
