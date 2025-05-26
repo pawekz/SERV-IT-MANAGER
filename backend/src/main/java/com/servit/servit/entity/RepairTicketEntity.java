@@ -45,7 +45,7 @@ public class RepairTicketEntity {
     @Column(name = "device_brand", nullable = false)
     private String deviceBrand;
 
-    @Column(name = "device_password", nullable = false)
+    @Column(name = "device_password")
     private String devicePassword;
 
     @Column(name = "reported_issue", nullable = false, columnDefinition = "TEXT")
