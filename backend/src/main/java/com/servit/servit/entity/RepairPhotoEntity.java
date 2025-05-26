@@ -9,7 +9,8 @@ import lombok.Data;
 public class RepairPhotoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long repair_photo_id;
+    @Column(name = "repair_photo_id")
+    private Long repairPhotoId;
 
     @Column(name = "photo_url")
     private String photoUrl;
