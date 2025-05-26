@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Wrench, User, Package, ChevronLeft, ChevronRight, X,  CuboidIcon as Cube } from 'lucide-react';
+import { Search, ChevronDown,  Package, ChevronLeft, ChevronRight, X, } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 
 const Inventory = () => {
@@ -67,7 +67,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-OEM",
             category: "Display",
             availability: { status: "IN STOCK", count: 15 },
-            price: 249.99,
+            location: "Shelf A1",
             quantity: 1
         },
         {
@@ -76,7 +76,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-P",
             category: "Display",
             availability: { status: "IN STOCK", count: 8 },
-            price: 199.99,
+            location: "Shelf A2",
             quantity: 1
         },
         {
@@ -85,7 +85,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-S",
             category: "Display",
             availability: { status: "LOW STOCK", count: 3 },
-            price: 169.99,
+            location: "Shelf B1",
             quantity: 1
         },
         {
@@ -94,7 +94,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-OEM",
             category: "Battery",
             availability: { status: "IN STOCK", count: 12 },
-            price: 79.99,
+            location: "Shelf B2",
             quantity: 1
         },
         {
@@ -103,7 +103,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-P",
             category: "Battery",
             availability: { status: "IN STOCK", count: 7 },
-            price: 59.99,
+            location: "Shelf B3",
             quantity: 1
         },
         {
@@ -112,7 +112,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-S",
             category: "Battery",
             availability: { status: "OUT OF STOCK", count: 0 },
-            price: 39.99,
+            location: "Shelf C1",
             quantity: 0
         },
         {
@@ -121,7 +121,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-REAR",
             category: "Camera",
             availability: { status: "IN STOCK", count: 5 },
-            price: 129.99,
+            location: "Shelf C2",
             quantity: 1
         },
         {
@@ -130,7 +130,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-FRONT",
             category: "Camera",
             availability: { status: "LOW STOCK", count: 2 },
-            price: 89.99,
+            location: "Shelf D1",
             quantity: 1
         },
         {
@@ -139,7 +139,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-PORT",
             category: "Laptop",
             availability: { status: "IN STOCK", count: 9 },
-            price: 49.99,
+            location: "Shelf D2",
             quantity: 1
         },
         {
@@ -148,7 +148,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-COIL",
             category: "Charging",
             availability: { status: "LOW STOCK", count: 4 },
-            price: 29.99,
+            location: "Shelf E1",
             quantity: 1
         }
     ];
@@ -177,8 +177,8 @@ const Inventory = () => {
         }
     };
 
-    // Calculate total price
-    const totalPrice = selectedParts.reduce((sum, part) => sum + part.price, 0).toFixed(2);
+    // Calculate total items
+    const totalItems = selectedParts.length;
 
     // Status badge color mapping
     const getStatusColor = (status) => {
@@ -378,7 +378,7 @@ const Inventory = () => {
                         </span>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <span className="text-sm font-medium text-gray-900">${item.price.toFixed(2)}</span>
+                                            <span className="text-sm font-medium text-gray-900">{item.location}</span>
                                         </td>
                                         <td className="px-5 py-4">
                                             <span className="text-sm text-gray-700">{item.quantity}</span>
@@ -460,10 +460,10 @@ const Inventory = () => {
                                         <div key={part.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
-                                                    {part.image.includes("display") && <div className="w-4 h-4 border border-gray-300 rounded-sm"></div>}
-                                                    {part.image.includes("battery") && <div className="w-4 h-3 border border-gray-300 rounded-sm"></div>}
-                                                    {part.image.includes("camera") && <div className="w-3 h-3 border-2 border-gray-300 rounded-full"></div>}
-                                                    {part.image.includes("charging") && <div className="w-4 h-2 border border-gray-300 rounded-sm"></div>}
+                                                    {part.image?.includes("display") && <div className="w-4 h-4 border border-gray-300 rounded-sm"></div>}
+                                                    {part.image?.includes("battery") && <div className="w-4 h-3 border border-gray-300 rounded-sm"></div>}
+                                                    {part.image?.includes("camera") && <div className="w-3 h-3 border-2 border-gray-300 rounded-full"></div>}
+                                                    {part.image?.includes("charging") && <div className="w-4 h-2 border border-gray-300 rounded-sm"></div>}
                                                 </div>
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{part.name}</div>
@@ -471,7 +471,7 @@ const Inventory = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <div className="text-sm font-medium text-gray-900">${part.price.toFixed(2)}</div>
+                                                <div className="text-sm font-medium text-gray-900">{part.location}</div>
                                                 <button
                                                     onClick={() => togglePartSelection(part)}
                                                     className="text-gray-400 hover:text-red-500"
@@ -489,8 +489,8 @@ const Inventory = () => {
                             )}
 
                             <div className="flex justify-between items-center py-3 border-t border-gray-200">
-                                <div className="font-medium text-gray-700">Total</div>
-                                <div className="text-lg font-bold text-gray-900">${totalPrice}</div>
+                                <div className="font-medium text-gray-700">Total Items</div>
+                                <div className="text-lg font-bold text-gray-900">{totalItems}</div>
                             </div>
                         </div>
 
@@ -535,4 +535,3 @@ const Inventory = () => {
 };
 
 export default Inventory;
-
