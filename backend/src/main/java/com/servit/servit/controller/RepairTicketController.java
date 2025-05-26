@@ -61,7 +61,7 @@ public class RepairTicketController {
         }
     }
 
-    @PostMapping("/uploadRepairTicketDocument/{ticketNumber}")
+    @PatchMapping("/uploadRepairTicketDocument/{ticketNumber}")
     public ResponseEntity<Void> uploadRepairTicketDocument(@PathVariable String ticketNumber,
                                                            @RequestParam("file") MultipartFile file) {
         try {
