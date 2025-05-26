@@ -11,7 +11,7 @@ public class DigitalSignatureEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long digitalSignatureId;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
     @OneToOne
