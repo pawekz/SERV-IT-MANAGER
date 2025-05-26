@@ -39,7 +39,7 @@ const RepairForm = ({ status, onNext  }) => {
         technicianObservations: "",
         technicianEmail: userData.email || "",
         technicianName: userData.firstName + " " + userData.lastName || "",
-        repairPhotos:""
+        repairPhotos:photoFile
     });
 
     const handleChange = (e) => {
