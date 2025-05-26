@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/repairTicket")
@@ -57,4 +60,34 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate ticket number");
         }
     }
+
+    @PatchMapping("/uploadRepairTicketDocument/{ticketNumber}")
+    public ResponseEntity<Void> uploadRepairTicketDocument(@PathVariable String ticketNumber,
+                                                           @RequestParam("file") MultipartFile file) {
+        try {
+            repairTicketService.uploadRepairTicketDocument(ticketNumber, file);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getAllRepairTickets")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
+        List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
+        return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+    }
+
+    @GetMapping("/getRepairTicketsByCustomerEmail")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
+        try {
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
+            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }

@@ -57,7 +57,10 @@ public class SecurityConfig {
                                 "/repairTicket/getRepairTicket/*",
                                 "/repairTicket/generateRepairTicketNumber",
                                 "/repairTicket/getAllRepairTickets",
-                                "/user/getTechnicianByEmail"
+                                "/user/getTechnicianByEmail",
+                                "/repairTicket/getAllRepairTickets",
+                                "/repairTicket/getAllRepairTicketsByStatus/*",
+                                "/repairTicket/uploadRepairTicketDocument/*"
                         ).hasAnyRole("ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/user/changeRole/*",

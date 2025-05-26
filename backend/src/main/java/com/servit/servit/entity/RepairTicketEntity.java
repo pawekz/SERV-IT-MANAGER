@@ -1,5 +1,6 @@
 package com.servit.servit.entity;
 
+import com.servit.servit.enumeration.RepairTicketDeviceType;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,7 +14,8 @@ import java.util.List;
 public class RepairTicketEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long repair_ticket_id;
+    @Column(name = "repair_ticket_id")
+    private Long repairTicketId;
 
     @Column(name = "ticket_number", nullable = false)
     private String ticketNumber;
@@ -27,8 +29,9 @@ public class RepairTicketEntity {
     @Column(name = "customer_phone_number", nullable = false)
     private String customerPhoneNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "device_type", nullable = false)
-    private String deviceType;
+    private RepairTicketDeviceType deviceType;
 
     @Column(name = "device_color", nullable = false)
     private String deviceColor;
@@ -42,7 +45,7 @@ public class RepairTicketEntity {
     @Column(name = "device_brand", nullable = false)
     private String deviceBrand;
 
-    @Column(name = "device_password", nullable = false)
+    @Column(name = "device_password")
     private String devicePassword;
 
     @Column(name = "reported_issue", nullable = false, columnDefinition = "TEXT")
@@ -76,4 +79,7 @@ public class RepairTicketEntity {
 
     @OneToOne(mappedBy = "repairTicket", cascade = CascadeType.ALL)
     private DigitalSignatureEntity digitalSignature;
+
+    @Column(name = "document_path")
+    private String documentPath;
 }
