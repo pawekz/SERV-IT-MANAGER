@@ -80,9 +80,14 @@ public class RepairTicketController {
         return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
     }
 
-    @GetMapping("/getRepairTicketsByStatus")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByStatus(@RequestParam String status) {
-        List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByStatus(status);
-        return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+    @GetMapping("/getRepairTicketsByCustomerEmail")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
+        try {
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
+            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
+
 }

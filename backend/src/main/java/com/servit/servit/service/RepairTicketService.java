@@ -6,6 +6,7 @@ import com.servit.servit.entity.DigitalSignatureEntity;
 import com.servit.servit.entity.RepairPhotoEntity;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.entity.UserEntity;
+import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.repository.RepairTicketRepository;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.FileUtil;
@@ -64,7 +65,7 @@ public class RepairTicketService {
         repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
         repairTicket.setDeviceModel(req.getDeviceModel());
         repairTicket.setDeviceBrand(req.getDeviceBrand());
-        repairTicket.setDeviceType(req.getDeviceType());
+        repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
         repairTicket.setReportedIssue(req.getReportedIssue());
         repairTicket.setTechnicianEmail(technician);
         repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
@@ -143,9 +144,8 @@ public class RepairTicketService {
                 .collect(Collectors.toList());
     }
 
-    public List<GetRepairTicketResponseDTO> getRepairTicketsByStatus(String status) {
-        return repairTicketRepository.findAll().stream()
-                .filter(ticket -> ticket.getStatus().equalsIgnoreCase(status))
+    public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
+        return repairTicketRepository.findByCustomerEmail(email).stream()
                 .map(this::mapToGetRepairTicketResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -156,7 +156,7 @@ public class RepairTicketService {
         dto.setCustomerName(repairTicket.getCustomerName());
         dto.setCustomerEmail(repairTicket.getCustomerEmail());
         dto.setCustomerPhoneNumber(repairTicket.getCustomerPhoneNumber());
-        dto.setDeviceType(repairTicket.getDeviceType());
+        dto.setDeviceType(repairTicket.getDeviceType() != null ? repairTicket.getDeviceType().name() : null);
         dto.setDeviceColor(repairTicket.getDeviceColor());
         dto.setDeviceSerialNumber(repairTicket.getDeviceSerialNumber());
         dto.setDeviceModel(repairTicket.getDeviceModel());
