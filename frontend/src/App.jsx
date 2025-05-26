@@ -19,6 +19,7 @@ import SignatureCapturePad from "./pages/SignatureCapturePad/SignatureCapturePad
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
 import DashboardPage from "./pages/DashboardPage/DashboardPage.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
+import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
 
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
         <Route path="/repairqueue" element={<RepairQueue />} />
         <Route path="/profilemanage" element={<UserManagement />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/realtimestatus" element={<RealTimeStatus />} />
       </Routes>
     </Router>
   )
