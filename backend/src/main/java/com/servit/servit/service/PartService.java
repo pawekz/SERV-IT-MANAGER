@@ -94,13 +94,19 @@ public class PartService {
     }
 
     /**
-     * Soft deletes a part by marking it as true.
-     * @param id The ID of the part to delete
+     * Soft deletes a part by marking it as deleted.
+     * @param partId The ID of the part to delete
      * @throws EntityNotFoundException if part not found
+     * @throws IllegalStateException if part is already deleted
      */
-    public void deletePart(Long id) {
-        PartEntity partEntity = partRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + id));
+    public void deletePart(Long partId) {
+        PartEntity partEntity = partRepository.findById(partId)
+                .orElseThrow(() -> new EntityNotFoundException("Part not found with partId: " + partId));
+        
+        if (partEntity.getIsDeleted()) {
+            throw new IllegalStateException("Part is already deleted");
+        }
+        
         partEntity.setIsDeleted(true);
         partRepository.save(partEntity);
     }
