@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,11 +76,11 @@ public class RepairTicketService {
         repairTicket.setCheckInDate(LocalDateTime.now());
         repairTicket.setTicketNumber(req.getTicketNumber());
 
+        AtomicInteger counter = new AtomicInteger(1);
         repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
                 .map(photo -> {
                     try {
-                        int index = req.getRepairPhotos().indexOf(photo) + 1;
-                        String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), index);
+                        String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
                         RepairPhotoEntity repairPhoto = new RepairPhotoEntity();
                         repairPhoto.setPhotoUrl(photoPath);
                         repairPhoto.setRepairTicket(repairTicket);
