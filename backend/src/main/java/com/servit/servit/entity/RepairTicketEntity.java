@@ -77,4 +77,7 @@ public class RepairTicketEntity {
 
     @OneToOne(mappedBy = "repairTicket", cascade = CascadeType.ALL)
     private DigitalSignatureEntity digitalSignature;
+
+    @Column(name = "document_path")
+    private String documentPath;
 }

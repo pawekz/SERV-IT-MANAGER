@@ -19,6 +19,8 @@ public class FileUtil {
     @Value("${upload.dir}/images/digital_signatures/")
     private String digitalSignaturesDir;
 
+    @Value("${upload.dir}/documents/claim_forms/")
+    private String claimFormsDir;
     private final SecureRandom random = new SecureRandom();
 
     public String saveRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
@@ -55,6 +57,26 @@ public class FileUtil {
         String fileName = String.format("%s-sig-%06d%s", ticketNumber, random.nextInt(1_000_000), fileExtension);
 
         Path filePath = Paths.get(digitalSignaturesDir).resolve(fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
+
+        return filePath.toString();
+    }
+
+    public String saveRepairTicketDocument(MultipartFile file, String ticketNumber) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be null or empty");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            throw new IllegalArgumentException("Invalid file name");
+        }
+
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String fileName = String.format("%s-repair-ticket-%s", ticketNumber, fileExtension);
+
+        Path filePath = Paths.get(claimFormsDir).resolve(fileName);
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, file.getBytes());
 
