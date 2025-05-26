@@ -27,7 +27,7 @@ public class UserEntity {
     @Column(name = "password", nullable = false, columnDefinition = "TEXT")
     private String password;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "first_name", nullable = false, length = 100)
@@ -50,6 +50,6 @@ public class UserEntity {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified;
 
-    @Column(name = "status", nullable = false)
-    private String status = "Pending";
+    @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'Pending'")
+    private String status;
 }

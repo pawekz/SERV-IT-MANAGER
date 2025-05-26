@@ -69,6 +69,7 @@ public class UserService {
         user.setPhoneNumber(req.getPhoneNumber());
         user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
         user.setIsVerified(false);
+        user.setStatus("Pending");
         userRepo.save(user);
 
         String otp = otpService.generateOtp(req.getEmail());
@@ -291,5 +292,27 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setStatus(status);
         userRepo.save(user);
+    }
+
+    @Transactional
+    public List<GetUserResponseDTO> getTechnicians() {
+        return userRepo.findAll().stream()
+                .filter(user -> user.getRole() == UserRoleEnum.TECHNICIAN)
+                .map(user -> new GetUserResponseDTO(
+                        user.getUserId(), user.getFirstName(), user.getLastName(),
+                        user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                .toList();
+    }
+
+    @Transactional
+    public GetUserResponseDTO getTechnicianByEmail(String email) {
+        UserEntity user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
+        if (user.getRole() != UserRoleEnum.TECHNICIAN) {
+            throw new IllegalArgumentException("User is not a technician");
+        }
+        return new GetUserResponseDTO(
+                user.getUserId(), user.getFirstName(), user.getLastName(),
+                user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus());
     }
 }

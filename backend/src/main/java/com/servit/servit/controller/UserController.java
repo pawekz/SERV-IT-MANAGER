@@ -153,4 +153,14 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/getTechnicians")
+    public ResponseEntity<List<GetUserResponseDTO>> getTechnicians() {
+        return ResponseEntity.ok(userSvc.getTechnicians());
+    }
+
+    @GetMapping("/getTechnicianByEmail")
+    public ResponseEntity<GetUserResponseDTO> getTechnicianByEmail(@RequestParam String email) {
+        return ResponseEntity.ok(userSvc.getTechnicianByEmail(email));
+    }
+
 }

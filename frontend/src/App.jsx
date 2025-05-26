@@ -20,6 +20,8 @@ import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
 import DashboardPage from "./pages/DashboardPage/DashboardPage.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
 import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
+import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
+
 
 function App() {
   return (
@@ -46,6 +48,7 @@ function App() {
         <Route path="/profilemanage" element={<UserManagement />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/feedbackform" element={<Feedbackform />} />
+        <Route path="/realtimestatus" element={<RealTimeStatus />} />
       </Routes>
     </Router>
   )

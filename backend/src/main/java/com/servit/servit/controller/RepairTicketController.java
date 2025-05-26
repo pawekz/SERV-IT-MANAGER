@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/repairTicket")
 public class RepairTicketController {
@@ -49,11 +51,21 @@ public class RepairTicketController {
         }
     }
 
-    @PostMapping("/uploadClaimForm/{ticketNumber}")
-    public ResponseEntity<Void> uploadClaimForm(@PathVariable String ticketNumber,
-                                                @RequestParam("file") MultipartFile file) {
+    @GetMapping("/generateRepairTicketNumber")
+    public ResponseEntity<String> generateRepairTicketNumber() {
         try {
-            repairTicketService.uploadClaimForm(ticketNumber, file);
+            String ticketNumber = repairTicketService.generateRepairTicketNumber();
+            return ResponseEntity.ok(ticketNumber);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate ticket number");
+        }
+    }
+
+    @PatchMapping("/uploadRepairTicketDocument/{ticketNumber}")
+    public ResponseEntity<Void> uploadRepairTicketDocument(@PathVariable String ticketNumber,
+                                                           @RequestParam("file") MultipartFile file) {
+        try {
+            repairTicketService.uploadRepairTicketDocument(ticketNumber, file);
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -61,4 +73,21 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/getAllRepairTickets")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
+        List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
+        return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+    }
+
+    @GetMapping("/getRepairTicketsByCustomerEmail")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
+        try {
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
+            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }

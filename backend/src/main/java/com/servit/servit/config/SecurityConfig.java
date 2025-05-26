@@ -55,7 +55,13 @@ public class SecurityConfig {
                         ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/repairTicket/checkInRepairTicket",
-                                "/repairTicket/getRepairTicket/*"
+                                "/repairTicket/getRepairTicket/*",
+                                "/repairTicket/generateRepairTicketNumber",
+                                "/repairTicket/getAllRepairTickets",
+                                "/user/getTechnicianByEmail",
+                                "/repairTicket/getAllRepairTickets",
+                                "/repairTicket/getAllRepairTicketsByStatus/*",
+                                "/repairTicket/uploadRepairTicketDocument/*"
                         ).hasAnyRole("ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/user/changeRole/*",
@@ -66,7 +72,8 @@ public class SecurityConfig {
                                 "/user/updateFullName/*",
                                 "/user/deleteUser/*",
                                 "/user/updatePhoneNuber/*",
-                                "/user/updateUsername/*"
+                                "/user/updateUsername/*",
+                                "/user/getTechnicians"
                         ).hasAnyRole("ADMIN")
                         //Allen testing
                         .requestMatchers("/parts/create").permitAll()

@@ -5,7 +5,10 @@ import com.servit.servit.dto.GetRepairTicketResponseDTO;
 import com.servit.servit.entity.DigitalSignatureEntity;
 import com.servit.servit.entity.RepairPhotoEntity;
 import com.servit.servit.entity.RepairTicketEntity;
+import com.servit.servit.entity.UserEntity;
+import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.repository.RepairTicketRepository;
+import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +19,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RepairTicketService {
@@ -25,10 +33,16 @@ public class RepairTicketService {
     private final RepairTicketRepository repairTicketRepository;
 
     @Autowired
+    private final UserRepository userRepository;
+
+    @Autowired
     private FileUtil fileUtil;
 
-    public RepairTicketService(RepairTicketRepository repairTicketRepository) {
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
+
+    public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
+        this.userRepository = userRepository;
     }
 
     public GetRepairTicketResponseDTO getRepairTicket(String ticketNumber) {
@@ -39,37 +53,20 @@ public class RepairTicketService {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket");
         }
 
-        GetRepairTicketResponseDTO getRepairTicketResponseDTO = new GetRepairTicketResponseDTO();
-
-        getRepairTicketResponseDTO.setTicketNumber(repairTicket.getTicketNumber());
-        getRepairTicketResponseDTO.setCustomerName(repairTicket.getCustomerName());
-        getRepairTicketResponseDTO.setCustomerEmail(repairTicket.getCustomerEmail());
-        getRepairTicketResponseDTO.setCustomerPhoneNumber(repairTicket.getCustomerPhoneNumber());
-        getRepairTicketResponseDTO.setDeviceType(repairTicket.getDeviceType());
-        getRepairTicketResponseDTO.setDeviceColor(repairTicket.getDeviceColor());
-        getRepairTicketResponseDTO.setDeviceSerialNumber(repairTicket.getDeviceSerialNumber());
-        getRepairTicketResponseDTO.setDeviceModel(repairTicket.getDeviceModel());
-        getRepairTicketResponseDTO.setDeviceBrand(repairTicket.getDeviceBrand());
-        getRepairTicketResponseDTO.setDevicePassword(repairTicket.getDevicePassword());
-        getRepairTicketResponseDTO.setReportedIssue(repairTicket.getReportedIssue());
-        getRepairTicketResponseDTO.setStatus(repairTicket.getStatus());
-        getRepairTicketResponseDTO.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
-
-        getRepairTicketResponseDTO.setDigitalSignatureImageUrl(repairTicket.getDigitalSignature().getImageUrl());
-
-        getRepairTicketResponseDTO.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
-                .map(RepairPhotoEntity::getPhotoUrl)
-                .collect(Collectors.toList()));
-
-        System.out.println("Repair ticket successfully retrieved.");
-
-        return getRepairTicketResponseDTO;
+        return mapToGetRepairTicketResponseDTO(repairTicket);
     }
 
     public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) throws IOException {
         if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null || req.getDeviceModel() == null) {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
         }
+
+        if (req.getRepairPhotos() != null && req.getRepairPhotos().size() > 3) {
+            throw new IllegalArgumentException("You can upload a maximum of 3 repair photos.");
+        }
+
+        UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
 
         RepairTicketEntity repairTicket = new RepairTicketEntity();
         repairTicket.setCustomerName(req.getCustomerName());
@@ -78,19 +75,21 @@ public class RepairTicketService {
         repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
         repairTicket.setDeviceModel(req.getDeviceModel());
         repairTicket.setDeviceBrand(req.getDeviceBrand());
-        repairTicket.setDeviceType(req.getDeviceType());
+        repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
         repairTicket.setReportedIssue(req.getReportedIssue());
+        repairTicket.setTechnicianEmail(technician);
+        repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+        repairTicket.setAccessories(req.getAccessories());
+        repairTicket.setObservations(req.getObservations());
         repairTicket.setStatus("CHECKED-IN");
         repairTicket.setCheckInDate(LocalDateTime.now());
-        repairTicket.setTicketNumber(generateTicketNumber());
+        repairTicket.setTicketNumber(req.getTicketNumber());
 
-        System.out.println("Ticket number generated: " + repairTicket.getTicketNumber());
-
+        AtomicInteger counter = new AtomicInteger(1);
         repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
                 .map(photo -> {
                     try {
-                        int index = req.getRepairPhotos().indexOf(photo) + 1;
-                        String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), index);
+                        String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
                         RepairPhotoEntity repairPhoto = new RepairPhotoEntity();
                         repairPhoto.setPhotoUrl(photoPath);
                         repairPhoto.setRepairTicket(repairTicket);
@@ -101,9 +100,9 @@ public class RepairTicketService {
                 })
                 .collect(Collectors.toList()));
 
-        System.out.println("Repair photos successfully captured and saved.");
-
         String digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
+
+        logger.info("Successfully saved digital signature for repair ticket: {}", repairTicket.getTicketNumber());
 
         DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
         digitalSignature.setImageUrl(digitalSignaturePath);
@@ -111,30 +110,79 @@ public class RepairTicketService {
 
         repairTicket.setDigitalSignature(digitalSignature);
 
-        System.out.println("Digital signature successfully captured and saved.");
+        logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
 
-        RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
-
-        System.out.println("Repair ticket successfully checked in.");
-
-        return savedTicket;
+        return repairTicketRepository.save(repairTicket);
     }
 
-    private String generateTicketNumber() {
-        return "IORT-" + String.format("%06d", (int) (Math.random() * 1_000_000));
-    }
+    public String generateRepairTicketNumber() {
+        String lastTicketNumber = repairTicketRepository.findLastTicketNumber();
+        int nextId = 1;
 
-    public void uploadClaimForm(String ticketNumber, MultipartFile file) throws IOException {
-        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
-
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+        if (lastTicketNumber != null && lastTicketNumber.startsWith("IORT-")) {
+            String numericPart = lastTicketNumber.substring(5);
+            nextId = Integer.parseInt(numericPart) + 1;
         }
 
-        String pdfPath = fileUtil.saveClaimForm(file, ticketNumber);
-        repairTicket.setClaimFormPath(pdfPath);
+        return "IORT-" + String.format("%06d", nextId);
+    }
+
+    public void uploadRepairTicketDocument(String ticketNumber, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
+            throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
+        }
+
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Repair ticket with ticket number " + ticketNumber + " not found."));
+
+        String pdfPath = fileUtil.saveRepairTicketDocument(file, ticketNumber);
+        repairTicket.setDocumentPath(pdfPath);
 
         repairTicketRepository.save(repairTicket);
+
+        System.out.println("Successfully uploaded document for repair ticket: " + ticketNumber);
+    }
+
+    public List<GetRepairTicketResponseDTO> getAllRepairTickets() {
+        return repairTicketRepository.findAll().stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
+        return repairTicketRepository.findByCustomerEmail(email).stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
+        GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
+        dto.setTicketNumber(repairTicket.getTicketNumber());
+        dto.setCustomerName(repairTicket.getCustomerName());
+        dto.setCustomerEmail(repairTicket.getCustomerEmail());
+        dto.setCustomerPhoneNumber(repairTicket.getCustomerPhoneNumber());
+        dto.setDeviceType(repairTicket.getDeviceType() != null ? repairTicket.getDeviceType().name() : null);
+        dto.setDeviceColor(repairTicket.getDeviceColor());
+        dto.setDeviceSerialNumber(repairTicket.getDeviceSerialNumber());
+        dto.setDeviceModel(repairTicket.getDeviceModel());
+        dto.setDeviceBrand(repairTicket.getDeviceBrand());
+        dto.setDevicePassword(repairTicket.getDevicePassword());
+        dto.setTechnicianEmail(repairTicket.getTechnicianEmail().getEmail());
+        dto.setTechnicianName(repairTicket.getTechnicianName());
+        dto.setAccessories(repairTicket.getAccessories());
+        dto.setObservations(repairTicket.getObservations());
+        dto.setReportedIssue(repairTicket.getReportedIssue());
+        dto.setStatus(repairTicket.getStatus());
+        dto.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
+        dto.setDigitalSignatureImageUrl(repairTicket.getDigitalSignature() != null ? repairTicket.getDigitalSignature().getImageUrl() : null);
+        dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
+                .map(RepairPhotoEntity::getPhotoUrl)
+                .collect(Collectors.toList()));
+        return dto;
     }
 }
