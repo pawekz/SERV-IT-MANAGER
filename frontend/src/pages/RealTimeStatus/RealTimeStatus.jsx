@@ -12,12 +12,12 @@ const RealTimeStatus = () => {
     const repairs = [
         {
             id: "RT-8742",
-            item: "iPhone 13 Pro",
+            item: "Dell Laptop",
             submitted: "05/10/2025",
             status: "Repairing",
             lastUpdated: "05/12/2025",
             progress: 60,
-            technician: "John Smith",
+            technician: "John Paulo",
             estimatedCompletion: "05/13/2025",
             notes: "Display and battery replaced. Testing in progress.",
         },
@@ -28,18 +28,18 @@ const RealTimeStatus = () => {
             status: "Ready for Pickup",
             lastUpdated: "05/11/2025",
             progress: 100,
-            technician: "Sarah Johnson",
+            technician: "Reene Doe",
             estimatedCompletion: "05/11/2025",
             notes: "Keyboard replacement completed. Quality check passed.",
         },
         {
             id: "RT-8689",
-            item: "iPad Mini",
+            item: "HP Printer",
             submitted: "04/28/2025",
             status: "Completed",
             lastUpdated: "05/03/2025",
             progress: 100,
-            technician: "Mike Davis",
+            technician: "Kyle Doe",
             estimatedCompletion: "05/03/2025",
             notes: "Screen repair completed. Device picked up by customer.",
         },
@@ -243,3 +243,7 @@ const RealTimeStatus = () => {
 }
 
 export default RealTimeStatus
+
+
+
+
