@@ -67,8 +67,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-OEM",
             category: "Display",
             availability: { status: "IN STOCK", count: 15 },
-            location: "Shelf A1",
-            quantity: 1
+            location: "Shelf A1"
         },
         {
             id: 2,
@@ -76,8 +75,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-P",
             category: "Display",
             availability: { status: "IN STOCK", count: 8 },
-            location: "Shelf A2",
-            quantity: 1
+            location: "Shelf A2"
         },
         {
             id: 3,
@@ -85,8 +83,7 @@ const Inventory = () => {
             sku: "IP13P-DISP-AFT-S",
             category: "Display",
             availability: { status: "LOW STOCK", count: 3 },
-            location: "Shelf B1",
-            quantity: 1
+            location: "Shelf B1"
         },
         {
             id: 4,
@@ -94,8 +91,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-OEM",
             category: "Battery",
             availability: { status: "IN STOCK", count: 12 },
-            location: "Shelf B2",
-            quantity: 1
+            location: "Shelf B2"
         },
         {
             id: 5,
@@ -103,8 +99,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-P",
             category: "Battery",
             availability: { status: "IN STOCK", count: 7 },
-            location: "Shelf B3",
-            quantity: 1
+            location: "Shelf B3"
         },
         {
             id: 6,
@@ -112,8 +107,7 @@ const Inventory = () => {
             sku: "IP13P-BAT-AFT-S",
             category: "Battery",
             availability: { status: "OUT OF STOCK", count: 0 },
-            location: "Shelf C1",
-            quantity: 0
+            location: "Shelf C1"
         },
         {
             id: 7,
@@ -121,8 +115,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-REAR",
             category: "Camera",
             availability: { status: "IN STOCK", count: 5 },
-            location: "Shelf C2",
-            quantity: 1
+            location: "Shelf C2"
         },
         {
             id: 8,
@@ -130,8 +123,7 @@ const Inventory = () => {
             sku: "IP13P-CAM-FRONT",
             category: "Camera",
             availability: { status: "LOW STOCK", count: 2 },
-            location: "Shelf D1",
-            quantity: 1
+            location: "Shelf D1"
         },
         {
             id: 9,
@@ -139,8 +131,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-PORT",
             category: "Laptop",
             availability: { status: "IN STOCK", count: 9 },
-            location: "Shelf D2",
-            quantity: 1
+            location: "Shelf D2"
         },
         {
             id: 10,
@@ -148,8 +139,7 @@ const Inventory = () => {
             sku: "IP13P-CHARGE-COIL",
             category: "Charging",
             availability: { status: "LOW STOCK", count: 4 },
-            location: "Shelf E1",
-            quantity: 1
+            location: "Shelf E1"
         }
     ];
 
@@ -209,73 +199,6 @@ const Inventory = () => {
                         <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
                         <p className="text-gray-600">Manage parts inventory and link items directly to repair jobs.</p>
                     </div>
-
-                    {/* Repair Ticket Card */}
-                    {/*<div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">*/}
-                    {/*    <div className="p-5">*/}
-                    {/*        <div className="flex items-start gap-4">*/}
-                    {/*            <div className="p-3 bg-blue-50 rounded-lg">*/}
-                    {/*                <Cube size={24} className="text-blue-500" />*/}
-                    {/*            </div>*/}
-                    {/*            <div>*/}
-                    {/*                <h2 className="text-lg font-semibold text-gray-800">Assign Parts to Repair Ticket {repairInfo.ticketId}</h2>*/}
-                    {/*                <p className="text-gray-600 text-sm">Select parts from inventory to assign to this repair ticket.</p>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-
-                    {/*    /!* Repair and Customer Info *!/*/}
-                    {/*    <div className="grid md:grid-cols-2 gap-6 p-5 border-t border-gray-100">*/}
-                    {/*        /!* Repair Information *!/*/}
-                    {/*        <div>*/}
-                    {/*            <div className="flex items-center mb-4">*/}
-                    {/*                <Wrench size={18} className="text-gray-500 mr-2" />*/}
-                    {/*                <h3 className="font-medium text-gray-700">Repair Information</h3>*/}
-                    {/*            </div>*/}
-                    {/*            <div className="grid grid-cols-2 gap-y-3 text-sm">*/}
-                    {/*                <div className="text-gray-500">Ticket ID:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.ticketId}</div>*/}
-
-                    {/*                <div className="text-gray-500">Device:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.device}</div>*/}
-
-                    {/*                <div className="text-gray-500">Repair Type:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.repairType}</div>*/}
-
-                    {/*                <div className="text-gray-500">Status:</div>*/}
-                    {/*                <div>*/}
-                    {/*<span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(repairInfo.status)}`}>*/}
-                    {/*  {repairInfo.status}*/}
-                    {/*</span>*/}
-                    {/*                </div>*/}
-
-                    {/*                <div className="text-gray-500">Technician:</div>*/}
-                    {/*                <div className="font-medium">{repairInfo.technician}</div>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-
-                    {/*        /!* Customer Information *!/*/}
-                    {/*        <div>*/}
-                    {/*            <div className="flex items-center mb-4">*/}
-                    {/*                <User size={18} className="text-gray-500 mr-2" />*/}
-                    {/*                <h3 className="font-medium text-gray-700">Customer Information</h3>*/}
-                    {/*            </div>*/}
-                    {/*            <div className="grid grid-cols-2 gap-y-3 text-sm">*/}
-                    {/*                <div className="text-gray-500">Name:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.name}</div>*/}
-
-                    {/*                <div className="text-gray-500">Email:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.email}</div>*/}
-
-                    {/*                <div className="text-gray-500">Phone:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.phone}</div>*/}
-
-                    {/*                <div className="text-gray-500">Created On:</div>*/}
-                    {/*                <div className="font-medium">{customerInfo.createdOn}</div>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
 
                     {/* Available Inventory */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -337,12 +260,10 @@ const Inventory = () => {
                                     <th className="w-10 px-5 py-3">
                                         <input type="checkbox" className="rounded border-gray-300 text-green-500 focus:ring-green-500" />
                                     </th>
-                                    {/*<th className="w-16 px-5 py-3">Image</th>*/}
                                     <th className="px-5 py-3">Part ID</th>
                                     <th className="px-5 py-3">Description</th>
                                     <th className="px-5 py-3">Availability</th>
                                     <th className="px-5 py-3">Location</th>
-                                    <th className="px-5 py-3">Quantity</th>
                                     <th className="px-5 py-3">Action</th>
                                 </tr>
                                 </thead>
@@ -357,14 +278,6 @@ const Inventory = () => {
                                                 onChange={() => togglePartSelection(item)}
                                             />
                                         </td>
-                                        {/*<td className="px-5 py-4">*/}
-                                        {/*    <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">*/}
-                                        {/*        {item.image.includes("display") && <div className="w-6 h-6 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*        {item.image.includes("battery") && <div className="w-6 h-4 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*        {item.image.includes("camera") && <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>}*/}
-                                        {/*        {item.image.includes("charging") && <div className="w-6 h-3 border border-gray-300 rounded-sm"></div>}*/}
-                                        {/*    </div>*/}
-                                        {/*</td>*/}
                                         <td className="px-5 py-4">
                                             <div className="text-sm font-medium text-gray-900">{item.name}</div>
                                             <div className="text-xs text-gray-500">SKU: {item.sku}</div>
@@ -379,9 +292,6 @@ const Inventory = () => {
                                         </td>
                                         <td className="px-5 py-4">
                                             <span className="text-sm font-medium text-gray-900">{item.location}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-gray-700">{item.quantity}</span>
                                         </td>
                                         <td className="px-5 py-4">
                                             <button
