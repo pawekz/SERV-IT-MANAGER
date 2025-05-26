@@ -71,6 +71,8 @@ public class SecurityConfig {
                                 "/user/updateUsername/*",
                                 "/user/getTechnicians"
                         ).hasAnyRole("ADMIN")
+                        //Allen testing
+                        .requestMatchers("/parts/create").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults())
