@@ -484,8 +484,8 @@ const LoginPage = () => {
                 }
             } else {
                 // User is verified or verification status wasn't explicitly returned as false
-                if (data.role === 'ADMIN') {
-                    navigate('/admin/dashboard');
+                if (data.role === 'ADMIN' || data.role === 'TECHNICIAN') {
+                    navigate('/dashboard');
                 } else {
                     navigate('/accountinformation');
                 }
