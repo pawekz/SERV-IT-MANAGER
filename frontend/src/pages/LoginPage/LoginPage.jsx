@@ -482,7 +482,13 @@ const LoginPage = () => {
                     setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
                     setLoginProcessing(false);
                 }
-            } else {
+            }
+
+            if(data.status === "Inactive"){
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userRole');
+                setError("Your account is inactive. Please contact support.");
+            }else {
                 // User is verified or verification status wasn't explicitly returned as false
                 if (data.role === 'ADMIN' || data.role === 'TECHNICIAN') {
                     navigate('/dashboard');

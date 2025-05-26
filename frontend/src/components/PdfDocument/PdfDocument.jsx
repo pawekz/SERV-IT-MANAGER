@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
     checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8
+        marginBottom: 8,
+        checked: true
     },
     checkbox: {
         width: 12,
@@ -166,13 +167,13 @@ const styles = StyleSheet.create({
 });
 
 // Create Document Component
-const PdfDocument = ({signatureDataURL}) => (
+const PdfDocument = ({signatureDataURL, formData}) => (
     <Document>
         <Page size="A4" style={styles.page}>
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerText}>
-                    <Text style={styles.title}>TECH REPAIR SERVICE</Text>
+                    <Text style={styles.title}>OICONNECT REPAIR SERVICE</Text>
                     <Text style={styles.subtitle}>Repair Check-In Form</Text>
                 </View>
             </View>
@@ -181,7 +182,7 @@ const PdfDocument = ({signatureDataURL}) => (
                 <Text style={styles.label}>Customer Check-In</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={styles.ticketLabel}>Ticket #:</Text>
-                    <Text style={styles.ticketValue}>TKT-1234</Text>
+                    <Text style={styles.ticketValue}>{formData.repairTicketId}</Text>
                 </View>
             </View>
             {/* Customer Information */}
@@ -192,15 +193,15 @@ const PdfDocument = ({signatureDataURL}) => (
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text style={styles.label}>Full Name:</Text>
-                        <Text style={styles.value}>John Doe</Text>
+                        <Text style={styles.value}>{formData.fullName}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Email:</Text>
-                        <Text style={styles.value}>john@example.com</Text>
+                        <Text style={styles.value}>{formData.email}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Phone:</Text>
-                        <Text style={styles.value}>+1 234 567 8900</Text>
+                        <Text style={styles.value}>{formData.phoneNumber}</Text>
                     </View>
                 </View>
             </View>
@@ -212,59 +213,72 @@ const PdfDocument = ({signatureDataURL}) => (
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text style={styles.label}>Device Type:</Text>
-                        <Text style={styles.value}>Laptop</Text>
+                        <Text style={styles.value}>{formData.deviceType}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Brand:</Text>
-                        <Text style={styles.value}>Apple</Text>
+                        <Text style={styles.value}>{formData.deviceBrand}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Model:</Text>
-                        <Text style={styles.value}>MacBook Pro 16"</Text>
+                        <Text style={styles.value}>{formData.deviceModel}</Text>
                     </View>
                 </View>
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text style={styles.label}>Serial Number:</Text>
-                        <Text style={styles.value}>SN123456789</Text>
+                        <Text style={styles.value}>{formData.deviceSerialNumber}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Color:</Text>
-                        <Text style={styles.value}>Silver</Text>
+                        <Text style={styles.value}>{formData.deviceColor}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Password:</Text>
-                        <Text style={styles.value}>••••••••</Text>
+                        <Text style={styles.value}>{formData.devicePassword}</Text>
                     </View>
                 </View>
             </View>
+
+            {/* Customer brought Accessories */}
+            <View style={styles.sectionBox}>
+                <View style={styles.sectionTitleBar}>
+                    <Text style={styles.sectionTitle}>PROBLEM ACCESSORIES</Text>
+                </View>
+                <Text style={styles.label}>Customer Owned Accessories:</Text>
+                <Text style={styles.textarea}>{formData.accessories}</Text>
+            </View>
+
             {/* Problem Description */}
             <View style={styles.sectionBox}>
                 <View style={styles.sectionTitleBar}>
                     <Text style={styles.sectionTitle}>PROBLEM DESCRIPTION</Text>
                 </View>
                 <Text style={styles.label}>Customer Reported Issues:</Text>
-                <Text style={styles.textarea}>Screen flickers and battery drains quickly.</Text>
-                <Text style={styles.label}>Technician Observations:</Text>
-                <Text style={styles.textarea}>To be filled by technician.</Text>
+                <Text style={styles.textarea}>{formData.reportedIssue}</Text>
             </View>
 
             {/* Device Condition */}
-            <View style={styles.sectionBox}>
-                <View style={styles.sectionTitleBar}>
-                    <Text style={styles.sectionTitle}>DEVICE CONDITION</Text>
-                </View>
-                <View style={styles.devicePhotoBox}>
-                    <Text style={styles.devicePhotoLabel}>Photo of device condition</Text>
-                </View>
-            </View>
+            {/*<View style={styles.sectionBox}>*/}
+            {/*    <View style={styles.sectionTitleBar}>*/}
+            {/*        <Text style={styles.sectionTitle}>DEVICE CONDITION</Text>*/}
+            {/*    </View>*/}
+            {/*    <View style={styles.devicePhotoBox}>*/}
+            {/*        <Text style={styles.devicePhotoLabel}>Photo of device condition</Text>*/}
+            {/*    </View>*/}
+            {/*</View>*/}
             {/* Terms and Conditions */}
             <View style={styles.sectionBox}>
                 <View style={styles.checkboxRow}>
                     <View style={styles.termsTextContainer}>
-                        <View style={styles.checkbox} />
-                        <Text style={styles.termsText}>I have read and agree to the repair terms and conditions</Text>
+                        <View style={styles.checkbox}>
+                            <Text style={{ fontSize: 10, textAlign: 'center', color: '#33e407' }}>✓</Text>
+                        </View>
+                        <Text style={styles.termsText}>
+                            I have read and agree to the repair terms and conditions
+                        </Text>
                     </View>
+
 
                     {typeof signatureDataURL === 'string' && signatureDataURL.startsWith('data:image') ? (
                         <Image

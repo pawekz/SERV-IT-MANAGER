@@ -43,17 +43,17 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/dashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
-                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repairqueue" className={linkClass('repair')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
             <li className="mb-1">
-                <Link to="#" className={linkClass('warranty')}>
+                <Link to="/warranty" className={linkClass('warranty')}>
                     <Truck size={18} className="mr-3" />
                     <span>Warranty Request</span>
                 </Link>
@@ -71,21 +71,20 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/dashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
             <li className="mb-1">
 
-                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
-
+                <Link to="/repairqueue" className={linkClass('repair')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/repairqueue" className={linkClass('repairqueue')}>
+                <Link to="/warranty" className={linkClass('warranty')}>
                     <ShieldCheck size={18} className="mr-3" />
                     <span>Warranty Request</span>
                 </Link>
@@ -122,7 +121,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="/repaircheckin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/repairqueue" className={linkClass('repair')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>

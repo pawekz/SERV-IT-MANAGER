@@ -13,8 +13,82 @@ import {
     CalendarIcon,
 } from "lucide-react"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
+import {useEffect, useState} from "react";
 
 const DashboardPage = () => {
+    const [userData, setUserData] = useState({
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        phoneNumber:'',
+        password: '********' // Placeholder for security
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const parseJwt = (token) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                setLoading(true);
+
+                // Check if we have cached user data in sessionStorage first
+                const cachedUserData = sessionStorage.getItem('userData');
+                if (cachedUserData) {
+                    const parsedData = JSON.parse(cachedUserData);
+                    setUserData(parsedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // Get token from localStorage if no cached data
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Not authenticated. Please log in.");
+                }
+
+                // Try to parse token to get user info
+                const decodedToken = parseJwt(token);
+
+                if (decodedToken) {
+                    const userData = {
+                        firstName: decodedToken.firstName || '',
+                        lastName: decodedToken.lastName || '',
+                        username: decodedToken.username || decodedToken.sub || '',
+                        email: decodedToken.email || decodedToken.sub || '',
+                        phoneNumber: decodedToken.phoneNumber || '',
+                        password: '********' // Mask password for security
+                    };
+
+                    setUserData(userData);
+
+                    // Cache the user data in sessionStorage for persistence across refreshes
+                    sessionStorage.setItem('userData', JSON.stringify(userData));
+                } else {
+                    // If token can't be decoded, could attempt API call to get user data
+                    throw new Error("Could not retrieve user information");
+                }
+                setError(null);
+            } catch (err) {
+                console.error("Error fetching user data:", err);
+                setError("Failed to load account information. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
     // Static data for the dashboard
     const stats = {
         users: 1248,
@@ -57,7 +131,7 @@ const DashboardPage = () => {
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar */}
 
-            <Sidebar/>
+            <Sidebar activePage={'dashboard'}/>
 
 
             {/*Given Sidebar length*/}
@@ -70,7 +144,7 @@ const DashboardPage = () => {
                 {/* Header */}
                 <header className="bg-white shadow-sm p-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold text-gray-800">Good Day, Kyle</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">Good Day, {userData.firstName}</h2>
                         <div className="flex items-center space-x-4">
                             <div className="relative">
                                 <input
