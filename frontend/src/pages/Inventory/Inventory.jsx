@@ -63,8 +63,7 @@ const Inventory = () => {
     const inventoryItems = [
         {
             id: 1,
-            image: "oem-display",
-            name: "iPhone 13 Pro OEM Display Assembly",
+            name: "HDMI CABLE",
             sku: "IP13P-DISP-OEM",
             category: "Display",
             availability: { status: "IN STOCK", count: 15 },
@@ -73,8 +72,7 @@ const Inventory = () => {
         },
         {
             id: 2,
-            image: "premium-display",
-            name: "iPhone 13 Pro Premium Aftermarket Display",
+            name: "HP LAPTOP",
             sku: "IP13P-DISP-AFT-P",
             category: "Display",
             availability: { status: "IN STOCK", count: 8 },
@@ -83,8 +81,7 @@ const Inventory = () => {
         },
         {
             id: 3,
-            image: "standard-display",
-            name: "iPhone 13 Pro Standard Aftermarket Display",
+            name: "PRINTER",
             sku: "IP13P-DISP-AFT-S",
             category: "Display",
             availability: { status: "LOW STOCK", count: 3 },
@@ -93,8 +90,7 @@ const Inventory = () => {
         },
         {
             id: 4,
-            image: "oem-battery",
-            name: "iPhone 13 Pro OEM Battery",
+            name: "HP PRINTER",
             sku: "IP13P-BAT-OEM",
             category: "Battery",
             availability: { status: "IN STOCK", count: 12 },
@@ -103,8 +99,7 @@ const Inventory = () => {
         },
         {
             id: 5,
-            image: "premium-battery",
-            name: "iPhone 13 Pro Premium Aftermarket Battery",
+            name: "WIRE",
             sku: "IP13P-BAT-AFT-P",
             category: "Battery",
             availability: { status: "IN STOCK", count: 7 },
@@ -113,8 +108,7 @@ const Inventory = () => {
         },
         {
             id: 6,
-            image: "standard-battery",
-            name: "iPhone 13 Pro Standard Aftermarket Battery",
+            name: "LENOVO BATTERY",
             sku: "IP13P-BAT-AFT-S",
             category: "Battery",
             availability: { status: "OUT OF STOCK", count: 0 },
@@ -123,8 +117,7 @@ const Inventory = () => {
         },
         {
             id: 7,
-            image: "rear-camera",
-            name: "iPhone 13 Pro Rear Camera Assembly",
+            name: "ASUS LAPTOP",
             sku: "IP13P-CAM-REAR",
             category: "Camera",
             availability: { status: "IN STOCK", count: 5 },
@@ -133,8 +126,7 @@ const Inventory = () => {
         },
         {
             id: 8,
-            image: "front-camera",
-            name: "iPhone 13 Pro Front Camera & Face ID",
+            name: "HDMI CABLE",
             sku: "IP13P-CAM-FRONT",
             category: "Camera",
             availability: { status: "LOW STOCK", count: 2 },
@@ -143,18 +135,16 @@ const Inventory = () => {
         },
         {
             id: 9,
-            image: "charging-port",
-            name: "iPhone 13 Pro Charging Port Flex",
+            name: "Razerblade Laptop",
             sku: "IP13P-CHARGE-PORT",
-            category: "Charging",
+            category: "Laptop",
             availability: { status: "IN STOCK", count: 9 },
             price: 49.99,
             quantity: 1
         },
         {
             id: 10,
-            image: "wireless-charging",
-            name: "iPhone 13 Pro Wireless Charging Coil",
+            name: "HP 13 Pro Wireless Charging Coil",
             sku: "IP13P-CHARGE-COIL",
             category: "Charging",
             availability: { status: "LOW STOCK", count: 4 },
