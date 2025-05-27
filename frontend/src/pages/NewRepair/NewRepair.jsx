@@ -14,12 +14,6 @@ export default function NewRepair() {
     const location = useLocation();
     const [formData, setFormData] = useState(location.state?.formData || {});
 
-    useEffect(() => {
-        // Read from sessionStorage (or localStorage)
-        const cameFrom = sessionStorage.getItem('cameFromCheckIn')
-        setCameFromCheckIn(cameFrom === 'true')
-    }, [])
-
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
 
