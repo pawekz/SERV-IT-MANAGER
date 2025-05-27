@@ -360,7 +360,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         onChange={handlePhotoUpload}
                                         max={3}
                                     />
-                                    {((photoFiles && photoFiles.length > 0) || (formData.repairPhotos && formData.repairPhotos.length > 0)) && (
+                                    {formData.repairPhotos && formData.repairPhotos.length > 0 && (
                                         <p className="text-sm text-gray-600">
                                             Selected Images:
                                         </p>
@@ -383,10 +383,38 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                         borderRadius: 8,
                                                         border: "1px solid #e5e7eb",
                                                         overflow: "hidden",
-                                                        cursor: "pointer"
+                                                        cursor: "pointer",
+                                                        position: "relative"
                                                     }}
-                                                    onClick={() => openViewer(idx)}
                                                 >
+                                                    <button
+                                                        type="button"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                repairPhotos: prev.repairPhotos.filter((_, i) => i !== idx)
+                                                            }));
+                                                        }}
+                                                        style={{
+                                                            position: "absolute",
+                                                            top: 4,
+                                                            right: 4,
+                                                            background: "rgba(255,255,255,0.8)",
+                                                            border: "none",
+                                                            borderRadius: "50%",
+                                                            width: 24,
+                                                            height: 24,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            cursor: "pointer",
+                                                            zIndex: 2
+                                                        }}
+                                                        aria-label="Remove photo"
+                                                    >
+                                                        <X size={18} className="text-gray-500 hover:text-red-500" />
+                                                    </button>
                                                     <img
                                                         src={src}
                                                         alt={`Device condition ${idx + 1}`}
@@ -396,6 +424,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                             objectFit: "contain",
                                                             background: "#f3f4f6"
                                                         }}
+                                                        onClick={() => openViewer(idx)}
                                                     />
                                                 </div>
                                             ))}
