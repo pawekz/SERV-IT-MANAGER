@@ -334,7 +334,7 @@ const RepairForm = ({ status, onNext }) => {
                                 onClick={onNext}
                                 className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                             >
-                                Submit
+                                Next
                             </button>
                         </div>
                     </form>
