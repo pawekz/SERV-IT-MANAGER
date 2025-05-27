@@ -25,7 +25,6 @@ public class FileUtil {
     private String claimFormsDir;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final long MAX_FILE_SIZE_MB = 10 * 1024 * 1024;
     private static final List<String> VALID_IMAGE_EXTENSIONS = List.of(".png", ".jpg", ".jpeg");
 
     public String saveRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
@@ -81,10 +80,6 @@ public class FileUtil {
         if (!VALID_IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase())) {
             throw new IllegalArgumentException("Invalid photo type. Only PNG, JPG, and JPEG are allowed.");
         }
-
-        if (file.getSize() > MAX_FILE_SIZE_MB) {
-            throw new IllegalArgumentException("Photo size exceeds the maximum limit of 5 MB.");
-        }
     }
 
     private void validateDocument(MultipartFile file) {
@@ -95,10 +90,6 @@ public class FileUtil {
         String fileExtension = getFileExtension(file);
         if (!".pdf".equalsIgnoreCase(fileExtension)) {
             throw new IllegalArgumentException("Invalid document type. Only PDF files are allowed.");
-        }
-
-        if (file.getSize() > MAX_FILE_SIZE_MB) {
-            throw new IllegalArgumentException("Document size exceeds the maximum limit of 5 MB.");
         }
     }
 

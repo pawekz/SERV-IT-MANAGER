@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react"
 import { Upload } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import RepairQueue from "../RepairQueue/RepairQueue.jsx";
 import RepairForm from "../../components/RepairForm/RepairForm.jsx";
 import SignatureCapturePad from "../SignatureCapturePad/SignatureCapturePad.jsx";
@@ -11,13 +11,8 @@ export default function NewRepair() {
     const navigate = useNavigate()
     const [cameFromCheckIn, setCameFromCheckIn] = useState(false)
 
-    useEffect(() => {
-        // Read from sessionStorage (or localStorage)
-        const cameFrom = sessionStorage.getItem('cameFromCheckIn')
-        setCameFromCheckIn(cameFrom === 'true')
-    }, [])
-
-
+    const location = useLocation();
+    const [formData, setFormData] = useState(location.state?.formData || {});
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -79,13 +74,22 @@ export default function NewRepair() {
 
             {/* Show SignatureCapturePad only if cameFromCheckIn is true, else show RepairForm */}
             {cameFromCheckIn ? (
-                <SignatureCapturePad onBack={() => setCameFromCheckIn(false)} />
+                <SignatureCapturePad
+                    onBack={() => setCameFromCheckIn(false)}
+                    formData={formData}
+                />
             ) : (
-                <RepairForm status={"new"} onNext={() => setCameFromCheckIn(true)} />
+                <RepairForm
+                    status={"new"}
+                    formData={formData}
+                    onNext={(data) => {
+                        setFormData(data);
+                        setCameFromCheckIn(true);
+                    }}
+                />
             )}
 
         </div>
     )
 }
-// /test/
 
