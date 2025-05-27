@@ -116,55 +116,56 @@ const SignatureCapturePad = ({ onBack, formData }) => {
         return new Blob([new Uint8Array(array)], { type: mime })
     }
 
-    const validateFormData = () => {
+    const validateFormData = (data = formData) => {
         const requiredFields = [
             'ticketNumber', 'customerName', 'customerEmail', 'customerPhoneNumber', 'deviceColor',
             'deviceType', 'deviceBrand', 'deviceModel', 'reportedIssue', 'accessories',
-        ]
+        ];
 
         const missingFields = requiredFields.filter(field =>
-            !formData[field] || formData[field].trim() === ''
-        )
+            !data[field] || data[field].trim() === ''
+        );
 
         if (missingFields.length > 0) {
-            return `Missing required fields: ${missingFields.join(', ')}`
+            return `Missing required fields: ${missingFields.join(', ')}`;
         }
 
-        if (!signatureDataURL) {
-            return 'Digital signature is required'
+        if (!data.signatureDataURL) {
+            return 'Digital signature is required';
         }
 
-        return null
-    }
+        return null;
+    };
 
-    const submitRepairTicket = async () => {
-        const token = localStorage.getItem('authToken')
+    const submitRepairTicket = async (sigDataUrl = signatureDataURL) => {
+        const token = localStorage.getItem('authToken');
         if (!token) {
-            throw new Error("Not authenticated. Please log in.")
+            throw new Error("Not authenticated. Please log in.");
         }
 
-        const form = new FormData()
+        const form = new FormData();
 
         Object.entries(formData).forEach(([key, value]) => {
-            if (key !== 'repairPhotos' && value !== null && value !== undefined) {
-                form.append(key, value.toString())
+            if (key !== 'repairPhotos' && key !== 'digitalSignature' && value !== null && value !== undefined) {
+                form.append(key, value.toString());
             }
-        })
+        });
 
-        if (signatureDataURL) {
-            const signatureBlob = dataURLtoBlob(signatureDataURL)
-            form.append("digitalSignature", signatureBlob, "signature.png")
+        const signatureToUse = sigDataUrl || signatureDataURL;
+        if (signatureToUse) {
+            const signatureBlob = dataURLtoBlob(signatureToUse);
+            form.append("digitalSignature", signatureBlob, "signature.png");
         } else {
-            throw new Error("Digital signature is required")
+            throw new Error("Digital signature is required");
         }
 
         if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
-            formData.repairPhotos.forEach((base64DataURL, index) => {
+            formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
                 if (base64DataURL) {
-                    const blob = dataURLtoBlob(base64DataURL)
-                    form.append("repairPhotos", blob, `photo-${index + 1}.png`)
+                    const blob = dataURLtoBlob(base64DataURL);
+                    form.append("repairPhotos", blob, `photo-${index + 1}.png`);
                 }
-            })
+            });
         }
 
         try {
@@ -174,56 +175,57 @@ const SignatureCapturePad = ({ onBack, formData }) => {
                     "Authorization": `Bearer ${token}`
                 },
                 body: form
-            })
+            });
 
             if (!response.ok) {
-                let errorMessage
+                let errorMessage;
                 try {
-                    const errorData = await response.text()
-                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`
+                    const errorData = await response.text();
+                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
                 } catch (e) {
-                    errorMessage = `Server returned ${response.status}: ${response.statusText}`
+                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
                 }
-
-                throw new Error(errorMessage)
+                throw new Error(errorMessage);
             }
 
-            const result = await response.json()
-            alert("Repair ticket submitted successfully!")
-            return result
+            const result = await response.json();
+            alert("Repair ticket submitted successfully!");
+            return result;
         } catch (error) {
-            throw error
+            throw error;
         }
-    }
+    };
 
     const handleNext = async () => {
         if (isEmpty) {
-            alert("Please provide a signature before proceeding.")
-            return
+            alert("Please provide a signature before proceeding.");
+            return;
         }
         if (!termsAccepted) {
-            alert("You must accept the terms and conditions before proceeding.")
-            return
+            alert("You must accept the terms and conditions before proceeding.");
+            return;
         }
 
-        saveSignature()
+        // Save signature and get the dataURL synchronously
+        const canvas = canvasRef.current;
+        const dataUrl = canvas.toDataURL("image/png");
+        setSignatureDataURL(dataUrl);
 
-        await new Promise(resolve => setTimeout(resolve, 100))
-
-        const validationError = validateFormData()
+        // Use the freshly captured dataUrl for validation and submission
+        const validationError = validateFormData({ ...formData, signatureDataURL: dataUrl });
         if (validationError) {
-            alert(validationError)
-            return
+            alert(validationError);
+            return;
         }
 
-        setShowPDF(true)
+        setShowPDF(true);
 
         try {
-            await submitRepairTicket()
+            await submitRepairTicket(dataUrl);
         } catch (error) {
-            alert("Failed to submit the form. Please try again.")
+            alert("Failed to submit the form. Please try again.");
         }
-    }
+    };
 
     return (
         <div className="w-full flex flex-row items-start justify-center py-8 gap-8 px-4 max-w-[1000px] mx-auto">

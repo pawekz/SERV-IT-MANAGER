@@ -6,6 +6,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [loading, setLoading] = useState(true);
+    const [photoError, setPhotoError] = useState("");
     const [error, setError] = useState(null);
 
     const location = useLocation();
@@ -57,10 +58,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
 
     const handlePhotoUpload = (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files).slice(0, 3); // max 3
+            const files = Array.from(e.target.files);
+            if (files.length > 3) {
+                setPhotoError("You can upload a maximum of 3 photos.");
+                return;
+            }
+            setPhotoError("");
             setPhotoFiles(files);
 
-            // Convert to base64 for sessionStorage (optional, or just store File objects)
             Promise.all(files.map(file => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -75,10 +80,21 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                 }));
             });
         }
+        // Do nothing if no files selected (cancel)
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const hasPhotos =
+            (photoFiles && photoFiles.length > 0) ||
+            (formData.repairPhotos && formData.repairPhotos.length > 0);
+
+        if (!hasPhotos) {
+            setPhotoError("Please upload at least one photo of the device condition.");
+            return;
+        } else {
+            setPhotoError("");
+        }
         if (onNext) {
             onNext(formData);
         }
@@ -314,7 +330,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         <Upload className="h-8 w-8 text-[#33e407]" />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <p className="text-sm text-gray-600">Upload up to 3 photos of device condition</p>
                                     <label
                                         htmlFor="photo-upload"
@@ -329,11 +345,27 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         className="hidden"
                                         multiple
                                         onChange={handlePhotoUpload}
+                                        max={3}
                                     />
-                                    {photoFiles.length > 0 && (
-                                        <p className="text-sm text-gray-600 mt-2">
-                                            Selected: {photoFiles.map(f => f.name).join(", ")}
+                                    {((photoFiles && photoFiles.length > 0) || (formData.repairPhotos && formData.repairPhotos.length > 0)) && (
+                                        <p className="text-sm text-gray-600">
+                                            Selected Images:
                                         </p>
+                                    )}
+                                    {photoError && (
+                                        <p className="text-sm text-red-600">{photoError}</p>
+                                    )}
+                                    {formData.repairPhotos && formData.repairPhotos.length > 0 && (
+                                        <div className="flex gap-4 mt-2 justify-center">
+                                            {formData.repairPhotos.map((src, idx) => (
+                                                <img
+                                                    key={idx}
+                                                    src={src}
+                                                    alt={`Device condition ${idx + 1}`}
+                                                    className="w-24 h-24 object-cover rounded border"
+                                                />
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             </div>
