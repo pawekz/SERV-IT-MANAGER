@@ -229,6 +229,36 @@ const SignatureCapturePad = ({ onBack, formData }) => {
 
     return (
         <div className="w-full flex flex-row items-start justify-center py-8 gap-8 px-4 max-w-[1000px] mx-auto">
+            {/* Left Side for Terms and Conditions */}
+            <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
+                {!showPDF ? (
+                    <div>
+                        <label className="flex items-center space-x-2 mb-4">
+                            <input
+                                type="checkbox"
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="form-checkbox h-5 w-5 text-green-500"
+                            />
+                            <span className="text-gray-700 font-semibold">I accept the terms and conditions</span>
+                        </label>
+
+                        <div className="max-h-[535px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[450px]">
+                            <TermsEditor />
+                        </div>
+                        <p className="text-gray-500 text-sm mt-4">
+                            Please review the terms and conditions before proceeding.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
+                        <PDFViewer width="100%" height="600">
+                            <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                        </PDFViewer>
+                    </div>
+                )}
+            </div>
+            {/* RIght Side for signature */}
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden min-w-[500px]">
                 <div className="flex w-full">
                     <div className="w-1 bg-[#33e407]"></div>
@@ -306,34 +336,7 @@ const SignatureCapturePad = ({ onBack, formData }) => {
                 </div>
             </div>
 
-            <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
-                {!showPDF ? (
-                    <div>
-                        <label className="flex items-center space-x-2 mb-4">
-                            <input
-                                type="checkbox"
-                                checked={termsAccepted}
-                                onChange={(e) => setTermsAccepted(e.target.checked)}
-                                className="form-checkbox h-5 w-5 text-green-500"
-                            />
-                            <span className="text-gray-700 font-semibold">I accept the terms and conditions</span>
-                        </label>
 
-                        <div className="max-h-[535px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[450px]">
-                            <TermsEditor />
-                        </div>
-                        <p className="text-gray-500 text-sm mt-4">
-                            Please review the terms and conditions before proceeding.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
-                        <PDFViewer width="100%" height="600">
-                            <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
-                        </PDFViewer>
-                    </div>
-                )}
-            </div>
         </div>
     )
 }
