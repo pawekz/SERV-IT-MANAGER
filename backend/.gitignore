@@ -33,7 +33,7 @@ build/
 .settings/
 .springBeans/
 .sts4-cache/
-/src/main/resources/static/
+/src/main/resources/static/*
 
 # IntelliJ IDEA
 .idea/
