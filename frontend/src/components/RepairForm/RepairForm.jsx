@@ -358,12 +358,31 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                     {formData.repairPhotos && formData.repairPhotos.length > 0 && (
                                         <div className="flex gap-4 mt-2 justify-center">
                                             {formData.repairPhotos.map((src, idx) => (
-                                                <img
+                                                <div
                                                     key={idx}
-                                                    src={src}
-                                                    alt={`Device condition ${idx + 1}`}
-                                                    className="w-24 h-24 object-cover rounded border"
-                                                />
+                                                    style={{
+                                                        width: 96,
+                                                        height: 96,
+                                                        background: "#f3f4f6",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        borderRadius: 8,
+                                                        border: "1px solid #e5e7eb",
+                                                        overflow: "hidden"
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={src}
+                                                        alt={`Device condition ${idx + 1}`}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            objectFit: "contain",
+                                                            background: "#f3f4f6"
+                                                        }}
+                                                    />
+                                                </div>
                                             ))}
                                         </div>
                                     )}
