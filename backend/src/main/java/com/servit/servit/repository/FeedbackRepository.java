@@ -7,4 +7,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FeedbackRepository extends JpaRepository<FeedbackEntity, Long> {
     // Custom query methods can be added here if needed
-} 
+}

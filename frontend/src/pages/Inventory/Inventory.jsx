@@ -13,7 +13,6 @@ const Inventory = () => {
     const [addPartLoading, setAddPartLoading] = useState(false);
     const [addPartSuccess, setAddPartSuccess] = useState(false);
     const [addPartError, setAddPartError] = useState(null);
-    const [expandedDescriptionId, setExpandedDescriptionId] = useState(null);
     const [showDescriptionModal, setShowDescriptionModal] = useState(false);
     const [selectedDescription, setSelectedDescription] = useState({ title: "", content: "" });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
@@ -41,6 +40,28 @@ const Inventory = () => {
         warrantyExpiration: "",
         addedBy: ""
     });
+
+    // Helper function to calculate availability status
+    const calculateAvailabilityStatus = (currentStock) => {
+        if (currentStock <= 0) {
+            return "Out of Stock";
+        } else if (currentStock <= 2) {
+            return "Low Stock";
+        } else {
+            return "In Stock";
+        }
+    };
+
+    // Helper function to get user email from token
+    const getUserEmailFromToken = (token) => {
+        try {
+            const decodedToken = parseJwt(token);
+            return decodedToken?.sub || decodedToken?.email || "unknown";
+        } catch (e) {
+            console.error("Error extracting email from token:", e);
+            return "unknown";
+        }
+    };
 
     // Show notification helper function
     const showNotification = (message, type = 'success') => {
@@ -97,15 +118,6 @@ const Inventory = () => {
         setShowDescriptionModal(true);
     };
 
-    // Toggle description expansion
-    const toggleDescriptionExpand = (id) => {
-        if (expandedDescriptionId === id) {
-            setExpandedDescriptionId(null);
-        } else {
-            setExpandedDescriptionId(id);
-        }
-    };
-
     // Function to decode JWT token - needed for sidebar functionality
     const parseJwt = (token) => {
         try {
@@ -147,9 +159,7 @@ const Inventory = () => {
                 sku: item.partNumber || item.serialNumber,
                 category: item.category || "Uncategorized",
                 availability: {
-                    status: item.currentStock > 0
-                        ? (item.currentStock <= item.lowStockThreshold ? "Low Stock" : "In Stock")
-                        : "Out of Stock",
+                    status: calculateAvailabilityStatus(item.currentStock),
                     quantity: item.currentStock
                 },
                 // Store full item data for editing
@@ -269,8 +279,31 @@ const Inventory = () => {
             console.log("Update response:", response.data);
             setEditSuccess(true);
 
-            // Refresh inventory to show updated data
-            await fetchInventory();
+            // Update the item in local state with new status
+            const updatedCurrentStock = parseInt(editPart.currentStock) || 0;
+            const newStatus = calculateAvailabilityStatus(updatedCurrentStock);
+
+            setInventoryItems(prevItems =>
+                prevItems.map(item =>
+                    item.id === editPart.id
+                        ? {
+                            ...item,
+                            name: editPart.name,
+                            sku: editPart.partNumber || editPart.serialNumber,
+                            currentStock: updatedCurrentStock,
+                            partNumber: editPart.partNumber,
+                            description: editPart.description,
+                            unitCost: parseFloat(editPart.unitCost) || 0,
+                            lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
+                            serialNumber: editPart.serialNumber,
+                            availability: {
+                                status: newStatus,
+                                quantity: updatedCurrentStock
+                            }
+                        }
+                        : item
+                )
+            );
 
             // Close modal after success
             setTimeout(() => {
@@ -300,13 +333,16 @@ const Inventory = () => {
                 throw new Error("Authentication token not found. Please log in again.");
             }
 
+            // Get the user's email from the token
+            const userEmail = getUserEmailFromToken(freshToken);
+
             // Format the data to match API expectations
             const partData = {
                 ...newPart,
                 unitCost: parseFloat(newPart.unitCost),
                 currentStock: parseInt(newPart.currentStock),
                 lowStockThreshold: parseInt(newPart.lowStockThreshold),
-                addedBy: newPart.addedBy || "system"
+                addedBy: userEmail // Use the email from the token
             };
 
             // Make API call to add part with proper Bearer format
@@ -445,15 +481,17 @@ const Inventory = () => {
                                 <div className="relative flex-1">
                                     <input
                                         type="text"
-                                        placeholder="Search parts by name or SKU..."
+                                        placeholder="Search by name, SKU, or category..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
-                                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                    <div className="absolute left-3 top-2.5 text-gray-400">
+                                        <Search size={18} />
+                                    </div>
                                 </div>
                                 <div className="ml-4">
-                                    <button className="px-3 py-2 border border-gray-300 rounded-md flex items-center text-gray-700 hover:bg-gray-50">
+                                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 flex items-center hover:bg-gray-50">
                                         <span className="mr-1">Filters</span>
                                         <ChevronDown size={16} />
                                     </button>
@@ -466,10 +504,18 @@ const Inventory = () => {
                             <table className="w-full">
                                 <thead>
                                 <tr className="bg-gray-50">
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Part ID
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Description
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Availability
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Action
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -477,41 +523,31 @@ const Inventory = () => {
                                     paginatedItems.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{item.sku || `#${item.id}`}</div>
+                                                <div className="text-sm font-medium text-gray-900">{item.sku || '-'}</div>
                                                 <div className="text-xs text-gray-500">{item.category}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm font-medium text-gray-900 mb-1">{item.name}</div>
                                                 <div
-                                                    className={`text-xs text-gray-500 ${item.description && item.description.length > 50 ? 'cursor-pointer' : ''}`}
-                                                    onClick={() => item.description && item.description.length > 50 ? handleDescriptionClick(item) : null}
+                                                    className="text-xs text-gray-500 cursor-pointer"
+                                                    onClick={() => handleDescriptionClick(item)}
                                                 >
                                                     {item.description ? (
-                                                        expandedDescriptionId === item.id
-                                                            ? item.description
-                                                            : `${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}`
+                                                        `${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}`
                                                     ) : (
                                                         <span className="text-gray-400 italic">No description</span>
-                                                    )}
-                                                    {item.description && item.description.length > 50 && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); toggleDescriptionExpand(item.id); }}
-                                                            className="ml-1 text-blue-500 hover:text-blue-700"
-                                                        >
-                                                            {expandedDescriptionId === item.id ? 'Show less' : 'Show more'}
-                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.availability.status)}`}>
-                                                        {item.availability.status}
-                                                    </span>
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.availability.status)}`}>
+                                                    {item.availability.status}
+                                                </span>
                                                 <div className="text-xs text-gray-500 mt-1">
-                                                    {item.availability.quantity} in stock
+                                                    Qty: {item.availability.quantity}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     <button
                                                         onClick={() => handleEditClick(item)}
@@ -531,10 +567,8 @@ const Inventory = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                                            {searchQuery
-                                                ? "No parts match your search criteria."
-                                                : "No parts in inventory. Add some parts to get started."}
+                                        <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                                            No inventory items found
                                         </td>
                                     </tr>
                                 )}
@@ -546,33 +580,23 @@ const Inventory = () => {
                         <div className="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}-{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
+                                    Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
                                 </p>
                             </div>
                             <div className="flex space-x-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm ${
-                                        currentPage === 1
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}
+                                    className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                                 >
-                                    <ChevronLeft size={16} className="mr-1" />
-                                    Previous
+                                    <ChevronLeft size={16} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage >= totalPages}
-                                    className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm ${
-                                        currentPage >= totalPages
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className={`px-3 py-1 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                                 >
-                                    Next
-                                    <ChevronRight size={16} className="ml-1" />
+                                    <ChevronRight size={16} />
                                 </button>
                             </div>
                         </div>
@@ -619,8 +643,7 @@ const Inventory = () => {
                                         name="partNumber"
                                         value={newPart.partNumber}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter part number"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -631,8 +654,7 @@ const Inventory = () => {
                                         name="name"
                                         value={newPart.name}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter part name"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -644,24 +666,22 @@ const Inventory = () => {
                                     name="description"
                                     value={newPart.description}
                                     onChange={handleInputChange}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Enter part description"
                                     rows="3"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost ($)</label>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost (₱)</label>
                                     <input
                                         type="number"
                                         name="unitCost"
                                         value={newPart.unitCost}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0.00"
-                                        step="0.01"
                                         min="0"
+                                        step="0.01"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                                 <div>
@@ -671,8 +691,7 @@ const Inventory = () => {
                                         name="serialNumber"
                                         value={newPart.serialNumber}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter serial number (if applicable)"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
@@ -685,9 +704,8 @@ const Inventory = () => {
                                         name="currentStock"
                                         value={newPart.currentStock}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0"
                                         min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                                 <div>
@@ -697,9 +715,8 @@ const Inventory = () => {
                                         name="lowStockThreshold"
                                         value={newPart.lowStockThreshold}
                                         onChange={handleInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0"
                                         min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
@@ -715,9 +732,7 @@ const Inventory = () => {
                                 <button
                                     type="submit"
                                     disabled={addPartLoading}
-                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
-                                        addPartLoading ? 'opacity-75 cursor-wait' : ''
-                                    }`}
+                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${addPartLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                     {addPartLoading ? 'Adding...' : 'Add Part'}
                                 </button>
@@ -766,8 +781,7 @@ const Inventory = () => {
                                         name="partNumber"
                                         value={editPart.partNumber || ""}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter part number"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -778,8 +792,7 @@ const Inventory = () => {
                                         name="name"
                                         value={editPart.name || ""}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter part name"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -791,24 +804,22 @@ const Inventory = () => {
                                     name="description"
                                     value={editPart.description || ""}
                                     onChange={handleEditInputChange}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Enter part description"
                                     rows="3"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost ($)</label>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost (₱)</label>
                                     <input
                                         type="number"
                                         name="unitCost"
                                         value={editPart.unitCost || 0}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0.00"
-                                        step="0.01"
                                         min="0"
+                                        step="0.01"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                                 <div>
@@ -818,8 +829,7 @@ const Inventory = () => {
                                         name="serialNumber"
                                         value={editPart.serialNumber || ""}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter serial number (if applicable)"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
@@ -832,9 +842,8 @@ const Inventory = () => {
                                         name="currentStock"
                                         value={editPart.currentStock || 0}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0"
                                         min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                                 <div>
@@ -844,9 +853,8 @@ const Inventory = () => {
                                         name="lowStockThreshold"
                                         value={editPart.lowStockThreshold || 0}
                                         onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="0"
                                         min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
@@ -862,9 +870,7 @@ const Inventory = () => {
                                 <button
                                     type="submit"
                                     disabled={editLoading}
-                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
-                                        editLoading ? 'opacity-75 cursor-wait' : ''
-                                    }`}
+                                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${editLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                     {editLoading ? 'Updating...' : 'Update Part'}
                                 </button>
