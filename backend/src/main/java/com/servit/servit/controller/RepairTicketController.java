@@ -38,16 +38,13 @@ public class RepairTicketController {
         }
     }
 
-    @PostMapping(value = "/checkInRepairTicket", consumes = {"multipart/form-data"})
-    public ResponseEntity<RepairTicketEntity> checkInRepairTicket(
-            @ModelAttribute CheckInRepairTicketRequestDTO req) {
+    @PostMapping("/checkInRepairTicket")
+    public ResponseEntity<?> checkInRepairTicket(@ModelAttribute CheckInRepairTicketRequestDTO req) {
         try {
-            RepairTicketEntity repairTicket = repairTicketService.checkInRepairTicket(req);
-            return ResponseEntity.status(HttpStatus.CREATED).body(repairTicket);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            RepairTicketEntity ticket = repairTicketService.checkInRepairTicket(req);
+            return ResponseEntity.ok(ticket);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

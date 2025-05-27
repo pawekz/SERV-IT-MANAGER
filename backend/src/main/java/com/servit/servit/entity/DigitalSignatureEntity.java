@@ -3,6 +3,9 @@ package com.servit.servit.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+
 @Entity
 @Table(name = "digital_signature")
 @Data
@@ -16,6 +19,7 @@ public class DigitalSignatureEntity {
 
     @OneToOne
     @JoinColumn(name = "repair_ticket_id")
+    @JsonBackReference
     private RepairTicketEntity repairTicket;
 
 }

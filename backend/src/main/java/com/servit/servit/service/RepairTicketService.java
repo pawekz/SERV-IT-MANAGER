@@ -75,6 +75,8 @@ public class RepairTicketService {
         repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
         repairTicket.setDeviceModel(req.getDeviceModel());
         repairTicket.setDeviceBrand(req.getDeviceBrand());
+        repairTicket.setDeviceColor(req.getDeviceColor());
+        repairTicket.setDevicePassword(req.getDevicePassword());
         repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
         repairTicket.setReportedIssue(req.getReportedIssue());
         repairTicket.setTechnicianEmail(technician);
