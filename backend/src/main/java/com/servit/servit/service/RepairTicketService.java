@@ -76,13 +76,19 @@ public class RepairTicketService {
         repairTicket.setDeviceModel(req.getDeviceModel());
         repairTicket.setDeviceBrand(req.getDeviceBrand());
         repairTicket.setDeviceColor(req.getDeviceColor());
-        repairTicket.setDevicePassword(req.getDevicePassword());
+        repairTicket.setDevicePassword(
+                req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
+        );
         repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
         repairTicket.setReportedIssue(req.getReportedIssue());
         repairTicket.setTechnicianEmail(technician);
         repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
-        repairTicket.setAccessories(req.getAccessories());
-        repairTicket.setObservations(req.getObservations());
+        repairTicket.setAccessories(
+                req.getAccessories() == null || req.getAccessories().isEmpty() ? "N/A" : req.getAccessories()
+        );
+        repairTicket.setObservations(
+                req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
+        );
         repairTicket.setStatus("CHECKED-IN");
         repairTicket.setCheckInDate(LocalDateTime.now());
         repairTicket.setTicketNumber(req.getTicketNumber());
