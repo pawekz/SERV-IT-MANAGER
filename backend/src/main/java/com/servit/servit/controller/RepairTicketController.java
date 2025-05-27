@@ -71,12 +71,42 @@ public class RepairTicketController {
         }
     }
 
+    // Search and fetch tickets by customer email, (ADMIN SIDE)
+    // Note: Ticket History, Ticket List, etc. etc.
+    @GetMapping("/searchRepairTickets")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTickets(@RequestParam String searchTerm) {
+        try {
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm);
+            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Search and fetch tickets by customer email, displaying all tickets related to the associated user via email
+    // Note: User's Ticket List, User's Ticket History, etc. etc.
+    @GetMapping("/searchRepairTicketsByEmail")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
+            @RequestParam String email,
+            @RequestParam String searchTerm) {
+        try {
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm);
+            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
+    // This endpoint fetches all repair tickets, regardless of the user (ADMIN SIDE)
     @GetMapping("/getAllRepairTickets")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
         List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
         return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
     }
 
+    // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
+    // This endpoint fetches all repair tickets associated with a specific customer email
     @GetMapping("/getRepairTicketsByCustomerEmail")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
         try {

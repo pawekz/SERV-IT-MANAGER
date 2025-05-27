@@ -171,6 +171,18 @@ public class RepairTicketService {
                 .collect(Collectors.toList());
     }
 
+    public List<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm) {
+        return repairTicketRepository.searchRepairTickets(searchTerm).stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<GetRepairTicketResponseDTO> searchRepairTicketsByEmail(String email, String searchTerm) {
+        return repairTicketRepository.searchRepairTicketsByEmail(email, searchTerm).stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
         GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
         dto.setTicketNumber(repairTicket.getTicketNumber());
