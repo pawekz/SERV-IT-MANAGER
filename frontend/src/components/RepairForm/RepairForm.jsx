@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, X, ChevronLeft, ChevronRight  } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
@@ -10,6 +10,19 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const [error, setError] = useState(null);
 
     const location = useLocation();
+
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [viewerIndex, setViewerIndex] = useState(0);
+
+    const openViewer = (idx) => {
+        setViewerIndex(idx);
+        setViewerOpen(true);
+    };
+
+    const closeViewer = () => setViewerOpen(false);
+
+    const nextPhoto = () => setViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
+    const prevPhoto = () => setViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
 
     let readonly;
     if (role === "admin") {
@@ -369,8 +382,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                         justifyContent: "center",
                                                         borderRadius: 8,
                                                         border: "1px solid #e5e7eb",
-                                                        overflow: "hidden"
+                                                        overflow: "hidden",
+                                                        cursor: "pointer"
                                                     }}
+                                                    onClick={() => openViewer(idx)}
                                                 >
                                                     <img
                                                         src={src}
@@ -400,6 +415,55 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                     </form>
                 </div>
             </div>
+            {viewerOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+                    onClick={closeViewer}
+                >
+                    <div
+                        className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
+                        style={{ minWidth: 350, minHeight: 350, maxWidth: 500, maxHeight: 500 }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
+                            onClick={closeViewer}
+                        >
+                            <X size={28} />
+                        </button>
+                        <img
+                            src={formData.repairPhotos[viewerIndex]}
+                            alt={`Device condition ${viewerIndex + 1}`}
+                            style={{
+                                maxWidth: 400,
+                                maxHeight: 400,
+                                objectFit: "contain",
+                                borderRadius: 8,
+                                background: "#f3f4f6"
+                            }}
+                        />
+                        <div className="flex items-center justify-between w-full mt-4">
+                            <button
+                                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                                onClick={prevPhoto}
+                                disabled={formData.repairPhotos.length < 2}
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <span className="text-gray-700 text-sm">
+                                {viewerIndex + 1} / {formData.repairPhotos.length}
+                            </span>
+                            <button
+                                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                                onClick={nextPhoto}
+                                disabled={formData.repairPhotos.length < 2}
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
