@@ -391,10 +391,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                         type="button"
                                                         onClick={e => {
                                                             e.stopPropagation();
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                repairPhotos: prev.repairPhotos.filter((_, i) => i !== idx)
-                                                            }));
+                                                            setFormData(prev => {
+                                                                const updatedPhotos = prev.repairPhotos.filter((_, i) => i !== idx);
+                                                                if (updatedPhotos.length === 0) {
+                                                                    setPhotoFiles([]);
+                                                                    setPhotoError("Please upload at least one photo of the device condition.");
+                                                                }
+                                                                return {
+                                                                    ...prev,
+                                                                    repairPhotos: updatedPhotos
+                                                                };
+                                                            });
                                                         }}
                                                         style={{
                                                             position: "absolute",

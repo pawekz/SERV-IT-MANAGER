@@ -173,7 +173,7 @@ const PdfDocument = ({signatureDataURL, formData}) => (
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerText}>
-                    <Text style={styles.title}>OICONNECT REPAIR SERVICE</Text>
+                    <Text style={styles.title}>IOCONNECT REPAIR SERVICE</Text>
                     <Text style={styles.subtitle}>Repair Check-In Form</Text>
                 </View>
             </View>
