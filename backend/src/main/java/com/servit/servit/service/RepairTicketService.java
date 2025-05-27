@@ -57,6 +57,9 @@ public class RepairTicketService {
     }
 
     public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) throws IOException {
+        if (repairTicketRepository.findByTicketNumber(req.getTicketNumber()).isPresent()) {
+            throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
+        }
         if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null || req.getDeviceModel() == null) {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
         }
