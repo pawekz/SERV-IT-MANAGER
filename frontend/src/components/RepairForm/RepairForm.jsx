@@ -191,6 +191,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         id="deviceType"
                                         value={formData.deviceType}
                                         onChange={handleChange}
+                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] bg-white"
                                     >
                                         <option value="" disabled hidden>Select device type</option>
@@ -206,6 +207,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         value={formData.deviceBrand}
                                         onChange={handleChange}
                                         placeholder="Enter brand"
+                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
@@ -216,6 +218,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         value={formData.deviceModel}
                                         onChange={handleChange}
                                         placeholder="Enter model"
+                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
@@ -226,6 +229,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         value={formData.deviceSerialNumber}
                                         onChange={handleChange}
                                         placeholder="Enter serial number"
+                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
@@ -236,6 +240,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                         value={formData.deviceColor}
                                         onChange={handleChange}
                                         placeholder="Enter color"
+                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
@@ -292,6 +297,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             value={formData.observations}
                                             onChange={handleChange}
                                             placeholder="Technician notes (optional)"
+                                            required
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                         />
                                     </div>
