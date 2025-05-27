@@ -2,44 +2,39 @@ import React, { useEffect, useState } from "react";
 import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const RepairForm = ({ status, onNext  }) => {
+const RepairForm = ({ status, onNext }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     let readonly;
-
     if (role === "admin") {
         readonly = false;
     }
 
     const navigate = useNavigate();
 
-    const [ticketNumber] = useState(
-        `TKT-${Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0")}`
-    );
-    const [photoFile, setPhotoFile] = useState(null);
+    const [ticketNumber, setTicketNumber] = useState("");
+    const [photoFiles, setPhotoFiles] = useState([]);
 
     const [formData, setFormData] = useState({
-        repairTicketId:"",
-        fullName: "",
-        email: "",
-        phoneNumber: "",
+        ticketNumber: "",
+        customerName: "",
+        customerEmail: "",
+        customerPhoneNumber: "",
         deviceType: "",
         deviceBrand: "",
         deviceModel: "",
         deviceSerialNumber: "",
         deviceColor: "",
         devicePassword: "",
-        accessories:"",
+        accessories: "",
         reportedIssue: "",
-        technicianObservations: "",
+        observations: "",
         technicianEmail: userData.email || "",
-        technicianName: userData.firstName + " " + userData.lastName || "",
-        repairPhotos:""
+        technicianName: (userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""),
+        repairPhotos: []
     });
 
     const handleChange = (e) => {
@@ -51,48 +46,51 @@ const RepairForm = ({ status, onNext  }) => {
     };
 
     const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            console.log("File selected:", e.target.files[0]);
-            setPhotoFile(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files).slice(0, 3); // max 3
+            setPhotoFiles(files);
+
+            // Convert to base64 for sessionStorage (optional, or just store File objects)
+            Promise.all(files.map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            })).then(base64Arr => {
+                setFormData((prev) => ({
+                    ...prev,
+                    repairPhotos: base64Arr
+                }));
+            });
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         sessionStorage.setItem('repairTicket', JSON.stringify(formData));
         sessionStorage.setItem('cameFromCheckIn', 'true');
-        navigate("/newrepair");
-    }
-
-    const parseJwt = (token) => {
-        try {
-            return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) {
-            return null;
+        
+        if (onNext) {
+            onNext();
+        } else {
+            navigate("/newrepair");
         }
     };
 
     useEffect(() => {
-        const fetchRepairTicketId = async () => {
+        const fetchRepairTicketNumber = async () => {
             try {
                 setLoading(true);
-
-                // Check if we have cached user data in sessionStorage first
-                const cachedUserData = sessionStorage.getItem('repairTicket');
-                if (cachedUserData) {
-                    const parsedData = JSON.parse(cachedUserData);
-                    setFormData(parsedData);
+                const cached = sessionStorage.getItem('repairTicket');
+                if (cached) {
+                    setFormData(JSON.parse(cached));
                     setLoading(false);
                     return;
                 }
-
-                // Get token from localStorage if no cached data
                 const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
-                }
-
+                if (!token) throw new Error("Not authenticated. Please log in.");
                 const response = await fetch(`http://localhost:8080/repairTicket/generateRepairTicketNumber`, {
                     method: 'GET',
                     headers: {
@@ -100,28 +98,21 @@ const RepairForm = ({ status, onNext  }) => {
                         'Authorization': `Bearer ${token}`
                     },
                 });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.text();
-                console.log(data)
-
                 setFormData((prev) => ({
                     ...prev,
-                    repairTicketId: data
+                    ticketNumber: data
                 }));
-
+                setTicketNumber(data);
             } catch (err) {
                 setError(err.message);
             } finally {
                 setLoading(false);
             }
-        }
-        fetchRepairTicketId();
+        };
+        fetchRepairTicketNumber();
     }, []);
-
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -132,30 +123,27 @@ const RepairForm = ({ status, onNext  }) => {
                 </div>
                 <div className="p-6">
                     <form onSubmit={handleSubmit}>
-                        {/* Header with Ticket Number */}
                         <div className="flex flex-col md:flex-row justify-between mb-6">
                             <div className="text-xl font-semibold text-gray-800">Customer Check-In</div>
                             <div className="flex items-center gap-2 mt-2 md:mt-0">
                                 <span className="text-sm font-medium">Ticket #:</span>
                                 <input
-                                    value={formData.repairTicketId}
+                                    value={formData.ticketNumber}
                                     readOnly
                                     className="w-40 bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-sm"
                                 />
                             </div>
                         </div>
-
-                        {/* Customer Information */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name:</label>
+                                    <label htmlFor="customerName" className="block text-sm font-medium text-gray-700">Full Name:</label>
                                     <input
-                                        id="fullName"
-                                        value={formData.fullName}
+                                        id="customerName"
+                                        value={formData.customerName}
                                         onChange={handleChange}
                                         placeholder="Enter full name"
                                         required
@@ -163,11 +151,11 @@ const RepairForm = ({ status, onNext  }) => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email:</label>
+                                    <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700">Email:</label>
                                     <input
-                                        id="email"
+                                        id="customerEmail"
                                         type="email"
-                                        value={formData.email}
+                                        value={formData.customerEmail}
                                         onChange={handleChange}
                                         placeholder="Enter email address"
                                         required
@@ -175,10 +163,10 @@ const RepairForm = ({ status, onNext  }) => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Phone:</label>
+                                    <label htmlFor="customerPhoneNumber" className="block text-sm font-medium text-gray-700">Phone:</label>
                                     <input
-                                        id="phoneNumber"
-                                        value={formData.phoneNumber}
+                                        id="customerPhoneNumber"
+                                        value={formData.customerPhoneNumber}
                                         onChange={handleChange}
                                         placeholder="Enter phone number"
                                         required
@@ -187,14 +175,11 @@ const RepairForm = ({ status, onNext  }) => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Device Information */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Device Type */}
                                 <div className="space-y-2">
                                     <label htmlFor="deviceType" className="block text-sm font-medium text-gray-700">Device Type:</label>
                                     <select
@@ -209,8 +194,6 @@ const RepairForm = ({ status, onNext  }) => {
                                         <option value="PRINTER">PRINTER</option>
                                     </select>
                                 </div>
-
-                                {/* Brand */}
                                 <div className="space-y-2">
                                     <label htmlFor="deviceBrand" className="block text-sm font-medium text-gray-700">Brand:</label>
                                     <input
@@ -221,8 +204,6 @@ const RepairForm = ({ status, onNext  }) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
-
-                                {/* Model */}
                                 <div className="space-y-2">
                                     <label htmlFor="deviceModel" className="block text-sm font-medium text-gray-700">Model:</label>
                                     <input
@@ -233,8 +214,6 @@ const RepairForm = ({ status, onNext  }) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
-
-                                {/* Serial Number */}
                                 <div className="space-y-2">
                                     <label htmlFor="deviceSerialNumber" className="block text-sm font-medium text-gray-700">Serial Number:</label>
                                     <input
@@ -245,8 +224,6 @@ const RepairForm = ({ status, onNext  }) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
-
-                                {/* Color */}
                                 <div className="space-y-2">
                                     <label htmlFor="deviceColor" className="block text-sm font-medium text-gray-700">Color:</label>
                                     <input
@@ -257,8 +234,6 @@ const RepairForm = ({ status, onNext  }) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                     />
                                 </div>
-
-                                {/* Password */}
                                 <div className="space-y-2">
                                     <label htmlFor="devicePassword" className="block text-sm font-medium text-gray-700">Device Password (if any):</label>
                                     <input
@@ -271,8 +246,6 @@ const RepairForm = ({ status, onNext  }) => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Accessories */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">ACCESSORIES</h2>
@@ -284,15 +257,13 @@ const RepairForm = ({ status, onNext  }) => {
                                         id="accessories"
                                         value={formData.accessories}
                                         onChange={handleChange}
-                                        placeholder="Describe the issues you're experiencing"
+                                        placeholder="Describe the accessories"
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                     />
                                 </div>
                             </div>
                         </div>
-
-                        {/* Problem Description */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">PROBLEM DESCRIPTION</h2>
@@ -311,10 +282,10 @@ const RepairForm = ({ status, onNext  }) => {
                                 </div>
                                 {status !== "new" && (
                                     <div className="space-y-2">
-                                        <label htmlFor="technicianObservations" className="block text-sm font-medium text-gray-700">Technician Observations:</label>
+                                        <label htmlFor="observations" className="block text-sm font-medium text-gray-700">Technician Observations:</label>
                                         <textarea
-                                            id="technicianObservations"
-                                            value={formData.technicianObservations}
+                                            id="observations"
+                                            value={formData.observations}
                                             onChange={handleChange}
                                             placeholder="Technician notes (optional)"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
@@ -323,8 +294,6 @@ const RepairForm = ({ status, onNext  }) => {
                                 )}
                             </div>
                         </div>
-
-                        {/* Device Condition - Photo Upload */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
@@ -336,28 +305,29 @@ const RepairForm = ({ status, onNext  }) => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <p className="text-sm text-gray-600">Upload photos of device condition</p>
+                                    <p className="text-sm text-gray-600">Upload up to 3 photos of device condition</p>
                                     <label
                                         htmlFor="photo-upload"
                                         className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
                                     >
-                                        Upload Photo
+                                        Upload Photo(s)
                                     </label>
-                                        <input
-                                            id="photo-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handlePhotoUpload}
-                                        />
-                                    {photoFile && (
-                                        <p className="text-sm text-gray-600 mt-2">Selected: {photoFile.name}</p>
+                                    <input
+                                        id="photo-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        multiple
+                                        onChange={handlePhotoUpload}
+                                    />
+                                    {photoFiles.length > 0 && (
+                                        <p className="text-sm text-gray-600 mt-2">
+                                            Selected: {photoFiles.map(f => f.name).join(", ")}
+                                        </p>
                                     )}
                                 </div>
                             </div>
                         </div>
-
-                        {/* Submit Button */}
                         <div className="flex justify-end">
                             <button
                                 type="submit"

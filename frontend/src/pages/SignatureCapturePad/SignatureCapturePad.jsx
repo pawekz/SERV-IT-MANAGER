@@ -13,7 +13,7 @@ const SignatureCapturePad = ({ onBack }) => {
     const [isEmpty, setIsEmpty] = useState(true)
     const [signatureDataURL, setSignatureDataURL] = useState(null);
     const [showPDF, setShowPDF] = useState(false);
-    const formData =JSON.parse(sessionStorage.getItem('repairTicket') || '{}');
+    const formData = JSON.parse(sessionStorage.getItem('repairTicket') || '{}');
     const [termsAccepted, setTermsAccepted] = useState(false);
 
     const handleBack = () => {
@@ -130,6 +130,27 @@ const SignatureCapturePad = ({ onBack }) => {
         return new Blob([new Uint8Array(array)], { type: mime });
     }
 
+    const validateFormData = () => {
+        const requiredFields = [
+            'ticketNumber', 'customerName', 'customerEmail', 'customerPhoneNumber', 'deviceColor',
+            'deviceType', 'deviceBrand', 'deviceModel', 'reportedIssue', 'accessories',
+        ];
+
+        const missingFields = requiredFields.filter(field =>
+            !formData[field] || formData[field].trim() === ''
+        );
+
+        if (missingFields.length > 0) {
+            return `Missing required fields: ${missingFields.join(', ')}`;
+        }
+
+        if (!signatureDataURL) {
+            return 'Digital signature is required';
+        }
+
+        return null; // No validation errors
+    }
+
     const submitRepairTicket = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -138,26 +159,39 @@ const SignatureCapturePad = ({ onBack }) => {
 
         const form = new FormData();
 
-        // Append all string fields from formData except repairPhotos and digitalSignature
+        // Log the formData to debug
+        console.log("Form data before submission:", formData);
+
+        // Ensure all required fields from the DTO are included
         Object.entries(formData).forEach(([key, value]) => {
-            if (key !== 'repairPhotos') {
-                form.append(key, value || '');
+            if (key !== 'repairPhotos' && value !== null && value !== undefined) {
+                form.append(key, value.toString());
             }
         });
 
-        // Append repair photos files (converted from base64 data URLs)
+        // Properly handle the signature file
+        if (signatureDataURL) {
+            const signatureBlob = dataURLtoBlob(signatureDataURL);
+            form.append("digitalSignature", signatureBlob, "signature.png");
+        } else {
+            throw new Error("Digital signature is required");
+        }
+
+        // Properly handle the repair photos
         if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
             formData.repairPhotos.forEach((base64DataURL, index) => {
-                const blob = dataURLtoBlob(base64DataURL);
-                form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                if (base64DataURL) {
+                    const blob = dataURLtoBlob(base64DataURL);
+                    form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                }
             });
         }
 
-        console.log(form);
-
-
-        const signatureBlob = dataURLtoBlob(signatureDataURL);
-        form.append("digitalSignature", signatureBlob, "signature.png");
+        // Log the form data to verify it's not empty
+        console.log("Form entries being sent:");
+        for (let pair of form.entries()) {
+            console.log(pair[0] + ': ' + (pair[1] instanceof Blob ? 'Blob data' : pair[1]));
+        }
 
         try {
             const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
@@ -168,24 +202,35 @@ const SignatureCapturePad = ({ onBack }) => {
                 body: form
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                alert("Ticket submitted successfully!");
-                sessionStorage.removeItem('repairTicket');
-                console.log(result);
-            } else {
-                const errorText = await response.text();
-                console.error("Submission failed:", errorText);
-                alert("Failed to submit ticket.");
+            if (!response.ok) {
+                // Get detailed error message if available
+                let errorMessage;
+                try {
+                    const errorData = await response.text();
+                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                } catch (e) {
+                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+                }
+
+                console.error("Submission failed:", errorMessage);
+                throw new Error(errorMessage);
             }
+
+            // Process successful response
+            const result = await response.json();
+            console.log("Submission successful:", result);
+
+            // Optional: Navigate to a success page or show success message
+            alert("Repair ticket submitted successfully!");
+            return result;
         } catch (error) {
-            console.error("Error during submission:", error);
-            alert("An error occurred. Please try again.");
+            console.error("Submission failed:", error.message);
+            throw error; // Re-throw to be handled by the caller
         }
     };
 
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (isEmpty) {
             alert("Please provide a signature before proceeding.");
             return;
@@ -194,13 +239,30 @@ const SignatureCapturePad = ({ onBack }) => {
             alert("You must accept the terms and conditions before proceeding.");
             return;
         }
-        saveSignature();  // saves and sets signatureDataURL
-        if (!signatureDataURL) {
-            alert("Signature capture failed. Please try again.");
+
+        // Save signature first and wait for it to complete
+        saveSignature();
+
+        // Wait a moment for the signature to be processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Validate form data before submission
+        const validationError = validateFormData();
+        if (validationError) {
+            alert(validationError);
             return;
         }
+
+        // Show PDF first
         setShowPDF(true);
-        submitRepairTicket();
+
+        // Then submit the form
+        try {
+            await submitRepairTicket();
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            alert("Failed to submit the form. Please try again.");
+        }
     }
 
     return (
