@@ -7,7 +7,7 @@ import lombok.Data;
 @Table(name = "feedback")
 @Data
 public class FeedbackEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
