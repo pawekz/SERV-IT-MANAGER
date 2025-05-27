@@ -11,18 +11,18 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
 
     const location = useLocation();
 
-    const [viewerOpen, setViewerOpen] = useState(false);
-    const [viewerIndex, setViewerIndex] = useState(0);
+    const [imageViewerOpen, setImageViewerOpen] = useState(false);
+    const [imageViewerIndex, setImageViewerIndex] = useState(0);
 
-    const openViewer = (idx) => {
-        setViewerIndex(idx);
-        setViewerOpen(true);
+    const openImageViewer = (idx) => {
+        setImageViewerIndex(idx);
+        setImageViewerOpen(true);
     };
 
-    const closeViewer = () => setViewerOpen(false);
+    const closeImageViewer = () => setImageViewerOpen(false);
 
-    const nextPhoto = () => setViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
-    const prevPhoto = () => setViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
+    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
+    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
 
     let readonly;
     if (role === "admin") {
@@ -424,7 +424,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                             objectFit: "contain",
                                                             background: "#f3f4f6"
                                                         }}
-                                                        onClick={() => openViewer(idx)}
+                                                        onClick={() => openImageViewer(idx)}
                                                     />
                                                 </div>
                                             ))}
@@ -444,10 +444,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                     </form>
                 </div>
             </div>
-            {viewerOpen && (
+            {imageViewerOpen && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
-                    onClick={closeViewer}
+                    onClick={closeImageViewer}
                 >
                     <div
                         className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
@@ -456,13 +456,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                     >
                         <button
                             className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
-                            onClick={closeViewer}
+                            onClick={closeImageViewer}
                         >
                             <X size={28} />
                         </button>
                         <img
-                            src={formData.repairPhotos[viewerIndex]}
-                            alt={`Device condition ${viewerIndex + 1}`}
+                            src={formData.repairPhotos[imageViewerIndex]}
+                            alt={`Device condition ${imageViewerIndex + 1}`}
                             style={{
                                 maxWidth: 400,
                                 maxHeight: 400,
@@ -474,17 +474,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                         <div className="flex items-center justify-between w-full mt-4">
                             <button
                                 className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                                onClick={prevPhoto}
+                                onClick={imageViewerPrevPhoto}
                                 disabled={formData.repairPhotos.length < 2}
                             >
                                 <ChevronLeft size={24} />
                             </button>
                             <span className="text-gray-700 text-sm">
-                                {viewerIndex + 1} / {formData.repairPhotos.length}
+                                {imageViewerIndex + 1} / {formData.repairPhotos.length}
                             </span>
                             <button
                                 className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                                onClick={nextPhoto}
+                                onClick={imageViewerNextPhoto}
                                 disabled={formData.repairPhotos.length < 2}
                             >
                                 <ChevronRight size={24} />
