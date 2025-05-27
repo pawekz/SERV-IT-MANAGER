@@ -57,6 +57,9 @@ public class RepairTicketService {
     }
 
     public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) throws IOException {
+        if (repairTicketRepository.findByTicketNumber(req.getTicketNumber()).isPresent()) {
+            throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
+        }
         if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null || req.getDeviceModel() == null) {
             throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
         }
@@ -75,12 +78,20 @@ public class RepairTicketService {
         repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
         repairTicket.setDeviceModel(req.getDeviceModel());
         repairTicket.setDeviceBrand(req.getDeviceBrand());
+        repairTicket.setDeviceColor(req.getDeviceColor());
+        repairTicket.setDevicePassword(
+                req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
+        );
         repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
         repairTicket.setReportedIssue(req.getReportedIssue());
         repairTicket.setTechnicianEmail(technician);
         repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
-        repairTicket.setAccessories(req.getAccessories());
-        repairTicket.setObservations(req.getObservations());
+        repairTicket.setAccessories(
+                req.getAccessories() == null || req.getAccessories().isEmpty() ? "N/A" : req.getAccessories()
+        );
+        repairTicket.setObservations(
+                req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
+        );
         repairTicket.setStatus("CHECKED-IN");
         repairTicket.setCheckInDate(LocalDateTime.now());
         repairTicket.setTicketNumber(req.getTicketNumber());
@@ -158,6 +169,29 @@ public class RepairTicketService {
         return repairTicketRepository.findByCustomerEmail(email).stream()
                 .map(this::mapToGetRepairTicketResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm) {
+        return repairTicketRepository.searchRepairTickets(searchTerm).stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<GetRepairTicketResponseDTO> searchRepairTicketsByEmail(String email, String searchTerm) {
+        return repairTicketRepository.searchRepairTicketsByEmail(email, searchTerm).stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public byte[] getRepairTicketDocument(String ticketNumber) throws IOException {
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
+        String documentPath = repairTicket.getDocumentPath();
+        if (documentPath == null) {
+            throw new EntityNotFoundException("No document uploaded for this ticket");
+        }
+        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
+        return java.nio.file.Files.readAllBytes(path);
     }
 
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {

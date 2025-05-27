@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -75,9 +77,11 @@ public class RepairTicketEntity {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<RepairPhotoEntity> repairPhotos;
 
     @OneToOne(mappedBy = "repairTicket", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private DigitalSignatureEntity digitalSignature;
 
     @Column(name = "document_path")

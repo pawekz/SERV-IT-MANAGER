@@ -173,7 +173,7 @@ const PdfDocument = ({signatureDataURL, formData}) => (
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerText}>
-                    <Text style={styles.title}>OICONNECT REPAIR SERVICE</Text>
+                    <Text style={styles.title}>IOCONNECT REPAIR SERVICE</Text>
                     <Text style={styles.subtitle}>Repair Check-In Form</Text>
                 </View>
             </View>
@@ -182,7 +182,7 @@ const PdfDocument = ({signatureDataURL, formData}) => (
                 <Text style={styles.label}>Customer Check-In</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={styles.ticketLabel}>Ticket #:</Text>
-                    <Text style={styles.ticketValue}>{formData.repairTicketId}</Text>
+                    <Text style={styles.ticketValue}>{formData.ticketNumber}</Text>
                 </View>
             </View>
             {/* Customer Information */}
@@ -193,15 +193,15 @@ const PdfDocument = ({signatureDataURL, formData}) => (
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text style={styles.label}>Full Name:</Text>
-                        <Text style={styles.value}>{formData.fullName}</Text>
+                        <Text style={styles.value}>{formData.customerName}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Email:</Text>
-                        <Text style={styles.value}>{formData.email}</Text>
+                        <Text style={styles.value}>{formData.customerEmail}</Text>
                     </View>
                     <View style={styles.col}>
                         <Text style={styles.label}>Phone:</Text>
-                        <Text style={styles.value}>{formData.phoneNumber}</Text>
+                        <Text style={styles.value}>{formData.customerPhoneNumber}</Text>
                     </View>
                 </View>
             </View>
