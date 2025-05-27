@@ -117,4 +117,20 @@ public class RepairTicketController {
         }
     }
 
+    // Ma fetch/download ang repair ticket document from the backend
+    @GetMapping("/getRepairTicketDocument/{ticketNumber}")
+    public ResponseEntity<byte[]> getRepairTicketDocument(@PathVariable String ticketNumber) {
+        try {
+            byte[] document = repairTicketService.getRepairTicketDocument(ticketNumber);
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=" + ticketNumber + ".pdf")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                    .body(document);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }

@@ -183,6 +183,17 @@ public class RepairTicketService {
                 .collect(Collectors.toList());
     }
 
+    public byte[] getRepairTicketDocument(String ticketNumber) throws IOException {
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
+        String documentPath = repairTicket.getDocumentPath();
+        if (documentPath == null) {
+            throw new EntityNotFoundException("No document uploaded for this ticket");
+        }
+        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
+        return java.nio.file.Files.readAllBytes(path);
+    }
+
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
         GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
         dto.setTicketNumber(repairTicket.getTicketNumber());

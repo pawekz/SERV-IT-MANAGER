@@ -47,21 +47,26 @@ public class SecurityConfig {
                                 "/feedback/submitFeedback"
                         ).permitAll()
                         .requestMatchers(
+                                "/repairTicket/searchRepairTicketsByEmail",
+                                "/repairTicket/getRepairTicketsByCustomerEmail"
+                        ).hasAnyRole("CUSTOMER")
+                        .requestMatchers(
                                 "/user/getCurrentUser",
                                 "/user/changeCurrentUserPassword",
                                 "/user/updateCurrentUserFullName",
                                 "/user/changeCurrentUserPhoneNumber",
-                                "/user/updateCurrentUsername"
+                                "/user/updateCurrentUsername",
+                                "/repairTicket/getRepairTicket/*",
+                                "/repairTicket/getRepairTicketDocument/*"
                         ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/repairTicket/checkInRepairTicket",
-                                "/repairTicket/getRepairTicket/*",
                                 "/repairTicket/generateRepairTicketNumber",
                                 "/repairTicket/getAllRepairTickets",
                                 "/user/getTechnicianByEmail",
                                 "/repairTicket/getAllRepairTickets",
-                                "/repairTicket/getAllRepairTicketsByStatus/*",
-                                "/repairTicket/uploadRepairTicketDocument/*"
+                                "/repairTicket/uploadRepairTicketDocument/*",
+                                "/repairTicket/searchRepairTickets"
                         ).hasAnyRole("ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/user/changeRole/*",
