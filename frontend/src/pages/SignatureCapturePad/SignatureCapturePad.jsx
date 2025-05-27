@@ -256,7 +256,7 @@ const SignatureCapturePad = ({ onBack, formData }) => {
                                 onTouchMove={draw}
                                 onTouchEnd={stopDrawing}
                             ></canvas>
-                            {isEmpty && <div className="absolute bottom-4 left-0 right-0 text-center text-gray-400">Sign here</div>}
+                            {/*{isEmpty && <div className="absolute bottom-4 left-0 right-0 text-center text-gray-400">Sign here</div>}*/}
                         </div>
 
                         <div className="flex flex-col items-center space-y-4">
