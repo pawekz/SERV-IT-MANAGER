@@ -1,17 +1,15 @@
 import { useRef, useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx"
 import { PDFViewer } from '@react-pdf/renderer'
 import TermsEditor from "../TermsEditor/TermsEditor.jsx"
 
-const SignatureCapturePad = ({ onBack }) => {
+const SignatureCapturePad = ({ onBack, formData }) => {
     const canvasRef = useRef(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [context, setContext] = useState(null)
     const [isEmpty, setIsEmpty] = useState(true)
     const [signatureDataURL, setSignatureDataURL] = useState(null)
     const [showPDF, setShowPDF] = useState(false)
-    const formData = JSON.parse(sessionStorage.getItem('repairTicket') || '{}')
     const [termsAccepted, setTermsAccepted] = useState(false)
 
     const handleBack = () => {

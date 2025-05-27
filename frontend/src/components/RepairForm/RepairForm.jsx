@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Upload } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const RepairForm = ({ status, onNext }) => {
+const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const location = useLocation();
 
     let readonly;
     if (role === "admin") {
@@ -34,8 +36,16 @@ const RepairForm = ({ status, onNext }) => {
         observations: "",
         technicianEmail: userData.email || "",
         technicianName: (userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""),
-        repairPhotos: []
+        repairPhotos: [],
+        ...initialFormData
     });
+
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            ...initialFormData
+        }));
+    }, [initialFormData]);
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -69,13 +79,8 @@ const RepairForm = ({ status, onNext }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        sessionStorage.setItem('repairTicket', JSON.stringify(formData));
-        sessionStorage.setItem('cameFromCheckIn', 'true');
-        
         if (onNext) {
-            onNext();
-        } else {
-            navigate("/newrepair");
+            onNext(formData);
         }
     };
 
@@ -118,7 +123,7 @@ const RepairForm = ({ status, onNext }) => {
         <div className="container mx-auto py-8 px-4 max-w-4xl">
             <div className="border-2 border-gray-200 shadow-lg rounded-lg overflow-hidden">
                 <div className="bg-gray-100 border-b border-gray-200 p-4">
-                    <h1 className="text-center text-2xl font-bold">OICONNECT REPAIR SERVICE</h1>
+                    <h1 className="text-center text-2xl font-bold">IOCONNECT REPAIR SERVICE</h1>
                     <p className="text-center text-gray-600">Repair Check-In Form</p>
                 </div>
                 <div className="p-6">
@@ -258,7 +263,6 @@ const RepairForm = ({ status, onNext }) => {
                                         value={formData.accessories}
                                         onChange={handleChange}
                                         placeholder="Describe the accessories"
-                                        required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                     />
                                 </div>
@@ -282,7 +286,7 @@ const RepairForm = ({ status, onNext }) => {
                                 </div>
                                 {status !== "new" && (
                                     <div className="space-y-2">
-                                        <label htmlFor="observations" className="block text-sm font-medium text-gray-700">Technician Observations:</label>
+                                        <label htmlFor="observations" className="block text-sm font-medium text-gray-700">Observations:</label>
                                         <textarea
                                             id="observations"
                                             value={formData.observations}
@@ -331,7 +335,6 @@ const RepairForm = ({ status, onNext }) => {
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                onClick={onNext}
                                 className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                             >
                                 Next
