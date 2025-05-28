@@ -27,6 +27,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 public class RepairTicketService {
 
@@ -175,16 +178,30 @@ public class RepairTicketService {
                 .collect(Collectors.toList());
     }
 
-    public List<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm) {
-        return repairTicketRepository.searchRepairTickets(searchTerm).stream()
-                .map(this::mapToGetRepairTicketResponseDTO)
-                .collect(Collectors.toList());
+    public Page<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm, Pageable pageable) {
+        logger.info("Searching repair tickets with searchTerm: {}", searchTerm);
+        try {
+            Page<GetRepairTicketResponseDTO> result = repairTicketRepository.searchRepairTickets(searchTerm, pageable)
+                    .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Found {} repair tickets for searchTerm: {}", result.getTotalElements(), searchTerm);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error searching repair tickets with searchTerm: {}", searchTerm, e);
+            throw new RuntimeException("Failed to search repair tickets", e);
+        }
     }
 
-    public List<GetRepairTicketResponseDTO> searchRepairTicketsByEmail(String email, String searchTerm) {
-        return repairTicketRepository.searchRepairTicketsByEmail(email, searchTerm).stream()
-                .map(this::mapToGetRepairTicketResponseDTO)
-                .collect(Collectors.toList());
+    public Page<GetRepairTicketResponseDTO> searchRepairTicketsByEmail(String email, String searchTerm, Pageable pageable) {
+        logger.info("Searching repair tickets for email: {} with searchTerm: {}", email, searchTerm);
+        try {
+            Page<GetRepairTicketResponseDTO> result = repairTicketRepository.searchRepairTicketsByEmail(email, searchTerm, pageable)
+                    .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Found {} repair tickets for email: {} and searchTerm: {}", result.getTotalElements(), email, searchTerm);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error searching repair tickets for email: {} with searchTerm: {}", email, searchTerm, e);
+            throw new RuntimeException("Failed to search repair tickets by email", e);
+        }
     }
 
     public byte[] getRepairTicketDocument(String ticketNumber) throws IOException {

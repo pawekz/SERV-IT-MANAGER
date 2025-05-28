@@ -8,6 +8,9 @@ import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.RepairTicketService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -73,27 +76,35 @@ public class RepairTicketController {
         }
     }
 
-    // Search and fetch tickets by customer email, (ADMIN SIDE)
+    // Search and fetch a paginated tickets list (ADMIN SIDE)
     // Note: Ticket History, Ticket List, etc. etc.
-    @GetMapping("/searchRepairTickets")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTickets(@RequestParam String searchTerm) {
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
+            @RequestParam String searchTerm,
+            @PageableDefault(size = 20) Pageable pageable) {
         try {
-            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm, pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Search and fetch tickets by customer email, displaying all tickets related to the associated user via email
+    // Search and fetch paginated ticket list by customer email, displaying all tickets related to the associated user via email
     // Note: User's Ticket List, User's Ticket History, etc. etc.
     @GetMapping("/searchRepairTicketsByEmail")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
             @RequestParam String email,
-            @RequestParam String searchTerm) {
+            @RequestParam String searchTerm,
+            @PageableDefault(size = 20) Pageable pageable) {
         try {
-            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm, pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -101,6 +112,7 @@ public class RepairTicketController {
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
     // This endpoint fetches all repair tickets, regardless of the user (ADMIN SIDE)
+    // NOT PAGEABLE
     @GetMapping("/getAllRepairTickets")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
         List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
@@ -109,6 +121,7 @@ public class RepairTicketController {
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
     // This endpoint fetches all repair tickets associated with a specific customer email
+    // NOT PAGEABLE
     @GetMapping("/getRepairTicketsByCustomerEmail")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
         try {
