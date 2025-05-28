@@ -315,4 +315,9 @@ public class UserService {
                 user.getUserId(), user.getFirstName(), user.getLastName(),
                 user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus());
     }
+
+    @Transactional
+    public Long getUserCount() {
+        return userRepo.count();
+    }
 }

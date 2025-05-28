@@ -6,6 +6,7 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
@@ -161,6 +162,11 @@ public class UserController {
     @GetMapping("/getTechnicianByEmail")
     public ResponseEntity<GetUserResponseDTO> getTechnicianByEmail(@RequestParam String email) {
         return ResponseEntity.ok(userSvc.getTechnicianByEmail(email));
+    }
+
+    @GetMapping("/getUserCount")
+    public ResponseEntity<Long> getUserCount() {
+        return ResponseEntity.ok(userSvc.getUserCount());
     }
 
 }
