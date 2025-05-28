@@ -187,11 +187,30 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
 
     return (
         <>
-            {/* Navigation Panel rendered completely outside the main content */}
-            <NavigationPanel 
-                handleGoBack={handleGoBack}
-                handleReturnToDashboard={handleReturnToDashboard}
-            />
+            {/* Navigation panel directly inside the return statement */}
+            <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '150px' }}>
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={handleGoBack}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                        title="Go back"
+                    >
+                        <ArrowLeft size={20} className="mr-2" />
+                        <span>Back</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleReturnToDashboard}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                        title="Return to dashboard"
+                    >
+                        <Home size={20} className="mr-2" />
+                        <span>Dashboard</span>
+                    </button>
+                </div>
+            </div>
             
             {/* Main content container - completely separate */}
             <div className="container mx-auto py-8 px-4 max-w-4xl">
