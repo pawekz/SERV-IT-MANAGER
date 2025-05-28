@@ -442,7 +442,7 @@ const Inventory = () => {
                         </div>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-opacity-90 transition-colors"
                         >
                             <Plus size={16} className="mr-1" />
                             Add New Part
