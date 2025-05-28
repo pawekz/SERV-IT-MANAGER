@@ -1,17 +1,18 @@
 import {
     LayoutGrid,
+    Package,
+    History,
+    Save,
+    UserCircle,
     ClipboardList,
     ShieldCheck,
-    History,
     Users,
-    Package,
-    Save,
     Search,
     Bell,
     Plus,
-    UserCircle,
     CalendarIcon,
 } from "lucide-react"
+import { Link } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import {useEffect, useState} from "react";
 
@@ -98,11 +99,11 @@ const DashboardPage = () => {
     }
 
     const inventoryData = [
-        { id: "INV001", description: "Laptop Battery Pack", pricePerUnit: "$89.99", quantity: 45, reorderLevel: 15 },
-        { id: "INV002", description: "Screen Protector", pricePerUnit: "$12.99", quantity: 120, reorderLevel: 30 },
-        { id: "INV003", description: "USB-C Cable", pricePerUnit: "$8.99", quantity: 78, reorderLevel: 25 },
-        { id: "INV004", description: "Wireless Mouse", pricePerUnit: "$24.99", quantity: 32, reorderLevel: 10 },
-        { id: "INV005", description: "Keyboard", pricePerUnit: "$49.99", quantity: 18, reorderLevel: 8 },
+        { id: "INV001", description: "Laptop Battery Pack", pricePerUnit: "₱89.99", quantity: 45, reorderLevel: 15 },
+        { id: "INV002", description: "Screen Protector", pricePerUnit: "₱12.99", quantity: 120, reorderLevel: 30 },
+        { id: "INV003", description: "USB-C Cable", pricePerUnit: "₱8.99", quantity: 78, reorderLevel: 25 },
+        { id: "INV004", description: "Wireless Mouse", pricePerUnit: "₱24.99", quantity: 32, reorderLevel: 10 },
+        { id: "INV005", description: "Keyboard", pricePerUnit: "₱49.99", quantity: 18, reorderLevel: 8 },
     ]
 
     // Chart data
@@ -157,10 +158,12 @@ const DashboardPage = () => {
                             <button className="p-2 rounded-full hover:bg-gray-100">
                                 <Bell className="w-5 h-5 text-gray-600" />
                             </button>
-                            <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
-                                <Plus className="w-5 h-5 mr-1" />
-                                Add Ticket
-                            </button>
+                            <Link to="/newrepair">
+                                <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                    <Plus className="w-5 h-5 mr-1" />
+                                    Add Ticket
+                                </button>
+                            </Link>
                         </div>
                     </div>
                 </header>

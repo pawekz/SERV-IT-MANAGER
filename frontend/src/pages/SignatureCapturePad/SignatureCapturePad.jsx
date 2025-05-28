@@ -2,8 +2,9 @@ import { useRef, useState, useEffect } from "react"
 import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx"
 import { PDFViewer } from '@react-pdf/renderer'
 import TermsEditor from "../TermsEditor/TermsEditor.jsx"
+import { ArrowLeft, ArrowRight, Home } from "lucide-react" // Import required icons
 
-const SignatureCapturePad = ({ onBack, formData }) => {
+const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
     const canvasRef = useRef(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [context, setContext] = useState(null)
@@ -14,6 +15,21 @@ const SignatureCapturePad = ({ onBack, formData }) => {
 
     const handleBack = () => {
         onBack()
+    }
+
+    // Added function for the "Back" button in the floating nav
+    const handleGoBack = () => {
+        onBack()
+    }
+
+    // Added function for the "Dashboard" button
+    const handleReturnToDashboard = () => {
+        if (onDashboard && typeof onDashboard === 'function') {
+            onDashboard()
+        } else {
+            // Fallback navigation if onDashboard prop is not provided
+            window.location.href = '/dashboard'
+        }
     }
 
     useEffect(() => {
@@ -226,9 +242,81 @@ const SignatureCapturePad = ({ onBack, formData }) => {
             alert("Failed to submit the form. Please try again.");
         }
     };
+    
+    // Added alias for handleNext to match the button in the floating nav
+    const handleSubmit = handleNext;
 
     return (
         <div className="w-full flex flex-row items-start justify-center py-8 gap-8 px-4 max-w-[1000px] mx-auto">
+            {/* Navigation panel directly inside the return statement */}
+            <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '80px' }}>
+                <div className="space-y-3">
+                    <button 
+                        type="button" 
+                        onClick={handleGoBack} 
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center" 
+                        title="Go back"
+                    >
+                        <ArrowLeft size={20} className="mr-2" />
+                        <span>Back</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleReturnToDashboard}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                        title="Return to dashboard"
+                    >
+                        <Home size={20} className="mr-2" />
+                        <span>Dashboard</span>
+                    </button>
+                </div>
+            </div>
+            
+            {/* Next Page button on the right side */}
+            <div className="sticky top-[30vh] right-0 w-0 z-[9999]" style={{ position: 'absolute', right: '220px' }}>
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                        title="Next Page"
+                    >
+                        <span>Next</span>
+                        <ArrowRight size={20} className="ml-2" />
+                    </button>
+                </div>
+            </div>
+            
+            {/* Left Side for Terms and Conditions */}
+            <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
+                {!showPDF ? (
+                    <div>
+                        <label className="flex items-center space-x-2 mb-4">
+                            <input
+                                type="checkbox"
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="form-checkbox h-5 w-5 text-green-500"
+                            />
+                            <span className="text-gray-700 font-semibold">I accept the terms and conditions</span>
+                        </label>
+
+                        <div className="max-h-[535px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[450px]">
+                            <TermsEditor />
+                        </div>
+                        <p className="text-gray-500 text-sm mt-4">
+                            Please review the terms and conditions before proceeding.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
+                        <PDFViewer width="100%" height="600">
+                            <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                        </PDFViewer>
+                    </div>
+                )}
+            </div>
+            {/* RIght Side for signature */}
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden min-w-[500px]">
                 <div className="flex w-full">
                     <div className="w-1 bg-[#33e407]"></div>
@@ -256,7 +344,7 @@ const SignatureCapturePad = ({ onBack, formData }) => {
                                 onTouchMove={draw}
                                 onTouchEnd={stopDrawing}
                             ></canvas>
-                            {isEmpty && <div className="absolute bottom-4 left-0 right-0 text-center text-gray-400">Sign here</div>}
+                            {/*{isEmpty && <div className="absolute bottom-4 left-0 right-0 text-center text-gray-400">Sign here</div>}*/}
                         </div>
 
                         <div className="flex flex-col items-center space-y-4">
@@ -306,34 +394,7 @@ const SignatureCapturePad = ({ onBack, formData }) => {
                 </div>
             </div>
 
-            <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
-                {!showPDF ? (
-                    <div>
-                        <label className="flex items-center space-x-2 mb-4">
-                            <input
-                                type="checkbox"
-                                checked={termsAccepted}
-                                onChange={(e) => setTermsAccepted(e.target.checked)}
-                                className="form-checkbox h-5 w-5 text-green-500"
-                            />
-                            <span className="text-gray-700 font-semibold">I accept the terms and conditions</span>
-                        </label>
 
-                        <div className="max-h-[535px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[450px]">
-                            <TermsEditor />
-                        </div>
-                        <p className="text-gray-500 text-sm mt-4">
-                            Please review the terms and conditions before proceeding.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
-                        <PDFViewer width="100%" height="600">
-                            <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
-                        </PDFViewer>
-                    </div>
-                )}
-            </div>
         </div>
     )
 }

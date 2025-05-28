@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +28,7 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
             "LOWER(r.deviceModel) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.deviceBrand) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    List<RepairTicketEntity> searchRepairTickets(@Param("searchTerm") String searchTerm);
+    Page<RepairTicketEntity> searchRepairTickets(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     @Query("SELECT r FROM RepairTicketEntity r WHERE r.customerEmail = :email AND (" +
             "LOWER(r.ticketNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
@@ -35,6 +37,6 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
             "LOWER(r.deviceModel) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.deviceBrand) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    List<RepairTicketEntity> searchRepairTicketsByEmail(@Param("email") String email, @Param("searchTerm") String searchTerm);
+    Page<RepairTicketEntity> searchRepairTicketsByEmail(@Param("email") String email, @Param("searchTerm") String searchTerm, Pageable pageable);
 
 }

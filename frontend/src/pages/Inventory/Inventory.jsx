@@ -38,7 +38,7 @@ const Inventory = () => {
         dateAdded: new Date().toISOString().split('T')[0] + "T00:00:00",
         datePurchasedByCustomer: null,
         warrantyExpiration: "",
-        addedBy: ""
+        addedBy: "" // Will be populated with user email from token during submission
     });
 
     // Helper function to calculate availability status
@@ -52,14 +52,23 @@ const Inventory = () => {
         }
     };
 
-    // Helper function to get user email from token
+    // Enhanced helper function to get user email from token
     const getUserEmailFromToken = (token) => {
         try {
             const decodedToken = parseJwt(token);
-            return decodedToken?.sub || decodedToken?.email || "unknown";
+            // Try multiple possible locations where email might be stored in the token
+            const email = decodedToken?.email ||
+                decodedToken?.sub ||
+                decodedToken?.preferred_username ||
+                decodedToken?.user_email;
+
+            console.log("Token payload:", decodedToken); // Debug what's in the token
+            console.log("Extracted email:", email);
+
+            return email || "unknown@example.com"; // Provide a default email format
         } catch (e) {
             console.error("Error extracting email from token:", e);
-            return "unknown";
+            return "error@example.com"; // Clearly indicate an error occurred
         }
     };
 
@@ -248,6 +257,9 @@ const Inventory = () => {
                 throw new Error("Authentication token not found. Please log in again.");
             }
 
+            // Get the user's email from the token for the edit operation
+            const userEmail = getUserEmailFromToken(freshToken);
+
             // Format the data for the API
             const updateData = {
                 partNumber: editPart.partNumber || "",
@@ -261,8 +273,10 @@ const Inventory = () => {
                 dateAdded: editPart.dateAdded || "",
                 datePurchasedByCustomer: editPart.datePurchasedByCustomer || "",
                 warrantyExpiration: editPart.warrantyExpiration || "",
-                addedBy: editPart.addedBy || ""
+                addedBy: userEmail // Update to use email instead of preserving old value
             };
+
+            console.log("Update data being sent to API:", updateData);
 
             // Make the PATCH request to update the part
             const response = await axios.patch(
@@ -299,7 +313,8 @@ const Inventory = () => {
                             availability: {
                                 status: newStatus,
                                 quantity: updatedCurrentStock
-                            }
+                            },
+                            addedBy: userEmail // Update to use email in the UI state as well
                         }
                         : item
                 )
@@ -335,6 +350,7 @@ const Inventory = () => {
 
             // Get the user's email from the token
             const userEmail = getUserEmailFromToken(freshToken);
+            console.log("User email extracted from token:", userEmail);
 
             // Format the data to match API expectations
             const partData = {
@@ -344,6 +360,8 @@ const Inventory = () => {
                 lowStockThreshold: parseInt(newPart.lowStockThreshold),
                 addedBy: userEmail // Use the email from the token
             };
+
+            console.log("Data being sent to API:", partData);
 
             // Make API call to add part with proper Bearer format
             const response = await axios.post(
@@ -523,31 +541,36 @@ const Inventory = () => {
                                     paginatedItems.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{item.sku || '-'}</div>
-                                                <div className="text-xs text-gray-500">{item.category}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-medium text-gray-900 mb-1">{item.name}</div>
-                                                <div
-                                                    className="text-xs text-gray-500 cursor-pointer"
-                                                    onClick={() => handleDescriptionClick(item)}
-                                                >
-                                                    {item.description ? (
-                                                        `${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}`
-                                                    ) : (
-                                                        <span className="text-gray-400 italic">No description</span>
-                                                    )}
+                                                <div className="flex items-center">
+                                                    <div className="ml-2">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {item.name || "Unnamed Part"}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            SKU: {item.sku || "N/A"}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.availability.status)}`}>
-                                                    {item.availability.status}
-                                                </span>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    Qty: {item.availability.quantity}
-                                                </div>
+                                                <button
+                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                    onClick={() => handleDescriptionClick(item)}
+                                                >
+                                                    View Description
+                                                </button>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span
+                                                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.availability?.status)}`}
+                                                >
+                                                    {item.availability?.status || "Unknown"}
+                                                </span>
+                                                <span className="ml-2 text-xs text-gray-500">
+                                                    Qty: {item.availability?.quantity || 0}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     <button
                                                         onClick={() => handleEditClick(item)}
@@ -568,7 +591,7 @@ const Inventory = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                            No inventory items found
+                                            No inventory items found. Add a new part to get started.
                                         </td>
                                     </tr>
                                 )}
