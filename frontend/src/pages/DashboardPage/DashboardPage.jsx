@@ -1,9 +1,4 @@
 import {
-    LayoutGrid,
-    Package,
-    History,
-    Save,
-    UserCircle,
     ClipboardList,
     ShieldCheck,
     Users,
