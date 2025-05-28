@@ -1,35 +1,35 @@
 import React, { useEffect, useState } from "react";
-import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, Home } from "lucide-react";
+import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Home } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // Create a completely separate NavigationPanel component
-const NavigationPanel = ({ handleGoBack, handleReturnToDashboard }) => {
-    return (
-        <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '20px' }}>
-            <div className="space-y-3">
-                <button
-                    type="button"
-                    onClick={handleGoBack}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                    title="Go back"
-                >
-                    <ArrowLeft size={20} className="mr-2" />
-                    <span>Back</span>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={handleReturnToDashboard}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                    title="Return to dashboard"
-                >
-                    <Home size={20} className="mr-2" />
-                    <span>Dashboard</span>
-                </button>
-            </div>
-        </div>
-    );
-};
+// const NavigationPanel = ({ handleGoBack, handleReturnToDashboard }) => {
+//     return (
+//         <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '20px' }}>
+//             <div className="space-y-3">
+//                 <button
+//                     type="button"
+//                     onClick={handleGoBack}
+//                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+//                     title="Go back"
+//                 >
+//                     <ArrowLeft size={20} className="mr-2" />
+//                     <span>Back</span>
+//                 </button>
+//
+//                 <button
+//                     type="button"
+//                     onClick={handleReturnToDashboard}
+//                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+//                     title="Return to dashboard"
+//                 >
+//                     <Home size={20} className="mr-2" />
+//                     <span>Dashboard</span>
+//                 </button>
+//             </div>
+//         </div>
+//     );
+// };
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
@@ -208,6 +208,21 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                     >
                         <Home size={20} className="mr-2" />
                         <span>Dashboard</span>
+                    </button>
+                </div>
+            </div>
+            
+            {/* Next Page button on the right side */}
+            <div className="sticky top-[30vh] right-0 w-0 z-[9999]" style={{ position: 'absolute', right: '275px' }}>
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                        title="Next Page"
+                    >
+                        <span>Next</span>
+                        <ArrowRight size={20} className="ml-2" />
                     </button>
                 </div>
             </div>
