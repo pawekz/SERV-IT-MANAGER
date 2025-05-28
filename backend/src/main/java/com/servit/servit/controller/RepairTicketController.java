@@ -2,10 +2,15 @@ package com.servit.servit.controller;
 
 import com.servit.servit.dto.CheckInRepairTicketRequestDTO;
 import com.servit.servit.dto.GetRepairTicketResponseDTO;
+import com.servit.servit.dto.RepairStatusHistoryResponseDTO;
+import com.servit.servit.dto.UpdateRepairStatusRequestDTO;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.RepairTicketService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,9 +47,9 @@ public class RepairTicketController {
     public ResponseEntity<?> checkInRepairTicket(@ModelAttribute CheckInRepairTicketRequestDTO req) {
         try {
             RepairTicketEntity ticket = repairTicketService.checkInRepairTicket(req);
-            return ResponseEntity.ok(ticket);
+            return ResponseEntity.status(HttpStatus.OK).body(ticket);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -52,7 +57,7 @@ public class RepairTicketController {
     public ResponseEntity<String> generateRepairTicketNumber() {
         try {
             String ticketNumber = repairTicketService.generateRepairTicketNumber();
-            return ResponseEntity.ok(ticketNumber);
+            return ResponseEntity.status(HttpStatus.OK).body(ticketNumber);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate ticket number");
         }
@@ -71,27 +76,35 @@ public class RepairTicketController {
         }
     }
 
-    // Search and fetch tickets by customer email, (ADMIN SIDE)
+    // Search and fetch a paginated tickets list (ADMIN SIDE)
     // Note: Ticket History, Ticket List, etc. etc.
-    @GetMapping("/searchRepairTickets")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTickets(@RequestParam String searchTerm) {
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
+            @RequestParam String searchTerm,
+            @PageableDefault(size = 20) Pageable pageable) {
         try {
-            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm, pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Search and fetch tickets by customer email, displaying all tickets related to the associated user via email
+    // Search and fetch paginated ticket list by customer email, displaying all tickets related to the associated user via email
     // Note: User's Ticket List, User's Ticket History, etc. etc.
     @GetMapping("/searchRepairTicketsByEmail")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
             @RequestParam String email,
-            @RequestParam String searchTerm) {
+            @RequestParam String searchTerm,
+            @PageableDefault(size = 20) Pageable pageable) {
         try {
-            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm, pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -99,19 +112,25 @@ public class RepairTicketController {
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
     // This endpoint fetches all repair tickets, regardless of the user (ADMIN SIDE)
+    // NOT PAGEABLE
     @GetMapping("/getAllRepairTickets")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
         List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
-        return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        return repairTickets.isEmpty()
+                ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
     }
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
     // This endpoint fetches all repair tickets associated with a specific customer email
+    // NOT PAGEABLE
     @GetMapping("/getRepairTicketsByCustomerEmail")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
         try {
             List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            return repairTickets.isEmpty()
+                    ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                    : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -133,4 +152,29 @@ public class RepairTicketController {
         }
     }
 
+    @PatchMapping("/updateRepairStatus")
+    public ResponseEntity<?> updateRepairStatus(@RequestBody UpdateRepairStatusRequestDTO request) {
+        try {
+            RepairTicketEntity ticket = repairTicketService.updateRepairStatus(request);
+            return ResponseEntity.ok(ticket);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getRepairStatusHistory/{ticketNumber}")
+    public ResponseEntity<List<RepairStatusHistoryResponseDTO>> getRepairStatusHistory(@PathVariable String ticketNumber) {
+        try {
+            List<RepairStatusHistoryResponseDTO> history = repairTicketService.getRepairStatusHistory(ticketNumber);
+            return ResponseEntity.ok(history);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

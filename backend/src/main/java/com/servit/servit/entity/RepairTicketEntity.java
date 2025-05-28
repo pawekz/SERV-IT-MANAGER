@@ -1,5 +1,6 @@
 package com.servit.servit.entity;
 
+import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -71,6 +72,14 @@ public class RepairTicketEntity {
 
     @Column(name = "check_in_date")
     private LocalDateTime checkInDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "repair_status", nullable = false)
+    private RepairStatusEnum repairStatusEnum;
+
+    @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<RepairStatusHistoryEntity> repairStatusHistory;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
