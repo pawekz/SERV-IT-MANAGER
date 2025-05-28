@@ -200,10 +200,23 @@ public class RepairTicketService {
 
 
     public RepairTicketEntity updateRepairStatus(UpdateRepairStatusRequestDTO request) {
+        if (request.getTicketNumber() == null || request.getTicketNumber().isEmpty()) {
+            throw new IllegalArgumentException("Ticket number must not be null or empty.");
+        }
+        if (request.getRepairStatus() == null || request.getRepairStatus().isEmpty()) {
+            throw new IllegalArgumentException("Repair status must not be null or empty.");
+        }
+
         RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(request.getTicketNumber())
                 .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
 
-        RepairStatusEnum newStatus = RepairStatusEnum.valueOf(request.getRepairStatus());
+        RepairStatusEnum newStatus;
+        try {
+            newStatus = RepairStatusEnum.valueOf(request.getRepairStatus());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid repair status: " + request.getRepairStatus(), ex);
+        }
+
         repairTicket.setRepairStatusEnum(newStatus);
 
         RepairStatusHistoryEntity statusHistory = new RepairStatusHistoryEntity();
@@ -216,7 +229,16 @@ public class RepairTicketService {
     }
 
     public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {
-        List<RepairStatusHistoryEntity> history = repairStatusHistoryRepository.findByRepairTicketTicketNumberOrderByTimestampDesc(ticketNumber);
+        if (ticketNumber == null || ticketNumber.isEmpty()) {
+            throw new IllegalArgumentException("Ticket number must not be null or empty.");
+        }
+
+        List<RepairStatusHistoryEntity> history = repairStatusHistoryRepository
+                .findByRepairTicketTicketNumberOrderByTimestampDesc(ticketNumber);
+
+        if (history == null || history.isEmpty()) {
+            throw new jakarta.persistence.EntityNotFoundException("No repair status history found for ticket: " + ticketNumber);
+        }
 
         return history.stream()
                 .map(this::mapToStatusHistoryResponseDTO)
@@ -224,6 +246,9 @@ public class RepairTicketService {
     }
 
     private RepairStatusHistoryResponseDTO mapToStatusHistoryResponseDTO(RepairStatusHistoryEntity entity) {
+        if (entity == null) {
+            throw new IllegalArgumentException("RepairStatusHistoryEntity must not be null.");
+        }
         RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
         dto.setTimestamp(entity.getTimestamp());
         return dto;
