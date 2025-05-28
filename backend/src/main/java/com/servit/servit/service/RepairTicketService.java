@@ -53,129 +53,206 @@ public class RepairTicketService {
     }
 
     public GetRepairTicketResponseDTO getRepairTicket(String ticketNumber) {
-        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
-
-        if (repairTicket.getDeviceModel() == null || repairTicket.getDeviceSerialNumber() == null) {
-            throw new IllegalArgumentException("Required fields are missing in the repair ticket");
+        logger.info("Fetching repair ticket with ticketNumber: {}", ticketNumber);
+        try {
+            RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                    .orElseThrow(() -> {
+                        logger.error("Repair ticket not found: {}", ticketNumber);
+                        return new EntityNotFoundException("Repair ticket not found");
+                    });
+            logger.info("Successfully fetched repair ticket: {}", ticketNumber);
+            return mapToGetRepairTicketResponseDTO(repairTicket);
+        } catch (EntityNotFoundException | IllegalArgumentException e) {
+            logger.error("Error fetching repair ticket: {}", ticketNumber, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error fetching repair ticket: {}", ticketNumber, e);
+            throw new RuntimeException("Failed to fetch repair ticket", e);
         }
-
-        return mapToGetRepairTicketResponseDTO(repairTicket);
     }
 
     public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) throws IOException {
-        if (repairTicketRepository.findByTicketNumber(req.getTicketNumber()).isPresent()) {
-            throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
+        logger.info("Attempting to check in repair ticket: {}", req.getTicketNumber());
+
+        try {
+            if (repairTicketRepository.findByTicketNumber(req.getTicketNumber()).isPresent()) {
+                logger.warn("A repair ticket with this ticket number already exists: {}", req.getTicketNumber());
+                throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
+            }
+            if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null) {
+                logger.warn("Required fields are missing in the repair ticket form for ticket: {}", req.getTicketNumber());
+                throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
+            }
+            if (req.getRepairPhotos() != null && req.getRepairPhotos().size() > 3) {
+                logger.warn("Too many repair photos uploaded for ticket: {}", req.getTicketNumber());
+                throw new IllegalArgumentException("You can upload a maximum of 3 repair photos.");
+            }
+
+            UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
+                    .orElseThrow(() -> {
+                        logger.warn("Technician not found: {}", req.getTechnicianEmail());
+                        return new IllegalArgumentException("Technician not found");
+                    });
+
+            RepairTicketEntity repairTicket = new RepairTicketEntity();
+            repairTicket.setCustomerName(req.getCustomerName());
+            repairTicket.setCustomerEmail(req.getCustomerEmail());
+            repairTicket.setCustomerPhoneNumber(req.getCustomerPhoneNumber());
+            repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
+            repairTicket.setDeviceModel(req.getDeviceModel());
+            repairTicket.setDeviceBrand(req.getDeviceBrand());
+            repairTicket.setDeviceColor(req.getDeviceColor());
+            repairTicket.setDevicePassword(
+                    req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
+            );
+            repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
+            repairTicket.setReportedIssue(req.getReportedIssue());
+            repairTicket.setTechnicianEmail(technician);
+            repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+            repairTicket.setAccessories(
+                    req.getAccessories() == null || req.getAccessories().isEmpty() ? "N/A" : req.getAccessories()
+            );
+            repairTicket.setObservations(
+                    req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
+            );
+            repairTicket.setStatus("CHECKED-IN");
+            repairTicket.setCheckInDate(LocalDateTime.now());
+            repairTicket.setTicketNumber(req.getTicketNumber());
+
+            AtomicInteger counter = new AtomicInteger(1);
+            try {
+                repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
+                        .map(photo -> {
+                            try {
+                                String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
+                                RepairPhotoEntity repairPhoto = new RepairPhotoEntity();
+                                repairPhoto.setPhotoUrl(photoPath);
+                                repairPhoto.setRepairTicket(repairTicket);
+                                logger.info("Saved repair photo for ticket: {} at {}", repairTicket.getTicketNumber(), photoPath);
+                                return repairPhoto;
+                            } catch (IOException e) {
+                                logger.error("Failed to save repair photo for ticket: {}", repairTicket.getTicketNumber(), e);
+                                throw new RuntimeException("Failed to save repair photo. Please retry.", e);
+                            }
+                        })
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                logger.error("Error processing repair photos for ticket: {}", repairTicket.getTicketNumber(), e);
+                throw e;
+            }
+
+            String digitalSignaturePath;
+            try {
+                digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
+                logger.info("Successfully saved digital signature for repair ticket: {}", repairTicket.getTicketNumber());
+            } catch (IOException e) {
+                logger.error("Failed to save digital signature for ticket: {}", repairTicket.getTicketNumber(), e);
+                throw new RuntimeException("Failed to save digital signature. Please retry.", e);
+            }
+
+            DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
+            digitalSignature.setImageUrl(digitalSignaturePath);
+            digitalSignature.setRepairTicket(repairTicket);
+
+            repairTicket.setDigitalSignature(digitalSignature);
+
+            logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
+
+            return repairTicketRepository.save(repairTicket);
+        } catch (IllegalArgumentException e) {
+            logger.error("Validation error during check-in for ticket: {}", req.getTicketNumber(), e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during check-in for ticket: {}", req.getTicketNumber(), e);
+            throw new RuntimeException("Failed to check in repair ticket", e);
         }
-        if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null || req.getDeviceModel() == null) {
-            throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
-        }
-
-        if (req.getRepairPhotos() != null && req.getRepairPhotos().size() > 3) {
-            throw new IllegalArgumentException("You can upload a maximum of 3 repair photos.");
-        }
-
-        UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
-
-        RepairTicketEntity repairTicket = new RepairTicketEntity();
-        repairTicket.setCustomerName(req.getCustomerName());
-        repairTicket.setCustomerEmail(req.getCustomerEmail());
-        repairTicket.setCustomerPhoneNumber(req.getCustomerPhoneNumber());
-        repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
-        repairTicket.setDeviceModel(req.getDeviceModel());
-        repairTicket.setDeviceBrand(req.getDeviceBrand());
-        repairTicket.setDeviceColor(req.getDeviceColor());
-        repairTicket.setDevicePassword(
-                req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
-        );
-        repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
-        repairTicket.setReportedIssue(req.getReportedIssue());
-        repairTicket.setTechnicianEmail(technician);
-        repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
-        repairTicket.setAccessories(
-                req.getAccessories() == null || req.getAccessories().isEmpty() ? "N/A" : req.getAccessories()
-        );
-        repairTicket.setObservations(
-                req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
-        );
-        repairTicket.setStatus("CHECKED-IN");
-        repairTicket.setCheckInDate(LocalDateTime.now());
-        repairTicket.setTicketNumber(req.getTicketNumber());
-
-        AtomicInteger counter = new AtomicInteger(1);
-        repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
-                .map(photo -> {
-                    try {
-                        String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
-                        RepairPhotoEntity repairPhoto = new RepairPhotoEntity();
-                        repairPhoto.setPhotoUrl(photoPath);
-                        repairPhoto.setRepairTicket(repairTicket);
-                        return repairPhoto;
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to save repair photo. Please retry.", e);
-                    }
-                })
-                .collect(Collectors.toList()));
-
-        String digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
-
-        logger.info("Successfully saved digital signature for repair ticket: {}", repairTicket.getTicketNumber());
-
-        DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
-        digitalSignature.setImageUrl(digitalSignaturePath);
-        digitalSignature.setRepairTicket(repairTicket);
-
-        repairTicket.setDigitalSignature(digitalSignature);
-
-        logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
-
-        return repairTicketRepository.save(repairTicket);
     }
 
     public String generateRepairTicketNumber() {
+        logger.info("Generating new repair ticket number.");
         String lastTicketNumber = repairTicketRepository.findLastTicketNumber();
         int nextId = 1;
 
         if (lastTicketNumber != null && lastTicketNumber.startsWith("IORT-")) {
-            String numericPart = lastTicketNumber.substring(5);
-            nextId = Integer.parseInt(numericPart) + 1;
+            try {
+                String numericPart = lastTicketNumber.substring(5);
+                nextId = Integer.parseInt(numericPart) + 1;
+                logger.info("Last ticket number found: {}. Next ticket number will be: IORT-{}", lastTicketNumber, String.format("%06d", nextId));
+            } catch (NumberFormatException e) {
+                logger.error("Failed to parse numeric part of last ticket number: {}", lastTicketNumber, e);
+                throw new RuntimeException("Invalid last ticket number format: " + lastTicketNumber, e);
+            }
+        } else {
+            logger.info("No previous ticket number found. Starting from IORT-000001.");
         }
 
-        return "IORT-" + String.format("%06d", nextId);
+        String newTicketNumber = "IORT-" + String.format("%06d", nextId);
+        logger.info("Generated new ticket number: {}", newTicketNumber);
+        return newTicketNumber;
     }
 
     public void uploadRepairTicketDocument(String ticketNumber, MultipartFile file) throws IOException {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
+        logger.info("Uploading document for repair ticket: {}", ticketNumber);
+
+        try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("Uploaded file is null or empty for ticket: {}", ticketNumber);
+                throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
+                logger.warn("Invalid file type for ticket: {}. Only PDF files are allowed.", ticketNumber);
+                throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
+            }
+
+            RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                    .orElseThrow(() -> {
+                        logger.error("Repair ticket not found: {}", ticketNumber);
+                        return new EntityNotFoundException("Repair ticket with ticket number " + ticketNumber + " not found.");
+                    });
+
+            String pdfPath = fileUtil.saveRepairTicketDocument(file, ticketNumber);
+            repairTicket.setDocumentPath(pdfPath);
+
+            repairTicketRepository.save(repairTicket);
+
+            logger.info("Successfully uploaded document for repair ticket: {}", ticketNumber);
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.error("Validation error while uploading document for ticket: {}", ticketNumber, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error while uploading document for ticket: {}", ticketNumber, e);
+            throw new RuntimeException("Failed to upload repair ticket document", e);
         }
-
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
-            throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
-        }
-
-        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
-                .orElseThrow(() -> new EntityNotFoundException("Repair ticket with ticket number " + ticketNumber + " not found."));
-
-        String pdfPath = fileUtil.saveRepairTicketDocument(file, ticketNumber);
-        repairTicket.setDocumentPath(pdfPath);
-
-        repairTicketRepository.save(repairTicket);
-
-        System.out.println("Successfully uploaded document for repair ticket: " + ticketNumber);
     }
 
     public List<GetRepairTicketResponseDTO> getAllRepairTickets() {
-        return repairTicketRepository.findAll().stream()
-                .map(this::mapToGetRepairTicketResponseDTO)
-                .collect(Collectors.toList());
+        logger.info("Fetching all repair tickets.");
+        try {
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findAll().stream()
+                    .map(this::mapToGetRepairTicketResponseDTO)
+                    .collect(Collectors.toList());
+            logger.info("Fetched {} repair tickets.", tickets.size());
+            return tickets;
+        } catch (Exception e) {
+            logger.error("Error fetching all repair tickets.", e);
+            throw new RuntimeException("Failed to fetch all repair tickets", e);
+        }
     }
 
     public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
-        return repairTicketRepository.findByCustomerEmail(email).stream()
-                .map(this::mapToGetRepairTicketResponseDTO)
-                .collect(Collectors.toList());
+        logger.info("Fetching repair tickets for customer email: {}", email);
+        try {
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findByCustomerEmail(email).stream()
+                    .map(this::mapToGetRepairTicketResponseDTO)
+                    .collect(Collectors.toList());
+            logger.info("Fetched {} repair tickets for customer email: {}", tickets.size(), email);
+            return tickets;
+        } catch (Exception e) {
+            logger.error("Error fetching repair tickets for customer email: {}", email, e);
+            throw new RuntimeException("Failed to fetch repair tickets by customer email", e);
+        }
     }
 
     public Page<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm, Pageable pageable) {
