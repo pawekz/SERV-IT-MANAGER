@@ -200,20 +200,27 @@ public class RepairTicketService {
 
 
     public RepairTicketEntity updateRepairStatus(UpdateRepairStatusRequestDTO request) {
+        logger.info("Updating repair status for ticket: {}", request.getTicketNumber());
         if (request.getTicketNumber() == null || request.getTicketNumber().isEmpty()) {
+            logger.warn("Ticket number is null or empty.");
             throw new IllegalArgumentException("Ticket number must not be null or empty.");
         }
         if (request.getRepairStatus() == null || request.getRepairStatus().isEmpty()) {
+            logger.warn("Repair status is null or empty for ticket: {}", request.getTicketNumber());
             throw new IllegalArgumentException("Repair status must not be null or empty.");
         }
 
         RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(request.getTicketNumber())
-                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
+                .orElseThrow(() -> {
+                    logger.error("Repair ticket not found: {}", request.getTicketNumber());
+                    return new EntityNotFoundException("Repair ticket not found");
+                });
 
         RepairStatusEnum newStatus;
         try {
             newStatus = RepairStatusEnum.valueOf(request.getRepairStatus());
         } catch (IllegalArgumentException ex) {
+            logger.error("Invalid repair status: {}", request.getRepairStatus(), ex);
             throw new IllegalArgumentException("Invalid repair status: " + request.getRepairStatus(), ex);
         }
 
@@ -225,11 +232,14 @@ public class RepairTicketService {
 
         repairTicket.getRepairStatusHistory().add(statusHistory);
 
+        logger.info("Repair status updated to {} for ticket: {}", newStatus, request.getTicketNumber());
         return repairTicketRepository.save(repairTicket);
     }
 
     public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {
+        logger.info("Fetching repair status history for ticket: {}", ticketNumber);
         if (ticketNumber == null || ticketNumber.isEmpty()) {
+            logger.warn("Ticket number is null or empty.");
             throw new IllegalArgumentException("Ticket number must not be null or empty.");
         }
 
@@ -237,9 +247,11 @@ public class RepairTicketService {
                 .findByRepairTicketTicketNumberOrderByTimestampDesc(ticketNumber);
 
         if (history == null || history.isEmpty()) {
+            logger.warn("No repair status history found for ticket: {}", ticketNumber);
             throw new jakarta.persistence.EntityNotFoundException("No repair status history found for ticket: " + ticketNumber);
         }
 
+        logger.info("Found {} status history records for ticket: {}", history.size(), ticketNumber);
         return history.stream()
                 .map(this::mapToStatusHistoryResponseDTO)
                 .collect(Collectors.toList());
@@ -247,6 +259,7 @@ public class RepairTicketService {
 
     private RepairStatusHistoryResponseDTO mapToStatusHistoryResponseDTO(RepairStatusHistoryEntity entity) {
         if (entity == null) {
+            logger.error("RepairStatusHistoryEntity is null.");
             throw new IllegalArgumentException("RepairStatusHistoryEntity must not be null.");
         }
         RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
