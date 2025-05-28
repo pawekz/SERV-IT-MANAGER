@@ -98,11 +98,11 @@ const DashboardPage = () => {
     }
 
     const inventoryData = [
-        { id: "INV001", description: "Laptop Battery Pack", pricePerUnit: "$89.99", quantity: 45, reorderLevel: 15 },
-        { id: "INV002", description: "Screen Protector", pricePerUnit: "$12.99", quantity: 120, reorderLevel: 30 },
-        { id: "INV003", description: "USB-C Cable", pricePerUnit: "$8.99", quantity: 78, reorderLevel: 25 },
-        { id: "INV004", description: "Wireless Mouse", pricePerUnit: "$24.99", quantity: 32, reorderLevel: 10 },
-        { id: "INV005", description: "Keyboard", pricePerUnit: "$49.99", quantity: 18, reorderLevel: 8 },
+        { id: "INV001", description: "Laptop Battery Pack", pricePerUnit: "₱89.99", quantity: 45, reorderLevel: 15 },
+        { id: "INV002", description: "Screen Protector", pricePerUnit: "₱12.99", quantity: 120, reorderLevel: 30 },
+        { id: "INV003", description: "USB-C Cable", pricePerUnit: "₱8.99", quantity: 78, reorderLevel: 25 },
+        { id: "INV004", description: "Wireless Mouse", pricePerUnit: "₱24.99", quantity: 32, reorderLevel: 10 },
+        { id: "INV005", description: "Keyboard", pricePerUnit: "₱49.99", quantity: 18, reorderLevel: 8 },
     ]
 
     // Chart data
