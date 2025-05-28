@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Upload, X, ChevronLeft, ChevronRight  } from "lucide-react";
+import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, Home } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
@@ -113,6 +113,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         }
     };
 
+    const handleGoBack = () => {
+        navigate(-1);
+    };
+
+    const handleReturnToDashboard = () => {
+        navigate('/dashboard');
+    };
+
     useEffect(() => {
         const fetchRepairTicketNumber = async () => {
             try {
@@ -168,6 +176,31 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                 />
                             </div>
                         </div>
+
+                        {/* Navigation section */}
+                        <div className="fixed left-[160px] top-1/3 space-y-3">
+                            <button
+                                type="button"
+                                onClick={handleGoBack}
+                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                                title="Go back"
+                            >
+                                <ArrowLeft size={20} className="mr-2" />
+                                <span>Back</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleReturnToDashboard}
+                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
+                                title="Return to dashboard"
+                            >
+                                <Home size={20} className="mr-2" />
+                                <span>Dashboard</span>
+                            </button>
+                        </div>
+
+                        {/* Rest of the form */}
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
