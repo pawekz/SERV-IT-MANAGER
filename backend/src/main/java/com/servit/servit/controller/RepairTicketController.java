@@ -2,6 +2,8 @@ package com.servit.servit.controller;
 
 import com.servit.servit.dto.CheckInRepairTicketRequestDTO;
 import com.servit.servit.dto.GetRepairTicketResponseDTO;
+import com.servit.servit.dto.RepairStatusHistoryResponseDTO;
+import com.servit.servit.dto.UpdateRepairStatusRequestDTO;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.RepairTicketService;
 import jakarta.persistence.EntityNotFoundException;
@@ -133,4 +135,29 @@ public class RepairTicketController {
         }
     }
 
+    @PatchMapping("/updateRepairStatus")
+    public ResponseEntity<?> updateRepairStatus(@RequestBody UpdateRepairStatusRequestDTO request) {
+        try {
+            RepairTicketEntity ticket = repairTicketService.updateRepairStatus(request);
+            return ResponseEntity.ok(ticket);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getRepairStatusHistory/{ticketNumber}")
+    public ResponseEntity<List<RepairStatusHistoryResponseDTO>> getRepairStatusHistory(@PathVariable String ticketNumber) {
+        try {
+            List<RepairStatusHistoryResponseDTO> history = repairTicketService.getRepairStatusHistory(ticketNumber);
+            return ResponseEntity.ok(history);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

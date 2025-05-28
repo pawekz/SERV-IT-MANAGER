@@ -2,12 +2,13 @@ package com.servit.servit.service;
 
 import com.servit.servit.dto.CheckInRepairTicketRequestDTO;
 import com.servit.servit.dto.GetRepairTicketResponseDTO;
-import com.servit.servit.entity.DigitalSignatureEntity;
-import com.servit.servit.entity.RepairPhotoEntity;
-import com.servit.servit.entity.RepairTicketEntity;
-import com.servit.servit.entity.UserEntity;
+import com.servit.servit.dto.RepairStatusHistoryResponseDTO;
+import com.servit.servit.dto.UpdateRepairStatusRequestDTO;
+import com.servit.servit.entity.*;
+import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.repository.RepairTicketRepository;
+import com.servit.servit.repository.RepairStatusHistoryRepository;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ public class RepairTicketService {
 
     @Autowired
     private final RepairTicketRepository repairTicketRepository;
+
+    @Autowired
+    private RepairStatusHistoryRepository repairStatusHistoryRepository;
 
     @Autowired
     private final UserRepository userRepository;
@@ -192,6 +196,42 @@ public class RepairTicketService {
         }
         java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
         return java.nio.file.Files.readAllBytes(path);
+    }
+
+
+    public RepairTicketEntity updateRepairStatus(UpdateRepairStatusRequestDTO request) {
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(request.getTicketNumber())
+                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
+
+        RepairStatusEnum newStatus = RepairStatusEnum.valueOf(request.getRepairStatus());
+        repairTicket.setRepairStatusEnum(newStatus);
+
+        RepairStatusHistoryEntity statusHistory = new RepairStatusHistoryEntity();
+        statusHistory.setRepairTicket(repairTicket);
+        statusHistory.setRepairStatusEnum(newStatus);
+        statusHistory.setNotes(request.getNotes());
+        statusHistory.setUpdatedBy(request.getUpdatedBy());
+
+        repairTicket.getRepairStatusHistory().add(statusHistory);
+
+        return repairTicketRepository.save(repairTicket);
+    }
+
+    public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {
+        List<RepairStatusHistoryEntity> history = repairStatusHistoryRepository.findByRepairTicketTicketNumberOrderByTimestampDesc(ticketNumber);
+
+        return history.stream()
+                .map(this::mapToStatusHistoryResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    private RepairStatusHistoryResponseDTO mapToStatusHistoryResponseDTO(RepairStatusHistoryEntity entity) {
+        RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
+        dto.setRepairStatus(entity.getRepairStatusEnum().getDisplayName());
+        dto.setNotes(entity.getNotes());
+        dto.setUpdatedBy(entity.getUpdatedBy());
+        dto.setTimestamp(entity.getTimestamp());
+        return dto;
     }
 
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
