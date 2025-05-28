@@ -209,8 +209,6 @@ public class RepairTicketService {
         RepairStatusHistoryEntity statusHistory = new RepairStatusHistoryEntity();
         statusHistory.setRepairTicket(repairTicket);
         statusHistory.setRepairStatusEnum(newStatus);
-        statusHistory.setNotes(request.getNotes());
-        statusHistory.setUpdatedBy(request.getUpdatedBy());
 
         repairTicket.getRepairStatusHistory().add(statusHistory);
 
@@ -227,9 +225,6 @@ public class RepairTicketService {
 
     private RepairStatusHistoryResponseDTO mapToStatusHistoryResponseDTO(RepairStatusHistoryEntity entity) {
         RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
-        dto.setRepairStatus(entity.getRepairStatusEnum().getDisplayName());
-        dto.setNotes(entity.getNotes());
-        dto.setUpdatedBy(entity.getUpdatedBy());
         dto.setTimestamp(entity.getTimestamp());
         return dto;
     }
