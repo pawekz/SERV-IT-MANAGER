@@ -122,7 +122,7 @@ const RepairQueue = () => {
     return (
         <div className="flex-1 overflow-auto">
 
-            <Sidebar activePage={'dashboard'}/>
+            <Sidebar activePage={'repairqueue'}/>
 
             <header className="bg-white shadow-sm p-4">
                 <div className="flex justify-between items-center">

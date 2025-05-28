@@ -493,7 +493,7 @@ const LoginPage = () => {
                 if (data.role === 'ADMIN' || data.role === 'TECHNICIAN') {
                     navigate('/dashboard');
                 } else {
-                    navigate('/accountinformation');
+                    navigate('/dashboard');
                 }
             }
         } catch (err) {
