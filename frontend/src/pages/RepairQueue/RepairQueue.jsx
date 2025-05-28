@@ -139,12 +139,12 @@ const RepairQueue = () => {
                         <button className="p-2 rounded-full hover:bg-gray-100">
                             <Bell className="w-5 h-5 text-gray-600" />
                         </button>
-                        <Link to="/newrepair">
-                            <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
-                                <Plus className="w-5 h-5 mr-1" />
-                                Add Ticket
-                            </button>
-                        </Link>
+                        {/*<Link to="/newrepair">*/}
+                        {/*    <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">*/}
+                        {/*        <Plus className="w-5 h-5 mr-1" />*/}
+                        {/*        Add Ticket*/}
+                        {/*    </button>*/}
+                        {/*</Link>*/}
                     </div>
                 </div>
             </header>
@@ -195,25 +195,32 @@ const RepairQueue = () => {
                                     <h1 className="text-xl font-semibold text-gray-800">Pending Repairs</h1>
 
                                     <div className="flex items-center gap-2">
-                                        <select
-                                            className=" text-sm text-gray-700 px-2 py-1 rounded-lg"
-                                            value={filterBy}
-                                            onChange={(e) => setFilterBy(e.target.value)}
-                                        >
-                                            <option value="serial">Serial Number</option>
-                                            <option value="tracking">Tracking Number</option>
-                                            <option value="device">Device Type</option>
-                                            <option value="customer">Customer Name</option>
-                                        </select>
+                                        {/*<select*/}
+                                        {/*    className=" text-sm text-gray-700 px-2 py-1 rounded-lg"*/}
+                                        {/*    value={filterBy}*/}
+                                        {/*    onChange={(e) => setFilterBy(e.target.value)}*/}
+                                        {/*>*/}
+                                        {/*    <option value="serial">Serial Number</option>*/}
+                                        {/*    <option value="tracking">Tracking Number</option>*/}
+                                        {/*    <option value="device">Device Type</option>*/}
+                                        {/*    <option value="customer">Customer Name</option>*/}
+                                        {/*</select>*/}
 
-                                        <input
-                                            type="text"
-                                            className=" text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                            placeholder={`Search by ${filterByLabel}`}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                        />
+                                        {/*<input*/}
+                                        {/*    type="text"*/}
+                                        {/*    className=" text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"*/}
+                                        {/*    placeholder={`Search by ${filterByLabel}`}*/}
+
+                                        {/*    value={searchQuery}*/}
+                                        {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
+                                        {/*/>*/}
                                     </div>
+                                    <Link to="/newrepair">
+                                        <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                            <Plus className="w-5 h-5 mr-1" />
+                                            Add Ticket
+                                        </button>
+                                    </Link>
                                 </div>
                                 {warrantyRequests.length === 0 ? (
                                     <p className="text-center text-gray-600">
