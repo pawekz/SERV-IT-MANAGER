@@ -12,6 +12,7 @@ import {
     Plus,
     CalendarIcon,
 } from "lucide-react"
+import { Link } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import {useEffect, useState} from "react";
 
@@ -157,10 +158,12 @@ const DashboardPage = () => {
                             <button className="p-2 rounded-full hover:bg-gray-100">
                                 <Bell className="w-5 h-5 text-gray-600" />
                             </button>
-                            <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
-                                <Plus className="w-5 h-5 mr-1" />
-                                Add Ticket
-                            </button>
+                            <Link to="/newrepair">
+                                <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                    <Plus className="w-5 h-5 mr-1" />
+                                    Add Ticket
+                                </button>
+                            </Link>
                         </div>
                     </div>
                 </header>
