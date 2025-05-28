@@ -47,9 +47,9 @@ public class RepairTicketController {
     public ResponseEntity<?> checkInRepairTicket(@ModelAttribute CheckInRepairTicketRequestDTO req) {
         try {
             RepairTicketEntity ticket = repairTicketService.checkInRepairTicket(req);
-            return ResponseEntity.ok(ticket);
+            return ResponseEntity.status(HttpStatus.OK).body(ticket);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -57,7 +57,7 @@ public class RepairTicketController {
     public ResponseEntity<String> generateRepairTicketNumber() {
         try {
             String ticketNumber = repairTicketService.generateRepairTicketNumber();
-            return ResponseEntity.ok(ticketNumber);
+            return ResponseEntity.status(HttpStatus.OK).body(ticketNumber);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate ticket number");
         }
@@ -116,7 +116,9 @@ public class RepairTicketController {
     @GetMapping("/getAllRepairTickets")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
         List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
-        return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+        return repairTickets.isEmpty()
+                ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
     }
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
@@ -126,7 +128,9 @@ public class RepairTicketController {
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
         try {
             List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
-            return repairTickets.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(repairTickets);
+            return repairTickets.isEmpty()
+                    ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                    : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
