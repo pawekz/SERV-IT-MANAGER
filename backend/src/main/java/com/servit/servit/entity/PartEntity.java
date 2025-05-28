@@ -1,5 +1,6 @@
 package com.servit.servit.entity;
 
+import com.servit.servit.enumeration.PartEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -51,4 +52,15 @@ public class PartEntity {
 
     @Column(name = "added_by", nullable = false)
     private String addedBy;
+
+    /*attached the repair ticket number here, see Customer Initiated RMA */
+    @Column(name = "quotation_part", nullable = false, columnDefinition = "int default 0")
+    private Integer quotationPart = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", nullable = false)
+    private PartEnum sourceType;
+
+    @Column(name = "is_reserved", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isReserved = false;
 } 

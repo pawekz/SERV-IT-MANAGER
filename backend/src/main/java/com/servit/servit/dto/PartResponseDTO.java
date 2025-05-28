@@ -1,5 +1,6 @@
 package com.servit.servit.dto;
 
+import com.servit.servit.enumeration.PartEnum;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,4 +20,7 @@ public class PartResponseDTO {
     private LocalDateTime datePurchasedByCustomer;
     private LocalDateTime warrantyExpiration;
     private String addedBy;
+    private Integer quotationPart;
+    private PartEnum sourceType;
+    private Boolean isReserved;
 } 
