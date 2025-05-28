@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Home } from "lucide-react";
+import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Home, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // Create a completely separate NavigationPanel component
@@ -63,6 +63,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const [ticketNumber, setTicketNumber] = useState("");
     const [photoFiles, setPhotoFiles] = useState([]);
 
+    const [isTamperModalOpen, setIsTamperModalOpen] = useState(false);
+
     const [formData, setFormData] = useState({
         ticketNumber: "",
         customerName: "",
@@ -80,6 +82,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         technicianEmail: userData.email || "",
         technicianName: (userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""),
         repairPhotos: [],
+        isDeviceTampered: false,
         ...initialFormData
     });
 
@@ -150,6 +153,22 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         navigate('/dashboard');
     };
 
+    const openTamperModal = () => {
+        setIsTamperModalOpen(true);
+    };
+
+    const closeTamperModal = () => {
+        setIsTamperModalOpen(false);
+    };
+
+    const handleTamperChange = (e) => {
+        const isTampered = e.target.checked;
+        setFormData(prev => ({
+            ...prev,
+            isDeviceTampered: isTampered
+        }));
+    };
+
     useEffect(() => {
         const fetchRepairTicketNumber = async () => {
             try {
@@ -184,6 +203,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         };
         fetchRepairTicketNumber();
     }, []);
+
+    const showQuestionMark = formData.deviceSerialNumber && formData.deviceSerialNumber.trim() !== '';
 
     return (
         <>
@@ -334,14 +355,25 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="deviceSerialNumber" className="block text-sm font-medium text-gray-700">Serial Number:</label>
-                                        <input
-                                            id="deviceSerialNumber"
-                                            value={formData.deviceSerialNumber}
-                                            onChange={handleChange}
-                                            placeholder="Enter serial number"
-                                            required
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
-                                        />
+                                        <div className="relative flex items-center">
+                                            <input
+                                                id="deviceSerialNumber"
+                                                value={formData.deviceSerialNumber}
+                                                onChange={handleChange}
+                                                placeholder="Enter serial number"
+                                                required
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            />
+                                            {showQuestionMark && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={openTamperModal}
+                                                    className="absolute right-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                >
+                                                    <HelpCircle size={20} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="deviceColor" className="block text-sm font-medium text-gray-700">Color:</label>
@@ -532,6 +564,62 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                         </form>
                     </div>
                 </div>
+                
+                {/* Tamper Check Modal */}
+                {isTamperModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+                        <div className="relative bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                            <button
+                                className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
+                                onClick={closeTamperModal}
+                            >
+                                <X size={24} />
+                            </button>
+                            <h3 className="text-xl font-semibold mb-4">Device Tamper Check</h3>
+                            <p className="text-gray-700 mb-4">Is the device tampered with?</p>
+                            
+                            <div className="space-y-4">
+                                <div className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        id="deviceTamperedYes"
+                                        name="deviceTampered"
+                                        checked={formData.isDeviceTampered === true}
+                                        onChange={() => setFormData(prev => ({ ...prev, isDeviceTampered: true }))}
+                                        className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                                    />
+                                    <label htmlFor="deviceTamperedYes" className="ml-2 block text-sm font-medium text-gray-700">
+                                        Yes
+                                    </label>
+                                </div>
+                                <div className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        id="deviceTamperedNo"
+                                        name="deviceTampered"
+                                        checked={formData.isDeviceTampered === false}
+                                        onChange={() => setFormData(prev => ({ ...prev, isDeviceTampered: false }))}
+                                        className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                                    />
+                                    <label htmlFor="deviceTamperedNo" className="ml-2 block text-sm font-medium text-gray-700">
+                                        No
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    type="button"
+                                    onClick={closeTamperModal}
+                                    className="px-4 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
                 {imageViewerOpen && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
