@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 public class DigitalSignatureEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "signature_id")
     private Long digitalSignatureId;
+
 
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
@@ -21,5 +23,10 @@ public class DigitalSignatureEntity {
     @JoinColumn(name = "repair_ticket_id")
     @JsonBackReference
     private RepairTicketEntity repairTicket;
+
+    @OneToOne
+    @JoinColumn(name = "warranty_id")
+    @JsonBackReference
+    private WarrantyEntity warranty;
 
 }
