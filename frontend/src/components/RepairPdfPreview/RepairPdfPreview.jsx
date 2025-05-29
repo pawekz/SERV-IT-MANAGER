@@ -1,0 +1,99 @@
+import { useState } from "react";
+import { PDFViewer } from "@react-pdf/renderer";
+import PdfDocument from "../PdfDocument/PdfDocument.jsx";
+
+function dataURLtoBlob(dataURL) {
+    const [header, base64] = dataURL.split(",");
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(base64);
+    const array = Array.from(binary, (char) => char.charCodeAt(0));
+    return new Blob([new Uint8Array(array)], { type: mime });
+}
+
+const RepairPdfPreview = ({ signatureDataURL, formData }) => {
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(null);
+    const [error, setError] = useState(null);
+
+    const handleSubmit = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) throw new Error("Not authenticated. Please log in.");
+            const form = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+                if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
+                    form.append(key, value.toString());
+            });
+            if (signatureDataURL) {
+                const signatureBlob = dataURLtoBlob(signatureDataURL);
+                form.append("digitalSignature", signatureBlob, "signature.png");
+            } else {
+                throw new Error("Digital signature is required");
+            }
+            if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
+                formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
+                    if (base64DataURL) {
+                        const blob = dataURLtoBlob(base64DataURL);
+                        form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                    }
+                });
+            }
+            const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: form,
+            });
+            if (!response.ok) {
+                let errorMessage;
+                try {
+                    const errorData = await response.text();
+                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                } catch (e) {
+                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+            const result = await response.json();
+            setSuccess(result);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="w-full flex justify-center py-8">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl w-full">
+                <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4">
+                    <PDFViewer width="100%" height="600">
+                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                    </PDFViewer>
+                </div>
+                {success && (
+                    <div className="mt-4 text-center text-green-600 font-bold">
+                        Ticket successfully created! Ticket #: {success.ticketNumber}
+                    </div>
+                )}
+                {error && (
+                    <div className="mt-4 text-center text-red-600 font-bold">
+                        {error}
+                    </div>
+                )}
+                <div className="flex justify-end mt-6">
+                    <button
+                        className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                        onClick={handleSubmit}
+                        disabled={loading || success}
+                    >
+                        {loading ? "Submitting..." : success ? "Submitted" : "Submit"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default RepairPdfPreview;

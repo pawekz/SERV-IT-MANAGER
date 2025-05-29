@@ -14,14 +14,13 @@ function dataURLtoBlob(dataURL) {
 }
 
 // --- Main Component ---
-const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
+const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
     // --- State ---
     const canvasRef = useRef(null);
     const [context, setContext] = useState(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [isEmpty, setIsEmpty] = useState(true);
     const [signatureDataURL, setSignatureDataURL] = useState(null);
-    const [showPDF, setShowPDF] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
 
@@ -112,51 +111,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
             (field) => !data[field] || data[field].trim() === ""
         );
         if (missingFields.length > 0) return `Missing required fields: ${missingFields.join(", ")}`;
-        if (!data.signatureDataURL) return "Digital signature is required";
         return null;
-    };
-
-    const submitRepairTicket = async (sigDataUrl = signatureDataURL) => {
-        const token = localStorage.getItem("authToken");
-        if (!token) throw new Error("Not authenticated. Please log in.");
-        const form = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
-                form.append(key, value.toString());
-        });
-        const signatureToUse = sigDataUrl || signatureDataURL;
-        if (signatureToUse) {
-            const signatureBlob = dataURLtoBlob(signatureToUse);
-            form.append("digitalSignature", signatureBlob, "signature.png");
-        } else {
-            throw new Error("Digital signature is required");
-        }
-        if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
-            formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
-                if (base64DataURL) {
-                    const blob = dataURLtoBlob(base64DataURL);
-                    form.append("repairPhotos", blob, `photo-${index + 1}.png`);
-                }
-            });
-        }
-        const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: form,
-        });
-        if (!response.ok) {
-            let errorMessage;
-            try {
-                const errorData = await response.text();
-                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-            } catch (e) {
-                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-            }
-            throw new Error(errorMessage);
-        }
-        const result = await response.json();
-        alert("Repair ticket submitted successfully!");
-        return result;
     };
 
     const handleNext = async () => {
@@ -176,29 +131,13 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
             alert(validationError);
             return;
         }
-        setShowPDF(true);
-        try {
-            await submitRepairTicket(dataUrl);
-        } catch {
-            alert("Failed to submit the form. Please try again.");
+        if (onSubmit) {
+            onSubmit(dataUrl);
         }
     };
 
-    // --- Render ---
     return (
         <div className="w-full flex flex-row items-start justify-center py-8 gap-8 px-4 max-w-[1000px] mx-auto">
-            {/* Left Side for Terms and Conditions */}
-            {!showPDF ? (
-                <></>
-            ) : (
-                <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
-                    <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
-                        <PDFViewer width="100%" height="600">
-                            <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
-                        </PDFViewer>
-                    </div>
-                </div>
-            )}
             {/* Signature Panel */}
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden min-w-[500px]">
                 <div className="flex w-full">
@@ -271,7 +210,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                                     onClick={handleNext}
                                     className="px-6 py-2 bg-[#33e407] hover:bg-[#2dc406] text-white rounded-md transition-colors"
                                 >
-                                    Submit
+                                    Next
                                 </button>
                             </div>
                         </div>
