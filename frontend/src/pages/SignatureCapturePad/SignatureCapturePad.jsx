@@ -1,172 +1,129 @@
-import { useRef, useState, useEffect } from "react"
-import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx"
-import { PDFViewer } from '@react-pdf/renderer'
-import TermsEditor from "../TermsEditor/TermsEditor.jsx"
-import { ArrowLeft, ArrowRight, Home } from "lucide-react" // Import required icons
+import { useRef, useState, useEffect } from "react";
+import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx";
+import { PDFViewer } from "@react-pdf/renderer";
+import TermsEditor from "../TermsEditor/TermsEditor.jsx";
+import { ArrowLeft, ArrowRight, Home, X } from "lucide-react";
 
+// --- Utility Functions ---
+function dataURLtoBlob(dataURL) {
+    const [header, base64] = dataURL.split(",");
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(base64);
+    const array = Array.from(binary, (char) => char.charCodeAt(0));
+    return new Blob([new Uint8Array(array)], { type: mime });
+}
+
+// --- Main Component ---
 const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
-    const canvasRef = useRef(null)
-    const [isDrawing, setIsDrawing] = useState(false)
-    const [context, setContext] = useState(null)
-    const [isEmpty, setIsEmpty] = useState(true)
-    const [signatureDataURL, setSignatureDataURL] = useState(null)
-    const [showPDF, setShowPDF] = useState(false)
-    const [termsAccepted, setTermsAccepted] = useState(false)
+    // --- State ---
+    const canvasRef = useRef(null);
+    const [context, setContext] = useState(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [isEmpty, setIsEmpty] = useState(true);
+    const [signatureDataURL, setSignatureDataURL] = useState(null);
+    const [showPDF, setShowPDF] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
 
     const handleBack = () => {
         onBack()
     }
 
-    // Added function for the "Back" button in the floating nav
-    const handleGoBack = () => {
-        onBack()
-    }
-
-    // Added function for the "Dashboard" button
-    const handleReturnToDashboard = () => {
-        if (onDashboard && typeof onDashboard === 'function') {
-            onDashboard()
-        } else {
-            // Fallback navigation if onDashboard prop is not provided
-            window.location.href = '/dashboard'
-        }
-    }
-
+    // --- Signature Pad Logic ---
     useEffect(() => {
-        const canvas = canvasRef.current
-        const ctx = canvas.getContext("2d")
-
-        ctx.lineWidth = 2
-        ctx.lineCap = "round"
-        ctx.strokeStyle = "#000000"
-
-        canvas.width = canvas.offsetWidth
-        canvas.height = canvas.offsetHeight
-
-        ctx.fillStyle = "#fafafa"
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-        setContext(ctx)
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000000";
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        ctx.fillStyle = "#fafafa";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        setContext(ctx);
 
         const handleResize = () => {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-            canvas.width = canvas.offsetWidth
-            canvas.height = canvas.offsetHeight
-            ctx.fillStyle = "#fafafa"
-            ctx.fillRect(0, 0, canvas.width, canvas.height)
-            ctx.putImageData(imageData, 0, 0)
-            ctx.lineWidth = 2
-            ctx.lineCap = "round"
-            ctx.strokeStyle = "#000000"
-        }
-
-        window.addEventListener("resize", handleResize)
-
-        return () => {
-            window.removeEventListener("resize", handleResize)
-        }
-    }, [])
-
-    const startDrawing = (e) => {
-        const { offsetX, offsetY } = getCoordinates(e)
-        context.beginPath()
-        context.moveTo(offsetX, offsetY)
-        setIsDrawing(true)
-        setIsEmpty(false)
-    }
-
-    const draw = (e) => {
-        if (!isDrawing) return
-
-        const { offsetX, offsetY } = getCoordinates(e)
-        context.lineTo(offsetX, offsetY)
-        context.stroke()
-    }
-
-    const stopDrawing = () => {
-        if (isDrawing) {
-            context.closePath()
-            setIsDrawing(false)
-        }
-    }
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.fillStyle = "#fafafa";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.putImageData(imageData, 0, 0);
+            ctx.lineWidth = 2;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "#000000";
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const getCoordinates = (e) => {
         if (e.type.includes("touch")) {
-            const rect = canvasRef.current.getBoundingClientRect()
-            const touch = e.touches[0] || e.changedTouches[0]
+            const rect = canvasRef.current.getBoundingClientRect();
+            const touch = e.touches[0] || e.changedTouches[0];
             return {
                 offsetX: touch.clientX - rect.left,
                 offsetY: touch.clientY - rect.top,
-            }
+            };
         } else {
             return {
                 offsetX: e.nativeEvent.offsetX,
                 offsetY: e.nativeEvent.offsetY,
-            }
+            };
         }
-    }
+    };
+
+    const startDrawing = (e) => {
+        const { offsetX, offsetY } = getCoordinates(e);
+        context.beginPath();
+        context.moveTo(offsetX, offsetY);
+        setIsDrawing(true);
+        setIsEmpty(false);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const { offsetX, offsetY } = getCoordinates(e);
+        context.lineTo(offsetX, offsetY);
+        context.stroke();
+    };
+
+    const stopDrawing = () => {
+        if (isDrawing) {
+            context.closePath();
+            setIsDrawing(false);
+        }
+    };
 
     const clearSignature = () => {
-        const canvas = canvasRef.current
-        context.fillStyle = "#fafafa"
-        context.fillRect(0, 0, canvas.width, canvas.height)
-        setIsEmpty(true)
-    }
+        const canvas = canvasRef.current;
+        context.fillStyle = "#fafafa";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        setIsEmpty(true);
+    };
 
-    const saveSignature = () => {
-        if (isEmpty) {
-            alert("Please provide a signature before saving.")
-            return
-        }
-
-        const canvas = canvasRef.current
-        const dataUrl = canvas.toDataURL("image/png")
-        setSignatureDataURL(dataUrl)
-    }
-
-    function dataURLtoBlob(dataURL) {
-        const [header, base64] = dataURL.split(',')
-        const mime = header.match(/:(.*?);/)[1]
-        const binary = atob(base64)
-        const array = Array.from(binary, (char) => char.charCodeAt(0))
-        return new Blob([new Uint8Array(array)], { type: mime })
-    }
-
+    // --- Form Validation & Submission ---
     const validateFormData = (data = formData) => {
         const requiredFields = [
-            'ticketNumber', 'customerName', 'customerEmail', 'customerPhoneNumber', 'deviceColor',
-            'deviceType', 'deviceBrand', 'deviceModel', 'reportedIssue', 'accessories',
+            "ticketNumber", "customerName", "customerEmail", "customerPhoneNumber", "deviceColor",
+            "deviceType", "deviceBrand", "deviceModel", "reportedIssue", "accessories",
         ];
-
-        const missingFields = requiredFields.filter(field =>
-            !data[field] || data[field].trim() === ''
+        const missingFields = requiredFields.filter(
+            (field) => !data[field] || data[field].trim() === ""
         );
-
-        if (missingFields.length > 0) {
-            return `Missing required fields: ${missingFields.join(', ')}`;
-        }
-
-        if (!data.signatureDataURL) {
-            return 'Digital signature is required';
-        }
-
+        if (missingFields.length > 0) return `Missing required fields: ${missingFields.join(", ")}`;
+        if (!data.signatureDataURL) return "Digital signature is required";
         return null;
     };
 
     const submitRepairTicket = async (sigDataUrl = signatureDataURL) => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            throw new Error("Not authenticated. Please log in.");
-        }
-
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("Not authenticated. Please log in.");
         const form = new FormData();
-
         Object.entries(formData).forEach(([key, value]) => {
-            if (key !== 'repairPhotos' && key !== 'digitalSignature' && value !== null && value !== undefined) {
+            if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
                 form.append(key, value.toString());
-            }
         });
-
         const signatureToUse = sigDataUrl || signatureDataURL;
         if (signatureToUse) {
             const signatureBlob = dataURLtoBlob(signatureToUse);
@@ -174,7 +131,6 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
         } else {
             throw new Error("Digital signature is required");
         }
-
         if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
             formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
                 if (base64DataURL) {
@@ -183,33 +139,24 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                 }
             });
         }
-
-        try {
-            const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: form
-            });
-
-            if (!response.ok) {
-                let errorMessage;
-                try {
-                    const errorData = await response.text();
-                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                } catch (e) {
-                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                }
-                throw new Error(errorMessage);
+        const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: form,
+        });
+        if (!response.ok) {
+            let errorMessage;
+            try {
+                const errorData = await response.text();
+                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+            } catch (e) {
+                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
             }
-
-            const result = await response.json();
-            alert("Repair ticket submitted successfully!");
-            return result;
-        } catch (error) {
-            throw error;
+            throw new Error(errorMessage);
         }
+        const result = await response.json();
+        alert("Repair ticket submitted successfully!");
+        return result;
     };
 
     const handleNext = async () => {
@@ -221,102 +168,38 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
             alert("You must accept the terms and conditions before proceeding.");
             return;
         }
-
-        // Save signature and get the dataURL synchronously
         const canvas = canvasRef.current;
         const dataUrl = canvas.toDataURL("image/png");
         setSignatureDataURL(dataUrl);
-
-        // Use the freshly captured dataUrl for validation and submission
         const validationError = validateFormData({ ...formData, signatureDataURL: dataUrl });
         if (validationError) {
             alert(validationError);
             return;
         }
-
         setShowPDF(true);
-
         try {
             await submitRepairTicket(dataUrl);
-        } catch (error) {
+        } catch {
             alert("Failed to submit the form. Please try again.");
         }
     };
-    
-    // Added alias for handleNext to match the button in the floating nav
-    const handleSubmit = handleNext;
 
+    // --- Render ---
     return (
         <div className="w-full flex flex-row items-start justify-center py-8 gap-8 px-4 max-w-[1000px] mx-auto">
-            {/* Navigation panel directly inside the return statement */}
-            <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '80px' }}>
-                <div className="space-y-3">
-                    <button 
-                        type="button" 
-                        onClick={handleGoBack} 
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center" 
-                        title="Go back"
-                    >
-                        <ArrowLeft size={20} className="mr-2" />
-                        <span>Back</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleReturnToDashboard}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                        title="Return to dashboard"
-                    >
-                        <Home size={20} className="mr-2" />
-                        <span>Dashboard</span>
-                    </button>
-                </div>
-            </div>
-            
-            {/* Next Page button on the right side */}
-            <div className="sticky top-[30vh] right-0 w-0 z-[9999]" style={{ position: 'absolute', right: '220px' }}>
-                <div className="space-y-3">
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                        title="Next Page"
-                    >
-                        <span>Next</span>
-                        <ArrowRight size={20} className="ml-2" />
-                    </button>
-                </div>
-            </div>
-            
             {/* Left Side for Terms and Conditions */}
-            <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
-                {!showPDF ? (
-                    <div>
-                        <label className="flex items-center space-x-2 mb-4">
-                            <input
-                                type="checkbox"
-                                checked={termsAccepted}
-                                onChange={(e) => setTermsAccepted(e.target.checked)}
-                                className="form-checkbox h-5 w-5 text-green-500"
-                            />
-                            <span className="text-gray-700 font-semibold">I accept the terms and conditions</span>
-                        </label>
-
-                        <div className="max-h-[535px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[450px]">
-                            <TermsEditor />
-                        </div>
-                        <p className="text-gray-500 text-sm mt-4">
-                            Please review the terms and conditions before proceeding.
-                        </p>
-                    </div>
-                ) : (
+            {!showPDF ? (
+                <></>
+            ) : (
+                <div className="w-[550px] bg-white rounded-lg shadow-lg p-6 sticky top-8">
                     <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4 min-w-[500px]">
                         <PDFViewer width="100%" height="600">
                             <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
                         </PDFViewer>
                     </div>
-                )}
-            </div>
-            {/* RIght Side for signature */}
+                </div>
+            )}
+            {/* Signature Panel */}
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden min-w-[500px]">
                 <div className="flex w-full">
                     <div className="w-1 bg-[#33e407]"></div>
@@ -329,9 +212,9 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                             <h2 className="text-xl font-semibold text-gray-800 mt-4">Digital Signature</h2>
                             <p className="text-gray-600 mt-1">Sign using mouse, touch, or stylus</p>
                         </div>
-
-                        <p className="text-center text-gray-600 mb-4">Please sign in the box below to complete your claim form</p>
-
+                        <p className="text-center text-gray-600 mb-4">
+                            Please sign in the box below to complete your claim form
+                        </p>
                         <div className="flex-1 max-w-3xl">
                             <canvas
                                 ref={canvasRef}
@@ -344,33 +227,38 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                                 onTouchMove={draw}
                                 onTouchEnd={stopDrawing}
                             ></canvas>
-                            {/*{isEmpty && <div className="absolute bottom-4 left-0 right-0 text-center text-gray-400">Sign here</div>}*/}
                         </div>
-
-                        <div className="flex flex-col items-center space-y-4">
-                            <div className="flex space-x-4">
-                                <button
-                                    onClick={clearSignature}
-                                    className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-5 w-5 mr-1"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
+                        {/* Terms Checkbox */}
+                        <label className="flex items-center justify-between my-4 w-full">
+                            <span className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={termsAccepted}
+                                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                                    className="form-checkbox h-5 w-5 text-green-500"
+                                />
+                                <span className="text-gray-700 font-semibold">
+                                    I accept the{" "}
+                                    <button
+                                        type="button"
+                                        className="underline text-[#33e407] hover:text-[#2dc406] focus:outline-none"
+                                        onClick={() => setShowTermsModal(true)}
                                     >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        />
-                                    </svg>
-                                    Clear
-                                </button>
-                            </div>
-
+                                        terms and conditions
+                                    </button>
+                                </span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={clearSignature}
+                                className="text-gray-500 hover:text-red-500 underline ml-4"
+                                style={{ fontWeight: 500 }}
+                            >
+                                Clear
+                            </button>
+                        </label>
+                        {/* Signature Controls */}
+                        <div className="flex flex-col items-center space-y-4">
                             <div className="flex w-full justify-between mt-4">
                                 <button
                                     onClick={handleBack}
@@ -378,6 +266,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                                 >
                                     Back
                                 </button>
+
                                 <button
                                     onClick={handleNext}
                                     className="px-6 py-2 bg-[#33e407] hover:bg-[#2dc406] text-white rounded-md transition-colors"
@@ -386,17 +275,45 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                                 </button>
                             </div>
                         </div>
-
                         <p className="text-center text-gray-500 text-sm mt-6">
                             By signing, you confirm that all information provided is accurate and complete.
                         </p>
                     </div>
                 </div>
             </div>
-
-
+            {showTermsModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                    tabIndex={-1}
+                    aria-modal="true"
+                    role="dialog"
+                    onClick={() => setShowTermsModal(false)} // Close on overlay click
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative animate-scaleIn"
+                        style={{ animation: "scaleIn 0.2s cubic-bezier(0.4,0,0.2,1)" }}
+                        onClick={e => e.stopPropagation()} // Prevent close when clicking inside modal
+                    >
+                        <button
+                            className="absolute top-2 right-2 text-gray-700 hover:text-red-500 focus:outline-none"
+                            onClick={() => setShowTermsModal(false)}
+                            aria-label="Close"
+                        >
+                            <X size={24} />
+                        </button>
+                        <div className="max-h-[60vh] overflow-y-auto border border-gray-200 rounded-md p-4">
+                            <TermsEditor />
+                        </div>
+                    </div>
+                    <style>
+                        {`
+                            [...]
+                        `}
+                    </style>
+                </div>
+            )}
         </div>
-    )
-}
+    );
+};
 
-export default SignatureCapturePad
+export default SignatureCapturePad;
