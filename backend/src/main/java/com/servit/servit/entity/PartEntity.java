@@ -63,4 +63,7 @@ public class PartEntity {
 
     @Column(name = "is_reserved", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isReserved = false;
-} 
+
+    @OneToOne(mappedBy = "item")
+    private WarrantyEntity warranty;
+}
