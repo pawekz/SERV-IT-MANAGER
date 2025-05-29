@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -10,7 +11,7 @@ function dataURLtoBlob(dataURL) {
     return new Blob([new Uint8Array(array)], { type: mime });
 }
 
-const RepairPdfPreview = ({ signatureDataURL, formData }) => {
+const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
@@ -64,25 +65,28 @@ const RepairPdfPreview = ({ signatureDataURL, formData }) => {
         }
     };
 
+
     return (
         <div className="w-full flex justify-center py-8">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl w-full">
-                <div className="max-h-[610px] overflow-y-auto border border-gray-200 rounded-md p-4">
-                    <PDFViewer width="100%" height="600">
+                <div className="max-h-[720px] overflow-y-auto p-4">
+                    <PDFViewer width="100%" height="600px">
                         <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
                     </PDFViewer>
+                    {error && (
+                        <div className="mt-4 text-red-600 text-center">
+                            {error}
+                        </div>
+                    )}
                 </div>
-                {success && (
-                    <div className="mt-4 text-center text-green-600 font-bold">
-                        Ticket successfully created! Ticket #: {success.ticketNumber}
-                    </div>
-                )}
-                {error && (
-                    <div className="mt-4 text-center text-red-600 font-bold">
-                        {error}
-                    </div>
-                )}
-                <div className="flex justify-end mt-6">
+                <div className="flex justify-between mt-6">
+                    <button
+                        className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md focus:outline-none"
+                        onClick={onBack}
+                        disabled={loading}
+                    >
+                        Back
+                    </button>
                     <button
                         className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                         onClick={handleSubmit}

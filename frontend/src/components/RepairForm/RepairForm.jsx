@@ -162,18 +162,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     };
 
     useEffect(() => {
+        if (initialFormData.ticketNumber) {
+            setFormData(prev => ({
+                ...prev,
+                ticketNumber: initialFormData.ticketNumber
+            }));
+            setLoading(false);
+            return;
+        }
         const fetchRepairTicketNumber = async () => {
             try {
                 setLoading(true);
-                const cached = sessionStorage.getItem('repairTicket');
-                if (cached) {
-                    setFormData(prev => ({
-                        ...prev,
-                        ...JSON.parse(cached)
-                    }));
-                    setLoading(false);
-                    return;
-                }
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
                 const response = await fetch(`http://localhost:8080/repairTicket/generateRepairTicketNumber`, {
@@ -196,7 +195,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
             }
         };
         fetchRepairTicketNumber();
-    }, []);
+    }, [initialFormData.ticketNumber]);
 
     const showQuestionMark = formData.deviceSerialNumber && formData.deviceSerialNumber.trim() !== '';
 
