@@ -78,6 +78,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
                             {error}
                         </div>
                     )}
+                    {loading ? "Loading..." : success ? "Repair ticket submitted successfully!" : null}
                 </div>
                 <div className="flex justify-between mt-6">
                     <button

@@ -67,7 +67,7 @@ export default function NewRepair() {
                 </li>
                 <li className={`flex w-full items-center after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
                     step === 2
-                        ? "after:border-[#33e407] dark:after:border-[#33e407] text-[#33e407]"
+                        ? "after:border-[#33e407]/20 dark:after:border-[#33e407]/40"
                         : "after:border-gray-100 dark:after:border-gray-700 text-gray-500 dark:text-gray-700"
                 }`}>
                 <span className={`flex items-center justify-center w-10 h-10 rounded-full lg:h-12 lg:w-12 shrink-0 ${
