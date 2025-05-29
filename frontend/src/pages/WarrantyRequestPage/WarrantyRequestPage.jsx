@@ -212,8 +212,7 @@ const WarrantyRequestPage = () => {
                                             </div>
                                     </div>
 
-                                    {/* Warranty Checker (Only for Customer) */}
-                                    {role === "customer" && (
+
                                         <div className="lg:w-[30%] w-full bg-white rounded-lg shadow-md p-6 h-fit">
                                             <CheckWarranty />
                                             <WarrantyRequest
@@ -222,7 +221,6 @@ const WarrantyRequestPage = () => {
                                                 readonly={false}
                                             />
                                         </div>
-                                    )}
                                 </section>
 
                                 {/* Resolved Warranty Section */}

@@ -57,7 +57,14 @@ public class SecurityConfig {
                                 "/user/changeCurrentUserPhoneNumber",
                                 "/user/updateCurrentUsername",
                                 "/repairTicket/getRepairTicket/*",
-                                "/repairTicket/getRepairTicketDocument/*"
+                                "/repairTicket/getRepairTicketDocument/*",
+                                "/warranty/updatestatus",
+                                "/warranty/generate-number",
+                                "/warranty/checkin",
+                                "/warranty/getWarrantyById/*",
+                                "/warranty/getWarrantiesByCustomerEmail/*",
+                                "/warranty/searchWarrantiesByEmail/*",
+                                "/warranty/getAllWarranties"
                         ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                         .requestMatchers(
                                 "/repairTicket/checkInRepairTicket",
@@ -98,7 +105,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("http://localhost:5175");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
