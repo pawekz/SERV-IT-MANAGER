@@ -145,14 +145,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         }
     };
 
-    const handleGoBack = () => {
-        navigate(-1);
-    };
-
-    const handleReturnToDashboard = () => {
-        navigate('/dashboard');
-    };
-
     const openTamperModal = () => {
         setIsTamperModalOpen(true);
     };
@@ -208,46 +200,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
 
     return (
         <>
-            {/* Navigation panel directly inside the return statement */}
-            <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '150px' }}>
-                <div className="space-y-3">
-                    <button
-                        type="button"
-                        onClick={handleGoBack}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                        title="Go back"
-                    >
-                        <ArrowLeft size={20} className="mr-2" />
-                        <span>Back</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleReturnToDashboard}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                        title="Return to dashboard"
-                    >
-                        <Home size={20} className="mr-2" />
-                        <span>Dashboard</span>
-                    </button>
-                </div>
-            </div>
-            
-            {/* Next Page button on the right side */}
-            <div className="sticky top-[30vh] right-0 w-0 z-[9999]" style={{ position: 'absolute', right: '275px' }}>
-                <div className="space-y-3">
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-                        title="Next Page"
-                    >
-                        <span>Next</span>
-                        <ArrowRight size={20} className="ml-2" />
-                    </button>
-                </div>
-            </div>
-            
             {/* Main content container - completely separate */}
             <div className="container mx-auto py-8 px-4 max-w-4xl">
                 <div className="border-2 border-gray-200 shadow-lg rounded-lg overflow-hidden">
@@ -365,7 +317,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                             />
                                             {showQuestionMark && (
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={openTamperModal}
                                                     className="absolute right-2 text-gray-500 hover:text-gray-700 focus:outline-none"
