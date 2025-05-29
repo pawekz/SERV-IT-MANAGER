@@ -290,8 +290,8 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                     onClick={() => setShowTermsModal(false)} // Close on overlay click
                 >
                     <div
-                        className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative animate-scaleIn"
-                        style={{ animation: "scaleIn 0.2s cubic-bezier(0.4,0,0.2,1)" }}
+                        className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-12 relative animate-scaleIn"
+                        style={{ animation: "scaleIn 0.2s cubic-bezier(0.4,0,0.2,1)", maxWidth: "1100px"}}
                         onClick={e => e.stopPropagation()} // Prevent close when clicking inside modal
                     >
                         <button
@@ -301,7 +301,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard }) => {
                         >
                             <X size={24} />
                         </button>
-                        <div className="max-h-[60vh] overflow-y-auto border border-gray-200 rounded-md p-4">
+                        <div className="max-h-[65vh] overflow-y-auto border border-gray-200 rounded-md p-4">
                             <TermsEditor />
                         </div>
                     </div>

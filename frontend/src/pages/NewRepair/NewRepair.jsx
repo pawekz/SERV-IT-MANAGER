@@ -13,12 +13,12 @@ export default function NewRepair() {
 
     const location = useLocation();
     const [formData, setFormData] = useState(location.state?.formData || {});
-    
+
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
 
             <ol className="flex justify-center items-center w-full max-w-xl mx-auto ml-56">
-                {/* Step 1: now uses Step 2's SVG (ID card/user) */}
+
                 <li className={`flex w-full items-center text-[#33e407] dark:text-[#33e407] after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
                     cameFromCheckIn
                         ? "after:border-[#33e407]/20 dark:after:border-[#33e407]/40"
@@ -37,7 +37,6 @@ export default function NewRepair() {
         </span>
                 </li>
 
-                {/* Step 2: now uses Step 3's SVG (document/text) */}
                 <li
                     className={`flex w-full items-center after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
                         cameFromCheckIn
@@ -64,7 +63,6 @@ export default function NewRepair() {
                 </span>
                 </li>
 
-                {/* Step 3: now uses Step 1's SVG (checkmark) */}
                 <li className="flex items-center w-full">
         <span className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full lg:h-12 lg:w-12 dark:bg-gray-700 shrink-0">
             <svg className="w-3.5 h-3.5 text-gray-500 lg:w-4 lg:h-4 dark:text-gray-100" aria-hidden="true"
@@ -76,7 +74,6 @@ export default function NewRepair() {
                 </li>
             </ol>
 
-            {/* Show SignatureCapturePad only if cameFromCheckIn is true, else show RepairForm */}
             {cameFromCheckIn ? (
                 <SignatureCapturePad
                     onBack={() => setCameFromCheckIn(false)}

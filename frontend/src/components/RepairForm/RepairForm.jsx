@@ -167,7 +167,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                 setLoading(true);
                 const cached = sessionStorage.getItem('repairTicket');
                 if (cached) {
-                    setFormData(JSON.parse(cached));
+                    setFormData(prev => ({
+                        ...prev,
+                        ...JSON.parse(cached)
+                    }));
                     setLoading(false);
                     return;
                 }
@@ -182,11 +185,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.text();
-                setFormData((prev) => ({
+                setFormData(prev => ({
                     ...prev,
                     ticketNumber: data
                 }));
-                setTicketNumber(data);
             } catch (err) {
                 setError(err.message);
             } finally {
