@@ -258,15 +258,24 @@ const PdfDocument = ({signatureDataURL, formData}) => (
                 <Text style={styles.textarea}>{formData.reportedIssue}</Text>
             </View>
 
-            {/* Device Condition */}
-            {/*<View style={styles.sectionBox}>*/}
-            {/*    <View style={styles.sectionTitleBar}>*/}
-            {/*        <Text style={styles.sectionTitle}>DEVICE CONDITION</Text>*/}
-            {/*    </View>*/}
-            {/*    <View style={styles.devicePhotoBox}>*/}
-            {/*        <Text style={styles.devicePhotoLabel}>Photo of device condition</Text>*/}
-            {/*    </View>*/}
-            {/*</View>*/}
+            {/* Repair Photos */}
+            <View style={styles.sectionBox}>
+                <View style={styles.sectionTitleBar}>
+                    <Text style={styles.sectionTitle}>REPAIR PHOTOS</Text>
+                </View>
+                {formData.repairPhotos && formData.repairPhotos.length > 0 ? (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {formData.repairPhotos.slice(0, 3).map((src, idx) => (
+                            <View key={idx} style={styles.devicePhotoBox}>
+                                <Text style={styles.devicePhotoLabel}>Photo {idx + 1}</Text>
+                                <Image src={src} style={styles.devicePhoto} />
+                            </View>
+                        ))}
+                    </View>
+                ) : (
+                    <Text style={styles.label}>No device photos provided.</Text>
+                )}
+            </View>
             {/* Terms and Conditions */}
             <View style={styles.sectionBox}>
                 <View style={styles.checkboxRow}>
