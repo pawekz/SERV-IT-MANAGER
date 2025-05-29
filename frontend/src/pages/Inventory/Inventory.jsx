@@ -19,12 +19,18 @@ const Inventory = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [partToDelete, setPartToDelete] = useState(null);
 
+    // For multiple serial numbers
+    const [serialNumbers, setSerialNumbers] = useState([""]);
+
     // Edit functionality state variables
     const [showEditModal, setShowEditModal] = useState(false);
     const [editPart, setEditPart] = useState(null);
     const [editLoading, setEditLoading] = useState(false);
     const [editSuccess, setEditSuccess] = useState(false);
     const [editError, setEditError] = useState(null);
+
+    // For editing serial numbers
+    const [editSerialNumbers, setEditSerialNumbers] = useState([""]);
 
     // New part form state
     const [newPart, setNewPart] = useState({
@@ -49,6 +55,48 @@ const Inventory = () => {
             return "Low Stock";
         } else {
             return "In Stock";
+        }
+    };
+
+    // Add a serial number field
+    const addSerialNumberField = () => {
+        setSerialNumbers([...serialNumbers, ""]);
+    };
+
+    // Update a serial number at specific index
+    const updateSerialNumber = (index, value) => {
+        const updated = [...serialNumbers];
+        updated[index] = value;
+        setSerialNumbers(updated);
+    };
+
+    // Remove a serial number field
+    const removeSerialNumberField = (index) => {
+        if (serialNumbers.length > 1) {
+            const updated = [...serialNumbers];
+            updated.splice(index, 1);
+            setSerialNumbers(updated);
+        }
+    };
+
+    // Add an edit serial number field
+    const addEditSerialNumberField = () => {
+        setEditSerialNumbers([...editSerialNumbers, ""]);
+    };
+
+    // Update an edit serial number at specific index
+    const updateEditSerialNumber = (index, value) => {
+        const updated = [...editSerialNumbers];
+        updated[index] = value;
+        setEditSerialNumbers(updated);
+    };
+
+    // Remove an edit serial number field
+    const removeEditSerialNumberField = (index) => {
+        if (editSerialNumbers.length > 1) {
+            const updated = [...editSerialNumbers];
+            updated.splice(index, 1);
+            setEditSerialNumbers(updated);
         }
     };
 
@@ -232,6 +280,14 @@ const Inventory = () => {
     // Handle edit button click
     const handleEditClick = (item) => {
         setEditPart({...item});
+
+        // Initialize editSerialNumbers based on the part's serial number
+        // If the serialNumber contains commas, treat it as multiple serial numbers
+        const serialNumbersArray = item.serialNumber ?
+            item.serialNumber.split(',').map(sn => sn.trim()) :
+            [""];
+
+        setEditSerialNumbers(serialNumbersArray);
         setShowEditModal(true);
     };
 
@@ -260,6 +316,11 @@ const Inventory = () => {
             // Get the user's email from the token for the edit operation
             const userEmail = getUserEmailFromToken(freshToken);
 
+            // Join all serial numbers with commas
+            const combinedSerialNumbers = editSerialNumbers
+                .filter(sn => sn.trim() !== "")
+                .join(", ");
+
             // Format the data for the API
             const updateData = {
                 partNumber: editPart.partNumber || "",
@@ -268,7 +329,7 @@ const Inventory = () => {
                 unitCost: parseFloat(editPart.unitCost) || 0,
                 currentStock: parseInt(editPart.currentStock) || 0,
                 lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
-                serialNumber: editPart.serialNumber || "",
+                serialNumber: combinedSerialNumbers,
                 isDeleted: editPart.isDeleted || false,
                 dateAdded: editPart.dateAdded || "",
                 datePurchasedByCustomer: editPart.datePurchasedByCustomer || "",
@@ -303,13 +364,13 @@ const Inventory = () => {
                         ? {
                             ...item,
                             name: editPart.name,
-                            sku: editPart.partNumber || editPart.serialNumber,
+                            sku: editPart.partNumber || combinedSerialNumbers,
                             currentStock: updatedCurrentStock,
                             partNumber: editPart.partNumber,
                             description: editPart.description,
                             unitCost: parseFloat(editPart.unitCost) || 0,
                             lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
-                            serialNumber: editPart.serialNumber,
+                            serialNumber: combinedSerialNumbers,
                             availability: {
                                 status: newStatus,
                                 quantity: updatedCurrentStock
@@ -352,9 +413,15 @@ const Inventory = () => {
             const userEmail = getUserEmailFromToken(freshToken);
             console.log("User email extracted from token:", userEmail);
 
+            // Combine all serial numbers with commas
+            const combinedSerialNumbers = serialNumbers
+                .filter(sn => sn.trim() !== "")
+                .join(", ");
+
             // Format the data to match API expectations
             const partData = {
                 ...newPart,
+                serialNumber: combinedSerialNumbers,
                 unitCost: parseFloat(newPart.unitCost),
                 currentStock: parseInt(newPart.currentStock),
                 lowStockThreshold: parseInt(newPart.lowStockThreshold),
@@ -392,6 +459,9 @@ const Inventory = () => {
                 warrantyExpiration: "",
                 addedBy: ""
             });
+
+            // Reset serial numbers
+            setSerialNumbers([""]);
 
             // Refresh inventory after successful add
             await fetchInventory();
@@ -461,7 +531,6 @@ const Inventory = () => {
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-[#2bb406] transition-colors"
-                            // className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-opacity-90 transition-colors"
                         >
                             <Plus size={16} className="mr-1" />
                             Add New Part
@@ -542,46 +611,41 @@ const Inventory = () => {
                                     paginatedItems.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="ml-2">
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {item.name || "Unnamed Part"}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            SKU: {item.sku || "N/A"}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <div className="text-sm font-medium text-gray-900">{item.sku}</div>
+                                                <div className="text-sm text-gray-500">{item.category}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900 max-w-xs truncate">{item.name}</div>
                                                 <button
-                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                                     onClick={() => handleDescriptionClick(item)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 mt-1"
                                                 >
-                                                    View Description
+                                                    View details
                                                 </button>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span
-                                                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.availability?.status)}`}
-                                                >
-                                                    {item.availability?.status || "Unknown"}
-                                                </span>
-                                                <span className="ml-2 text-xs text-gray-500">
-                                                    Qty: {item.availability?.quantity || 0}
-                                                </span>
+                                                <div className="flex items-center">
+                                                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.availability?.status)}`}>
+                                                        {item.availability?.status}
+                                                    </span>
+                                                    <span className="ml-2 text-sm text-gray-500">
+                                                        {item.availability?.quantity} in stock
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     <button
                                                         onClick={() => handleEditClick(item)}
-                                                        className="text-blue-600 hover:text-blue-800"
+                                                        className="text-indigo-600 hover:text-indigo-900"
+                                                        title="Edit part"
                                                     >
                                                         <Pen size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeletePart(item.id)}
-                                                        className="text-red-600 hover:text-red-800"
+                                                        className="text-red-600 hover:text-red-900"
+                                                        title="Delete part"
                                                     >
                                                         <Trash size={16} />
                                                     </button>
@@ -709,40 +773,61 @@ const Inventory = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
-                                    <input
-                                        type="text"
-                                        name="serialNumber"
-                                        value={newPart.serialNumber}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">
+                                        Serial Numbers
+                                        <button
+                                            type="button"
+                                            onClick={addSerialNumberField}
+                                            className="ml-2 p-1 text-blue-500 hover:text-blue-700 focus:outline-none"
+                                        >
+                                            <Plus size={16} />
+                                        </button>
+                                    </label>
+                                    {serialNumbers.map((serialNum, index) => (
+                                        <div key={index} className="flex items-center mb-2">
+                                            <input
+                                                type="text"
+                                                value={serialNum}
+                                                onChange={(e) => updateSerialNumber(index, e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                            {index > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeSerialNumberField(index)}
+                                                    className="ml-2 p-1 text-red-500 hover:text-red-700 focus:outline-none"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>
-                                    <input
-                                        type="number"
-                                        name="currentStock"
-                                        value={newPart.currentStock}
-                                        onChange={handleInputChange}
-                                        min="0"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
+                                    {/*<label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>*/}
+                                    {/*<input*/}
+                                    {/*    type="number"*/}
+                                    {/*    name="currentStock"*/}
+                                    {/*    value={newPart.currentStock}*/}
+                                    {/*    onChange={handleInputChange}*/}
+                                    {/*    min="0"*/}
+                                    {/*    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"*/}
+                                    {/*/>*/}
                                 </div>
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>
-                                    <input
-                                        type="number"
-                                        name="lowStockThreshold"
-                                        value={newPart.lowStockThreshold}
-                                        onChange={handleInputChange}
-                                        min="0"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
+                                {/*<div>*/}
+                                {/*    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>*/}
+                                {/*    <input*/}
+                                {/*        type="number"*/}
+                                {/*        name="lowStockThreshold"*/}
+                                {/*        value={newPart.lowStockThreshold}*/}
+                                {/*        onChange={handleInputChange}*/}
+                                {/*        min="0"*/}
+                                {/*        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"*/}
+                                {/*    />*/}
+                                {/*</div>*/}
                             </div>
 
                             <div className="flex justify-end mt-6">
@@ -847,14 +932,35 @@ const Inventory = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
-                                    <input
-                                        type="text"
-                                        name="serialNumber"
-                                        value={editPart.serialNumber || ""}
-                                        onChange={handleEditInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">
+                                        Serial Numbers
+                                        <button
+                                            type="button"
+                                            onClick={addEditSerialNumberField}
+                                            className="ml-2 p-1 text-blue-500 hover:text-blue-700 focus:outline-none"
+                                        >
+                                            <Plus size={16} />
+                                        </button>
+                                    </label>
+                                    {editSerialNumbers.map((serialNum, index) => (
+                                        <div key={index} className="flex items-center mb-2">
+                                            <input
+                                                type="text"
+                                                value={serialNum}
+                                                onChange={(e) => updateEditSerialNumber(index, e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                            {index > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeEditSerialNumberField(index)}
+                                                    className="ml-2 p-1 text-red-500 hover:text-red-700 focus:outline-none"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
