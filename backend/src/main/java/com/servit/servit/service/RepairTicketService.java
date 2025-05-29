@@ -115,7 +115,8 @@ public class RepairTicketService {
             repairTicket.setObservations(
                     req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
             );
-            repairTicket.setStatus("CHECKED-IN");
+            repairTicket.setStatus("CHECKED_IN");
+            repairTicket.setRepairStatus(RepairStatusEnum.RECEIVED);
             repairTicket.setCheckInDate(LocalDateTime.now());
             repairTicket.setTicketNumber(req.getTicketNumber());
 
@@ -318,7 +319,7 @@ public class RepairTicketService {
             throw new IllegalArgumentException("Invalid repair status: " + request.getRepairStatus(), ex);
         }
 
-        repairTicket.setRepairStatusEnum(newStatus);
+        repairTicket.setRepairStatus(newStatus);
 
         RepairStatusHistoryEntity statusHistory = new RepairStatusHistoryEntity();
         statusHistory.setRepairTicket(repairTicket);

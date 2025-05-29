@@ -75,7 +75,7 @@ public class RepairTicketEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "repair_status", nullable = false)
-    private RepairStatusEnum repairStatusEnum;
+    private RepairStatusEnum repairStatus;
 
     @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
