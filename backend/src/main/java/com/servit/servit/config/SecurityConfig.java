@@ -75,6 +75,8 @@ public class SecurityConfig {
                                 "/repairTicket/uploadRepairTicketDocument/*",
                                 "/repairTicket/searchRepairTickets"
                         ).hasAnyRole("ADMIN", "TECHNICIAN")
+                        .requestMatchers("/api/admin/backup/**") // New rule for backup endpoints
+                        .hasRole("ADMIN")                         // Use hasRole for single role check
                         .requestMatchers(
                                 "/user/changeRole/*",
                                 "/user/getAllUsers",
@@ -87,7 +89,7 @@ public class SecurityConfig {
                                 "/user/updateUsername/*",
                                 "/user/getTechnicians",
                                 "/user/getUserCount"
-                        ).hasAnyRole("ADMIN")
+                        ).hasRole("ADMIN") // Changed to hasRole as these are ADMIN only
                         //Allen testing
                         .requestMatchers("/parts/create").permitAll()
                         .anyRequest().authenticated()
