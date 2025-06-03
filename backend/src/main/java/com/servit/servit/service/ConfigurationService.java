@@ -1,0 +1,83 @@
+package com.servit.servit.service;
+
+import com.servit.servit.entity.SystemConfiguration;
+import com.servit.servit.repository.SystemConfigurationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
+
+@Service
+public class ConfigurationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
+
+    public static final String BACKUP_PATH_CONFIG_KEY = "backup.base.path";
+    private static final String DEFAULT_BACKUP_PATH = "./src/main/resources/"; // Changed to avoid conflict, default SQL dump location
+
+    private final SystemConfigurationRepository systemConfigurationRepository;
+
+    @Autowired
+    public ConfigurationService(SystemConfigurationRepository systemConfigurationRepository) {
+        this.systemConfigurationRepository = systemConfigurationRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public String getConfigurationValue(String key, String defaultValue) {
+        if (!StringUtils.hasText(key)) {
+            logger.warn("Attempted to get configuration with null or empty key. Returning default value.");
+            return defaultValue;
+        }
+        return systemConfigurationRepository.findByConfigKey(key)
+                .map(SystemConfiguration::getConfigValue)
+                .orElse(defaultValue);
+    }
+
+    @Transactional
+    public void setConfigurationValue(String key, String value) {
+        if (!StringUtils.hasText(key)) {
+            logger.error("Configuration key cannot be null or empty.");
+            throw new IllegalArgumentException("Configuration key cannot be null or empty.");
+        }
+        if (value == null) { // Allowing empty string for value, but not null
+            logger.error("Configuration value for key '{}' cannot be null.", key);
+            throw new IllegalArgumentException("Configuration value cannot be null.");
+        }
+
+        SystemConfiguration configuration = systemConfigurationRepository.findByConfigKey(key)
+                .orElse(new SystemConfiguration(key, value));
+
+        configuration.setConfigValue(value);
+        systemConfigurationRepository.save(configuration);
+        logger.info("Set configuration for key '{}'.", key);
+    }
+
+    @Transactional(readOnly = true)
+    public String getBackupPath() {
+        return getConfigurationValue(BACKUP_PATH_CONFIG_KEY, DEFAULT_BACKUP_PATH);
+    }
+
+    @Transactional
+    public void setBackupPath(String path) {
+        if (!StringUtils.hasText(path)) {
+            logger.error("Backup path cannot be null, empty or blank.");
+            throw new IllegalArgumentException("Backup path cannot be null, empty or blank.");
+        }
+
+        // Basic path validation - check if it's a valid path format, not if it exists or is a directory.
+        try {
+            Paths.get(path); // This will throw InvalidPathException if the path string is malformed
+        } catch (InvalidPathException e) {
+            logger.error("Invalid backup path format: {}", path, e);
+            throw new IllegalArgumentException("Invalid backup path format: " + path, e);
+        }
+        
+        logger.info("Setting backup path to: {}", path);
+        setConfigurationValue(BACKUP_PATH_CONFIG_KEY, path);
+    }
+}
