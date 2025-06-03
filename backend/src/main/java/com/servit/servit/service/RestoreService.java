@@ -2,7 +2,9 @@ package com.servit.servit.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -11,11 +13,12 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.metamodel.EntityType;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -40,14 +43,49 @@ public class RestoreService {
     private EntityManager entityManager;
 
     private final JdbcTemplate jdbcTemplate;
+    private final Environment environment;
+    private final ConfigurationService configurationService;
 
-    public RestoreService(JdbcTemplate jdbcTemplate) {
+    @Autowired
+    public RestoreService(JdbcTemplate jdbcTemplate, Environment environment, ConfigurationService configurationService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.environment = environment;
+        this.configurationService = configurationService;
+    }
+
+    private static class ParsedDbUrl {
+        final String host;
+        final String port;
+        final String databaseName;
+
+        ParsedDbUrl(String host, String port, String databaseName) {
+            this.host = host;
+            this.port = port;
+            this.databaseName = databaseName;
+        }
     }
 
     private String getDbName() {
         try {
-            return dbUrl.substring(dbUrl.lastIndexOf("/") + 1).split("\?")[0];
+            int protocolEndIndex = dbUrl.indexOf("://");
+            if (protocolEndIndex == -1) {
+                throw new IllegalArgumentException("Invalid database URL format: missing protocol");
+            }
+
+            int lastSlashIndex = dbUrl.lastIndexOf("/");
+            if (lastSlashIndex == -1 || lastSlashIndex <= protocolEndIndex) {
+                throw new IllegalArgumentException("Invalid database URL format: missing database name");
+            }
+
+            String urlSuffix = dbUrl.substring(lastSlashIndex + 1);
+            String[] urlParts = urlSuffix.split("\\?");
+            String databaseName = urlParts[0];
+
+            if (databaseName.isEmpty()) {
+                throw new IllegalArgumentException("Database name is empty in URL");
+            }
+
+            return databaseName;
         } catch (Exception e) {
             logger.error("Failed to parse database name from URL: {}", dbUrl, e);
             return null;
@@ -75,104 +113,81 @@ public class RestoreService {
         }
     }
 
+    private ParsedDbUrl parseDbUrl() {
+        return new ParsedDbUrl(getDbHost(), getDbPort(), getDbName());
+    }
+
+    private String getDbUsername() {
+        return dbUsername;
+    }
+
+    private String getDbPassword() {
+        return dbPassword;
+    }
+
+    private ProcessBuilder createProcessBuilder(List<String> command) {
+        return new ProcessBuilder(command);
+    }
+
+    /**
+     * Restores table data from a backup file (INSERT statements only).
+     * Clears all managed tables before restore.
+     * @param backupIdentifier Relative path to the backup file (e.g., backup-YYYYMMDD/SERVIT-YYYYMMDD.sql)
+     * @return Status message
+     */
     @Transactional
-    public String restoreBackup(String fileName) {
-        String dbName = getDbName();
-        if (dbName == null) {
-            return "Error: Database name could not be determined for restore.";
+    public String restoreBackup(String backupIdentifier) {
+        if (backupIdentifier == null || backupIdentifier.isEmpty() || backupIdentifier.contains("..") || !backupIdentifier.contains("/")) {
+            throw new BackupNotFoundException("Invalid backup identifier provided. Expected format: backup-<date>/SERVIT-<date>.sql");
         }
-
-        File backupFile = Paths.get(backupDirectoryPath, fileName).toFile();
-        if (!backupFile.exists() || !backupFile.isFile()) {
-            logger.error("Backup file not found for restore: {}", fileName);
-            return "Error: Backup file not found.";
+        String basePath = configurationService.getBackupPath();
+        Path backupFilePath = Paths.get(basePath, backupIdentifier);
+        if (!Files.exists(backupFilePath) || !Files.isRegularFile(backupFilePath)) {
+            throw new BackupNotFoundException("Backup file not found: " + backupFilePath.toString());
         }
-        String filePath = backupFile.getAbsolutePath();
-
-        // Clear data from tables before restoring
+        // Clear all managed tables before restore
         try {
-            logger.info("Attempting to clear data from managed tables...");
             Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
             List<String> tableNames = new ArrayList<>();
             for (EntityType<?> entity : entities) {
-                // Get table name from @Table annotation if present, otherwise use entity name
                 jakarta.persistence.Table tableAnnotation = entity.getJavaType().getAnnotation(jakarta.persistence.Table.class);
                 String tableName = tableAnnotation != null ? tableAnnotation.name() : entity.getName();
                 tableNames.add(tableName);
             }
-
-            // Disable foreign key checks, delete data, then re-enable.
-            // Order of deletion might matter if not disabling FK checks, but this is safer.
             jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0;");
-            logger.info("Disabled foreign key checks.");
-
             for (String tableName : tableNames) {
-                logger.info("Deleting data from table: {}", tableName);
                 jdbcTemplate.execute("DELETE FROM " + tableName);
             }
-            logger.info("Data deleted from all managed tables.");
-
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
         } catch (Exception e) {
-            logger.error("Error clearing data from tables before restore", e);
-            // Re-enable FK checks even if clearing fails, before aborting
-            try {
-                jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
-                logger.info("Re-enabled foreign key checks after error during data clearing.");
-            } catch (Exception fke) {
-                logger.error("Failed to re-enable foreign key checks after data clearing error.", fke);
-            }
+            try { jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;"); } catch (Exception ignore) {}
             return "Error clearing data from tables: " + e.getMessage();
         }
-
-
-        // Construct mysql command to import data
-        String passwordOption = (dbPassword != null && !dbPassword.isEmpty()) ? "--password=" + dbPassword : "";
-        String command = String.format("mysql --host=%s --port=%s --user=%s %s %s < %s",
-                getDbHost(), getDbPort(), dbUsername, passwordOption, dbName, filePath);
-
-        logger.info("Executing restore command: mysql --host={} --port={} --user={} --password=**** {} < {}",
-            getDbHost(), getDbPort(), dbUsername, dbName, filePath);
-
+        // Restore data from backup file
+        ParsedDbUrl dbUrl = parseDbUrl();
+        String username = getDbUsername();
+        String password = getDbPassword();
+        List<String> command = Arrays.asList(
+            "mysql",
+            "--user=" + username,
+            "--password=" + password,
+            "--host=" + dbUrl.host,
+            "--port=" + dbUrl.port,
+            dbUrl.databaseName,
+            "-e", "source " + backupFilePath.toString().replace("\\", "/")
+        );
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                processBuilder.command("cmd.exe", "/c", command);
-            } else {
-                processBuilder.command("sh", "-c", command);
-            }
-
+            ProcessBuilder processBuilder = createProcessBuilder(command);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
-
-            // Re-enable foreign key checks after import attempt (success or failure)
-            try {
-                jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
-                logger.info("Re-enabled foreign key checks after restore attempt.");
-            } catch (Exception e) {
-                 logger.error("Failed to re-enable foreign key checks after restore attempt.", e);
-                 // This is problematic, as FK constraints might not be active.
-                 // Consider how to handle this, maybe return a special warning.
-            }
-
-
             if (exitCode == 0) {
-                logger.info("Database restore completed successfully from: {}", fileName);
-                return "Restore completed successfully from: " + fileName;
+                return "Restore completed successfully from: " + backupIdentifier;
             } else {
                 String errors = new String(process.getErrorStream().readAllBytes());
-                logger.error("Restore failed with exit code {}. Errors: {}", exitCode, errors);
                 return "Restore failed. Exit code: " + exitCode + ". Errors: " + errors;
             }
         } catch (IOException | InterruptedException e) {
-            logger.error("Error during restore process", e);
-            Thread.currentThread().interrupt(); // Restore interrupted status
-            // Attempt to re-enable foreign key checks even if process fails
-            try {
-                jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
-                logger.info("Re-enabled foreign key checks after error during restore process.");
-            } catch (Exception fke) {
-                 logger.error("Failed to re-enable foreign key checks after restore process error.", fke);
-            }
+            Thread.currentThread().interrupt();
             return "Error during restore: " + e.getMessage();
         }
     }
