@@ -18,6 +18,7 @@ const Inventory = () => {
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [partToDelete, setPartToDelete] = useState(null);
+    const [userRole, setUserRole] = useState(null);
 
     // For multiple serial numbers
     const [serialNumbers, setSerialNumbers] = useState([""]);
@@ -46,6 +47,16 @@ const Inventory = () => {
         warrantyExpiration: "",
         addedBy: "" // Will be populated with user email from token during submission
     });
+
+    // Function to check if the user is a technician
+    const isTechnician = () => {
+        return userRole === 'technician';
+    };
+
+    // Show technician restriction message
+    const showTechnicianRestrictionMessage = () => {
+        showNotification("As a technician, you don't have permission to modify inventory.", "error");
+    };
 
     // Helper function to calculate availability status
     const calculateAvailabilityStatus = (currentStock) => {
@@ -100,6 +111,22 @@ const Inventory = () => {
         }
     };
 
+    // Enhanced parseJwt to better handle role extraction
+    const parseJwt = (token) => {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error("Error parsing JWT:", e);
+            return null;
+        }
+    };
+
     // Enhanced helper function to get user email from token
     const getUserEmailFromToken = (token) => {
         try {
@@ -128,8 +155,22 @@ const Inventory = () => {
         }, 3000); // Auto-hide after 3 seconds
     };
 
+    // Get token from various storage locations
+    const getAuthToken = () => {
+        const authToken = localStorage.getItem('authToken') ||
+            localStorage.getItem('token') ||
+            sessionStorage.getItem('token') ||
+            sessionStorage.getItem('authToken');
+        return authToken;
+    };
+
     // Update this function to open the delete modal instead of using window.confirm
     const handleDeletePart = (partId) => {
+        if (isTechnician()) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
         const part = inventoryItems.find(item => item.id === partId);
         setPartToDelete(part);
         setShowDeleteModal(true);
@@ -173,24 +214,6 @@ const Inventory = () => {
             content: item.description || "No description available"
         });
         setShowDescriptionModal(true);
-    };
-
-    // Function to decode JWT token - needed for sidebar functionality
-    const parseJwt = (token) => {
-        try {
-            return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) {
-            return null;
-        }
-    };
-
-    // Get token from various storage locations
-    const getAuthToken = () => {
-        const authToken = localStorage.getItem('authToken') ||
-            localStorage.getItem('token') ||
-            sessionStorage.getItem('token') ||
-            sessionStorage.getItem('authToken');
-        return authToken;
     };
 
     const fetchInventory = async () => {
@@ -257,6 +280,18 @@ const Inventory = () => {
                     throw new Error("Invalid authentication token");
                 }
 
+                // Extract the user's role from the token
+                const role = decodedToken?.role ||
+                    decodedToken?.authorities ||
+                    decodedToken?.["cognito:groups"] ||
+                    [];
+
+                // Set the user role - handle both string and array formats
+                const normalizedRole = Array.isArray(role) ? role[0]?.toLowerCase() : role.toLowerCase();
+                setUserRole(normalizedRole);
+
+                console.log("User role:", normalizedRole);
+
                 await fetchInventory();
             } catch (err) {
                 console.error("Authentication error:", err);
@@ -279,6 +314,11 @@ const Inventory = () => {
 
     // Handle edit button click
     const handleEditClick = (item) => {
+        if (isTechnician()) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
         setEditPart({...item});
 
         // Initialize editSerialNumbers based on the part's serial number
@@ -303,6 +343,12 @@ const Inventory = () => {
     // Handle update part form submission
     const handleUpdatePart = async (e) => {
         e.preventDefault();
+
+        if (isTechnician()) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
         setEditLoading(true);
         setEditError(null);
         setEditSuccess(false);
@@ -398,6 +444,12 @@ const Inventory = () => {
     // Handle add part form submission
     const handleAddPart = async (e) => {
         e.preventDefault();
+
+        if (isTechnician()) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
         setAddPartLoading(true);
         setAddPartError(null);
         setAddPartSuccess(false);
@@ -522,19 +574,25 @@ const Inventory = () => {
             {/* Main Content */}
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
                 <div className="px-10 py-8">
-                    {/* Header */}
+                    {/* Header with conditional Add button */}
                     <div className="mb-6 flex justify-between items-center">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
-                            <p className="text-sm text-gray-600 mt-1">Manage your parts and inventory</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                                {isTechnician()
+                                    ? "View and search parts inventory"
+                                    : "Manage your parts and inventory"}
+                            </p>
                         </div>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-[#2bb406] transition-colors"
-                        >
-                            <Plus size={16} className="mr-1" />
-                            Add New Part
-                        </button>
+                        {!isTechnician() && (
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-[#2bb406] transition-colors"
+                            >
+                                <Plus size={16} className="mr-1" />
+                                Add New Part
+                            </button>
+                        )}
                     </div>
 
                     {/* Error Display */}
@@ -635,20 +693,32 @@ const Inventory = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={() => handleEditClick(item)}
-                                                        className="text-indigo-600 hover:text-indigo-900"
-                                                        title="Edit part"
-                                                    >
-                                                        <Pen size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeletePart(item.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        title="Delete part"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
+                                                    {!isTechnician() ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleEditClick(item)}
+                                                                className="text-indigo-600 hover:text-indigo-900"
+                                                                title="Edit part"
+                                                            >
+                                                                <Pen size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeletePart(item.id)}
+                                                                className="text-red-600 hover:text-red-900"
+                                                                title="Delete part"
+                                                            >
+                                                                <Trash size={16} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleDescriptionClick(item)}
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                            title="View details"
+                                                        >
+                                                            <Search size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
