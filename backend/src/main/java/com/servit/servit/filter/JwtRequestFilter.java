@@ -47,6 +47,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 logger.error("Error extracting username from token: {}", e.getMessage());
                 // Consider setting response status to 401 or 403 here if token is malformed/invalid
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token");
+                return; //stop filter chain if token extraction fails
             }
         } else {
             logger.debug("Authorization header missing or does not start with Bearer");

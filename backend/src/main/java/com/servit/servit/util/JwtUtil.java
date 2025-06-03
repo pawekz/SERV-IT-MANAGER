@@ -3,8 +3,10 @@ package com.servit.servit.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +15,10 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "dGVzdHNlY3JldGtleTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx";
+    // Generate a secure 512-bit key for HS512 algorithm
+    private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(
+            "oGwzAKPM06mr1bPXUakGSRWPWbo3wuRCZ1MN8dChjJkLPUTwksTfrG8dLg5A1b9W2Mq4QbT2vw5HircGbpQZxykK0vDAgKfCvG5epajyGMY=".getBytes()
+    );
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -30,10 +35,10 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+                .verifyWith(SECRET_KEY)  // Updated to use verifyWith instead of deprecated setSigningKey
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)  // Updated to use parseSignedClaims
+                .getPayload();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -53,11 +58,11 @@ public class JwtUtil {
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 3))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .claims(claims)  // Updated to use claims() instead of setClaims()
+                .subject(subject)  // Updated to use subject() instead of setSubject()
+                .issuedAt(new Date(System.currentTimeMillis()))  // Updated method name
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 3))  // Updated method name
+                .signWith(SECRET_KEY, SignatureAlgorithm.HS512)  // Now using HS512 consistently
                 .compact();
     }
 

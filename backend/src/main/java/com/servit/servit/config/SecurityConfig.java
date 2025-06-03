@@ -88,7 +88,8 @@ public class SecurityConfig {
                                 "/user/updatePhoneNuber/*",
                                 "/user/updateUsername/*",
                                 "/user/getTechnicians",
-                                "/user/getUserCount"
+                                "/user/getUserCount",
+                                "/api/backup/**"
                         ).hasRole("ADMIN") // Changed to hasRole as these are ADMIN only
                         //Allen testing
                         .requestMatchers("/parts/create").permitAll()
