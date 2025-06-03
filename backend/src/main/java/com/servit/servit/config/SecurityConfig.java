@@ -75,6 +75,8 @@ public class SecurityConfig {
                                 "/repairTicket/uploadRepairTicketDocument/*",
                                 "/repairTicket/searchRepairTickets"
                         ).hasAnyRole("ADMIN", "TECHNICIAN")
+                        .requestMatchers("/api/admin/backup/**") // New rule for backup endpoints
+                        .hasRole("ADMIN")                         // Use hasRole for single role check
                         .requestMatchers(
                                 "/user/changeRole/*",
                                 "/user/getAllUsers",
@@ -86,8 +88,9 @@ public class SecurityConfig {
                                 "/user/updatePhoneNuber/*",
                                 "/user/updateUsername/*",
                                 "/user/getTechnicians",
-                                "/user/getUserCount"
-                        ).hasAnyRole("ADMIN")
+                                "/user/getUserCount",
+                                "/api/backup/**"
+                        ).hasRole("ADMIN") // Changed to hasRole as these are ADMIN only
                         //Allen testing
                         .requestMatchers("/parts/create").permitAll()
                         .anyRequest().authenticated()
@@ -105,7 +108,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5175");
+        config.addAllowedOrigin("http://localhost:5173"); //default port is 5173 in VITE
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
