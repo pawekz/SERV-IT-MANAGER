@@ -2,6 +2,7 @@ package com.servit.servit.controller;
 
 import com.servit.servit.service.BackupService;
 import com.servit.servit.service.ConfigurationService;
+import com.servit.servit.service.ScheduledBackupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.text.SimpleDateFormat;
-import java.sql.Timestamp;
-import java.sql.Time;
-import java.sql.Date;
 
 @RestController
 @RequestMapping("/api/backup")
@@ -26,11 +21,13 @@ public class BackupController {
 
     private final BackupService backupService;
     private final ConfigurationService configurationService;
+    private final ScheduledBackupService scheduledBackupService;
 
     @Autowired
-    public BackupController(BackupService backupService, ConfigurationService configurationService) {
+    public BackupController(BackupService backupService, ConfigurationService configurationService, ScheduledBackupService scheduledBackupService) {
         this.backupService = backupService;
         this.configurationService = configurationService;
+        this.scheduledBackupService = scheduledBackupService;
     }
 
     @PostMapping("/now")
@@ -102,6 +99,57 @@ public class BackupController {
         } catch (Exception e) {
             logger.error("Failed to delete backup {}", backupIdentifier, e);
             return ResponseEntity.status(500).body("Failed to delete backup: " + e.getMessage());
+        }
+    }
+
+    // Get current backup schedule
+    @GetMapping("/schedule")
+    public ResponseEntity<Map<String, Object>> getBackupSchedule() {
+        try {
+            Map<String, Object> response = new HashMap<>();
+            response.put("cronExpression", configurationService.getBackupScheduleCron());
+            response.put("enabled", configurationService.isBackupScheduleEnabled());
+            response.put("isScheduled", scheduledBackupService.isScheduled());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to get backup schedule", e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to get backup schedule: " + e.getMessage()));
+        }
+    }
+
+    // Set backup schedule
+    @PostMapping("/schedule")
+    public ResponseEntity<?> setBackupSchedule(@RequestBody Map<String, String> payload) {
+        String cronExpression = payload.get("cronExpression");
+        if (cronExpression == null) {
+            return ResponseEntity.badRequest().body("cronExpression is required");
+        }
+        
+        try {
+            configurationService.setBackupScheduleCron(cronExpression);
+            scheduledBackupService.updateSchedule();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", cronExpression.equals("DISABLED") ? "Backup schedule disabled" : "Backup schedule updated");
+            response.put("cronExpression", cronExpression);
+            response.put("enabled", configurationService.isBackupScheduleEnabled());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to set backup schedule: {}", cronExpression, e);
+            return ResponseEntity.status(400).body("Failed to set backup schedule: " + e.getMessage());
+        }
+    }
+
+    // Disable backup schedule
+    @PostMapping("/schedule/disable")
+    public ResponseEntity<?> disableBackupSchedule() {
+        try {
+            configurationService.setBackupScheduleCron("DISABLED");
+            scheduledBackupService.updateSchedule();
+            return ResponseEntity.ok(Map.of("message", "Backup schedule disabled"));
+        } catch (Exception e) {
+            logger.error("Failed to disable backup schedule", e);
+            return ResponseEntity.status(500).body("Failed to disable backup schedule: " + e.getMessage());
         }
     }
 }

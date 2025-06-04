@@ -5,12 +5,15 @@ import com.servit.servit.repository.SystemConfigurationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Service
 public class ConfigurationService {
@@ -18,7 +21,11 @@ public class ConfigurationService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
 
     public static final String BACKUP_PATH_CONFIG_KEY = "backup.base.path";
+    public static final String BACKUP_SCHEDULE_CRON_KEY = "backup.schedule.cron";
+    public static final String BACKUP_SCHEDULE_ENABLED_KEY = "backup.schedule.enabled";
+    
     private static final String DEFAULT_BACKUP_PATH = "./src/main/resources/"; // Changed to avoid conflict, default SQL dump location
+    private static final String DEFAULT_BACKUP_SCHEDULE = "DISABLED";
 
     private final SystemConfigurationRepository systemConfigurationRepository;
 
@@ -79,5 +86,68 @@ public class ConfigurationService {
         
         logger.info("Setting backup path to: {}", path);
         setConfigurationValue(BACKUP_PATH_CONFIG_KEY, path);
+    }
+
+    @Transactional(readOnly = true)
+    public String getBackupScheduleCron() {
+        return getConfigurationValue(BACKUP_SCHEDULE_CRON_KEY, DEFAULT_BACKUP_SCHEDULE);
+    }
+
+    @Transactional
+    public void setBackupScheduleCron(String cronExpression) {
+        if (cronExpression == null) {
+            logger.error("CRON expression cannot be null.");
+            throw new IllegalArgumentException("CRON expression cannot be null.");
+        }
+
+        if (cronExpression.equals("DISABLED")) {
+            logger.info("Disabling backup schedule");
+            setConfigurationValue(BACKUP_SCHEDULE_CRON_KEY, cronExpression);
+            setConfigurationValue(BACKUP_SCHEDULE_ENABLED_KEY, "false");
+            return;
+        }
+
+        // Validate CRON expression
+        try {
+            CronExpression.parse(cronExpression);
+        } catch (Exception e) {
+            logger.error("Invalid CRON expression: {}", cronExpression, e);
+            throw new IllegalArgumentException("Invalid CRON expression: " + cronExpression, e);
+        }
+
+        // Validate minimum 5-minute interval
+        validateMinimumInterval(cronExpression);
+
+        logger.info("Setting backup schedule CRON to: {}", cronExpression);
+        setConfigurationValue(BACKUP_SCHEDULE_CRON_KEY, cronExpression);
+        setConfigurationValue(BACKUP_SCHEDULE_ENABLED_KEY, "true");
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isBackupScheduleEnabled() {
+        String enabled = getConfigurationValue(BACKUP_SCHEDULE_ENABLED_KEY, "false");
+        return "true".equalsIgnoreCase(enabled);
+    }
+
+    private void validateMinimumInterval(String cronExpression) {
+        try {
+            CronExpression cron = CronExpression.parse(cronExpression);
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime next1 = cron.next(now);
+            LocalDateTime next2 = cron.next(next1);
+            
+            if (next1 != null && next2 != null) {
+                Duration interval = Duration.between(next1, next2);
+                if (interval.toMinutes() < 5) {
+                    throw new IllegalArgumentException("Backup interval must be at least 5 minutes. Current interval: " + interval.toMinutes() + " minutes");
+                }
+            }
+        } catch (Exception e) {
+            if (e instanceof IllegalArgumentException) {
+                throw e;
+            }
+            logger.warn("Could not validate interval for CRON expression: {}", cronExpression, e);
+            // Allow the CRON expression if we can't validate the interval
+        }
     }
 }
