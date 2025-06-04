@@ -1,0 +1,169 @@
+/* Custom styles for react-calendar */
+.react-calendar {
+  max-width: 400px;
+  background: white;
+  border: 1px solid #a0a096;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.125em;
+}
+
+.react-calendar--selectRange .react-calendar__tile--hover {
+  background-color: #e6f3ff;
+}
+
+.react-calendar__tile {
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.react-calendar__tile:hover {
+  background-color: #f3f4f6;
+}
+
+.react-calendar__tile--active,
+.react-calendar__tile--active:hover {
+  background-color: #3b82f6 !important;
+  color: white;
+}
+
+.react-calendar__navigation button {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  border: none;
+  background: none;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.react-calendar__navigation button:hover {
+  background-color: #f3f4f6;
+}
+
+.react-calendar__navigation button:disabled {
+  background-color: transparent;
+  color: #9ca3af;
+}
+
+.react-calendar__month-view__weekdays {
+  font-weight: 500;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 8px;
+  text-align: center;
+}
+
+/* Custom styles for react-time-picker */
+.react-time-picker {
+  display: inline-flex;
+  position: relative;
+}
+
+.react-time-picker__wrapper {
+  display: flex;
+  flex-grow: 1;
+  flex-shrink: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.react-time-picker__wrapper:focus-within {
+  border-color: #3b82f6;
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.react-time-picker__inputGroup {
+  min-width: calc(4px + (4ch * 0.5) + (2 * 0.5ch));
+  flex-grow: 1;
+  padding: 0;
+  box-sizing: content-box;
+}
+
+.react-time-picker__inputGroup__divider {
+  padding: 0 2px;
+  color: #6b7280;
+}
+
+.react-time-picker__inputGroup__input {
+  border: none;
+  outline: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  box-sizing: content-box;
+  -moz-appearance: textfield;
+}
+
+.react-time-picker__inputGroup__input::-webkit-outer-spin-button,
+.react-time-picker__inputGroup__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.react-time-picker__inputGroup__input:invalid {
+  background: #ffe6e6;
+}
+
+.react-time-picker__button {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  margin: 0 2px;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.react-time-picker__button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.react-time-picker__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.react-time-picker__button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.react-time-picker__clock {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .react-calendar {
+    max-width: 100%;
+  }
+  
+  .react-time-picker__wrapper {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+} 
