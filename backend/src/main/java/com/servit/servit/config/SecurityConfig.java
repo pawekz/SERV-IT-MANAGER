@@ -14,11 +14,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class SecurityConfig {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Autowired
     private final JwtRequestFilter jwtRequestFilter;
@@ -34,72 +37,80 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .cors(withDefaults())
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(
-                                "/user/register",
-                                "/auth/login",
-                                "/user/verifyOtp",
-                                "/user/resendOtp",
-                                "/user/forgotPassword",
-                                "/user/resetPassword",
-                                "/feedback/submitFeedback"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/repairTicket/searchRepairTicketsByEmail",
-                                "/repairTicket/getRepairTicketsByCustomerEmail"
-                        ).hasAnyRole("CUSTOMER")
-                        .requestMatchers(
-                                "/user/getCurrentUser",
-                                "/user/changeCurrentUserPassword",
-                                "/user/updateCurrentUserFullName",
-                                "/user/changeCurrentUserPhoneNumber",
-                                "/user/updateCurrentUsername",
-                                "/repairTicket/getRepairTicket/*",
-                                "/repairTicket/getRepairTicketDocument/*",
-                                "/warranty/updatestatus",
-                                "/warranty/generate-number",
-                                "/warranty/checkin",
-                                "/warranty/getWarrantyById/*",
-                                "/warranty/getWarrantiesByCustomerEmail/*",
-                                "/warranty/searchWarrantiesByEmail/*",
-                                "/warranty/getAllWarranties"
-                        ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
-                        .requestMatchers(
-                                "/repairTicket/checkInRepairTicket",
-                                "/repairTicket/generateRepairTicketNumber",
-                                "/repairTicket/getAllRepairTickets",
-                                "/user/getTechnicianByEmail",
-                                "/repairTicket/getAllRepairTickets",
-                                "/repairTicket/uploadRepairTicketDocument/*",
-                                "/repairTicket/searchRepairTickets"
-                        ).hasAnyRole("ADMIN", "TECHNICIAN")
-                        .requestMatchers("/api/admin/backup/**") // New rule for backup endpoints
-                        .hasRole("ADMIN")                         // Use hasRole for single role check
-                        .requestMatchers(
-                                "/user/changeRole/*",
-                                "/user/getAllUsers",
-                                "/user/getUser/*",
-                                "/user/changePassword/*",
-                                "/user/updateEmail/*",
-                                "/user/updateFullName/*",
-                                "/user/deleteUser/*",
-                                "/user/updatePhoneNuber/*",
-                                "/user/updateUsername/*",
-                                "/user/getTechnicians",
-                                "/user/getUserCount",
-                                "/api/backup/**"
-                        ).hasRole("ADMIN") // Changed to hasRole as these are ADMIN only
-                        //Allen testing
-                        .requestMatchers("/parts/create").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(withDefaults())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+        logger.debug("Configuring security filter chain");
+        
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(withDefaults())
+            .authorizeHttpRequests(authz -> authz
+                    .requestMatchers(
+                            "/user/register",
+                            "/auth/login",
+                            "/user/verifyOtp",
+                            "/user/resendOtp",
+                            "/user/forgotPassword",
+                            "/user/resetPassword",
+                            "/feedback/submitFeedback"
+                    ).permitAll()
+                    .requestMatchers(
+                            "/repairTicket/searchRepairTicketsByEmail",
+                            "/repairTicket/getRepairTicketsByCustomerEmail"
+                    ).hasRole("CUSTOMER")
+                    .requestMatchers(
+                            "/user/getCurrentUser",
+                            "/user/changeCurrentUserPassword",
+                            "/user/updateCurrentUserFullName",
+                            "/user/changeCurrentUserPhoneNumber",
+                            "/user/updateCurrentUsername",
+                            "/repairTicket/getRepairTicket/*",
+                            "/repairTicket/getRepairTicketDocument/*",
+                            "/warranty/updatestatus",
+                            "/warranty/generate-number",
+                            "/warranty/checkin",
+                            "/warranty/getWarrantyById/*",
+                            "/warranty/getWarrantiesByCustomerEmail/*",
+                            "/warranty/searchWarrantiesByEmail/*",
+                            "/warranty/getAllWarranties"
+                    ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
+                    .requestMatchers(
+                            "/repairTicket/checkInRepairTicket",
+                            "/repairTicket/generateRepairTicketNumber",
+                            "/repairTicket/getAllRepairTickets",
+                            "/user/getTechnicianByEmail",
+                            "/repairTicket/getAllRepairTickets",
+                            "/repairTicket/uploadRepairTicketDocument/*",
+                            "/repairTicket/searchRepairTickets",
+                            "/part/addPart",
+                            "/"
+                    ).hasAnyRole("ADMIN", "TECHNICIAN")
+                    .requestMatchers("/api/admin/backup/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers(
+                            "/user/changeRole/*",
+                            "/user/getAllUsers",
+                            "/user/getUser/*",
+                            "/user/changePassword/*",
+                            "/user/updateEmail/*",
+                            "/user/updateFullName/*",
+                            "/user/deleteUser/*",
+                            "/user/updatePhoneNuber/*",
+                            "/user/updateUsername/*",
+                            "/user/getTechnicians",
+                            "/user/getUserCount",
+                            "/api/backup/**"
+                    ).hasRole("ADMIN")
+                    .requestMatchers("/parts/create").permitAll()
+                    .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .httpBasic(AbstractHttpConfigurer::disable);
+        
+        // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        
+        logger.debug("Security filter chain configured successfully");
         return http.build();
     }
 

@@ -415,7 +415,7 @@ const DashboardPage = () => {
                             {inventoryLoading ? (
                                 <div className="text-center py-4">Loading inventory data...</div>
                             ) : inventoryError ? (
-                                <div className="text-center py-4 text-red-500">{inventoryError}</div>
+                                <div className="text-center py-4 text-gray-500">Empty</div>
                             ) : (
                                 <>
                                     <table className="w-full">
