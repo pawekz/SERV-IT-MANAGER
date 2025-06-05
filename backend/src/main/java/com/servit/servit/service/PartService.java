@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.servit.servit.dto.AddPartRequestDTO;
 import com.servit.servit.dto.PartResponseDTO;
 import com.servit.servit.dto.UpdatePartRequestDTO;
+import com.servit.servit.enumeration.PartEnum;
 
 import java.util.List;
 import java.util.Optional;
