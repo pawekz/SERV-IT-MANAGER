@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash, Plus, CheckCircle } from 'lucide-react';
+import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash, Plus, CheckCircle, AlertTriangle } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import axios from "axios";
 
@@ -19,6 +19,8 @@ const Inventory = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [partToDelete, setPartToDelete] = useState(null);
     const [userRole, setUserRole] = useState(null);
+    const [lowStockItems, setLowStockItems] = useState([]);
+    const [showLowStockModal, setShowLowStockModal] = useState(false);
 
     // For multiple serial numbers
     const [serialNumbers, setSerialNumbers] = useState([""]);
@@ -53,6 +55,11 @@ const Inventory = () => {
         return userRole === 'technician';
     };
 
+    // Function to check if the user is an admin
+    const isAdmin = () => {
+        return userRole === 'admin';
+    };
+
     // Show technician restriction message
     const showTechnicianRestrictionMessage = () => {
         showNotification("As a technician, you don't have permission to modify inventory.", "error");
@@ -66,6 +73,99 @@ const Inventory = () => {
             return "Low Stock";
         } else {
             return "In Stock";
+        }
+    };
+
+    // Function to check low stock threshold and trigger alerts
+    const checkLowStockThreshold = (currentStock, threshold, partId, partName) => {
+        if (currentStock <= threshold && currentStock > 0) {
+            // Add item to low stock list if not already there
+            setLowStockItems(prev => {
+                const exists = prev.some(item => item.id === partId);
+                if (!exists) {
+                    return [...prev, {
+                        id: partId,
+                        name: partName,
+                        currentStock,
+                        lowStockThreshold: threshold
+                    }];
+                }
+                return prev;
+            });
+
+            // Only show the alert modal if user is admin
+            if (isAdmin()) {
+                setShowLowStockModal(true);
+            }
+
+            return true;
+        }
+        return false;
+    };
+
+    // Function to reserve a part (reduce stock)
+    const reservePart = async (partId, quantityToReserve) => {
+        if (quantityToReserve <= 0) return;
+
+        try {
+            const freshToken = getAuthToken();
+            if (!freshToken) {
+                throw new Error("Authentication token not found");
+            }
+
+            // Find the part in inventory
+            const partToUpdate = inventoryItems.find(item => item.id === partId);
+            if (!partToUpdate) return;
+
+            const newStock = Math.max(0, partToUpdate.currentStock - quantityToReserve);
+
+            // Check if this reservation breaches the threshold
+            const isLowStock = checkLowStockThreshold(
+                newStock,
+                partToUpdate.lowStockThreshold,
+                partToUpdate.id,
+                partToUpdate.name
+            );
+
+            // Update local state first for immediate feedback
+            const updatedItems = inventoryItems.map(item => {
+                if (item.id === partId) {
+                    return {
+                        ...item,
+                        currentStock: newStock,
+                        availability: {
+                            status: calculateAvailabilityStatus(newStock),
+                            quantity: newStock
+                        }
+                    };
+                }
+                return item;
+            });
+
+            setInventoryItems(updatedItems);
+
+            // Update backend
+            const updateData = {
+                currentStock: newStock
+            };
+
+            await axios.patch(
+                `http://localhost:8080/part/updatePart/${partId}`,
+                updateData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${freshToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (isLowStock) {
+                showNotification(`Stock level for ${partToUpdate.name} is now low (${newStock} remaining)`, "warning");
+            }
+        } catch (err) {
+            console.error("Error updating part stock:", err);
+            showNotification("Failed to update inventory records", "error");
         }
     };
 
@@ -90,25 +190,11 @@ const Inventory = () => {
         }
     };
 
-    // Add an edit serial number field
-    const addEditSerialNumberField = () => {
-        setEditSerialNumbers([...editSerialNumbers, ""]);
-    };
-
     // Update an edit serial number at specific index
     const updateEditSerialNumber = (index, value) => {
         const updated = [...editSerialNumbers];
         updated[index] = value;
         setEditSerialNumbers(updated);
-    };
-
-    // Remove an edit serial number field
-    const removeEditSerialNumberField = (index) => {
-        if (editSerialNumbers.length > 1) {
-            const updated = [...editSerialNumbers];
-            updated.splice(index, 1);
-            setEditSerialNumbers(updated);
-        }
     };
 
     // Enhanced parseJwt to better handle role extraction
@@ -303,6 +389,32 @@ const Inventory = () => {
         checkAuthentication();
     }, []);
 
+    // Check for low stock items on initial load
+    useEffect(() => {
+        const checkInitialLowStock = () => {
+            const lowItems = inventoryItems.filter(item =>
+                item.currentStock <= item.lowStockThreshold && item.currentStock > 0
+            );
+
+            if (lowItems.length > 0) {
+                setLowStockItems(lowItems.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    currentStock: item.currentStock,
+                    lowStockThreshold: item.lowStockThreshold
+                })));
+
+                if (isAdmin()) {
+                    setShowLowStockModal(true);
+                }
+            }
+        };
+
+        if (inventoryItems.length > 0) {
+            checkInitialLowStock();
+        }
+    }, [inventoryItems]);
+
     // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -324,8 +436,7 @@ const Inventory = () => {
         // Initialize editSerialNumbers based on the part's serial number
         // If the serialNumber contains commas, treat it as multiple serial numbers
         const serialNumbersArray = item.serialNumber ?
-            item.serialNumber.split(',').map(sn => sn.trim()) :
-            [""];
+            [item.serialNumber] : [""];
 
         setEditSerialNumbers(serialNumbersArray);
         setShowEditModal(true);
@@ -363,9 +474,21 @@ const Inventory = () => {
             const userEmail = getUserEmailFromToken(freshToken);
 
             // Join all serial numbers with commas
-            const combinedSerialNumbers = editSerialNumbers
-                .filter(sn => sn.trim() !== "")
-                .join(", ");
+            const serialNumber = editSerialNumbers[0].trim();
+
+            // Check for duplicate part number or serial number (excluding the current part)
+            const isDuplicate = inventoryItems.some(item =>
+                    item.id !== editPart.id && (
+                        (item.partNumber && item.partNumber.toLowerCase() === editPart.partNumber.toLowerCase()) ||
+                        (item.serialNumber && serialNumber &&
+                            item.serialNumber.toLowerCase() === serialNumber.toLowerCase()
+                        )
+                    )
+            );
+
+            if (isDuplicate) {
+                throw new Error("A part with the same part number or serial number already exists in inventory.");
+            }
 
             // Format the data for the API
             const updateData = {
@@ -375,9 +498,9 @@ const Inventory = () => {
                 unitCost: parseFloat(editPart.unitCost) || 0,
                 currentStock: parseInt(editPart.currentStock) || 0,
                 lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
-                serialNumber: combinedSerialNumbers,
+                serialNumber: serialNumber,
                 isDeleted: editPart.isDeleted || false,
-                dateAdded: editPart.dateAdded || "",
+                // dateAdded is excluded to preserve the original value
                 datePurchasedByCustomer: editPart.datePurchasedByCustomer || "",
                 warrantyExpiration: editPart.warrantyExpiration || "",
                 addedBy: userEmail // Update to use email instead of preserving old value
@@ -410,13 +533,13 @@ const Inventory = () => {
                         ? {
                             ...item,
                             name: editPart.name,
-                            sku: editPart.partNumber || combinedSerialNumbers,
+                            sku: editPart.partNumber || serialNumber,
                             currentStock: updatedCurrentStock,
                             partNumber: editPart.partNumber,
                             description: editPart.description,
                             unitCost: parseFloat(editPart.unitCost) || 0,
                             lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
-                            serialNumber: combinedSerialNumbers,
+                            serialNumber: serialNumber,
                             availability: {
                                 status: newStatus,
                                 quantity: updatedCurrentStock
@@ -427,6 +550,14 @@ const Inventory = () => {
                 )
             );
 
+            // Check if the update caused a low stock condition
+            checkLowStockThreshold(
+                updatedCurrentStock,
+                parseInt(editPart.lowStockThreshold) || 0,
+                editPart.id,
+                editPart.name
+            );
+
             // Close modal after success
             setTimeout(() => {
                 setShowEditModal(false);
@@ -435,7 +566,7 @@ const Inventory = () => {
 
         } catch (err) {
             console.error("Error updating part:", err);
-            setEditError(err.response?.data?.message || "Failed to update part");
+            setEditError(err.message || err.response?.data?.message || "Failed to update part");
         } finally {
             setEditLoading(false);
         }
@@ -469,6 +600,22 @@ const Inventory = () => {
             const combinedSerialNumbers = serialNumbers
                 .filter(sn => sn.trim() !== "")
                 .join(", ");
+
+            // Check for duplicate part number or serial number
+            const isDuplicate = inventoryItems.some(item =>
+                (item.partNumber && item.partNumber.toLowerCase() === newPart.partNumber.toLowerCase()) ||
+                (item.serialNumber && combinedSerialNumbers &&
+                    item.serialNumber.toLowerCase().split(',').some(serial =>
+                        combinedSerialNumbers.toLowerCase().split(',').some(newSerial =>
+                            newSerial.trim() === serial.trim()
+                        )
+                    )
+                )
+            );
+
+            if (isDuplicate) {
+                throw new Error("A part with the same part number or serial number already exists in inventory.");
+            }
 
             // Format the data to match API expectations
             const partData = {
@@ -528,7 +675,7 @@ const Inventory = () => {
             if (err.response?.status === 401) {
                 setAddPartError("Authentication failed. Please log in again.");
             } else {
-                setAddPartError(err.response?.data?.message || "Failed to add part. Please try again.");
+                setAddPartError(err.message || err.response?.data?.message || "Failed to add part. Please try again.");
             }
         } finally {
             setAddPartLoading(false);
@@ -877,27 +1024,27 @@ const Inventory = () => {
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    {/*<label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>*/}
-                                    {/*<input*/}
-                                    {/*    type="number"*/}
-                                    {/*    name="currentStock"*/}
-                                    {/*    value={newPart.currentStock}*/}
-                                    {/*    onChange={handleInputChange}*/}
-                                    {/*    min="0"*/}
-                                    {/*    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"*/}
-                                    {/*/>*/}
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>
+                                    <input
+                                        type="number"
+                                        name="currentStock"
+                                        value={newPart.currentStock}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
                                 </div>
-                                {/*<div>*/}
-                                {/*    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>*/}
-                                {/*    <input*/}
-                                {/*        type="number"*/}
-                                {/*        name="lowStockThreshold"*/}
-                                {/*        value={newPart.lowStockThreshold}*/}
-                                {/*        onChange={handleInputChange}*/}
-                                {/*        min="0"*/}
-                                {/*        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"*/}
-                                {/*    />*/}
-                                {/*</div>*/}
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>
+                                    <input
+                                        type="number"
+                                        name="lowStockThreshold"
+                                        value={newPart.lowStockThreshold}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex justify-end mt-6">
@@ -1002,35 +1149,13 @@ const Inventory = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">
-                                        Serial Numbers
-                                        <button
-                                            type="button"
-                                            onClick={addEditSerialNumberField}
-                                            className="ml-2 p-1 text-blue-500 hover:text-blue-700 focus:outline-none"
-                                        >
-                                            <Plus size={16} />
-                                        </button>
-                                    </label>
-                                    {editSerialNumbers.map((serialNum, index) => (
-                                        <div key={index} className="flex items-center mb-2">
-                                            <input
-                                                type="text"
-                                                value={serialNum}
-                                                onChange={(e) => updateEditSerialNumber(index, e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                            {index > 0 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeEditSerialNumberField(index)}
-                                                    className="ml-2 p-1 text-red-500 hover:text-red-700 focus:outline-none"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
+                                    <input
+                                        type="text"
+                                        value={editSerialNumbers[0] || ""}
+                                        onChange={(e) => updateEditSerialNumber(0, e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
                                 </div>
                             </div>
 
@@ -1142,15 +1267,73 @@ const Inventory = () => {
             {/* Notification Toast */}
             {notification.show && (
                 <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-md z-50 transition-all duration-300 flex items-center ${
-                    notification.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    notification.type === 'error' ? 'bg-red-100 text-red-800' :
+                        notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
                 }`}>
                     <div className="flex items-center">
                         {notification.type === 'error' ? (
                             <X size={20} className="mr-2" />
+                        ) : notification.type === 'warning' ? (
+                            <AlertTriangle size={20} className="mr-2" />
                         ) : (
                             <CheckCircle size={20} className="mr-2" />
                         )}
                         <p>{notification.message}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Low Stock Alert Modal */}
+            {showLowStockModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-xl w-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center text-yellow-600">
+                                <AlertTriangle size={20} className="mr-2" />
+                                <h2 className="text-xl font-semibold">Low Stock Alert</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowLowStockModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="mb-4">
+                            <p className="text-gray-700">The following items are running low on stock:</p>
+                        </div>
+
+                        <div className="overflow-y-auto max-h-60">
+                            <table className="min-w-full">
+                                <thead>
+                                <tr className="bg-gray-50">
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part Name</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Threshold</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                {lowStockItems.map(item => (
+                                    <tr key={item.id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3">{item.name}</td>
+                                        <td className="px-4 py-3 text-red-600 font-medium">{item.currentStock}</td>
+                                        <td className="px-4 py-3 text-gray-500">{item.lowStockThreshold}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowLowStockModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
