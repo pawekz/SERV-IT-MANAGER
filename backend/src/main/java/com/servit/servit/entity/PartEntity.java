@@ -61,4 +61,5 @@ public class PartEntity {
 
     @OneToOne(mappedBy = "item")
     private WarrantyEntity warranty;
+    //
 }

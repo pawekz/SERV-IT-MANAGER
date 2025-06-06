@@ -129,4 +129,5 @@ public class PartController {
 
     // TODO: Add endpoint for triggering low stock alerts manually if needed,
     // although it's primarily an internal process triggered by stock changes.
+//
 }

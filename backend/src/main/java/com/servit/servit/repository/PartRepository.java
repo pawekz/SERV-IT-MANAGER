@@ -25,4 +25,5 @@ public interface PartRepository extends JpaRepository<PartEntity, Long> {
 
     @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND p.currentStock <= p.lowStockThreshold")
     List<PartEntity> findLowStockParts();
-} 
+}
+//

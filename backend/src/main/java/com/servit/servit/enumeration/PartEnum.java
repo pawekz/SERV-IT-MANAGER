@@ -7,4 +7,5 @@ public enum PartEnum {
     */
     STANDARD,
     SUPPLIER_REPLACEMENT
+    //
 }
