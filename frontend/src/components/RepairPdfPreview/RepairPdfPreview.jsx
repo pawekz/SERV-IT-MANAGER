@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -15,6 +16,13 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
+
+    // Toast state
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const showToast = (message, type = "success") => {
+        setToast({ show: true, message, type });
+    };
+    const closeToast = () => setToast({ ...toast, show: false });
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -58,13 +66,14 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
             }
             const result = await response.json();
             setSuccess(result);
+            showToast("Repair ticket submitted successfully!", "success");
         } catch (err) {
             setError(err.message);
+            showToast(err.message, "error");
         } finally {
             setLoading(false);
         }
     };
-
 
     return (
         <div className="w-full flex justify-center py-8">
@@ -73,12 +82,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
                     <PDFViewer width="100%" height="600px">
                         <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
                     </PDFViewer>
-                    {error && (
-                        <div className="mt-4 text-red-600 text-center">
-                            {error}
-                        </div>
-                    )}
-                    {loading ? "Loading..." : success ? "Repair ticket submitted successfully!" : null}
                 </div>
                 <div className="flex justify-between mt-6">
                     <button
@@ -93,10 +96,17 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
                         onClick={handleSubmit}
                         disabled={loading || success}
                     >
-                        {loading ? "Submitting..." : success ? "Submitted" : "Submit"}
+                        {success ? "Submitted" : "Submit"}
                     </button>
                 </div>
             </div>
+            {/* Toast Notification */}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={closeToast}
+            />
         </div>
     );
 };
