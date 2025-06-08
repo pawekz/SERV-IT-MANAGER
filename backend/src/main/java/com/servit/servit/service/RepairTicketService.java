@@ -1,9 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.CheckInRepairTicketRequestDTO;
-import com.servit.servit.dto.GetRepairTicketResponseDTO;
-import com.servit.servit.dto.RepairStatusHistoryResponseDTO;
-import com.servit.servit.dto.UpdateRepairStatusRequestDTO;
+import com.servit.servit.dto.*;
 import com.servit.servit.entity.*;
 import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
@@ -97,7 +94,10 @@ public class RepairTicketService {
             RepairTicketEntity repairTicket = new RepairTicketEntity();
             repairTicket.setCustomerName(req.getCustomerName());
             repairTicket.setCustomerEmail(req.getCustomerEmail());
-            repairTicket.setCustomerPhoneNumber(req.getCustomerPhoneNumber());
+
+            String rawPhone = req.getCustomerPhoneNumber().replaceAll("^\\+?63", "");
+            repairTicket.setCustomerPhoneNumber("+63" + rawPhone);
+
             repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
             repairTicket.setDeviceModel(req.getDeviceModel());
             repairTicket.setDeviceBrand(req.getDeviceBrand());
@@ -360,6 +360,19 @@ public class RepairTicketService {
         RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
         dto.setTimestamp(entity.getTimestamp());
         return dto;
+    }
+
+    public RepairTicketPdfResponseDTO getRepairTicketPdf(String ticketNumber) throws IOException {
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Repair ticket not found"));
+        String documentPath = repairTicket.getDocumentPath();
+        if (documentPath == null) {
+            throw new EntityNotFoundException("No document uploaded for this ticket");
+        }
+        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(path);
+        String fileName = path.getFileName().toString();
+        return new RepairTicketPdfResponseDTO(fileBytes, fileName);
     }
 
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {

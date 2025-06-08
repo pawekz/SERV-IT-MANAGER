@@ -86,12 +86,12 @@ public class PartNumberStockTrackingService {
         int availableStock = totalStock - totalReserved;
         
         // Log stock calculation for debugging
-        System.out.println("Stock calculation for part number: " + partNumber);
-        System.out.println("  - Active parts count: " + parts.size());
-        System.out.println("  - Total stock (count of parts): " + totalStock);
-        System.out.println("  - Total reserved: " + totalReserved);
-        System.out.println("  - Available stock: " + availableStock);
-        System.out.println("  - Low stock threshold: " + tracking.getLowStockThreshold());
+        logger.info("Stock calculation for part number: {}", partNumber);
+        logger.info("  - Active parts count: {}", parts.size());
+        logger.info("  - Total stock (count of parts): {}", totalStock);
+        logger.info("  - Total reserved: {}", totalReserved);
+        logger.info("  - Available stock: {}", availableStock);
+        logger.info("  - Low stock threshold: {}", tracking.getLowStockThreshold());
         
         // Update tracking entity
         tracking.setCurrentTotalStock(totalStock);

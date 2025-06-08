@@ -10,8 +10,10 @@ export default function NewRepair() {
     const location = useLocation();
     const [formData, setFormData] = useState(location.state?.formData || {});
     const [signatureDataURL, setSignatureDataURL] = useState(null);
+    const [termsAccepted, setTermsAccepted] = useState(false); // <-- Add this
     const [checkInResponse, setCheckInResponse] = useState(null);
     const [step, setStep] = useState(0);
+    const [success, setSuccess] = useState(null); // <-- Add this
 
     function renderStep() {
         if (step === 0) {
@@ -23,6 +25,7 @@ export default function NewRepair() {
                         setFormData(data);
                         setStep(1);
                     }}
+                    success={success}
                 />
             );
         }
@@ -31,10 +34,15 @@ export default function NewRepair() {
                 <SignatureCapturePad
                     onBack={() => setStep(0)}
                     formData={formData}
+                    signatureDataURL={signatureDataURL}
+                    setSignatureDataURL={setSignatureDataURL}
+                    termsAccepted={termsAccepted}
+                    setTermsAccepted={setTermsAccepted}
                     onSubmit={sigDataUrl => {
                         setSignatureDataURL(sigDataUrl);
                         setStep(2);
                     }}
+                    success={success}
                 />
             );
         }
@@ -45,6 +53,8 @@ export default function NewRepair() {
                     formData={formData}
                     checkInResponse={checkInResponse}
                     onBack={() => setStep(1)}
+                    success={success}
+                    setSuccess={setSuccess}
                 />
             );
         }
