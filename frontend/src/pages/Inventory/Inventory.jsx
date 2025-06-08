@@ -341,8 +341,26 @@ const Inventory = () => {
             return;
         }
 
-        const part = inventoryItems.find(item => item.id === partId);
-        setPartToDelete(part);
+        // Find the actual individual part from allParts arrays
+        let partToDelete = null;
+        for (const item of inventoryItems) {
+            if (item.allParts) {
+                const foundPart = item.allParts.find(part => part.id === partId);
+                if (foundPart) {
+                    partToDelete = foundPart;
+                    break;
+                }
+            }
+        }
+        
+        console.log("Deleting individual part:", partToDelete);
+        
+        if (!partToDelete) {
+            showNotification("Part not found", "error");
+            return;
+        }
+        
+        setPartToDelete(partToDelete);
         setShowDeleteModal(true);
     };
 
@@ -361,9 +379,10 @@ const Inventory = () => {
                 }
             });
 
-            setInventoryItems(prevItems => prevItems.filter(item => item.id !== partToDelete.id));
             showNotification("Part deleted successfully");
 
+            // Refresh inventory to get updated data
+            await fetchInventory();
             // Refresh stock tracking after deletion
             await refreshAllStockTracking();
 
@@ -749,6 +768,7 @@ const Inventory = () => {
             return;
         }
 
+        console.log("Editing individual part:", part);
         setEditPart({...part});
         setShowEditModal(true);
     };
@@ -788,8 +808,6 @@ const Inventory = () => {
                 name: editPart.name || "",
                 description: editPart.description || "",
                 unitCost: parseFloat(editPart.unitCost) || 0,
-                currentStock: parseInt(editPart.currentStock) || 0,
-                lowStockThreshold: parseInt(editPart.lowStockThreshold) || 0,
                 serialNumber: editPart.serialNumber,
                 addedBy: userEmail
             };
@@ -808,8 +826,9 @@ const Inventory = () => {
             setEditSuccess(true);
             showNotification("Part updated successfully");
 
-            // Refresh inventory and stock tracking
+            // Refresh inventory to get updated data including individual parts
             await fetchInventory();
+            // Refresh stock tracking after update
             await refreshAllStockTracking();
 
             setTimeout(() => {
