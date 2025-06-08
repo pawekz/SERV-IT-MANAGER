@@ -166,7 +166,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                         <div className="flex-1 max-w-3xl">
                             <canvas
                                 ref={canvasRef}
-                                className="w-full h-64 cursor-crosshair"
+                                className="w-full h-64 cursor-crosshair border-2 border-gray-300 rounded-md"
                                 onMouseDown={startDrawing}
                                 onMouseMove={draw}
                                 onMouseUp={stopDrawing}
