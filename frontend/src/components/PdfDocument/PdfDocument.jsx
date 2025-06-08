@@ -5,184 +5,200 @@ const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',
         backgroundColor: '#fff',
-        paddingVertical: 30,
-        paddingHorizontal: 40,
+        paddingVertical: 36,
+        paddingHorizontal: 48,
         fontFamily: 'Helvetica',
         fontSize: 11,
-        color: '#222',
+        color: '#111',
         lineHeight: 1.5,
     },
     header: {
-        marginBottom: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: '#222',
+        marginBottom: 18,
+        borderBottomWidth: 2,
+        borderBottomColor: '#000',
         borderBottomStyle: 'solid',
-        paddingBottom: 12,
+        paddingBottom: 10,
     },
     title: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
-        color: '#111',
-        letterSpacing: 1,
+        color: '#000',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: 13,
+        fontSize: 12,
         textAlign: 'center',
-        color: '#444',
-        marginTop: 4,
-        fontWeight: 'medium',
+        color: '#222',
+        marginTop: 2,
+        fontWeight: 'normal',
         letterSpacing: 0.5,
+        textTransform: 'uppercase',
     },
     ticketRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 18,
     },
     ticketLabel: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#000',
+        letterSpacing: 0.5,
     },
     ticketValue: {
         fontSize: 14,
-        backgroundColor: '#f0f0f0',
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 6,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#000',
+        paddingVertical: 5,
+        paddingHorizontal: 12,
         fontWeight: 'bold',
-        color: '#111',
         letterSpacing: 0.5,
+        color: '#000',
     },
     sectionBox: {
-        marginBottom: 24,
-        paddingTop: 8,
-        borderTopWidth: 1,
-        borderTopColor: '#ddd',
-        borderTopStyle: 'solid',
+        marginBottom: 12,
+        paddingTop: 6,
     },
     sectionTitle: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
-        color: '#111',
-        marginBottom: 12,
+        color: '#000',
+        marginBottom: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
+        borderBottomColor: '#000',
         borderBottomStyle: 'solid',
-        paddingBottom: 6,
+        paddingBottom: 4,
         letterSpacing: 0.8,
+        textTransform: 'uppercase',
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 12,
+        marginBottom: 10,
     },
     col: {
         flex: 1,
-        paddingRight: 12,
+        paddingRight: 10,
     },
     label: {
-        fontSize: 10,
-        color: '#555',
-        marginBottom: 4,
-        fontWeight: '600',
+        fontSize: 9,
+        color: '#222',
+        marginBottom: 2,
+        fontWeight: 'bold',
         textTransform: 'uppercase',
         letterSpacing: 0.7,
     },
     value: {
-        fontSize: 12,
-        color: '#111',
+        fontSize: 11,
+        color: '#000',
         fontWeight: 'normal',
     },
     textarea: {
-        fontSize: 11,
-        color: '#111',
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 4,
-        padding: 8,
-        minHeight: 48,
+        fontSize: 10,
+        color: '#000',
+        padding: 6,
+        minHeight: 36,
         textAlignVertical: 'top',
-        backgroundColor: '#fafafa',
     },
     devicePhotoBox: {
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 6,
-        padding: 8,
+        borderColor: '#000',
+        padding: 6,
         alignItems: 'center',
-        marginRight: 12,
-        marginBottom: 12,
-        width: 140,
-        height: 180,
+        marginRight: 10,
+        marginBottom: 10,
+        width: 120,
+        height: 150,
         justifyContent: 'space-between',
+        backgroundColor: '#fff',
     },
     devicePhotoLabel: {
-        fontSize: 11,
-        color: '#333',
-        marginBottom: 8,
-        fontWeight: '600',
+        fontSize: 10,
+        color: '#000',
+        marginBottom: 6,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
     devicePhoto: {
-        width: 120,
-        height: 120,
-        borderRadius: 6,
+        width: 100,
+        height: 100,
         objectFit: 'cover',
-        marginBottom: 4,
+        marginBottom: 2,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: '#000',
+    },
+    termsHeaderLine: {
+        width: '100%',
+        borderBottomWidth: 1,
+        borderBottomColor: '#000',
+        borderBottomStyle: 'solid',
+        marginBottom: 12,
     },
     termsText: {
-        fontSize: 10,
-        color: '#444',
-        lineHeight: 1.6,
-        marginBottom: 8,
+        fontSize: 9,
+        color: '#111',
+        lineHeight: 1.5,
+        marginBottom: 6,
     },
     termsTitle: {
         fontWeight: 'bold',
-        color: '#222',
-        fontSize: 11,
-        marginBottom: 4,
+        color: '#000',
+        fontSize: 10,
+        marginBottom: 2,
+        textTransform: 'uppercase',
     },
     checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 24,
+        marginTop: 18,
     },
     checkbox: {
-        width: 14,
-        height: 14,
+        width: 12,
+        height: 12,
         borderWidth: 1,
-        borderColor: '#222',
-        marginRight: 8,
+        borderColor: '#000',
+        backgroundColor: '#000',
+        marginRight: 6,
         justifyContent: 'center',
         alignItems: 'center',
     },
     checkboxTick: {
-        fontSize: 12,
-        color: '#222',
+        fontSize: 10,
+        color: '#000',
         textAlign: 'center',
-        lineHeight: 12,
+        lineHeight: 10,
     },
     signatureContainer: {
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#222',
-        borderRadius: 4,
         padding: 6,
-        width: 140,
-        height: 50,
+        width: 180,
+        height: 60,
+        backgroundColor: '#fff',
     },
     signatureImage: {
-        width: 130,
+        width: 160,
         height: 40,
         objectFit: 'contain',
+        marginBottom: -10,
+        zIndex: 1,
+    },
+    signatureLine: {
+        width: 160,
+        borderBottomWidth: 1,
+        borderBottomColor: '#000',
+        borderBottomStyle: 'solid',
+        marginBottom: 2,
+        zIndex: 0,
     },
     signatureLabel: {
-        fontSize: 10,
-        color: '#222',
-        marginTop: 6,
+        fontSize: 9,
+        color: '#000',
+        marginTop: 2,
         textAlign: 'center',
     },
     photosWrapper: {
@@ -191,8 +207,8 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
     },
     noPhotosText: {
-        fontSize: 12,
-        color: '#999',
+        fontSize: 11,
+        color: '#888',
         fontStyle: 'italic',
     },
 });
@@ -208,7 +224,12 @@ const PdfDocument = ({ signatureDataURL, formData }) => (
 
             <View style={styles.ticketRow}>
                 <Text style={styles.ticketLabel}>Customer Check-In</Text>
-                <Text style={styles.ticketValue}>{formData.ticketNumber || 'N/A'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12, color: '#000', marginRight: 4, fontWeight: 'normal' }}>Ticket #:</Text>
+                    <Text style={{ fontSize: 14, color: '#000', fontWeight: 'bold' }}>
+                        {formData.ticketNumber || 'N/A'}
+                    </Text>
+                </View>
             </View>
 
             {/* Customer Information */}
@@ -286,7 +307,7 @@ const PdfDocument = ({ signatureDataURL, formData }) => (
                 <View style={styles.photosWrapper}>
                     {formData.repairPhotos.slice(0, 3).map((src, idx) => (
                         <View key={idx} style={styles.devicePhotoBox}>
-                            <Text style={styles.devicePhotoLabel}>Photo {idx + 1}</Text>
+                            <Text style={styles.devicePhotoLabel}>Repair Photo {idx + 1}</Text>
                             <Image src={src} style={styles.devicePhoto} />
                         </View>
                     ))}
@@ -301,6 +322,7 @@ const PdfDocument = ({ signatureDataURL, formData }) => (
             <View style={[styles.header, { borderBottomWidth: 0, marginBottom: 16 }]}>
                 <Text style={styles.title}>TERMS AND CONDITIONS</Text>
             </View>
+            <View style={styles.termsHeaderLine} />
             <View>
                 {[
                     {
@@ -344,7 +366,7 @@ const PdfDocument = ({ signatureDataURL, formData }) => (
                             'If you have any questions, please contact us at info@ioconnect-cbu.com or call 032-272-9019.',
                     },
                 ].map((item, i) => (
-                    <View key={i} style={{ marginBottom: 8 }}>
+                    <View key={i} style={{ marginBottom: 4 }}>
                         <Text style={styles.termsTitle}>
                             {i + 1}. {item.title}
                         </Text>
@@ -366,6 +388,7 @@ const PdfDocument = ({ signatureDataURL, formData }) => (
                         {typeof signatureDataURL === 'string' && signatureDataURL.startsWith('data:image') ? (
                             <>
                                 <Image src={signatureDataURL} style={styles.signatureImage} />
+                                <View style={styles.signatureLine} />
                                 <Text style={styles.signatureLabel}>Customer Signature</Text>
                             </>
                         ) : (
