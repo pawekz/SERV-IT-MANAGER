@@ -1,5 +1,6 @@
 package com.servit.servit.dto;
 
+import com.servit.servit.enumeration.PartEnum;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,9 +14,18 @@ public class UpdatePartRequestDTO {
     private Integer currentStock;
     private Integer lowStockThreshold;
     private String serialNumber;
+    private PartEnum partType;
     private Boolean isDeleted;
     private LocalDateTime dateAdded;
     private LocalDateTime datePurchasedByCustomer;
     private LocalDateTime warrantyExpiration;
     private String addedBy;
+    private String modifiedBy;
+    
+    // Supplier information (for SUPPLIER_REPLACEMENT parts)
+    private String supplierName;
+    private String supplierPartNumber;
+    private LocalDateTime supplierOrderDate;
+    private LocalDateTime supplierExpectedDelivery;
+    private LocalDateTime supplierActualDelivery;
 } 
