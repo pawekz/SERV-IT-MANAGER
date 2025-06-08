@@ -97,7 +97,7 @@ public class SecurityConfig {
                             "/part/stock/summary/*",
                             "/part/stock/lowStockPartNumbers",
                             "/part/stock/searchPartNumbers",
-                            "/"
+                            "/part/addPart"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")

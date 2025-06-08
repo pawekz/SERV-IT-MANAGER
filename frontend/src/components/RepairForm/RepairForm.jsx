@@ -1,37 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Upload, X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Home, HelpCircle } from "lucide-react";
+import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-// Create a completely separate NavigationPanel component
-// const NavigationPanel = ({ handleGoBack, handleReturnToDashboard }) => {
-//     return (
-//         <div className="sticky top-[30vh] left-0 w-0 z-[9999]" style={{ position: 'absolute', left: '20px' }}>
-//             <div className="space-y-3">
-//                 <button
-//                     type="button"
-//                     onClick={handleGoBack}
-//                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-//                     title="Go back"
-//                 >
-//                     <ArrowLeft size={20} className="mr-2" />
-//                     <span>Back</span>
-//                 </button>
-//
-//                 <button
-//                     type="button"
-//                     onClick={handleReturnToDashboard}
-//                     className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md shadow flex items-center justify-center"
-//                     title="Return to dashboard"
-//                 >
-//                     <Home size={20} className="mr-2" />
-//                     <span>Dashboard</span>
-//                 </button>
-//             </div>
-//         </div>
-//     );
-// };
-
-const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
+const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [loading, setLoading] = useState(true);
@@ -39,30 +10,11 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
     const [error, setError] = useState(null);
 
     const location = useLocation();
+    const navigate = useNavigate();
 
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
-
-    const openImageViewer = (idx) => {
-        setImageViewerIndex(idx);
-        setImageViewerOpen(true);
-    };
-
-    const closeImageViewer = () => setImageViewerOpen(false);
-
-    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
-    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
-
-    let readonly;
-    if (role === "admin") {
-        readonly = false;
-    }
-
-    const navigate = useNavigate();
-
-    const [ticketNumber, setTicketNumber] = useState("");
     const [photoFiles, setPhotoFiles] = useState([]);
-
     const [isTamperModalOpen, setIsTamperModalOpen] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -92,74 +44,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
             ...initialFormData
         }));
     }, [initialFormData]);
-
-    const handleChange = (e) => {
-        const { id, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [id]: value,
-        }));
-    };
-
-    const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                setPhotoError("You can upload a maximum of 3 photos.");
-                return;
-            }
-            setPhotoError("");
-            setPhotoFiles(files);
-
-            Promise.all(files.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })).then(base64Arr => {
-                setFormData((prev) => ({
-                    ...prev,
-                    repairPhotos: base64Arr
-                }));
-            });
-        }
-        // Do nothing if no files selected (cancel)
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const hasPhotos =
-            (photoFiles && photoFiles.length > 0) ||
-            (formData.repairPhotos && formData.repairPhotos.length > 0);
-
-        if (!hasPhotos) {
-            setPhotoError("Please upload at least one photo of the device condition.");
-            return;
-        } else {
-            setPhotoError("");
-        }
-        if (onNext) {
-            onNext(formData);
-        }
-    };
-
-    const openTamperModal = () => {
-        setIsTamperModalOpen(true);
-    };
-
-    const closeTamperModal = () => {
-        setIsTamperModalOpen(false);
-    };
-
-    const handleTamperChange = (e) => {
-        const isTampered = e.target.checked;
-        setFormData(prev => ({
-            ...prev,
-            isDeviceTampered: isTampered
-        }));
-    };
 
     useEffect(() => {
         if (initialFormData.ticketNumber) {
@@ -197,11 +81,99 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         fetchRepairTicketNumber();
     }, [initialFormData.ticketNumber]);
 
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [id]: value,
+        }));
+    };
+
+    const handlePhotoUpload = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            if (files.length > 3) {
+                setPhotoError("You can upload a maximum of 3 photos.");
+                return;
+            }
+            setPhotoError("");
+            setPhotoFiles(files);
+
+            Promise.all(files.map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            })).then(base64Arr => {
+                setFormData((prev) => ({
+                    ...prev,
+                    repairPhotos: base64Arr
+                }));
+            });
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const hasPhotos =
+            (photoFiles && photoFiles.length > 0) ||
+            (formData.repairPhotos && formData.repairPhotos.length > 0);
+
+        if (!hasPhotos) {
+            setPhotoError("Please upload at least one photo of the device condition.");
+            return;
+        } else {
+            setPhotoError("");
+        }
+
+        const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
+        const submitData = {
+            ...formData,
+            customerPhoneNumber: formattedPhoneNumber
+        };
+
+        if (onNext) {
+            onNext(submitData);
+        }
+    };
+
+    const handlePhoneInput = (e) => {
+        const { value } = e.target;
+        const numericValue = value.replace(/\D/g, '');
+        let formattedValue = '';
+        if (numericValue.length > 0) {
+            formattedValue = numericValue.slice(0, 3);
+            if (numericValue.length > 3) {
+                formattedValue += ' ' + numericValue.slice(3, 6);
+            }
+            if (numericValue.length > 6) {
+                formattedValue += ' ' + numericValue.slice(6, 10);
+            }
+        }
+        setFormData((prev) => ({
+            ...prev,
+            customerPhoneNumber: formattedValue
+        }));
+    };
+
+    const openTamperModal = () => setIsTamperModalOpen(true);
+    const closeTamperModal = () => setIsTamperModalOpen(false);
+
     const showQuestionMark = formData.deviceSerialNumber && formData.deviceSerialNumber.trim() !== '';
+
+    // Image viewer navigation
+    const openImageViewer = (idx) => {
+        setImageViewerIndex(idx);
+        setImageViewerOpen(true);
+    };
+    const closeImageViewer = () => setImageViewerOpen(false);
+    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
+    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
 
     return (
         <>
-            {/* Main content container - completely separate */}
             <div className="container mx-auto py-8 px-4 max-w-4xl">
                 <div className="border-2 border-gray-200 shadow-lg rounded-lg overflow-hidden">
                     <div className="bg-gray-100 border-b border-gray-200 p-4">
@@ -210,6 +182,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                     </div>
                     <div className="p-6">
                         <form onSubmit={handleSubmit}>
+                            {/* Customer Check-In */}
                             <div className="flex flex-col md:flex-row justify-between mb-6">
                                 <div className="text-xl font-semibold text-gray-800">Customer Check-In</div>
                                 <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -221,8 +194,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                     />
                                 </div>
                             </div>
-
-                            {/* Rest of the form */}
+                            {/* Customer Information */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
@@ -236,6 +208,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Enter full name"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
@@ -248,22 +221,36 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Enter email address"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="customerPhoneNumber" className="block text-sm font-medium text-gray-700">Phone:</label>
-                                        <input
-                                            id="customerPhoneNumber"
-                                            value={formData.customerPhoneNumber}
-                                            onChange={handleChange}
-                                            placeholder="Enter phone number"
-                                            required
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
-                                        />
+                                        <div className="flex items-center w-full border border-gray-300 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                            <div className="flex items-center bg-gray-50 px-3 py-2 border-r border-gray-200">
+                                                <img
+                                                    src="https://flagcdn.com/16x12/ph.png"
+                                                    alt="Philippine flag"
+                                                    className="mr-2 w-5 h-auto"
+                                                />
+                                                <span className="text-sm text-gray-600">+63</span>
+                                            </div>
+                                            <input
+                                                id="customerPhoneNumber"
+                                                value={formData.customerPhoneNumber}
+                                                onChange={handlePhoneInput}
+                                                placeholder="905 123 4567"
+                                                required
+                                                disabled={success}
+                                                className="flex-1 px-4 py-2 text-sm border-none focus:outline-none"
+                                                maxLength={13}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            {/* Device Information */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
@@ -276,6 +263,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             value={formData.deviceType}
                                             onChange={handleChange}
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] bg-white"
                                         >
                                             <option value="" disabled hidden>Select device type</option>
@@ -292,6 +280,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Enter brand"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
@@ -303,6 +292,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Enter model"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
@@ -315,6 +305,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                 onChange={handleChange}
                                                 placeholder="Enter serial number"
                                                 required
+                                                disabled={success}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                             />
                                             {showQuestionMark && (
@@ -322,6 +313,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                     type="button"
                                                     onClick={openTamperModal}
                                                     className="absolute right-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                    disabled={success}
                                                 >
                                                     <HelpCircle size={20} />
                                                 </button>
@@ -336,6 +328,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Enter color"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
@@ -346,11 +339,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             value={formData.devicePassword}
                                             onChange={handleChange}
                                             placeholder="Enter password"
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                                         />
                                     </div>
                                 </div>
                             </div>
+                            {/* Accessories */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">ACCESSORIES</h2>
@@ -363,11 +358,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             value={formData.accessories}
                                             onChange={handleChange}
                                             placeholder="Describe the accessories"
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                         />
                                     </div>
                                 </div>
                             </div>
+                            {/* Problem Description */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">PROBLEM DESCRIPTION</h2>
@@ -381,6 +378,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             onChange={handleChange}
                                             placeholder="Describe the issues you're experiencing"
                                             required
+                                            disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                         />
                                     </div>
@@ -393,30 +391,30 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                 onChange={handleChange}
                                                 placeholder="Technician notes (optional)"
                                                 required
+                                                disabled={success}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
                                             />
                                         </div>
                                     )}
                                 </div>
                             </div>
+                            {/* Device Condition Photos */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
                                 </div>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                    <div className="mb-4">
-                                        <div className="mx-auto bg-gray-100 rounded-full p-3 w-16 h-16 flex items-center justify-center">
-                                            <Upload className="h-8 w-8 text-[#33e407]" />
-                                        </div>
-                                    </div>
                                     <div className="space-y-3">
-                                        <p className="text-sm text-gray-600">Upload up to 3 photos of device condition</p>
-                                        <label
-                                            htmlFor="photo-upload"
-                                            className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
-                                        >
-                                            Upload Photo(s)
-                                        </label>
+                                        {!success && (
+                                            <>
+                                                <label
+                                                    htmlFor="photo-upload"
+                                                    className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+                                                >
+                                                    Upload Photo(s)
+                                                </label>
+                                            </>
+                                        )}
                                         <input
                                             id="photo-upload"
                                             type="file"
@@ -424,11 +422,12 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                             className="hidden"
                                             multiple
                                             onChange={handlePhotoUpload}
+                                            disabled={success}
                                             max={3}
                                         />
                                         {formData.repairPhotos && formData.repairPhotos.length > 0 && (
                                             <p className="text-sm text-gray-600">
-                                                Selected Images:
+                                                Uploaded Images:
                                             </p>
                                         )}
                                         {photoError && (
@@ -453,41 +452,44 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                             position: "relative"
                                                         }}
                                                     >
-                                                        <button
-                                                            type="button"
-                                                            onClick={e => {
-                                                                e.stopPropagation();
-                                                                setFormData(prev => {
-                                                                    const updatedPhotos = prev.repairPhotos.filter((_, i) => i !== idx);
-                                                                    if (updatedPhotos.length === 0) {
-                                                                        setPhotoFiles([]);
-                                                                        setPhotoError("Please upload at least one photo of the device condition.");
-                                                                    }
-                                                                    return {
-                                                                        ...prev,
-                                                                        repairPhotos: updatedPhotos
-                                                                    };
-                                                                });
-                                                            }}
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: 4,
-                                                                right: 4,
-                                                                background: "rgba(255,255,255,0.8)",
-                                                                border: "none",
-                                                                borderRadius: "50%",
-                                                                width: 24,
-                                                                height: 24,
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                justifyContent: "center",
-                                                                cursor: "pointer",
-                                                                zIndex: 2
-                                                            }}
-                                                            aria-label="Remove photo"
-                                                        >
-                                                            <X size={18} className="text-gray-500 hover:text-red-500" />
-                                                        </button>
+                                                        {!success && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={e => {
+                                                                    e.stopPropagation();
+                                                                    setFormData(prev => {
+                                                                        const updatedPhotos = prev.repairPhotos.filter((_, i) => i !== idx);
+                                                                        if (updatedPhotos.length === 0) {
+                                                                            setPhotoFiles([]);
+                                                                            setPhotoError("Please upload at least one photo of the device condition.");
+                                                                        }
+                                                                        return {
+                                                                            ...prev,
+                                                                            repairPhotos: updatedPhotos
+                                                                        };
+                                                                    });
+                                                                }}
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: 4,
+                                                                    right: 4,
+                                                                    background: "rgba(255,255,255,0.8)",
+                                                                    border: "none",
+                                                                    borderRadius: "50%",
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    cursor: "pointer",
+                                                                    zIndex: 2
+                                                                }}
+                                                                aria-label="Remove photo"
+                                                                disabled={success}
+                                                            >
+                                                                <X size={18} className="text-gray-500 hover:text-red-500" />
+                                                            </button>
+                                                        )}
                                                         <img
                                                             src={src}
                                                             alt={`Device condition ${idx + 1}`}
@@ -503,10 +505,19 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                                 ))}
                                             </div>
                                         )}
-                                    </div>
+                                        <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
+                                </div>
                                 </div>
                             </div>
-                            <div className="flex justify-end">
+                            {/* Navigation Buttons */}
+                            <div className="flex justify-between gap-4">
+                                <button
+                                    type="button"
+                                    className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md focus:outline-none"
+                                    onClick={() => navigate("/dashboard")}
+                                >
+                                    Back
+                                </button>
                                 <button
                                     type="submit"
                                     className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
@@ -517,7 +528,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                         </form>
                     </div>
                 </div>
-                
                 {/* Tamper Check Modal */}
                 {isTamperModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -530,7 +540,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                             </button>
                             <h3 className="text-xl font-semibold mb-4">Device Tamper Check</h3>
                             <p className="text-gray-700 mb-4">Is the device tampered with?</p>
-                            
                             <div className="space-y-4">
                                 <div className="flex items-center">
                                     <input
@@ -559,7 +568,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                     </label>
                                 </div>
                             </div>
-                            
                             <div className="flex justify-end mt-6">
                                 <button
                                     type="button"
@@ -572,7 +580,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                         </div>
                     </div>
                 )}
-                
+                {/* Image Viewer Modal */}
                 {imageViewerOpen && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
@@ -622,8 +630,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                         </div>
                     </div>
                 )}
-                {/* Add this style tag to ensure the sticky navigation works properly */}
-                <style jsx>{`
+                {/* Sticky nav style */}
+                <style>{`
                     .sticky-nav {
                         position: fixed;
                         left: 160px;
