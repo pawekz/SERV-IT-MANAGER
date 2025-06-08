@@ -1,6 +1,7 @@
 package com.servit.servit.repository;
 
 import com.servit.servit.entity.PartEntity;
+import com.servit.servit.enumeration.PartEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,16 +14,40 @@ import java.util.Optional;
 public interface PartRepository extends JpaRepository<PartEntity, Long> {
     Optional<PartEntity> findByPartNumber(String partNumber);
     
+    List<PartEntity> findAllByPartNumber(String partNumber);
+    
+    @Query("SELECT DISTINCT p.partNumber FROM PartEntity p WHERE p.isDeleted = false")
+    List<String> findDistinctPartNumbers();
+    
     Optional<PartEntity> findBySerialNumber(String serialNumber);
 
     List<PartEntity> findByIsDeletedFalse();
+    
+    List<PartEntity> findByPartTypeAndIsDeletedFalse(PartEnum partType);
+    
+    List<PartEntity> findByIsReservedTrueAndIsDeletedFalse();
+    
+    List<PartEntity> findByReservedForTicketIdAndIsDeletedFalse(String ticketId);
 
     @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
             "(LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(p.partNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+            "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.serialNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     List<PartEntity> searchParts(@Param("searchTerm") String searchTerm);
-
-    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND p.currentStock <= p.lowStockThreshold")
-    List<PartEntity> findLowStockParts();
+    
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+            "((p.currentStock - COALESCE(p.reservedQuantity, 0)) > 0)")
+    List<PartEntity> findPartsWithAvailableStock();
+    
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+            "p.partType = :partType AND " +
+            "((p.currentStock - COALESCE(p.reservedQuantity, 0)) > 0)")
+    List<PartEntity> findAvailablePartsByType(@Param("partType") PartEnum partType);
+    
+    @Query("SELECT COUNT(p) FROM PartEntity p WHERE p.isDeleted = false")
+    Long countActiveParts();
+    
+    @Query("SELECT SUM(p.currentStock) FROM PartEntity p WHERE p.isDeleted = false")
+    Long getTotalStock();
 } 

@@ -81,6 +81,22 @@ public class SecurityConfig {
                             "/repairTicket/uploadRepairTicketDocument/*",
                             "/repairTicket/searchRepairTickets",
                             "/part/addPart",
+                            "/part/addBulkParts",
+                            "/part/stock/updateStocks/*",
+                            "/part/stock/adjustStock/*",
+                            "/part/reservePart",
+                            "/part/stock/releaseReservedStock/*",
+                            "/part/confirmPartUsage/*",
+                            "/part/checkLowStockAlert/*",
+                            "/part/workflow/verifyWarranty",
+                            "/part/workflow/getPartsForQuotation",
+                            "/part/workflow/processQuotationApproval",
+                            "/part/workflow/receiveSupplierReplacement",
+                            "/part/audit/partHistory/*",
+                            "/part/audit/ticketHistory/*",
+                            "/part/stock/summary/*",
+                            "/part/stock/lowStockPartNumbers",
+                            "/part/stock/searchPartNumbers",
                             "/"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
@@ -97,7 +113,15 @@ public class SecurityConfig {
                             "/user/updateUsername/*",
                             "/user/getTechnicians",
                             "/user/getUserCount",
-                            "/api/backup/**"
+                            "/api/backup/**",
+                            "/part/updatePart/*",
+                            "/part/deletePart/*",
+                            "/part/workflow/processAutoReplacement",
+                            "/part/stock/needReorder",
+                            "/part/stock/updateTracking",
+                            "/part/stock/refreshTracking/*",
+                            "/part/stock/refreshAllTracking",
+                            "/part/stock/resolveAlert/*"
                     ).hasRole("ADMIN")
                     .requestMatchers("/parts/create").permitAll()
                     .anyRequest().authenticated()

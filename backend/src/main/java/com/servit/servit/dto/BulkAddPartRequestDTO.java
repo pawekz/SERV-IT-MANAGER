@@ -4,18 +4,18 @@ import com.servit.servit.enumeration.PartEnum;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
-public class AddPartRequestDTO {
-    private String partNumber;
+public class BulkAddPartRequestDTO {
+    // Common information for all parts
+    private String basePartNumber; // Will be appended with sequence number
     private String name;
     private String description;
     private BigDecimal unitCost;
-    private Integer currentStock;
+    private Integer stockPerItem; // Stock quantity for each individual part
     private Integer lowStockThreshold;
-    private String serialNumber;
     private PartEnum partType = PartEnum.STANDARD;
-    private LocalDateTime dateAdded;
     private LocalDateTime datePurchasedByCustomer;
     private LocalDateTime warrantyExpiration;
     private String addedBy;
@@ -25,4 +25,14 @@ public class AddPartRequestDTO {
     private String supplierPartNumber;
     private LocalDateTime supplierOrderDate;
     private LocalDateTime supplierExpectedDelivery;
+    
+    // Individual serial numbers for each part
+    private List<String> serialNumbers;
+    
+    // Validation method
+    public boolean isValid() {
+        return serialNumbers != null && !serialNumbers.isEmpty() &&
+               basePartNumber != null && !basePartNumber.trim().isEmpty() &&
+               name != null && !name.trim().isEmpty();
+    }
 } 
