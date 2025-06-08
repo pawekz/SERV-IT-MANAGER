@@ -18,18 +18,12 @@ public class PartNumberStockSummaryDTO {
     private LocalDateTime alertResolvedAt;
     private Integer totalPartsCount;
     private Integer suppliersCount;
-    private Boolean autoReorderEnabled;
-    private Integer reorderPoint;
-    private Integer reorderQuantity;
     private String priorityLevel;
-    private String category;
     private String stockStatus; // CRITICAL, LOW, NORMAL, GOOD
     private LocalDateTime lastStockUpdate;
     private List<String> availableSuppliers;
     private String notes;
     
     // Calculated fields
-    private Integer daysOfStockRemaining; // Based on usage patterns if available
-    private Boolean needsReorder;
     private String alertLevel; // NONE, WARNING, CRITICAL
 } 

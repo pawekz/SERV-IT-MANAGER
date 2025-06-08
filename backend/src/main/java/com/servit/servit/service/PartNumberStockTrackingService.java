@@ -259,7 +259,7 @@ public class PartNumberStockTrackingService {
         // Calculated fields
         dto.setStockStatus(calculateStockStatus(tracking));
         dto.setAlertLevel(calculateAlertLevel(tracking));
-        dto.setNeedsReorder(false); // Manual inventory management - no auto-reorder
+        // Manual inventory management - no auto-reorder functionality
         
         // Get available suppliers from the already calculated parts data
         List<String> suppliers = parts.stream()
