@@ -3,36 +3,29 @@ import TermsEditor from "../TermsEditor/TermsEditor.jsx";
 import { X } from "lucide-react";
 import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
 
-// --- Utility Functions ---
-function dataURLtoBlob(dataURL) {
-    const [header, base64] = dataURL.split(",");
-    const mime = header.match(/:(.*?);/)[1];
-    const binary = atob(base64);
-    const array = Array.from(binary, (char) => char.charCodeAt(0));
-    return new Blob([new Uint8Array(array)], { type: mime });
-}
-
 // --- Main Component ---
-const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
+const SignatureCapturePad = ({
+                                 onBack,
+                                 formData,
+                                 signatureDataURL,
+                                 setSignatureDataURL,
+                                 termsAccepted,
+                                 setTermsAccepted,
+                                 onDashboard,
+                                 onSubmit
+                             }) => {
     // --- State ---
     const canvasRef = useRef(null);
     const [context, setContext] = useState(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [isEmpty, setIsEmpty] = useState(true);
-    const [signatureDataURL, setSignatureDataURL] = useState(null);
-    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [isEmpty, setIsEmpty] = useState(!signatureDataURL);
     const [showTermsModal, setShowTermsModal] = useState(false);
 
     // Toast state
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
-    const showToast = (message, type = "success") => {
-        setToast({ show: true, message, type });
-    };
+    const showToast = (message, type = "success") => setToast({ show: true, message, type });
     const closeToast = () => setToast({ ...toast, show: false });
 
-    const handleBack = () => {
-        onBack()
-    }
 
     // --- Signature Pad Logic ---
     useEffect(() => {
@@ -45,6 +38,18 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         canvas.height = canvas.offsetHeight;
         setContext(ctx);
 
+        // Draw existing signature if available
+        if (signatureDataURL) {
+            const img = new window.Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = signatureDataURL;
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
         const handleResize = () => {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             canvas.width = canvas.offsetWidth;
@@ -56,7 +61,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
-    }, []);
+    }, [signatureDataURL]);
 
     const getCoordinates = (e) => {
         if (e.type.includes("touch")) {
@@ -93,6 +98,9 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         if (isDrawing) {
             context.closePath();
             setIsDrawing(false);
+            const canvas = canvasRef.current;
+            const dataUrl = canvas.toDataURL("image/png");
+            setSignatureDataURL(dataUrl);
         }
     };
 
@@ -100,6 +108,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         const canvas = canvasRef.current;
         context.clearRect(0, 0, canvas.width, canvas.height);
         setIsEmpty(true);
+        setSignatureDataURL(null);
         showToast("Signature cleared.", "success");
     };
 
@@ -123,7 +132,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
     };
 
     const handleNext = async () => {
-        if (isEmpty) {
+        if (isEmpty && !signatureDataURL) {
             showToast("Please provide a signature before proceeding.", "error");
             return;
         }
@@ -152,6 +161,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                 <div className="flex w-full">
                     <div className="w-1 bg-[#33e407]"></div>
                     <div className="flex-1 p-8">
+                        {/* ...header... */}
                         <div className="text-center mb-6">
                             <h1 className="text-2xl font-bold">
                                 <span className="text-gray-800">IO</span>
@@ -182,7 +192,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                                 <input
                                     type="checkbox"
                                     checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                                    onChange={e => setTermsAccepted(e.target.checked)}
                                     className="form-checkbox h-5 w-5 text-green-500"
                                 />
                                 <span className="text-gray-700 font-semibold">
@@ -205,16 +215,15 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                                 Clear
                             </button>
                         </label>
-                        {/* Signature Controls */}
+                        {/* ...controls and modal... */}
                         <div className="flex flex-col items-center space-y-4">
                             <div className="flex w-full justify-between mt-4">
                                 <button
-                                    onClick={handleBack}
+                                    onClick={onBack}
                                     className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md transition-colors"
                                 >
                                     Back
                                 </button>
-
                                 <button
                                     onClick={handleNext}
                                     className="px-6 py-2 bg-[#33e407] hover:bg-[#2dc406] text-white rounded-md transition-colors"
@@ -229,18 +238,19 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                     </div>
                 </div>
             </div>
+            {/* ...modal and toast... */}
             {showTermsModal && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
                     tabIndex={-1}
                     aria-modal="true"
                     role="dialog"
-                    onClick={() => setShowTermsModal(false)} // Close on overlay click
+                    onClick={() => setShowTermsModal(false)}
                 >
                     <div
                         className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-12 relative animate-scaleIn"
                         style={{ animation: "scaleIn 0.2s cubic-bezier(0.4,0,0.2,1)", maxWidth: "1100px"}}
-                        onClick={e => e.stopPropagation()} // Prevent close when clicking inside modal
+                        onClick={e => e.stopPropagation()}
                     >
                         <button
                             className="absolute top-2 right-2 text-gray-700 hover:text-red-500 focus:outline-none"
@@ -253,14 +263,8 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                             <TermsEditor />
                         </div>
                     </div>
-                    <style>
-                        {`
-                            [...]
-                        `}
-                    </style>
                 </div>
             )}
-            {/* Toast Notification */}
             <Toast
                 show={toast.show}
                 message={toast.message}
