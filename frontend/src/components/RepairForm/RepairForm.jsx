@@ -498,9 +498,9 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                 <button
                                     type="button"
                                     className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md focus:outline-none"
-                                    onClick={() => navigate(-1)}
+                                    onClick={() => navigate("/dashboard")}
                                 >
-                                    Cancel
+                                    Back
                                 </button>
                                 <button
                                     type="submit"
