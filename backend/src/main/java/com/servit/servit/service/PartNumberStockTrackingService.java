@@ -6,6 +6,8 @@ import com.servit.servit.entity.PartEntity;
 import com.servit.servit.entity.PartNumberStockTrackingEntity;
 import com.servit.servit.repository.PartNumberStockTrackingRepository;
 import com.servit.servit.repository.PartRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class PartNumberStockTrackingService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(PartNumberStockTrackingService.class);
     
     private final PartNumberStockTrackingRepository trackingRepository;
     private final PartRepository partRepository;
