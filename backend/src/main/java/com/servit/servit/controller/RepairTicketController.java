@@ -1,9 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.CheckInRepairTicketRequestDTO;
-import com.servit.servit.dto.GetRepairTicketResponseDTO;
-import com.servit.servit.dto.RepairStatusHistoryResponseDTO;
-import com.servit.servit.dto.UpdateRepairStatusRequestDTO;
+import com.servit.servit.dto.*;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.RepairTicketService;
 import jakarta.persistence.EntityNotFoundException;
@@ -78,6 +75,7 @@ public class RepairTicketController {
 
     // Search and fetch a paginated tickets list (ADMIN SIDE)
     // Note: Ticket History, Ticket List, etc. etc.
+    @GetMapping("/searchRepairTickets")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
             @RequestParam String searchTerm,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -145,6 +143,21 @@ public class RepairTicketController {
                     .header("Content-Disposition", "attachment; filename=" + ticketNumber + ".pdf")
                     .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
                     .body(document);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getRepairTicketPdf/{ticketNumber}")
+    public ResponseEntity<byte[]> getRepairTicketPdf(@PathVariable String ticketNumber) {
+        try {
+            RepairTicketPdfResponseDTO pdfResponse = repairTicketService.getRepairTicketPdf(ticketNumber);
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=\"" + pdfResponse.getFileName() + "\"")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                    .body(pdfResponse.getFileBytes());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {

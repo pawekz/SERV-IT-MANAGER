@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 public class DigitalSignatureEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "signature_id")
+    @Column(name = "digital_signature_id")
     private Long digitalSignatureId;
 
 

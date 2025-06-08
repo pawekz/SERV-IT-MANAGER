@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Toast from '../../components/Toast/Toast.jsx';
 
 // Reusable Spinner component
 const Spinner = ({ size = "normal" }) => {
@@ -11,31 +12,6 @@ const Spinner = ({ size = "normal" }) => {
 
     return (
         <div className={`${sizeClasses[size]} border-[#33e407] rounded-full animate-spin`}></div>
-    );
-};
-
-// Toast Notification Component
-const Toast = ({ message, visible, onClose }) => {
-    useEffect(() => {
-        if (visible) {
-            const timer = setTimeout(() => {
-                onClose();
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [visible, onClose]);
-
-    if (!visible) return null;
-
-    return (
-        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs animate-fade-in-up flex items-center z-50">
-            <div className="bg-green-100 p-2 rounded-full mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-            </div>
-            <p className="text-gray-700">{message}</p>
-        </div>
     );
 };
 
@@ -300,8 +276,9 @@ const LoginPage = () => {
     const [resendCooldown, setResendCooldown] = useState(0);
 
     // Toast notification state
-    const [toastVisible, setToastVisible] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const showToast = (message, type = 'success') => setToast({ show: true, message, type });
+    const closeToast = () => setToast({ ...toast, show: false });
 
     // Forgot Password flow states
     const [showForgotModal, setShowForgotModal] = useState(false);
@@ -349,12 +326,6 @@ const LoginPage = () => {
     // Toggle password visibility
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
-    };
-
-    // Show toast notification
-    const showToast = (message) => {
-        setToastMessage(message);
-        setToastVisible(true);
     };
 
     // Extract user info from JWT token
@@ -923,9 +894,10 @@ const LoginPage = () => {
 
             {/* Toast notification */}
             <Toast
-                message={toastMessage}
-                visible={toastVisible}
-                onClose={() => setToastVisible(false)}
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={closeToast}
             />
 
             {/* Full-screen Loading Overlay */}

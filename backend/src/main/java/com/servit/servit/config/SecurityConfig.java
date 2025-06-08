@@ -80,8 +80,7 @@ public class SecurityConfig {
                             "/repairTicket/getAllRepairTickets",
                             "/repairTicket/uploadRepairTicketDocument/*",
                             "/repairTicket/searchRepairTickets",
-                            "/part/addPart",
-                            "/"
+                            "/part/addPart"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
