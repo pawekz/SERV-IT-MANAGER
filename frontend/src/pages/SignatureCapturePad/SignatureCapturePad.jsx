@@ -3,6 +3,7 @@ import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx";
 import { PDFViewer } from "@react-pdf/renderer";
 import TermsEditor from "../TermsEditor/TermsEditor.jsx";
 import { ArrowLeft, ArrowRight, Home, X } from "lucide-react";
+import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
 
 // --- Utility Functions ---
 function dataURLtoBlob(dataURL) {
@@ -23,6 +24,13 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
     const [signatureDataURL, setSignatureDataURL] = useState(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
+
+    // Toast state
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const showToast = (message, type = "success") => {
+        setToast({ show: true, message, type });
+    };
+    const closeToast = () => setToast({ ...toast, show: false });
 
     const handleBack = () => {
         onBack()
@@ -99,6 +107,13 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         context.fillStyle = "#fafafa";
         context.fillRect(0, 0, canvas.width, canvas.height);
         setIsEmpty(true);
+        showToast("Signature cleared.", "success");
+    };
+
+    const handleClear = async () => {
+        if (!isEmpty) {
+            clearSignature();
+        }
     };
 
     // --- Form Validation & Submission ---
@@ -116,11 +131,11 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
 
     const handleNext = async () => {
         if (isEmpty) {
-            alert("Please provide a signature before proceeding.");
+            showToast("Please provide a signature before proceeding.", "error");
             return;
         }
         if (!termsAccepted) {
-            alert("You must accept the terms and conditions before proceeding.");
+            showToast("You must accept the terms and conditions before proceeding.", "error");
             return;
         }
         const canvas = canvasRef.current;
@@ -128,11 +143,12 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         setSignatureDataURL(dataUrl);
         const validationError = validateFormData({ ...formData, signatureDataURL: dataUrl });
         if (validationError) {
-            alert(validationError);
+            showToast(validationError, "error");
             return;
         }
         if (onSubmit) {
             onSubmit(dataUrl);
+            showToast("Signature captured successfully!", "success");
         }
     };
 
@@ -189,7 +205,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                             </span>
                             <button
                                 type="button"
-                                onClick={clearSignature}
+                                onClick={handleClear}
                                 className="text-gray-500 hover:text-red-500 underline ml-4"
                                 style={{ fontWeight: 500 }}
                             >
@@ -251,6 +267,13 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
                     </style>
                 </div>
             )}
+            {/* Toast Notification */}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={closeToast}
+            />
         </div>
     );
 };
