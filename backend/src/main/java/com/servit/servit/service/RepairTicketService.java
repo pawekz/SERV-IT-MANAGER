@@ -94,7 +94,10 @@ public class RepairTicketService {
             RepairTicketEntity repairTicket = new RepairTicketEntity();
             repairTicket.setCustomerName(req.getCustomerName());
             repairTicket.setCustomerEmail(req.getCustomerEmail());
-            repairTicket.setCustomerPhoneNumber(req.getCustomerPhoneNumber());
+
+            String rawPhone = req.getCustomerPhoneNumber().replaceAll("^\\+?63", "");
+            repairTicket.setCustomerPhoneNumber("+63" + rawPhone);
+
             repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
             repairTicket.setDeviceModel(req.getDeviceModel());
             repairTicket.setDeviceBrand(req.getDeviceBrand());
