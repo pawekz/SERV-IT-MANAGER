@@ -172,7 +172,7 @@ const SignatureCapturePad = ({
                             <p className="text-gray-600 mt-1">Sign using mouse, touch, or stylus</p>
                         </div>
                         <p className="text-center text-gray-600 mb-4">
-                            Please sign in the box below to complete your claim form
+                            Please sign in the box below to complete your repair ticket form
                         </p>
                         <div className="flex-1 max-w-3xl">
                             <canvas
