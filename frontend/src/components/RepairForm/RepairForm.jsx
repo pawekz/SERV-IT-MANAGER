@@ -132,6 +132,25 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         }
     };
 
+    const handlePhoneInput = (e) => {
+        const { value } = e.target;
+        const numericValue = value.replace(/\D/g, '');
+        let formattedValue = '';
+        if (numericValue.length > 0) {
+            formattedValue = numericValue.slice(0, 3);
+            if (numericValue.length > 3) {
+                formattedValue += ' ' + numericValue.slice(3, 6);
+            }
+            if (numericValue.length > 6) {
+                formattedValue += ' ' + numericValue.slice(6, 10);
+            }
+        }
+        setFormData((prev) => ({
+            ...prev,
+            customerPhoneNumber: formattedValue
+        }));
+    };
+
     const openTamperModal = () => setIsTamperModalOpen(true);
     const closeTamperModal = () => setIsTamperModalOpen(false);
 
@@ -199,14 +218,25 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="customerPhoneNumber" className="block text-sm font-medium text-gray-700">Phone:</label>
-                                        <input
-                                            id="customerPhoneNumber"
-                                            value={formData.customerPhoneNumber}
-                                            onChange={handleChange}
-                                            placeholder="Enter phone number"
-                                            required
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
-                                        />
+                                        <div className="flex items-center w-full border border-gray-300 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                            <div className="flex items-center bg-gray-50 px-3 py-2 border-r border-gray-200">
+                                                <img
+                                                    src="https://flagcdn.com/16x12/ph.png"
+                                                    alt="Philippine flag"
+                                                    className="mr-2 w-5 h-auto"
+                                                />
+                                                <span className="text-sm text-gray-600">+63</span>
+                                            </div>
+                                            <input
+                                                id="customerPhoneNumber"
+                                                value={formData.customerPhoneNumber}
+                                                onChange={handlePhoneInput}
+                                                placeholder="905 123 4567"
+                                                required
+                                                className="flex-1 px-4 py-2 text-sm border-none focus:outline-none"
+                                                maxLength={13}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
