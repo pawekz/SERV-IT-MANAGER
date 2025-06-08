@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
+import Toast from "../../components/Toast/Toast.jsx";
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -17,12 +16,49 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
     const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
 
-    // Toast state
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
     const showToast = (message, type = "success") => {
         setToast({ show: true, message, type });
     };
     const closeToast = () => setToast({ ...toast, show: false });
+
+    const uploadPdf = async (ticketNumber) => {
+        try {
+            const pdfBlob = await pdf(
+                <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+            ).toBlob();
+
+            const form = new FormData();
+            form.append("file", pdfBlob, `${ticketNumber}.pdf`);
+
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(
+                `http://localhost:8080/repairTicket/uploadRepairTicketDocument/${ticketNumber}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: form,
+                }
+            );
+            if (!response.ok) {
+                let errorMessage;
+                try {
+                    const errorData = await response.text();
+                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                } catch (e) {
+                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            showToast("Repair ticket submitted successfully!", "success");
+
+        } catch (err) {
+            showToast("PDF upload failed: " + err.message, "error");
+        }
+    };
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -66,7 +102,12 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
             }
             const result = await response.json();
             setSuccess(result);
-            showToast("Repair ticket submitted successfully!", "success");
+
+            if (result && result.ticketNumber) {
+                await uploadPdf(result.ticketNumber);
+            } else if (formData.ticketNumber) {
+                await uploadPdf(formData.ticketNumber);
+            }
         } catch (err) {
             setError(err.message);
             showToast(err.message, "error");
