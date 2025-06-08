@@ -127,8 +127,15 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {} }) => {
         } else {
             setPhotoError("");
         }
+
+        const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
+        const submitData = {
+            ...formData,
+            customerPhoneNumber: formattedPhoneNumber
+        };
+
         if (onNext) {
-            onNext(formData);
+            onNext(submitData);
         }
     };
 
