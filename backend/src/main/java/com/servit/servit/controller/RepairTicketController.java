@@ -78,6 +78,7 @@ public class RepairTicketController {
 
     // Search and fetch a paginated tickets list (ADMIN SIDE)
     // Note: Ticket History, Ticket List, etc. etc.
+    @GetMapping("/searchRepairTickets")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
             @RequestParam String searchTerm,
             @PageableDefault(size = 20) Pageable pageable) {
