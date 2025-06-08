@@ -407,12 +407,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     <div className="space-y-3">
                                         {!success && (
                                             <>
-                                                <div className="mb-4">
-                                                    <div className="mx-auto bg-gray-100 rounded-full p-3 w-16 h-16 flex items-center justify-center">
-                                                        <Upload className="h-8 w-8 text-[#33e407]" />
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-600">Upload up to 3 photos of device condition</p>
                                                 <label
                                                     htmlFor="photo-upload"
                                                     className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
@@ -433,7 +427,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                         />
                                         {formData.repairPhotos && formData.repairPhotos.length > 0 && (
                                             <p className="text-sm text-gray-600">
-                                                Selected Images:
+                                                Uploaded Images:
                                             </p>
                                         )}
                                         {photoError && (
@@ -511,7 +505,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                 ))}
                                             </div>
                                         )}
-                                    </div>
+                                        <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
+                                </div>
                                 </div>
                             </div>
                             {/* Navigation Buttons */}
