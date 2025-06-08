@@ -12,7 +12,8 @@ const SignatureCapturePad = ({
                                  termsAccepted,
                                  setTermsAccepted,
                                  onDashboard,
-                                 onSubmit
+                                 onSubmit,
+                                 success = false
                              }) => {
     // --- State ---
     const canvasRef = useRef(null);
@@ -177,13 +178,14 @@ const SignatureCapturePad = ({
                             <canvas
                                 ref={canvasRef}
                                 className="w-full h-64 cursor-crosshair border-2 border-gray-300 rounded-md"
-                                onMouseDown={startDrawing}
-                                onMouseMove={draw}
-                                onMouseUp={stopDrawing}
-                                onMouseLeave={stopDrawing}
-                                onTouchStart={startDrawing}
-                                onTouchMove={draw}
-                                onTouchEnd={stopDrawing}
+                                onMouseDown={e => !success && startDrawing(e)}
+                                onMouseMove={e => !success && draw(e)}
+                                onMouseUp={e => !success && stopDrawing(e)}
+                                onMouseLeave={e => !success && stopDrawing(e)}
+                                onTouchStart={e => !success && startDrawing(e)}
+                                onTouchMove={e => !success && draw(e)}
+                                onTouchEnd={e => !success && stopDrawing(e)}
+                                style={{ background: "#fff", pointerEvents: success ? "none" : "auto" }}
                             ></canvas>
                         </div>
                         <p className="text-center text-gray-500 text-sm mt-6">
@@ -197,6 +199,7 @@ const SignatureCapturePad = ({
                                     checked={termsAccepted}
                                     onChange={e => setTermsAccepted(e.target.checked)}
                                     className="form-checkbox h-5 w-5 text-green-500"
+                                    disabled={success}
                                 />
                                 <span className="text-gray-700 font-semibold">
                                     I accept the{" "}
@@ -214,6 +217,7 @@ const SignatureCapturePad = ({
                                 onClick={handleClear}
                                 className="text-gray-500 hover:text-red-500 underline ml-4"
                                 style={{ fontWeight: 500 }}
+                                disabled={success}
                             >
                                 Clear
                             </button>

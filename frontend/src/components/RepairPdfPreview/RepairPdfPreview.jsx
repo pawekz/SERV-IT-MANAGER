@@ -11,9 +11,8 @@ function dataURLtoBlob(dataURL) {
     return new Blob([new Uint8Array(array)], { type: mime });
 }
 
-const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
+const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess }) => {
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
 
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -137,7 +136,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack }) => {
                         onClick={handleSubmit}
                         disabled={loading || success}
                     >
-                        {success ? "Submitted" : "Submit"}
+                        {success ? "Finish" : "Submit"}
                     </button>
                 </div>
             </div>
