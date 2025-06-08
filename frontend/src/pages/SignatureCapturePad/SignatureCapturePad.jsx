@@ -1,8 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import PdfDocument from "../../components/PdfDocument/PdfDocument.jsx";
-import { PDFViewer } from "@react-pdf/renderer";
 import TermsEditor from "../TermsEditor/TermsEditor.jsx";
-import { ArrowLeft, ArrowRight, Home, X } from "lucide-react";
+import { X } from "lucide-react";
 import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
 
 // --- Utility Functions ---
@@ -45,16 +43,12 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
         ctx.strokeStyle = "#000000";
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
-        ctx.fillStyle = "#fafafa";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
         setContext(ctx);
 
         const handleResize = () => {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            ctx.fillStyle = "#fafafa";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.putImageData(imageData, 0, 0);
             ctx.lineWidth = 2;
             ctx.lineCap = "round";
@@ -104,8 +98,7 @@ const SignatureCapturePad = ({ onBack, formData, onDashboard, onSubmit }) => {
 
     const clearSignature = () => {
         const canvas = canvasRef.current;
-        context.fillStyle = "#fafafa";
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.clearRect(0, 0, canvas.width, canvas.height);
         setIsEmpty(true);
         showToast("Signature cleared.", "success");
     };
