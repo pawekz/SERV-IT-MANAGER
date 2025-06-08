@@ -245,25 +245,28 @@ const SignatureCapturePad = ({
             {/* ...modal and toast... */}
             {showTermsModal && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
                     tabIndex={-1}
                     aria-modal="true"
                     role="dialog"
                     onClick={() => setShowTermsModal(false)}
                 >
                     <div
-                        className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-12 relative animate-scaleIn"
-                        style={{ animation: "scaleIn 0.2s cubic-bezier(0.4,0,0.2,1)", maxWidth: "1100px"}}
+                        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-10 relative border border-gray-100"
+                        style={{ maxWidth: "900px", minHeight: "60vh" }}
                         onClick={e => e.stopPropagation()}
                     >
                         <button
-                            className="absolute top-2 right-2 text-gray-700 hover:text-red-500 focus:outline-none"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-red-400 transition-colors"
                             onClick={() => setShowTermsModal(false)}
                             aria-label="Close"
                         >
-                            <X size={24} />
+                            <X size={28} />
                         </button>
-                        <div className="max-h-[65vh] overflow-y-auto border border-gray-200 rounded-md p-4">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center tracking-tight">
+                            Terms & Conditions
+                        </h2>
+                        <div className="max-h-[60vh] overflow-y-auto border border-gray-100 rounded-lg p-6 bg-gray-50">
                             <TermsEditor />
                         </div>
                     </div>
