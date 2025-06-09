@@ -16,17 +16,19 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         purchasedDate: "",
         serialNumber: serialNumber,
         reportedIssue: "",
-        returnReason: [],
+        returnReason: "",
     });
 
     useEffect(() => {
+        if (!serialNumber) return;
+
         const fetchWarrantyNumber = async () => {
             try {
                 setLoading(true);
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
-                const response = await fetch(`http://localhost:8080/warranty/generateWarrantyNumber`, {
+                const response = await fetch('http://localhost:8080/warranty/getAllWarranties', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -96,6 +98,59 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
             [field]: value,
         }));
     };
+
+    const onSubmit = async () => {
+        try {
+                setLoading(true);
+                setError(null);
+
+                const token = localStorage.getItem('authToken');
+                if (!token) throw new Error("Not authenticated. Please log in.");
+
+                if (
+                    !formData.customerName ||
+                    !formData.customerEmail ||
+                    !formData.customerPhoneNumber ||
+                    !formData.returnReason
+                ) {
+                    setError("Please fill in all required fields.");
+                    setLoading(false);
+                    return;
+                }
+
+                const payload = new FormData();
+                    payload.append("customerName", formData.customerName);
+                    payload.append("customerPhoneNumber", formData.customerPhoneNumber);
+                    payload.append("customerEmail", formData.customerEmail);
+                    payload.append("warrantyNumber", formData.warrantyNumber);
+                    payload.append("serialNumber", formData.serialNumber);
+                    payload.append("reportedIssue", formData.reportedIssue);
+                    payload.append("returnReason", formData.returnReason);
+
+                console.log("Submitting payload:", payload);
+
+                const response = await fetch(`http://localhost:8080/warranty/checkInWarranty`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: payload
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log("Return request submitted:", result);
+                onClose(); // Close the modal after successful submission
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+    }
 
     if (!isOpen) return null;
 
@@ -225,7 +280,10 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 <div className="flex justify-end space-x-4">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>
                         <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600"
-                                onClick={() => console.log("Submitting form:", formData)} // or your submit logic
+                                onClick={() => {
+                                    console.log("Submitting form:", formData);
+                                    onSubmit();
+                                }} // or your submit logic
                         >
                             Submit Request
                         </button>

@@ -15,6 +15,7 @@ public class CheckInWarrantyDTO {
     private String customerEmail;
     private String customerPhoneNumber;
     private String returnReason;
+    private String reportedIssue;
     private String serialNumber;
 //    private MultipartFile digitalSignature;
 //    private List<MultipartFile> warrantyPhotos;

@@ -63,6 +63,7 @@ public class WarrantyController {
         return ResponseEntity.ok(warrantyService.searchWarrantiesByEmail(email, searchTerm, pageable));
     }
 
+    //submit a new warranty
     @PostMapping("/checkInWarranty")
     public ResponseEntity<?> checkInWarranty(@ModelAttribute CheckInWarrantyDTO req) {
         try {
@@ -97,6 +98,7 @@ public class WarrantyController {
         }
     }
 
+    //verify warranty by serial number
     @GetMapping("/check/{serialNumber}")
     public VerifyWarrantyDTO checkWarranty(@PathVariable String serialNumber) {
         return warrantyService.checkWarranty(serialNumber);

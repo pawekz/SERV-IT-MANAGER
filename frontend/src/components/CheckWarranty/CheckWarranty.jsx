@@ -124,7 +124,7 @@ const CheckWarranty = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             )}
-            < RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false) } serialNumber={query}/>
+            <RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false)} serialNumber={query}/>
         </div>
     );
 };

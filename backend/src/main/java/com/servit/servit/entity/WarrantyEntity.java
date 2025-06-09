@@ -49,16 +49,16 @@ public class WarrantyEntity {
     @JsonManagedReference
     private PartEntity item;
 
-    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<WarrantyPhotoEntity> warrantyPhotos;
-
-    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private DigitalSignatureEntity digitalSignature;
-
-    @Column(name = "document_path")
-    private String documentPath;
+//    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonManagedReference
+//    private List<WarrantyPhotoEntity> warrantyPhotos;
+//
+//    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
+//    @JsonManagedReference
+//    private DigitalSignatureEntity digitalSignature;
+//
+//    @Column(name = "document_path")
+//    private String documentPath;
 
 }
 

@@ -111,15 +111,15 @@ public class WarrantyService {
         dto.setDeviceType(warranty.getItem().getPartType().toString());
         dto.setSerialNumber(warranty.getItem().getSerialNumber());
 
-        if (warranty.getWarrantyPhotos() != null) {
-            dto.setRepairPhotosUrls(
-                    warranty.getWarrantyPhotos().stream()
-                            .map(WarrantyPhotoEntity::getPhotoUrl)
-                            .collect(Collectors.toList())
-            );
-        } else {
-            dto.setRepairPhotosUrls(List.of());
-        }
+//        if (warranty.getWarrantyPhotos() != null) {
+//            dto.setRepairPhotosUrls(
+//                    warranty.getWarrantyPhotos().stream()
+//                            .map(WarrantyPhotoEntity::getPhotoUrl)
+//                            .collect(Collectors.toList())
+//            );
+//        } else {
+//            dto.setRepairPhotosUrls(List.of());
+//        }
         return dto;
     }
 
@@ -136,10 +136,6 @@ public class WarrantyService {
                 logger.warn("Required fields are missing in the warranty form for ticket: {}", req.getWarrantyNumber());
                 throw new IllegalArgumentException("Required fields are missing in the warranty form");
             }
-//            if (req.getWarrantyPhotos() != null && req.getWarrantyPhotos().size() > 3) {
-//                logger.warn("Too many warranty photos uploaded for ticket: {}", req.getWarrantyNumber());
-//                throw new IllegalArgumentException("You can upload a maximum of 3 warranty photos.");
-//            }
 
             PartEntity part = partRepository.findBySerialNumber(req.getSerialNumber())
                     .orElseThrow(() -> new EntityNotFoundException("Part not found"));
@@ -153,43 +149,7 @@ public class WarrantyService {
             warranty.setStatus(WarrantyStatus.CHECKED_IN);
             warranty.setCreatedAt(LocalDateTime.now());
             warranty.setWarrantyNumber(req.getWarrantyNumber());
-
-            AtomicInteger counter = new AtomicInteger(1);
-//            try {
-//                warranty.setWarrantyPhotos(req.getWarrantyPhotos().stream()
-//                        .map(photo -> {
-//                            try {
-//                                String photoPath = fileUtil.saveRepairPhoto(photo, warranty.getWarrantyNumber(), counter.getAndIncrement());
-//                                WarrantyPhotoEntity warrantyPhoto = new WarrantyPhotoEntity();
-//                                warrantyPhoto.setPhotoUrl(photoPath);
-//                                warrantyPhoto.setWarranty(warranty);
-//                                logger.info("Saved repair photo for ticket: {} at {}", warranty.getWarrantyNumber(), photoPath);
-//                                return warrantyPhoto;
-//                            } catch (IOException e) {
-//                                logger.error("Failed to save repair photo for ticket: {}", warranty.getWarrantyNumber(), e);
-//                                throw new RuntimeException("Failed to save repair photo. Please retry.", e);
-//                            }
-//                        })
-//                        .collect(Collectors.toList()));
-//            } catch (Exception e) {
-//                logger.error("Error processing repair photos for ticket: {}", warranty.getWarrantyNumber(), e);
-//                throw e;
-//            }
-
-//            String digitalSignaturePath;
-//            try {
-//                digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), warranty.getWarrantyNumber());
-//                logger.info("Successfully saved digital signature for repair ticket: {}", warranty.getWarrantyNumber());
-//            } catch (IOException e) {
-//                logger.error("Failed to save digital signature for ticket: {}", warranty.getWarrantyNumber(), e);
-//                throw new RuntimeException("Failed to save digital signature. Please retry.", e);
-//            }
-
-//            DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
-//            digitalSignature.setImageUrl(digitalSignaturePath);
-//            digitalSignature.setWarranty(warranty);
-
-//            warranty.setDigitalSignature(digitalSignature);
+            warranty.setReportedIssue(req.getReportedIssue());
 
             logger.info("Successfully created Warranty ticket: {}", warranty.getWarrantyNumber());
 
@@ -249,41 +209,41 @@ public class WarrantyService {
         return warrantyRepository.save(warranty);
     }
 
-    public void uploadWarrantyDocument(String warrantyNumber, MultipartFile file) throws IOException {
-        logger.info("Uploading document for repair ticket: {}", warrantyNumber);
-
-        try {
-            if (file == null || file.isEmpty()) {
-                logger.warn("Uploaded file is null or empty for warranty: {}", warrantyNumber);
-                throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
-                logger.warn("Invalid file type for warranty: {}. Only PDF files are allowed.", warrantyNumber);
-                throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
-            }
-
-            WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
-                    .orElseThrow(() -> {
-                        logger.error("Repair ticket not found: {}", warrantyNumber);
-                        return new EntityNotFoundException("Repair warranty with warranty number " + warrantyNumber + " not found.");
-                    });
-
-            String pdfPath = fileUtil.saveRepairTicketDocument(file, warrantyNumber);
-            warranty.setDocumentPath(pdfPath);
-
-            warrantyRepository.save(warranty);
-
-            logger.info("Successfully uploaded document for warranty: {}", warrantyNumber);
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            logger.error("Validation error while uploading document for warranty: {}", warrantyNumber, e);
-            throw e;
-        } catch (Exception e) {
-            logger.error("Unexpected error while uploading document for warranty: {}", warrantyNumber, e);
-            throw new RuntimeException("Failed to upload warranty document", e);
-        }
-    }
+//    public void uploadWarrantyDocument(String warrantyNumber, MultipartFile file) throws IOException {
+//        logger.info("Uploading document for repair ticket: {}", warrantyNumber);
+//
+//        try {
+//            if (file == null || file.isEmpty()) {
+//                logger.warn("Uploaded file is null or empty for warranty: {}", warrantyNumber);
+//                throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
+//            }
+//
+//            String originalFilename = file.getOriginalFilename();
+//            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
+//                logger.warn("Invalid file type for warranty: {}. Only PDF files are allowed.", warrantyNumber);
+//                throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
+//            }
+//
+//            WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
+//                    .orElseThrow(() -> {
+//                        logger.error("Repair ticket not found: {}", warrantyNumber);
+//                        return new EntityNotFoundException("Repair warranty with warranty number " + warrantyNumber + " not found.");
+//                    });
+//
+//            String pdfPath = fileUtil.saveRepairTicketDocument(file, warrantyNumber);
+//            warranty.setDocumentPath(pdfPath);
+//
+//            warrantyRepository.save(warranty);
+//
+//            logger.info("Successfully uploaded document for warranty: {}", warrantyNumber);
+//        } catch (IllegalArgumentException | EntityNotFoundException e) {
+//            logger.error("Validation error while uploading document for warranty: {}", warrantyNumber, e);
+//            throw e;
+//        } catch (Exception e) {
+//            logger.error("Unexpected error while uploading document for warranty: {}", warrantyNumber, e);
+//            throw new RuntimeException("Failed to upload warranty document", e);
+//        }
+//    }
 
     public VerifyWarrantyDTO checkWarranty(String serialNumber) {
         Optional<PartEntity> optionalPart = partRepository.findBySerialNumber(serialNumber);
