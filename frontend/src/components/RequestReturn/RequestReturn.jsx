@@ -38,11 +38,10 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
-            setFormData(prev => ({
-                ...prev,
-                warrantyNumber: data
-            }));
+            const data = await response.text();
+
+            console.log("Warranty API Response:", data);
+            return data;
         } catch (err) {
             setError(err.message);
         } finally {
@@ -56,6 +55,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         const getData = async () => {
             try {
                 setLoading(true);
+                let warrantyNumber = await generateWarrantyNumber();
+                console.log(warrantyNumber)
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
@@ -71,24 +72,14 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
 
                 const deviceData = await device.json();
 
-                if (role !== "customer") {
                     setFormData(prev => ({
                         ...prev,
                         deviceName: deviceData.name,
                         purchasedDate: deviceData.datePurchasedByCustomer,
                         serialNumber: deviceData.serialNumber,
+                        warrantyNumber: warrantyNumber,
                     }));
-                } else {
-                    setFormData(prev => ({
-                        ...prev,
-                        customerName: userData.customerName,
-                        customerPhoneNumber: userData.customerPhoneNumber,
-                        customerEmail: userData.customerEmail,
-                        deviceName: deviceData.name,
-                        purchasedDate: deviceData.datePurchasedByCustomer,
-                        serialNumber: deviceData.serialNumber,
-                    }));
-                }
+
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -96,8 +87,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
             }
         };
 
-        generateWarrantyNumber();
-        getData();
+        getData()
     }, [isOpen, serialNumber]);
 
     const reasonsList = [
@@ -120,14 +110,10 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         try {
                 setLoading(true);
                 setError(null);
-                console.log(formData)
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
                 if (
-                    !formData.customerName ||
-                    !formData.customerEmail ||
-                    !formData.customerPhoneNumber ||
                     !formData.returnReason
                 ) {
                     setError("Please fill in all required fields.");
@@ -136,9 +122,9 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 }
 
                 const payload = new FormData();
-                    payload.append("customerName", formData.customerName);
-                    payload.append("customerPhoneNumber", formData.customerPhoneNumber);
-                    payload.append("customerEmail", formData.customerEmail);
+                    payload.append("customerName", userData.firstName + " " + userData.lastName);
+                    payload.append("customerPhoneNumber", userData.phoneNumber);
+                    payload.append("customerEmail", userData.email);
                     payload.append("warrantyNumber", formData.warrantyNumber);
                     payload.append("serialNumber", formData.serialNumber);
                     payload.append("reportedIssue", formData.reportedIssue);
