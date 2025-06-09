@@ -22,6 +22,7 @@ import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
 import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
 import NewRepair from "./pages/NewRepair/NewRepair.jsx";
 import AdminDashboard from "./pages/DashboardPage/AdminDashboard.jsx";
+import CustomerDashboard from "./pages/DashboardPage/CustomerDashboard.jsx";
 
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
         <Route path="/realtimestatus" element={<RealTimeStatus />} />
         <Route path="/newrepair" element={<NewRepair />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
+        <Route path="/customerdashboard" element={<CustomerDashboard />} />
       </Routes>
     </Router>
   )

@@ -1,5 +1,25 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 
+import { Link } from 'react-router-dom';
+
+import {
+    HelpCircle,
+    Bell,
+    User,
+    Clock,
+    Calendar,
+    ClipboardList,
+    CheckCircle,
+    AlertTriangle,
+    FileText,
+    MessageSquare,
+    Phone,
+    Mail,
+    HandHelpingIcon as HelpIcon,
+} from "lucide-react"
+
+
+
 const AdminDashboard = () => {
     return (
         <div className="flex min-h-screen">
@@ -23,11 +43,11 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center space-x-5">
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                            🔔
+                            <Bell className="h-5 w-5 text-gray-600" />
                         </div>
-                        <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                            👤
-                        </div>
+                        <Link to="/accountinformation" className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                            <User className="h-5 w-5 text-gray-600" />
+                        </Link>
                     </div>
                 </div>
 
