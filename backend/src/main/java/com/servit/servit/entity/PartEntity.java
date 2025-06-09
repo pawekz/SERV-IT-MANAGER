@@ -1,5 +1,6 @@
 package com.servit.servit.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.servit.servit.enumeration.PartEnum;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -98,5 +99,6 @@ public class PartEntity {
 
     @OneToOne
     @JoinColumn(name = "warranty_id")
+    @JsonBackReference
     private WarrantyEntity warranty;
 }
