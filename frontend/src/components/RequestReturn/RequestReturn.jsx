@@ -28,7 +28,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
-                const response = await fetch('http://localhost:8080/warranty/getAllWarranties', {
+                const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -61,7 +61,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                         purchasedDate: deviceData.datePurchasedByCustomer,
                         warrantyNumber: data
                     }));
-                } else {
+                }
+                else{
                     setFormData(prev => ({
                         ...prev,
                         customerName: userData.customerName,
@@ -103,7 +104,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         try {
                 setLoading(true);
                 setError(null);
-
+                console.log(formData)
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
