@@ -96,6 +96,7 @@ public class PartEntity {
     @Column(name = "version")
     private Long version;
 
-    @OneToOne(mappedBy = "item")
+    @OneToOne
+    @JoinColumn(name = "warranty_id")
     private WarrantyEntity warranty;
 }

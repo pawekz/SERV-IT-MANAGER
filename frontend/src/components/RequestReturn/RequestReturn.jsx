@@ -1,20 +1,85 @@
 import React, {useEffect, useState} from "react";
 
-const RequestReturn = ({ isOpen, onClose }) => {
+const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
     const [deviceType, setDeviceType] = useState("");
     const role = localStorage.getItem('userRole')?.toLowerCase();
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        name: "",
-        phone: "",
-        email: "",
-        orderNumber: "",
-        deviceType: "",
-        purchaseDate: "",
-        serialNumber: "",
-        issueDescription: "",
-        reasons: [],
+        customerName: "",
+        customerPhoneNumber: "",
+        customerEmail: "",
+        warrantyNumber: "",
+        deviceName: "",
+        purchasedDate: "",
+        serialNumber: serialNumber,
+        reportedIssue: "",
+        returnReason: [],
     });
+
+    useEffect(() => {
+        const fetchWarrantyNumber = async () => {
+            try {
+                setLoading(true);
+                const token = localStorage.getItem('authToken');
+                if (!token) throw new Error("Not authenticated. Please log in.");
+
+                const response = await fetch(`http://localhost:8080/warranty/generateWarrantyNumber`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.text();
+
+                const device = await fetch(`http://localhost:8080/part/getPartBySerialNumber/${serialNumber}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+
+                if (!device.ok) throw new Error(`HTTP error! status: ${device.status}`);
+
+                const deviceData = await device.json();
+
+
+
+                if (role !== "customer") {
+                    setFormData(prev => ({
+                        ...prev,
+                        deviceName: deviceData.name,
+                        purchasedDate: deviceData.datePurchasedByCustomer,
+                        warrantyNumber: data
+                    }));
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        customerName: userData.customerName,
+                        customerPhoneNumber: userData.customerPhoneNumber,
+                        customerEmail: userData.customerEmail,
+                        deviceName: deviceData.name,
+                        purchasedDate: deviceData.datePurchasedByCustomer,
+                        warrantyNumber: data
+                    }));
+                }
+                console.log(formData)
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchWarrantyNumber();
+    }, []);
 
     const reasonsList = [
         "Defective/Not Working",
@@ -25,16 +90,24 @@ const RequestReturn = ({ isOpen, onClose }) => {
         "Other",
     ];
 
+    const handleChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
 
             <div
-                className={`bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh]
+                className={`bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl max-h-[100vh] overflow-y-auto
                 transform transition-all duration-700 scale-95 opacity-0 ${isOpen ? 'scale-100 opacity-100' : ''}`}
-            ><div className="bg-gray-100 p-3 rounded-r-2xl  mb-5 border-l-8 border-[#33e407]">
+            ><div className="bg-gray-100 p-3 rounded-r-2xl  mb-8 border-l-8 border-[#33e407]">
                 <h2 className="text-2xl font-semibold text-center ">Return Request (RMA)</h2>
+                <p className="float-right text-gray-500 p-5 pr-0">Warranty Number: {formData.warrantyNumber}</p>
             </div>
                 {/* Customer Info */}
                 {role !== "customer" && (
@@ -43,23 +116,34 @@ const RequestReturn = ({ isOpen, onClose }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                <input type="text" placeholder="Name" className="input w-full" />
+                                <input type="text"
+                                       placeholder="Name"
+                                       className="input w-full rounded-lg border-2 p-2"
+                                       value={formData.customerName}
+                                       onChange={e => handleChange("customerName", e.target.value)}
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                <input type="text" placeholder="Phone" className="input w-full" />
+                                <input type="text"
+                                       placeholder="Phone"
+                                       className="input w-full rounded-lg border-2 p-2"
+                                       value={formData.customerPhoneNumber}
+                                       onChange={e => handleChange("customerPhoneNumber", e.target.value)}
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input type="email" placeholder="Email" className="input w-full" />
+                                <input type="email"
+                                       placeholder="Email"
+                                       className="input w-full rounded-lg border-2 p-2"
+                                       value={formData.customerEmail}
+                                       onChange={e => handleChange("customerEmail", e.target.value)}
+                                />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Order Number</label>
-                                <input type="text" placeholder="Order Number" className="input w-full" />
-                            </div>
                         </div>
                     </div>
                 )}
@@ -70,29 +154,22 @@ const RequestReturn = ({ isOpen, onClose }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 ">Device Type</label>
-                            <select
-                                value={deviceType}
-                                onChange={(e) => setDeviceType(e.target.value)}
-                                className={`input w-full rounded-lg border-2 p-2 ${
-                                    deviceType === "" ? "text-gray-500" : "text-black"
-                                }`}
-                            >
-                                <option value="" disabled hidden>
-                                    Select Device Type
-                                </option>
-                                <option value="Laptop">Laptop</option>
-                                <option value="Phone">Phone</option>
-                                <option value="Accessories">Accessories</option>
-                                <option value="Others">Others</option>
-                            </select>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 ">Device Name</label>
+                            <input
+                                type="text"
+                                className="input w-full rounded-lg border-2 p-2"
+                                disabled
+                                value={formData.deviceName}
+                            />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">Purchased Date</label>
                             <input
-                                type="date"
+                                type="text"
                                 className="input w-full rounded-lg border-2 p-2"
+                                disabled
+                                value={new Date(formData.purchasedDate).toLocaleDateString()}
                             />
                         </div>
 
@@ -101,27 +178,38 @@ const RequestReturn = ({ isOpen, onClose }) => {
                             <input
                                 type="text"
                                 className="input w-full rounded-lg border-2 p-2"
+                                disabled
+                                value={formData.serialNumber}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-black mb-1">Issue</label>
+                            <label className="block text-sm font-medium text-black mb-1">Issue Details</label>
                             <input
                                 type="text"
                                 className="input w-full rounded-lg border-2 p-2"
+                                value={formData.reportedIssue}
+                                onChange={e => handleChange("reportedIssue", e.target.value)}
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* Return Reason */}
-                <div className="border rounded-r-2xl  p-4 mb-4 border-l-8 border-l-[#33e407]">
+                <div className="border rounded-r-2xl p-4 mb-4 border-l-8 border-l-[#33e407]">
                     <h3 className="font-bold mb-3">Return Reason</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {reasonsList.map((label, i) => (
                             <label key={i} className="flex items-center space-x-2">
                                 <input
-                                    type="checkbox"
+                                    type="radio"
+                                    name="returnReason"
+                                    value={label}
+                                    checked={formData.returnReason === label}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        returnReason: e.target.value
+                                    }))}
                                     className="accent-green-600"
                                 />
                                 <span>{label}</span>
@@ -130,13 +218,15 @@ const RequestReturn = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-                <p className="text-sm italic text-green-500 mb-6">
+                <p className=" italic text-green-600 mb-6">
                     * Note: Device must be brought to the office for diagnosis and repair processing.
                 </p>
 
                 <div className="flex justify-end space-x-4">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>
-                        <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600">
+                        <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600"
+                                onClick={() => console.log("Submitting form:", formData)} // or your submit logic
+                        >
                             Submit Request
                         </button>
                 </div>

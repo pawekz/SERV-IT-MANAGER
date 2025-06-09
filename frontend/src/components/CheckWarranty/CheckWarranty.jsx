@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import RequestReturn from "../RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../WarrantyRequest/WarrantyRequest.jsx";
 import {Archive, Computer, Headphones, TabletSmartphone} from "lucide-react";
+import axios from "axios";
 
 const CheckWarranty = ({ isOpen, onClose }) => {
     const [query, setQuery] = useState('');
@@ -9,6 +10,31 @@ const CheckWarranty = ({ isOpen, onClose }) => {
     const [result, setResult] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [openReturnRequest, setOpenReturnRequest] = useState(false);
+    const [error, setError] = useState(null);
+
+    const generateWarrantyNumber = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error(`Failed to generate warranty number: ${response.status}`);
+
+            return await response.text();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = async () => {
         if (!query.trim()) return;
@@ -16,34 +42,38 @@ const CheckWarranty = ({ isOpen, onClose }) => {
         setLoading(true);
         setResult(null);
 
-        // Simulate delay
-        setTimeout(() => {
-            const mockData =
-                query === '123456'
-                    ? { inWarranty: true, daysLeft: 42 }
-                    : { inWarranty: false, daysLeft: 0 };
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error("Not authenticated. Please log in.");
+            console.log(token)
 
-            setResult(mockData);
+            const response = await fetch(`http://localhost:8080/warranty/check/${query}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Warranty check failed.');
+            }
+
+            const warrantyData = await response.json();
+            console.log('Warranty Data:', warrantyData);
+            setResult(warrantyData);
             setModalOpen(true);
+
+        } catch (error) {
+            console.error('Warranty check failed:', error);
+            setResult({ withinWarranty: false, message: "Warranty check failed or serial number not found." });
+            setModalOpen(true);
+        } finally {
             setLoading(false);
-        }, 800); // simulate loading time
-    };
-
-    const getProductIcon = (deviceType) => {
-        if (!deviceType || typeof deviceType !== "string") return <Archive className="text-gray-500 w-8 h-8" />;
-
-        const name = deviceType.toLowerCase();
-
-        if (name.includes("laptop") || name.includes("computer") || name.includes("pc")) {
-            return <Computer className="text-[#10B981] size-10" />;
-        } else if (name.includes("phone") || name.includes("smartphone") || name.includes("tablet")) {
-            return <TabletSmartphone className="text-[#10B981] size-10" />;
-        } else if (name.includes("headset") || name.includes("earphone") || name.includes("headphone")) {
-            return <Headphones className="text-[#10B981] size-10" />;
-        } else {
-            return <Archive className="text-[#10B981] size-10" />;
         }
     };
+
 
 
     return (
@@ -67,13 +97,13 @@ const CheckWarranty = ({ isOpen, onClose }) => {
             {modalOpen && result && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 transition">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-md transform scale-100 transition duration-300">
-                        {result.inWarranty ? (
+                        {result.withinWarranty  ? (
                             <>
-                                <h3 className="text-lg font-bold text-green-600 mb-2">Device: Headphone</h3>
-                                <p>Serial Number: #123456</p>
+                                <h3 className="text-lg font-bold text-green-600 mb-2">Device: {result.deviceName}</h3>
+                                <p>Serial Number: {result.serialNumber}</p>
                                 <p>{result.daysLeft} days left.</p>
                                 <button
-                                    onClick={() => setOpenReturnRequest(true)}
+                                    onClick={() => {setOpenReturnRequest(true); setModalOpen(false);}}
                                 className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600 mr-5 mt-5"
                             >
                                 Make Return Request
@@ -81,8 +111,8 @@ const CheckWarranty = ({ isOpen, onClose }) => {
                                 </>
                         ) : (
                             <>
-                                <h3 className="text-lg font-bold text-red-600 mb-2">Not in Warranty</h3>
-                                <p>Sorry, You are no longer eligible for a return.</p>
+                                <h3 className="text-lg font-bold text-green-600 mb-2">Sorry...</h3>
+                                <p>{result.message}</p>
                             </>
                         )}
                         <button
@@ -94,7 +124,7 @@ const CheckWarranty = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             )}
-            < RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false) } />
+            < RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false) } serialNumber={query}/>
         </div>
     );
 };
