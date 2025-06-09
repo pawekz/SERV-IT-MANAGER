@@ -19,6 +19,17 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         returnReason: "",
     });
 
+    useEffect(() => {
+        if (role === "customer" && isOpen) {
+            setFormData(prev => ({
+                ...prev,
+                customerName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+                customerPhoneNumber: userData.phoneNumber || "",
+                customerEmail: userData.email || "",
+            }));
+        }
+    }, [role, isOpen]);
+
     const generateWarrantyNumber = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -71,6 +82,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 if (!device.ok) throw new Error(`HTTP error! status: ${device.status}`);
 
                 const deviceData = await device.json();
+                console.log("Device Data:", formData);
 
                     setFormData(prev => ({
                         ...prev,
@@ -79,7 +91,6 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                         serialNumber: deviceData.serialNumber,
                         warrantyNumber: warrantyNumber,
                     }));
-
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -110,10 +121,14 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         try {
                 setLoading(true);
                 setError(null);
+
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
                 if (
+                    !formData.customerName ||
+                    !formData.customerEmail ||
+                    !formData.customerPhoneNumber ||
                     !formData.returnReason
                 ) {
                     setError("Please fill in all required fields.");
@@ -122,9 +137,9 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 }
 
                 const payload = new FormData();
-                    payload.append("customerName", userData.firstName + " " + userData.lastName);
-                    payload.append("customerPhoneNumber", userData.phoneNumber);
-                    payload.append("customerEmail", userData.email);
+                    payload.append("customerName", formData.customerName);
+                    payload.append("customerPhoneNumber", formData.customerPhoneNumber);
+                    payload.append("customerEmail", formData.customerEmail);
                     payload.append("warrantyNumber", formData.warrantyNumber);
                     payload.append("serialNumber", formData.serialNumber);
                     payload.append("reportedIssue", formData.reportedIssue);
