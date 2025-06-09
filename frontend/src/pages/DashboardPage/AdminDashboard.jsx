@@ -25,8 +25,12 @@ const AdminDashboard = () => {
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
             <Sidebar />
+
+            {/*to seperate the sidebar and the main content*/}
             <div className="w-60  bg-gray-50 shadow-md">
             </div>
+
+
             {/* Main Content Area */}
             <div className="flex-1 bg-gray-50">
                 {/* Header with Search and User Menu */}

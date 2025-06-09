@@ -23,6 +23,7 @@ import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
 import NewRepair from "./pages/NewRepair/NewRepair.jsx";
 import AdminDashboard from "./pages/DashboardPage/AdminDashboard.jsx";
 import CustomerDashboard from "./pages/DashboardPage/CustomerDashboard.jsx";
+import Techniciandashboard from "./pages/DashboardPage/techniciandashboard.jsx";
 
 
 function App() {
@@ -53,6 +54,8 @@ function App() {
         <Route path="/newrepair" element={<NewRepair />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
         <Route path="/customerdashboard" element={<CustomerDashboard />} />
+        <Route path="/techniciandashboard" element={<Techniciandashboard />} />
+        {/* Add more routes as needed */}
       </Routes>
     </Router>
   )
