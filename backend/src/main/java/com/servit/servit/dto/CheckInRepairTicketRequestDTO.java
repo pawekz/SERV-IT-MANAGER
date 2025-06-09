@@ -21,6 +21,7 @@ public class CheckInRepairTicketRequestDTO {
     private String technicianName;
     private String accessories;
     private String observations;
+
     private MultipartFile digitalSignature;
     private List<MultipartFile> repairPhotos;
 }

@@ -20,4 +20,7 @@ public class WarrantyPhotoEntity {
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
     private WarrantyEntity warranty;
+
+    @Column(name = "document_path")
+    private String documentPath;
 }

@@ -5,18 +5,21 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 public class GetAllWarrantyDTO {
-    private Long warrantyNumber;
+    private String warrantyNumber;
     private String customerName;
     private String customerEmail;
     private String customerPhoneNumber;
     private WarrantyStatus status;
     private String reportedIssue;
     private String returnReason;
-    private LocalDate expirationDate;
-    private Long partId;
+    private LocalDateTime expirationDate;
+    private String deviceName;
+    private String deviceType;
+    private String serialNumber;
     private List<String> repairPhotosUrls;
 }

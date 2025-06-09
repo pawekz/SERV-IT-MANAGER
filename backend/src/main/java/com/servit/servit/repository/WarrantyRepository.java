@@ -1,6 +1,5 @@
 package com.servit.servit.repository;
 
-import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.entity.WarrantyEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,12 +9,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WarrantyRepository extends JpaRepository<WarrantyEntity, Long> {
 
-    @Query(value = "SELECT warranty_expiration FROM part WHERE part.part_id == partId", nativeQuery = true)
-    String verifyItemWarranty(@Param("partId") Long partId);
+    Optional<WarrantyEntity> findByWarrantyNumber(String warrantyNumber);
 
     List<WarrantyEntity> findByCustomerEmail(String email);
 
@@ -23,7 +22,7 @@ public interface WarrantyRepository extends JpaRepository<WarrantyEntity, Long> 
     String findLastWarrantyNumber();
 
     @Query("SELECT w FROM WarrantyEntity w WHERE w.customerEmail = :email AND (" +
-            "LOWER(CAST(w.warantyNumber AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(CAST(w.warrantyNumber AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.customerName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.customerPhoneNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.returnReason) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

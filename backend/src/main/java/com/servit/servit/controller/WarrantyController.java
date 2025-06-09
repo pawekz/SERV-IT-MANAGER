@@ -1,12 +1,15 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.GetAllWarrantyDTO;
+import com.servit.servit.dto.*;
+import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.entity.WarrantyEntity;
 import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.service.WarrantyService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,9 +25,12 @@ public class WarrantyController {
         this.warrantyService = warrantyService;
     }
 
-    @GetMapping
-    public ResponseEntity<List<WarrantyEntity>> getAllWarranties() {
-        return ResponseEntity.ok(warrantyService.getAllWarranties());
+    @GetMapping("/getAllWarranties")
+    public ResponseEntity<List<GetAllWarrantyDTO>> getAllWarranties() {
+        List<GetAllWarrantyDTO> warranty = warrantyService.getAllWarranties();
+        return warranty.isEmpty()
+                ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                : ResponseEntity.status(HttpStatus.OK).body(warranty);
     }
 
     @GetMapping("/{id}")
@@ -34,12 +40,21 @@ public class WarrantyController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/email")
-    public ResponseEntity<List<GetAllWarrantyDTO>> getWarrantiesByCustomerEmail(@RequestParam String email) {
-        return ResponseEntity.ok(warrantyService.getWarrantiesByCustomerEmail(email));
+    // get all warranties under certain customer by email
+    @GetMapping("/getWarrantyByCustomerEmail")
+    public ResponseEntity<List<GetAllWarrantyDTO>> getWarrantyByCustomerEmail(@RequestParam String email) {
+        try {
+            List<GetAllWarrantyDTO> warranty = warrantyService.getWarrantiesByCustomerEmail(email);
+            return warranty.isEmpty()
+                    ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                    : ResponseEntity.status(HttpStatus.OK).body(warranty);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    @GetMapping("/search")
+    // serach all warranties under certain customer by email with a serach term
+    @GetMapping("/searchByEmail")
     public ResponseEntity<Page<GetAllWarrantyDTO>> searchWarranties(
             @RequestParam String email,
             @RequestParam String searchTerm,
@@ -48,22 +63,44 @@ public class WarrantyController {
         return ResponseEntity.ok(warrantyService.searchWarrantiesByEmail(email, searchTerm, pageable));
     }
 
-    @PostMapping("/checkin")
-    public ResponseEntity<WarrantyEntity> checkinWarranty(@RequestBody WarrantyEntity warranty) {
-        return ResponseEntity.ok(warrantyService.checkinWarranty(warranty));
+    //submit a new warranty
+    @PostMapping("/checkInWarranty")
+    public ResponseEntity<?> checkInWarranty(@ModelAttribute CheckInWarrantyDTO req) {
+        try {
+            WarrantyEntity warranty = warrantyService.checkinWarranty(req);
+            return ResponseEntity.status(HttpStatus.OK).body(warranty);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
-    @PutMapping("/updatestatus")
-    public ResponseEntity<Void> updateWarrantyStatus(
-            @PathVariable Long id,
-            @RequestParam WarrantyStatus status
-    ) {
-        warrantyService.updateStatus(id, status);
-        return ResponseEntity.noContent().build();
+    @PatchMapping("/updateWarrantyStatus")
+    public ResponseEntity<?> updateWarrantyStatus(@RequestBody UpdateWarrantyStatusDTO request) {
+        try {
+            WarrantyEntity warranty = warrantyService.updateWarrantyStatus(request);
+            return ResponseEntity.ok(warranty);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
-    @GetMapping("/generate-number")
+    @GetMapping("/generateWarrantyNumber")
     public ResponseEntity<String> generateWarrantyNumber() {
-        return ResponseEntity.ok(warrantyService.generateWarrantyNumber());
+        try {
+            String warrantyNumber = warrantyService.generateWarrantyNumber();
+            return ResponseEntity.status(HttpStatus.OK).body(warrantyNumber);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate warranty number");
+        }
+    }
+
+    //verify warranty by serial number
+    @GetMapping("/check/{serialNumber}")
+    public VerifyWarrantyDTO checkWarranty(@PathVariable String serialNumber) {
+        return warrantyService.checkWarranty(serialNumber);
     }
 }

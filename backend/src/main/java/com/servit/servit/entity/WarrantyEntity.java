@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.servit.servit.enumeration.WarrantyStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -15,10 +17,10 @@ public class WarrantyEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "warranty_id")
-    private Long warantyId;
+    private Long warrantyId;
 
     @Column(name = "warranty_number")
-    private Long warantyNumber;
+    private String warrantyNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -39,20 +41,24 @@ public class WarrantyEntity {
     @Column(name = "reported_issue", nullable = false, columnDefinition = "TEXT")
     private String reportedIssue;
 
-    @Column(name = "expiration_date", nullable = false)
-    private LocalDate expirationDate;
-
-    @OneToOne
-    @JoinColumn(name = "part_id", unique = true)
-    private PartEntity item;
-
-    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<WarrantyPhotoEntity> warrantyPhotos;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private DigitalSignatureEntity digitalSignature;
+    private PartEntity item;
+
+//    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonManagedReference
+//    private List<WarrantyPhotoEntity> warrantyPhotos;
+//
+//    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
+//    @JsonManagedReference
+//    private DigitalSignatureEntity digitalSignature;
+//
+//    @Column(name = "document_path")
+//    private String documentPath;
 
 }
 
