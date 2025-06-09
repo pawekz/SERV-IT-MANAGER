@@ -19,26 +19,45 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         returnReason: "",
     });
 
-    useEffect(() => {
-        if (!serialNumber) return;
+    const generateWarrantyNumber = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Not authenticated. Please log in.");
+            }
 
-        const fetchWarrantyNumber = async () => {
+            const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setFormData(prev => ({
+                ...prev,
+                warrantyNumber: data
+            }));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!isOpen || !serialNumber) return;
+
+        const getData = async () => {
             try {
                 setLoading(true);
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
-
-                const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                });
-
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                const data = await response.text();
 
                 const device = await fetch(`http://localhost:8080/part/getPartBySerialNumber/${serialNumber}`, {
                     method: 'GET',
@@ -52,17 +71,14 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
 
                 const deviceData = await device.json();
 
-
-
                 if (role !== "customer") {
                     setFormData(prev => ({
                         ...prev,
                         deviceName: deviceData.name,
                         purchasedDate: deviceData.datePurchasedByCustomer,
-                        warrantyNumber: data
+                        serialNumber: deviceData.serialNumber,
                     }));
-                }
-                else{
+                } else {
                     setFormData(prev => ({
                         ...prev,
                         customerName: userData.customerName,
@@ -70,10 +86,9 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                         customerEmail: userData.customerEmail,
                         deviceName: deviceData.name,
                         purchasedDate: deviceData.datePurchasedByCustomer,
-                        warrantyNumber: data
+                        serialNumber: deviceData.serialNumber,
                     }));
                 }
-                console.log(formData)
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -81,8 +96,9 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
             }
         };
 
-        fetchWarrantyNumber();
-    }, []);
+        generateWarrantyNumber();
+        getData();
+    }, [isOpen, serialNumber]);
 
     const reasonsList = [
         "Defective/Not Working",
