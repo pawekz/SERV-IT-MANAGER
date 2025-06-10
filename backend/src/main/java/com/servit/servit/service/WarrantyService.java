@@ -279,6 +279,12 @@ public class WarrantyService {
         }
 
         PartEntity part = optionalPart.get();
+        if(part.getWarranty() != null) {
+            dto.setWithinWarranty(false);
+            dto.setMessage("This item already has a warranty: " + part.getWarranty().getWarrantyNumber());
+            dto.setDaysLeft(null); // Or consider using Optional<LocalDate> or -1 to represent "not applicable"
+            return dto;
+        }
         dto.setDeviceName(part.getName());
         dto.setDeviceType(part.getDescription());
         LocalDateTime expiration = part.getWarrantyExpiration();
