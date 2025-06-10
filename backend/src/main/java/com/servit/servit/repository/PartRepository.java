@@ -1,6 +1,7 @@
 package com.servit.servit.repository;
 
 import com.servit.servit.entity.PartEntity;
+import com.servit.servit.entity.WarrantyEntity;
 import com.servit.servit.enumeration.PartEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,8 @@ public interface PartRepository extends JpaRepository<PartEntity, Long> {
     
     @Query("SELECT DISTINCT p.partNumber FROM PartEntity p WHERE p.isDeleted = false")
     List<String> findDistinctPartNumbers();
+
+    Optional<PartEntity> findByWarranty(WarrantyEntity warranty);
     
     Optional<PartEntity> findBySerialNumber(String serialNumber);
 

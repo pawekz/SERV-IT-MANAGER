@@ -4,6 +4,7 @@ import {Upload} from "lucide-react";
 const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [agreed, setAgreed] = useState(false);
+    const [photoFile, setPhotoFile] = useState(null);
 
     if (role === "admin"){
         readonly = false;
@@ -26,18 +27,6 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
         // Handle form submission logic here
         alert("Form submitted successfully!")
     }
-
-    const [formData, setFormData] = useState({
-        name: "",
-        phone: "",
-        email: "",
-        orderNumber: "",
-        deviceType: "",
-        purchaseDate: "",
-        serialNumber: "",
-        issueDescription: "",
-        reasons: [],
-    });
 
     const reasonsList = [
         "Defective/Not Working",
@@ -64,24 +53,21 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                     <form>
                         {/* Header with Ticket Number */}
 
-                        {readonly && (
+
                             <div className="mb-4">
-                                <div className={`text-50 font-semibold text-gray-800 ${data.status === "Requested" || data.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}>
-                                    Status: {data.status}
-                                </div>
                                 <div className="flex flex-col md:flex-row justify-between mb-6">
-                                    <div className="text-xl font-semibold text-gray-800">Warranty:#4{data.id}32</div>
+                                    <div className="text-xl font-semibold text-gray-800">Warranty: {data.warrantyNumber}</div>
                                     <div className="flex items-center gap-2 mt-2 md:mt-0">
-                                        <span className="text-sm font-medium">Ticket #:</span>
+                                        <span className="text-sm font-medium">Status:</span>
                                         <input
-                                            value={'#' + data.serialNumber}
+                                            value={data.status}
                                             readOnly
-                                            className="w-40 bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                            className={`text-50 font-semibold text-gray-800 ${data.status === "Requested" || data.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}
                                         />
                                     </div>
                                 </div>
                             </div>
-                        )}
+
 
                         {/* Customer Information Section */}
                         {role !== "customer" && (
@@ -96,7 +82,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     </label>
                                     <input
                                         id="fullName"
-                                        value={data.name}
+                                        defaultValue={data.customerName}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
@@ -109,7 +95,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     <input
                                         id="email"
                                         type="email"
-                                        value={data.email}
+                                        defaultValue={data.customerEmail}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
@@ -121,7 +107,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     </label>
                                     <input
                                         id="phone"
-                                        value={data.phoneNumber}
+                                        defaultValue={data.customerPhoneNumber}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
@@ -137,38 +123,26 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="deviceName" className="block text-sm font-medium text-gray-700">
+                                        Device Name:
+                                    </label>
+                                    <input
+                                        id="deviceName"
+                                        defaultValue={data.deviceName}
+                                        readOnly={readonly}
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                    />
+                                </div>
                                 <div className="space-y-2">
                                     <label htmlFor="deviceType" className="block text-sm font-medium text-gray-700">
-                                        Device Type:
+                                        Description:
                                     </label>
                                     <input
                                         id="deviceType"
-                                        value={data.deviceType}
-                                        readOnly={readonly}
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
-                                        Brand:
-                                    </label>
-                                    <input
-                                        id="brand"
-                                        value={data.deviceType}
-                                        readOnly={readonly}
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-                                        Model:
-                                    </label>
-                                    <input
-                                        id="model"
-                                        value={data.deviceType}
+                                        defaultValue={data.deviceType}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
@@ -180,31 +154,19 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     </label>
                                     <input
                                         id="serialNumber"
-                                        value={data.serialNumber}
+                                        defaultValue={data.serialNumber}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label htmlFor="color" className="block text-sm font-medium text-gray-700">
-                                        Color:
+                                    <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700">
+                                        Warranty Expiration Date:
                                     </label>
                                     <input
-                                        id="color"
-                                        value={data.color}
-                                        readOnly={readonly}
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                        Password:
-                                    </label>
-                                    <input
-                                        id="password"
-                                        value={data.serialNumber}
+                                        id="expirationDate"
+                                        defaultValue={new Date(data.expirationDate).toLocaleDateString()}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
@@ -225,7 +187,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     </label>
                                     <textarea
                                         id="customerIssues"
-                                        value={data.issueDescription}
+                                        defaultValue={data.reportedIssue}
                                         readOnly={readonly}
                                         required
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
@@ -250,16 +212,23 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                         <label htmlFor="technicianObservations" className="block text-sm font-medium text-gray-700">
                             Return Reason:
                         </label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]">
-                                {reasonsList.map((label, i) => (
-                                    <label key={i} className="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            className="accent-green-600"
-                                        />
-                                        <span>{label}</span>
-                                    </label>
-                                ))}
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full px-3 py-2 border border-gray-300 rounded-md min-h-[100px]">
+                            {reasonsList.map((label, i) => (
+                                <label key={i} className="flex items-center space-x-2 text-gray-800">
+                                    <input
+                                        type="radio"
+                                        name="returnReason"
+                                        defaultValue={label}
+                                        checked={data.returnReason === label}
+                                        disabled
+                                        className="accent-green-600 cursor-default"
+                                    />
+                                    <span className={`${data.returnReason === label ? 'text-green-700 font-medium' : ''}`}>
+                                        {label}
+                                    </span>
+                                </label>
+                            ))}
                         </div>
                         {!readonly && role === "customer" && (
                         <p className="text-sm italic text-green-500 mb-2">
@@ -326,7 +295,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, readonly  }) => {
                                     type="submit"
                                     className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                                 >
-                                    Submit Repair Request
+                                    Confirm Repair Request
                                 </button>
                             )}
                         </div>

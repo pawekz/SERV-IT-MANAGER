@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static java.util.Locale.filter;
 
 @Service
 public class WarrantyService {
@@ -61,6 +64,7 @@ public class WarrantyService {
         try {
             List<GetAllWarrantyDTO> warranties = warrantyRepository.findAll().stream()
                     .map(this::mapToGetAllWarrantyDTO)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             logger.info("Fetched {} warranties.", warranties.size());
             return warranties;
@@ -98,6 +102,14 @@ public class WarrantyService {
     }
 
     private GetAllWarrantyDTO mapToGetAllWarrantyDTO(WarrantyEntity warranty) {
+
+        Optional<PartEntity> part = partRepository.findByWarranty(warranty);
+        if (part.isEmpty()) {
+            logger.warn("No part found for warranty ID: {}", warranty.getWarrantyId());
+            return null;  // or create DTO with partial data
+        }
+        PartEntity partEntity = part.get();
+
         GetAllWarrantyDTO dto = new GetAllWarrantyDTO();
         dto.setWarrantyNumber(warranty.getWarrantyNumber());
         dto.setStatus(warranty.getStatus());
@@ -106,10 +118,10 @@ public class WarrantyService {
         dto.setCustomerPhoneNumber(warranty.getCustomerPhoneNumber());
         dto.setReturnReason(warranty.getReturnReason());
         dto.setReportedIssue(warranty.getReportedIssue());
-        dto.setExpirationDate(warranty.getItem().getWarrantyExpiration());
-        dto.setDeviceName(warranty.getItem().getName());
-        dto.setDeviceType(warranty.getItem().getPartType().toString());
-        dto.setSerialNumber(warranty.getItem().getSerialNumber());
+        dto.setExpirationDate(partEntity.getWarrantyExpiration());
+        dto.setDeviceName(partEntity.getName());
+        dto.setDeviceType(partEntity.getDescription());
+        dto.setSerialNumber(partEntity.getSerialNumber());
 
 //        if (warranty.getWarrantyPhotos() != null) {
 //            dto.setRepairPhotosUrls(
@@ -150,6 +162,14 @@ public class WarrantyService {
             warranty.setCreatedAt(LocalDateTime.now());
             warranty.setWarrantyNumber(req.getWarrantyNumber());
             warranty.setReportedIssue(req.getReportedIssue());
+
+            warranty = warrantyRepository.save(warranty);
+
+            part.setWarranty(warranty);
+            partRepository.save(part);
+
+// Finally set the reverse relationship if needed
+            warranty.setItem(part);
 
             logger.info("Successfully created Warranty ticket: {}", warranty.getWarrantyNumber());
 
@@ -259,6 +279,12 @@ public class WarrantyService {
         }
 
         PartEntity part = optionalPart.get();
+        if(part.getWarranty() != null) {
+            dto.setWithinWarranty(false);
+            dto.setMessage("This item already has a warranty: " + part.getWarranty().getWarrantyNumber());
+            dto.setDaysLeft(null); // Or consider using Optional<LocalDate> or -1 to represent "not applicable"
+            return dto;
+        }
         dto.setDeviceName(part.getName());
         dto.setDeviceType(part.getDescription());
         LocalDateTime expiration = part.getWarrantyExpiration();
