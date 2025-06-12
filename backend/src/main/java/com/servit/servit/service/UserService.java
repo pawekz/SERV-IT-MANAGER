@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -322,5 +323,19 @@ public class UserService {
     @Transactional
     public Long getUserCount() {
         return userRepo.count();
+    }
+
+    @Transactional
+    public List<GetUserResponseDTO> getWeeklyUsers() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfWeek = startOfWeek.plusDays(7);
+        
+        return userRepo.findAll().stream()
+                .filter(user -> user.getCreatedAt().isAfter(startOfWeek) && user.getCreatedAt().isBefore(endOfWeek))
+                .map(user -> new GetUserResponseDTO(
+                        user.getUserId(), user.getFirstName(), user.getLastName(),
+                        user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                .toList();
     }
 }
