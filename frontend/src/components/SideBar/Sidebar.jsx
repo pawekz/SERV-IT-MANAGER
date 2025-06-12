@@ -25,7 +25,6 @@ const Sidebar = ({ activePage }) => {
     };
 
     const handleLogout = () => {
-
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         sessionStorage.removeItem('userData');
@@ -43,15 +42,17 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className={linkClass('dashboard')}>
+                <Link to="/customerdashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
+            <li className="mb-1">
                 <Link to="/repairqueue" className={linkClass('repair')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
                 </Link>
+            </li>
             <li className="mb-1">
                 <Link to="/warranty" className={linkClass('warranty')}>
                     <Truck size={18} className="mr-3" />
@@ -60,7 +61,7 @@ const Sidebar = ({ activePage }) => {
             </li>
             <li className="mb-1">
                 <Link to="#" className={linkClass('history')}>
-                    <FileClock   size={18} className="mr-3" />
+                    <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
             </li>
@@ -71,13 +72,12 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className={linkClass('dashboard')}>
+                <Link to="/techniciandashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
             </li>
             <li className="mb-1">
-
                 <Link to="/repairqueue" className={linkClass('repair')}>
                     <ClipboardList size={18} className="mr-3" />
                     <span>Repair Queue</span>
@@ -91,11 +91,10 @@ const Sidebar = ({ activePage }) => {
             </li>
             <li className="mb-1">
                 <Link to="#" className={linkClass('history')}>
-                    <FileClock   size={18} className="mr-3" />
+                    <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
             </li>
-
 
             <div className="mb-6 mt-6">
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
@@ -115,7 +114,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/dashboard" className="flex items-center px-6 py-3 text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407] transition-all duration-200">
+                <Link to="/admindashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -134,11 +133,10 @@ const Sidebar = ({ activePage }) => {
             </li>
             <li className="mb-1">
                 <Link to="#" className={linkClass('history')}>
-                    <FileClock   size={18} className="mr-3" />
+                    <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
             </li>
-
 
             <div className="mb-6 mt-6">
                 <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">ADMINISTRATION</h2>
@@ -167,7 +165,6 @@ const Sidebar = ({ activePage }) => {
     );
 
     return (
-
         <div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">
             <div className="p-6 border-b border-gray-200">
                 <h1 className="text-2xl font-bold text-gray-800">
