@@ -222,6 +222,53 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
+    // Fetch active repair tickets from backend
+    useEffect(() => {
+        const fetchActiveRepairTickets = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/repairTicket/getActiveRepairTickets', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching active repair tickets: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Update open tickets count with the total count from paginated result
+                setStats(prevStats => ({
+                    ...prevStats,
+                    openTickets: data.totalElements || 0
+                }));
+
+            } catch (err) {
+                console.error("Error fetching active repair tickets:", err);
+                // Keep the previous value or set to 0 if error occurs
+                setStats(prevStats => ({
+                    ...prevStats,
+                    openTickets: prevStats.openTickets || 0
+                }));
+            }
+        };
+
+        fetchActiveRepairTickets();
+
+        // Set up polling to refresh active tickets count every 2 minutes
+        const intervalId = setInterval(fetchActiveRepairTickets, 120000);
+
+        return () => clearInterval(intervalId);
+    }, []);
+
     // Fetch repair tickets from backend
     useEffect(() => {
         const fetchRepairTickets = async () => {
@@ -247,15 +294,6 @@ const AdminDashboard = () => {
 
                 const data = await response.json();
                 setRepairTickets(data);
-
-                // Count open tickets (assuming a ticket is open if status is not "COMPLETED")
-                const openTicketsCount = data.filter(ticket =>
-                    ticket.status !== 'COMPLETED' && ticket.status !== 'CANCELLED').length;
-
-                setStats(prevStats => ({
-                    ...prevStats,
-                    openTickets: openTicketsCount
-                }));
 
                 setTicketsError(null);
             } catch (err) {
