@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
  * Currently implements console logging but can be extended to support email, SMS, push notifications, etc.
  */
 @Service
-public class NotificationService {
+public class AlertService {
     
-    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlertService.class);
 
     /**
      * Sends low stock alert to administrators

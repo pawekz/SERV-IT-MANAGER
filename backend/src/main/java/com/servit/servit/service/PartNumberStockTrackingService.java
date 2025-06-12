@@ -25,16 +25,16 @@ public class PartNumberStockTrackingService {
     
     private final PartNumberStockTrackingRepository trackingRepository;
     private final PartRepository partRepository;
-    private final NotificationService notificationService;
+    private final AlertService alertService;
     
     @Autowired
     public PartNumberStockTrackingService(
             PartNumberStockTrackingRepository trackingRepository,
             PartRepository partRepository,
-            NotificationService notificationService) {
+            AlertService alertService) {
         this.trackingRepository = trackingRepository;
         this.partRepository = partRepository;
-        this.notificationService = notificationService;
+        this.alertService = alertService;
     }
     
     /**
