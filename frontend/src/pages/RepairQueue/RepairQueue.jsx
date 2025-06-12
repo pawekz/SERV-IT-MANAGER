@@ -117,6 +117,7 @@ const RepairQueue = () => {
         const name = deviceType.toLowerCase();
 
         if (name.includes("laptop") || name.includes("computer") || name.includes("pc")) {
+
             return <Images className="text-[#10B981] size-10" />;
         } else if (name.includes("phone") || name.includes("smartphone") || name.includes("tablet")) {
             return <Images className="text-[#10B981] size-10" />;
@@ -249,7 +250,12 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
+
+
                                                         <Images className="text-[#10B981] size-60" />
+
+
+
                                                         <p className="text-[12px]">Ticket Number</p>
                                                     </div>
                                                     <div className="my-2 h-px bg-[#33e407]">

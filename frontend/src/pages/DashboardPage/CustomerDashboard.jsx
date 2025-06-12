@@ -86,18 +86,20 @@ const CustomerDashboard = () => {
                         </div>
 
                         <div className="flex flex-wrap gap-3 mt-6">
-                            <button className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-md font-medium">
-                                <ClipboardList className="h-4 w-4 mr-2" />
-                                View Details
-                            </button>
-                            <button className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-md font-medium">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Track Status
-                            </button>
-                            <button className="flex items-center px-4 py-2 bg-amber-50 text-amber-600 rounded-md font-medium">
-                                <AlertTriangle className="h-4 w-4 mr-2" />
-                                Action Required
-                            </button>
+                            <Link to="/realtimestatus">
+                                <button className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-md font-medium">
+                                    <ClipboardList className="h-4 w-4 mr-2" />
+                                    View Details
+                                </button>
+                            </Link>
+                            {/*<button className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-md font-medium">*/}
+                            {/*    <CheckCircle className="h-4 w-4 mr-2" />*/}
+                            {/*    Track Status*/}
+                            {/*</button>*/}
+                            {/*<button className="flex items-center px-4 py-2 bg-amber-50 text-amber-600 rounded-md font-medium">*/}
+                            {/*    <AlertTriangle className="h-4 w-4 mr-2" />*/}
+                            {/*    Action Required*/}
+                            {/*</button>*/}
                         </div>
                     </div>
 
