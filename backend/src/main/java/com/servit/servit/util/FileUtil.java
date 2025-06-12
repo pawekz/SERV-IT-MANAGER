@@ -62,7 +62,7 @@ public class FileUtil {
 
         String fileExtension = getFileExtension(file);
         String date = LocalDate.now().format(DATE_FORMATTER);
-        String fileName = String.format("%s-ticket-%s%s", ticketNumber, date, fileExtension);
+        String fileName = String.format("%s-repair-ticket-%s%s", ticketNumber, date, fileExtension);
 
         Path filePath = Paths.get(claimFormsDir).resolve(fileName);
         Files.createDirectories(filePath.getParent());

@@ -116,7 +116,7 @@ public class EmailService {
                 "</body>" +
                 "</html>";
 
-        String attachmentName = ticketNumber + "_RepairTicket.pdf";
+        String attachmentName = String.format("%s-repair-ticket.pdf", ticketNumber);
         emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
     }
 }
