@@ -19,14 +19,7 @@ import {
 } from "lucide-react"
 import {useEffect, useState} from "react";
 
-
-
-
-
-
 const AdminDashboard = () => {
-
-
     const [userData, setUserData] = useState({
         firstName: '',
         lastName: '',
@@ -41,14 +34,27 @@ const AdminDashboard = () => {
     // State for dashboard statistics
     const [stats, setStats] = useState({
         users: 0,
+        usersAddedThisWeek: 0,
+        openTickets: 0,
+        pendingApprovals: 0,
+        lowStockItems: 0,
         devicesInRepair: 87,
         warrantyRequests: 32,
         satisfactionRate: "94%",
+    });
+    // State for tracking errors specifically for weekly user stats
+    const [statsErrors, setStatsErrors] = useState({
+        usersAddedThisWeek: false
     });
     // State for inventory data
     const [inventoryData, setInventoryData] = useState([]);
     const [inventoryLoading, setInventoryLoading] = useState(true);
     const [inventoryError, setInventoryError] = useState(null);
+
+    // State for repair tickets
+    const [repairTickets, setRepairTickets] = useState([]);
+    const [ticketsLoading, setTicketsLoading] = useState(true);
+    const [ticketsError, setTicketsError] = useState(null);
 
     // Modal state for description
     const [modalData, setModalData] = useState(null);
@@ -164,6 +170,105 @@ const AdminDashboard = () => {
         fetchUserCount();
     }, []);
 
+    // Add useEffect to fetch users added this week with improved error handling
+    useEffect(() => {
+        const fetchUsersAddedThisWeek = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+                // Use the getWeeklyUsers endpoint
+                const response = await fetch('http://localhost:8080/user/getWeeklyUsers', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch weekly users: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                // Handle the case where response is an array of objects
+                const count = Array.isArray(data) ? data.length : data;
+
+                setStats(prevStats => ({
+                    ...prevStats,
+                    usersAddedThisWeek: count
+                }));
+
+                // Reset error state
+                setStatsErrors(prev => ({...prev, usersAddedThisWeek: false}));
+            } catch (err) {
+                console.error("Error fetching users added this week:", err);
+                setStatsErrors(prev => ({...prev, usersAddedThisWeek: true}));
+
+                // Set fallback value
+                setStats(prevStats => ({
+                    ...prevStats,
+                    usersAddedThisWeek: 0
+                }));
+            }
+        };
+
+        fetchUsersAddedThisWeek();
+
+        // Set up polling to refresh the count periodically
+        const intervalId = setInterval(fetchUsersAddedThisWeek, 60000); // Refresh every minute
+
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // Fetch repair tickets from backend
+    useEffect(() => {
+        const fetchRepairTickets = async () => {
+            try {
+                setTicketsLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/repairTicket/getAllRepairTickets', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching repair tickets: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setRepairTickets(data);
+
+                // Count open tickets (assuming a ticket is open if status is not "COMPLETED")
+                const openTicketsCount = data.filter(ticket =>
+                    ticket.status !== 'COMPLETED' && ticket.status !== 'CANCELLED').length;
+
+                setStats(prevStats => ({
+                    ...prevStats,
+                    openTickets: openTicketsCount
+                }));
+
+                setTicketsError(null);
+            } catch (err) {
+                console.error("Error fetching repair tickets:", err);
+                setTicketsError("Failed to load ticket data");
+            } finally {
+                setTicketsLoading(false);
+            }
+        };
+
+        fetchRepairTickets();
+    }, []);
+
     // Add useEffect to fetch inventory data from the backend
     useEffect(() => {
         const fetchInventoryData = async () => {
@@ -189,6 +294,14 @@ const AdminDashboard = () => {
 
                 const data = await response.json();
                 setInventoryData(data);
+
+                // Count low stock items (assuming items with quantity <= 5 are considered low stock)
+                const lowStockCount = data.filter(item => item.quantity <= 5).length;
+                setStats(prevStats => ({
+                    ...prevStats,
+                    lowStockItems: lowStockCount
+                }));
+
                 setInventoryError(null);
             } catch (err) {
                 console.error("Error fetching inventory data:", err);
@@ -199,6 +312,51 @@ const AdminDashboard = () => {
         };
 
         fetchInventoryData();
+    }, []);
+
+    // Fetch pending approvals
+    useEffect(() => {
+        const fetchPendingApprovals = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                // Assuming there's an endpoint for pending approvals
+                const response = await fetch('http://localhost:8080/repairTicket/getPendingApprovals', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // If endpoint doesn't exist or returns error, use default value
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        pendingApprovals: 3
+                    }));
+                    return;
+                }
+
+                const count = await response.json();
+                setStats(prevStats => ({
+                    ...prevStats,
+                    pendingApprovals: count
+                }));
+            } catch (err) {
+                console.error("Error fetching pending approvals:", err);
+                // Fallback to default value if error occurs
+                setStats(prevStats => ({
+                    ...prevStats,
+                    pendingApprovals: 3
+                }));
+            }
+        };
+
+        fetchPendingApprovals();
     }, []);
 
     // Chart data
@@ -244,7 +402,7 @@ const AdminDashboard = () => {
         setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
     }
 
-        return (
+    return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
             <Sidebar />
@@ -285,23 +443,29 @@ const AdminDashboard = () => {
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <div className="text-gray-600 text-sm mb-2">Active Users</div>
-                            <div className="text-2xl font-bold text-gray-800">42</div>
-                            <div className="text-xs text-gray-500 mt-1">+3 this week</div>
+                            <div className="text-gray-600 text-sm mb-2">Total Users</div>
+                            <div className="text-2xl font-bold text-gray-800">{stats.users}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                                {statsErrors.usersAddedThisWeek ? (
+                                    "Unable to track new users"
+                                ) : (
+                                    `+${stats.usersAddedThisWeek} this week`
+                                )}
+                            </div>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <div className="text-gray-600 text-sm mb-2">Open Tickets</div>
-                            <div className="text-2xl font-bold text-gray-800">18</div>
+                            <div className="text-2xl font-bold text-gray-800">{stats.openTickets}</div>
                             <div className="text-xs text-gray-500 mt-1">-2 since yesterday</div>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <div className="text-gray-600 text-sm mb-2">Pending Approvals</div>
-                            <div className="text-2xl font-bold text-gray-800">3</div>
+                            <div className="text-2xl font-bold text-gray-800">{stats.pendingApprovals}</div>
                             <div className="text-xs text-gray-500 mt-1">Requires attention</div>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <div className="text-gray-600 text-sm mb-2">Low Stock Items</div>
-                            <div className="text-2xl font-bold text-gray-800">7</div>
+                            <div className="text-2xl font-bold text-gray-800">{stats.lowStockItems}</div>
                             <div className="text-xs text-gray-500 mt-1">Needs reordering</div>
                         </div>
                     </div>
