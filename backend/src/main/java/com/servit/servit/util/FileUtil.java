@@ -57,12 +57,12 @@ public class FileUtil {
         return filePath.toString();
     }
 
-    public String saveRepairTicketDocument(MultipartFile file, String ticketNumber) throws IOException {
+    public String saveRepairTicketPdf(MultipartFile file, String ticketNumber) throws IOException {
         validateDocument(file);
 
         String fileExtension = getFileExtension(file);
         String date = LocalDate.now().format(DATE_FORMATTER);
-        String fileName = String.format("%s-document-%s%s", ticketNumber, date, fileExtension);
+        String fileName = String.format("%s-repair-ticket-%s%s", ticketNumber, date, fileExtension);
 
         Path filePath = Paths.get(claimFormsDir).resolve(fileName);
         Files.createDirectories(filePath.getParent());

@@ -1,19 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
-
-// Reusable Spinner component
-const Spinner = ({ size = "normal" }) => {
-    const sizeClasses = {
-        small: "w-5 h-5 border-t-2 border-b-2",
-        normal: "w-8 h-8 border-t-3 border-b-3",
-        large: "w-16 h-16 border-t-4 border-b-4"
-    };
-
-    return (
-        <div className={`${sizeClasses[size]} border-[#33e407] rounded-full animate-spin`}></div>
-    );
-};
+import Spinner from '../../components/Spinner/Spinner.jsx';
+import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
 
 const SignUpPage = () => {
     const navigate = useNavigate();
@@ -653,15 +642,11 @@ const SignUpPage = () => {
 
             {/* Full-screen Loading Overlay */}
             {signupProcessing && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-                    <div className="bg-white rounded-xl p-8 shadow-xl text-center">
-                        <div className="flex flex-col items-center">
-                            <Spinner size="large" />
-                            <h3 className="text-lg font-medium text-gray-800 mt-4">Setting up your account</h3>
-                            <p className="text-sm text-gray-600 mt-2">Please wait while we process your registration...</p>
-                        </div>
-                    </div>
-                </div>
+                <LoadingModal
+                    show={loading}
+                    title="Setting Up Your Account"
+                    message="Please wait while we process your registration......"
+                />
             )}
         </div>
     );
