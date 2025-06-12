@@ -43,6 +43,8 @@ public class RepairTicketService {
     private FileUtil fileUtil;
 
     private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
+    @Autowired
+    private EmailService emailService;
 
     public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
@@ -68,7 +70,7 @@ public class RepairTicketService {
         }
     }
 
-    public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) throws IOException {
+    public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) {
         logger.info("Attempting to check in repair ticket: {}", req.getTicketNumber());
 
         try {
@@ -192,7 +194,7 @@ public class RepairTicketService {
         return newTicketNumber;
     }
 
-    public void uploadRepairTicketDocument(String ticketNumber, MultipartFile file) throws IOException {
+    public void uploadRepairTicketPdf(String ticketNumber, MultipartFile file) {
         logger.info("Uploading document for repair ticket: {}", ticketNumber);
 
         try {
@@ -213,14 +215,41 @@ public class RepairTicketService {
                         return new EntityNotFoundException("Repair ticket with ticket number " + ticketNumber + " not found.");
                     });
 
-            String pdfPath = fileUtil.saveRepairTicketDocument(file, ticketNumber);
+            String pdfPath;
+            try {
+                pdfPath = fileUtil.saveRepairTicketPdf(file, ticketNumber);
+            } catch (IOException ioEx) {
+                logger.error("IO error while saving PDF for ticket: {}", ticketNumber, ioEx);
+                throw new RuntimeException("Failed to save PDF file. Please try again.", ioEx);
+            }
+
             repairTicket.setDocumentPath(pdfPath);
 
-            repairTicketRepository.save(repairTicket);
+            try {
+                repairTicketRepository.save(repairTicket);
+            } catch (Exception dbEx) {
+                logger.error("Database error while saving repair ticket: {}", ticketNumber, dbEx);
+                throw new RuntimeException("Failed to update repair ticket with document path.", dbEx);
+            }
+
+            try {
+                emailService.sendRepairTicketPdfEmail(
+                        repairTicket.getCustomerEmail(),
+                        repairTicket.getTicketNumber(),
+                        repairTicket.getCustomerName(),
+                        pdfPath
+                );
+            } catch (Exception emailEx) {
+                logger.error("Error sending email for repair ticket document: {}", ticketNumber, emailEx);
+                throw new RuntimeException("Failed to send email.", emailEx);
+            }
 
             logger.info("Successfully uploaded document for repair ticket: {}", ticketNumber);
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             logger.error("Validation error while uploading document for ticket: {}", ticketNumber, e);
+            throw e;
+        } catch (RuntimeException e) {
+            logger.error("Runtime error while uploading document for ticket: {}", ticketNumber, e);
             throw e;
         } catch (Exception e) {
             logger.error("Unexpected error while uploading document for ticket: {}", ticketNumber, e);

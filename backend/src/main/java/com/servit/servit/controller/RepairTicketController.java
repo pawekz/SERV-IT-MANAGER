@@ -60,11 +60,11 @@ public class RepairTicketController {
         }
     }
 
-    @PatchMapping("/uploadRepairTicketDocument/{ticketNumber}")
-    public ResponseEntity<Void> uploadRepairTicketDocument(@PathVariable String ticketNumber,
-                                                           @RequestParam("file") MultipartFile file) {
+    @PatchMapping("/uploadRepairTicketPdf/{ticketNumber}")
+    public ResponseEntity<Void> uploadRepairTicketPdf(@PathVariable String ticketNumber,
+                                                      @RequestParam("file") MultipartFile file) {
         try {
-            repairTicketService.uploadRepairTicketDocument(ticketNumber, file);
+            repairTicketService.uploadRepairTicketPdf(ticketNumber, file);
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

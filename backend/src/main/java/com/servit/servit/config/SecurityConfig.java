@@ -78,7 +78,7 @@ public class SecurityConfig {
                             "/repairTicket/getAllRepairTickets",
                             "/user/getTechnicianByEmail",
                             "/repairTicket/getAllRepairTickets",
-                            "/repairTicket/uploadRepairTicketDocument/*",
+                            "/repairTicket/uploadRepairTicketPdf/*",
                             "/repairTicket/searchRepairTickets",
                             "/part/addPart",
                             "/part/addBulkParts",
