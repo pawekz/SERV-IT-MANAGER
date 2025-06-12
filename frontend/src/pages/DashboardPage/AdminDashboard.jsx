@@ -1,7 +1,5 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
-
 import { Link } from 'react-router-dom';
-
 import {
     HelpCircle,
     Bell,
@@ -737,5 +735,5 @@ const AdminDashboard = () => {
         </div>
     )
 }
-//
+
 export default AdminDashboard
