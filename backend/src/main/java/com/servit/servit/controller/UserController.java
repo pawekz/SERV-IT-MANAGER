@@ -173,5 +173,5 @@ public class UserController {
     public ResponseEntity<List<GetUserResponseDTO>> getWeeklyUsers() {
         return ResponseEntity.ok(userSvc.getWeeklyUsers());
     }
-
+//
 }
