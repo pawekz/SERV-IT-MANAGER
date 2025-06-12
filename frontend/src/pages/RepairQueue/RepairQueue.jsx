@@ -318,7 +318,7 @@ const RepairQueue = () => {
                                                                 onClick={(e) => handleStatusClick(e, request.id)}
                                                                 className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
                                                             >
-                                                                Status: {request.status} <ChevronUp className="ml-1 w-4 h-4" />
+                                                                <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.status}
                                                             </p>
 
                                                             {statusDropdownOpen === request.id && (
@@ -363,8 +363,6 @@ const RepairQueue = () => {
                                                 >
                                                     <div className="mr-4 flex object-center">
                                                         <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
-                                                        {/*<img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="size-60" />*/}
-                                                        {/*<Images className="text-[#10B981] size-60" />*/}
                                                         <p className="text-[12px]">Ticket Number</p>
 
                                                     </div>
@@ -385,7 +383,7 @@ const RepairQueue = () => {
                                                                 onClick={(e) => handleStatusClick(e, request.id)}
                                                                 className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
                                                             >
-                                                                Status: {request.status} <ChevronUp className="ml-1 w-4 h-4" />
+                                                                <ChevronUp className="ml-1 w-4 h-4" />   Status: {request.status}
                                                             </p>
 
                                                             {statusDropdownOpen === request.id && (
