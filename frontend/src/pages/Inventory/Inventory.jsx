@@ -186,24 +186,12 @@ const Inventory = () => {
 
     // Get token from various storage locations
     const getAuthToken = () => {
-        const authToken = localStorage.getItem('authToken') ||
-            localStorage.getItem('token') ||
-            sessionStorage.getItem('token') ||
-            sessionStorage.getItem('authToken');
+        const authToken = localStorage.getItem('authToken');
         
         if (!authToken) {
             console.error("No authentication token found in storage");
             return null;
         }
-        
-        if (typeof authToken !== 'string' || authToken.trim() === '') {
-            console.error("Authentication token is empty or invalid type");
-            return null;
-        }
-        
-        // Log token format for debugging (without exposing the actual token)
-        const parts = authToken.split('.');
-        console.log(`Token validation: Found ${parts.length} parts (should be 3 for JWT)`);
         
         return authToken;
     };
@@ -526,7 +514,7 @@ const Inventory = () => {
             setLoading(false);
         } catch (err) {
             console.error("Error fetching inventory:", err);
-            setError("Failed to load inventory items");
+            setError("Failed to load inventory items, add items or check your connection.");
             setLoading(false);
         }
     };
