@@ -16,8 +16,6 @@ public class BulkAddPartRequestDTO {
     private Integer stockPerItem; // Stock quantity for each individual part
     private Integer lowStockThreshold;
     private PartEnum partType = PartEnum.STANDARD;
-    private LocalDateTime datePurchasedByCustomer;
-    private LocalDateTime warrantyExpiration;
     private String addedBy;
     
     // Supplier information (for SUPPLIER_REPLACEMENT parts)

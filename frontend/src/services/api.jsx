@@ -31,7 +31,7 @@ function parseJwt(token) {
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('authToken');
   if (token) {
-    // Validate token format
+    // Validate token format as it will trigger the error handling
     if (!token.includes('.') || token.split('.').length !== 3) {
       localStorage.removeItem('authToken');
       window.dispatchEvent(new Event('tokenExpired'));

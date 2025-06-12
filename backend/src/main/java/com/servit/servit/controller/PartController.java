@@ -97,22 +97,29 @@ public class PartController {
     @PatchMapping("/updatePart/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updatePart(@PathVariable Long id, @RequestBody UpdatePartRequestDTO req) {
-        logger.info("API Request: Updating part with ID: {}", id);
         try {
-            PartResponseDTO result = partService.updatePart(id, req);
-            logger.info("API Response: Part updated successfully - ID: {}, Part Number: {}", 
-                       result.getId(), result.getPartNumber());
-            return ResponseEntity.ok(result);
-        } catch (EntityNotFoundException e) {
-            logger.warn("API Error: Part not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException e) {
-            logger.warn("API Error: Bad request while updating part - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+            logger.info("Updating part with ID: {}", id);
+            logger.debug("Update request data: {}", req);
+
+            // Validate warranty dates if customer purchased
+            if (req.getIsCustomerPurchased() != null && req.getIsCustomerPurchased()) {
+                if (req.getDatePurchasedByCustomer() == null) {
+                    return ResponseEntity.badRequest().body("Purchase date is required for customer purchased items");
+                }
+                if (req.getWarrantyExpiration() == null) {
+                    return ResponseEntity.badRequest().body("Warranty expiration date is required for customer purchased items");
+                }
+                if (req.getDatePurchasedByCustomer().isAfter(req.getWarrantyExpiration())) {
+                    return ResponseEntity.badRequest().body("Warranty expiration date must be after purchase date");
+                }
+            }
+
+            PartResponseDTO updatedPart = partService.updatePart(id, req);
+            return ResponseEntity.ok(updatedPart);
         } catch (Exception e) {
-            logger.error("API Error: Internal server error while updating part - {}", e.getMessage(), e);
+            logger.error("Error updating part: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+                    .body("Failed to update part: " + e.getMessage());
         }
     }
 
@@ -604,6 +611,21 @@ public class PartController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error resolving stock alert: " + e.getMessage());
+        }
+    }
+
+    // Add new endpoint to verify warranty
+    @GetMapping("/verifyWarranty/{partId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> verifyWarranty(@PathVariable Long partId) {
+        try {
+            logger.info("Verifying warranty for part ID: {}", partId);
+            Map<String, Object> warrantyInfo = partService.verifyWarranty(partId);
+            return ResponseEntity.ok(warrantyInfo);
+        } catch (Exception e) {
+            logger.error("Error verifying warranty: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to verify warranty: " + e.getMessage());
         }
     }
 }
