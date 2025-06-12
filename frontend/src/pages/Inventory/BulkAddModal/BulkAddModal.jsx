@@ -1,17 +1,12 @@
 import React from 'react';
-import { X, Copy, CalendarIcon, Trash, Plus } from 'lucide-react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
+import { X, Copy, Trash, Plus } from 'lucide-react';
 
 const BulkAddModal = ({ 
     isOpen, 
     onClose, 
     bulkAddItems,
     onBulkItemChange,
-    onDateChange,
     onSubmit,
-    showCalendar,
-    setShowCalendar,
     onAddBulkItem,
     onRemoveBulkItem,
     loading
@@ -20,7 +15,7 @@ const BulkAddModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg max-w-7xl w-full h-[95vh] flex flex-col overflow-hidden">
+            <div className="bg-white p-6 rounded-lg max-w-5xl w-full h-[95vh] flex flex-col overflow-hidden">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-800">Bulk Add Parts with Same Details</h2>
@@ -28,7 +23,7 @@ const BulkAddModal = ({
                             First row is the master - changes will copy to all rows. Serial Number can be different per row.
                         </p>
                         <p className="text-xs text-blue-600 mt-1">
-                            💡 Purchase Date from master row will be copied to new rows, but can be changed individually.
+                            💡 Use this for adding inventory stock. Warranty information can be added later when parts are sold to customers.
                         </p>
                     </div>
                     <button
@@ -69,8 +64,6 @@ const BulkAddModal = ({
                                         </div>
                                     </th>
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serial No.</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Purchase Date</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warranty Exp.</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
@@ -127,72 +120,6 @@ const BulkAddModal = ({
                                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                                 placeholder="Serial number"
                                                 required
-                                            />
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <div className="relative">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowCalendar(prev => ({ ...prev, [index]: !prev[index] }))}
-                                                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                                                >
-                                                    <span>
-                                                        {item.datePurchasedByCustomer ? 
-                                                            new Date(item.datePurchasedByCustomer).toLocaleDateString() : 
-                                                            'Select date'
-                                                        }
-                                                    </span>
-                                                    <CalendarIcon size={14} />
-                                                </button>
-                                                {showCalendar[index] && (
-                                                    <div 
-                                                        className="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-xl min-w-[320px]"
-                                                        style={{
-                                                            right: '0',
-                                                            top: '100%',
-                                                            transform: index > 3 ? 'translateY(-420px)' : 'translateY(0)',
-                                                            maxHeight: '450px'
-                                                        }}
-                                                    >
-                                                        <div className="max-h-[420px] overflow-y-auto p-3">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className="text-sm font-medium text-gray-700">Select Purchase Date</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setShowCalendar(prev => ({ ...prev, [index]: false }))}
-                                                                    className="text-gray-400 hover:text-gray-600"
-                                                                >
-                                                                    <X size={16} />
-                                                                </button>
-                                                            </div>
-                                                            <Calendar
-                                                                onChange={(date) => onDateChange(index, date)}
-                                                                value={item.datePurchasedByCustomer ? new Date(item.datePurchasedByCustomer) : new Date()}
-                                                                className="react-calendar w-full"
-                                                            />
-                                                            <div className="mt-2 flex justify-end">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        onBulkItemChange(index, 'datePurchasedByCustomer', null);
-                                                                        setShowCalendar(prev => ({ ...prev, [index]: false }));
-                                                                    }}
-                                                                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 border border-gray-300 rounded"
-                                                                >
-                                                                    Clear Date
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <input
-                                                type="date"
-                                                value={item.warrantyExpiration ? item.warrantyExpiration.split('T')[0] : ''}
-                                                onChange={(e) => onBulkItemChange(index, 'warrantyExpiration', e.target.value)}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                             />
                                         </td>
                                         <td className="px-3 py-2">

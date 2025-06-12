@@ -39,4 +39,6 @@ public class PartResponseDTO {
     private String availabilityStatus;
     private Integer availableStock; // currentStock - reservedQuantity
     private Long version;
+
+    private Boolean isCustomerPurchased;
 } 

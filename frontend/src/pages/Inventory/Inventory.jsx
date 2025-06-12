@@ -56,13 +56,10 @@ const Inventory = () => {
         unitCost: 0,
         currentStock: 1,
         lowStockThreshold: 10,
-        serialNumber: "",
-        /*category: "GENERAL",*/
-        datePurchasedByCustomer: null,
-        warrantyExpiration: ""
+        serialNumber: ""
     }]);
     const [bulkAddLoading, setBulkAddLoading] = useState(false);
-    const [showCalendar, setShowCalendar] = useState({});
+
     const [isMasterRow, setIsMasterRow] = useState(true); // First row is master
 
     // Edit functionality state variables
@@ -182,6 +179,22 @@ const Inventory = () => {
         setTimeout(() => {
             setNotification({ show: false, message: '', type: '' });
         }, 4000);
+    };
+
+    // Highlight matching text in search results
+    const highlightText = (text, searchTerm) => {
+        if (!searchTerm.trim() || !text) return text;
+        
+        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const parts = text.split(regex);
+        
+        return parts.map((part, index) => 
+            regex.test(part) ? (
+                <span key={index} className="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">
+                    {part}
+                </span>
+            ) : part
+        );
     };
 
     // Get token from various storage locations
@@ -584,11 +597,7 @@ const Inventory = () => {
         });
     };
 
-    // Handle date change for calendar
-    const handleDateChange = (index, date) => {
-        handleBulkItemChange(index, 'datePurchasedByCustomer', date);
-        setShowCalendar(prev => ({ ...prev, [index]: false }));
-    };
+
 
     // Copy master row to new row
     const copyMasterToNewRow = () => {
@@ -596,23 +605,13 @@ const Inventory = () => {
             const masterRow = prev[0];
             const newRow = {
                 ...masterRow,
-                serialNumber: "" // Keep serial number empty, but copy purchase date from master
+                serialNumber: "" // Keep serial number empty for each new row
             };
             return [...prev, newRow];
         });
     };
 
-    // Close calendar when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (!event.target.closest('.react-calendar') && !event.target.closest('button')) {
-                setShowCalendar({});
-            }
-        };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Add new bulk item (copy from master row)
     const addBulkItem = () => {
@@ -664,11 +663,7 @@ const Inventory = () => {
                 stockPerItem: 1, // Each item represents 1 physical part
                 lowStockThreshold: parseInt(validItems[0].lowStockThreshold),
                 partType: "STANDARD",
-                serialNumbers: validItems.map(item => item.serialNumber),
-                datePurchasedByCustomer: validItems[0].datePurchasedByCustomer ? 
-                    new Date(validItems[0].datePurchasedByCustomer).toISOString() : null,
-                warrantyExpiration: validItems[0].warrantyExpiration ? 
-                    new Date(validItems[0].warrantyExpiration).toISOString() : null
+                serialNumbers: validItems.map(item => item.serialNumber)
             };
 
             const response = await axios.post('http://localhost:8080/part/addBulkParts', bulkData, {
@@ -688,11 +683,8 @@ const Inventory = () => {
                 unitCost: 0,
                 currentStock: 1,
                 lowStockThreshold: 10,
-                serialNumber: "",
-                datePurchasedByCustomer: null,
-                warrantyExpiration: ""
+                serialNumber: ""
             }]);
-            setShowCalendar({});
 
             // Refresh inventory
             await fetchInventory();
@@ -797,6 +789,9 @@ const Inventory = () => {
                 description: editPart.description || "",
                 unitCost: parseFloat(editPart.unitCost) || 0,
                 serialNumber: editPart.serialNumber,
+                isCustomerPurchased: editPart.isCustomerPurchased || false,
+                datePurchasedByCustomer: editPart.datePurchasedByCustomer,
+                warrantyExpiration: editPart.warrantyExpiration,
                 addedBy: userEmail
             };
 
@@ -933,7 +928,11 @@ const Inventory = () => {
         item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         /*item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||*/
-        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        // Search in serial numbers of all parts in the group
+        (item.allParts && item.allParts.some(part => 
+            part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        ))
     );
 
     // Pagination
@@ -1091,7 +1090,7 @@ const Inventory = () => {
                                     <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="Search by name or SKU..."
+                                            placeholder="Search by name, SKU, part number, or serial number..."
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1189,13 +1188,17 @@ const Inventory = () => {
                                                             />
                                                         </button>
                                                         <div>
-                                                            <div className="text-sm font-medium text-gray-900">{item.partNumber}</div>
+                                                            <div className="text-sm font-medium text-gray-900">
+                                                                {highlightText(item.partNumber, searchQuery)}
+                                                            </div>
                                                             <div className="text-sm text-gray-500">{item.category} • {item.totalParts} items</div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900 max-w-xs truncate">{item.name}</div>
+                                                    <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                                                        {highlightText(item.name, searchQuery)}
+                                                    </div>
                                                     <button
                                                         onClick={() => handleDescriptionClick(item)}
                                                         className="text-xs text-blue-600 hover:text-blue-800 mt-1"
@@ -1267,7 +1270,9 @@ const Inventory = () => {
                                                         </td>
                                                         <td className="px-6 py-3">
                                                             <div className="text-sm text-gray-700">
-                                                                <div className="font-medium">Serial: {part.serialNumber}</div>
+                                                                <div className="font-medium">
+                                                                    Serial: {highlightText(part.serialNumber, searchQuery)}
+                                                                </div>
                                                                 <div className="text-xs text-gray-500">
                                                                     Added: {part.dateAdded ? new Date(part.dateAdded).toLocaleDateString() : 'N/A'}
                                                                 </div>
@@ -1442,9 +1447,7 @@ const Inventory = () => {
                     onSubmit={handleBulkAdd}
                     bulkAddItems={bulkAddItems}
                     onBulkItemChange={handleBulkItemChange}
-                    onDateChange={handleDateChange}
-                    showCalendar={showCalendar}
-                    setShowCalendar={setShowCalendar}
+
                     onAddBulkItem={addBulkItem}
                     onRemoveBulkItem={removeBulkItem}
                     loading={bulkAddLoading}
