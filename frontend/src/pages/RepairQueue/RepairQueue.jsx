@@ -49,7 +49,9 @@ const RepairQueue = () => {
                         issueDescription: "Screen flickers randomly during use.",
                         reasons: ["Defective/Not Working", "Performance Issues"],
                         status: "Requested",
-                        color: "blue"
+                        color: "blue",
+                        deviceName: "RAZER BLADE 15",
+
                     },
                     {
                         id: 2,
@@ -63,7 +65,9 @@ const RepairQueue = () => {
                         issueDescription: "Received a different model than ordered.",
                         reasons: ["Wrong Item Received"],
                         status: "Approved",
-                        color: "black"
+                        color: "black",
+                        deviceName: "ASUS ROG",
+
                     },
                     {
                         id: 3,
@@ -77,7 +81,9 @@ const RepairQueue = () => {
                         issueDescription: "Bluetooth connection keeps dropping.",
                         reasons: ["Performance Issues", "Defective/Not Working"],
                         status: "Claimed",
-                        color: "pink"
+                        color: "pink",
+                        deviceName: "MACBOOK AIR",
+
                     },
                     {
                         id: 4,
@@ -91,7 +97,9 @@ const RepairQueue = () => {
                         issueDescription: "Requesting upgrade to a newer model.",
                         reasons: ["Upgrade Request"],
                         status: "Denied",
-                        color: "red"
+                        color: "red",
+                        deviceName: "Dell XPS 13",
+
                     }
                 ];
                 setWarrantyRequests(fetchedData);
@@ -228,6 +236,9 @@ const RepairQueue = () => {
                                     </p>
 
                                 ) : (
+
+                                    // Pending Repairs
+
                                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                         {warrantyRequests
                                             .filter((request) => request.status === "Requested" || request.status === "Approved")
@@ -238,21 +249,27 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <Images className="text-[#10B981] size-60" />;
+                                                        <Images className="text-[#10B981] size-60" />
+                                                        <p className="text-[12px]">Ticket Number</p>
                                                     </div>
-                                                    <div className="my-2 h-px bg-[#33e407]"></div>
+                                                    <div className="my-2 h-px bg-[#33e407]">
+                                                    </div>
 
                                                     <div>
-                                                        <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.serialNumber}
+                                                        <h2 className="text-[16px] font-semibold text-gray-800 mb-1">
+                                                            {request.deviceName}
+
                                                         </h2>
-                                                        <p className="text-sm text-gray-600">
-                                                            <strong>Customer:</strong> {request.deviceType}
+                                                        <p className="text-[14px] text-gray-600">
+                                                            {/*<strong>Customer:</strong> {request.deviceType}*/}
+                                                            {request.issueDescription}
                                                         </p>
+                                                        <div className="mt-[5px]"></div>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Date:</strong> {request.purchaseDate}
+                                                            {request.serialNumber}
+
                                                         </p>
-                                                        <p className={`text-sm font-medium mt-1 ${request.status === "Requested" ? "text-yellow-600" : "text-green-600"}`}>
+                                                        <p className={`text-sm font-medium mt-1 text-right ${request.status === "Requested" ? "text-yellow-600" : "text-green-600"}`}>
                                                             Status: {request.status}
                                                         </p>
                                                     </div>
@@ -267,6 +284,8 @@ const RepairQueue = () => {
                                         No warranty request has been resolved yet.
                                     </p>
 
+                                    // Resolved Repairs
+
                                 ) : (
                                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                         {warrantyRequests
@@ -278,21 +297,23 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <Images className="text-[#10B981] size-60" />;
+                                                        <Images className="text-[#10B981] size-60" />
+                                                        <p className="text-[12px]">Ticket Number</p>
+
                                                     </div>
                                                     <div className="my-2 h-px bg-[#33e407]"></div>
 
                                                     <div>
                                                         <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.serialNumber}
+                                                            {request.deviceName}
                                                         </h2>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Device Type:</strong> {request.deviceType}
+                                                            {request.issueDescription}
                                                         </p>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Date:</strong> {request.purchaseDate}
+                                                            {request.serialNumber}
                                                         </p>
-                                                        <p className={`text-sm font-medium mt-1 ${request.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}>
+                                                        <p className={`text-sm font-medium mt-1 text-right ${request.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}>
                                                             Status: {request.status}
                                                         </p>
                                                     </div>
