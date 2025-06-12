@@ -190,4 +190,18 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/getActiveRepairTickets")
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getActiveRepairTickets(
+            @PageableDefault(size = 20) Pageable pageable) {
+        try {
+            Page<GetRepairTicketResponseDTO> activeTickets = repairTicketService.getActiveRepairTickets(pageable);
+            if (activeTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(activeTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
