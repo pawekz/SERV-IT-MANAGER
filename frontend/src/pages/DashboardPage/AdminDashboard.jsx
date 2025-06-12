@@ -696,7 +696,7 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Recent Feedback */}
+                        {/* Recent Feedbacks */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Customer Feedback</h3>
                             <div className="space-y-4">
