@@ -16,8 +16,204 @@ import {
 } from "lucide-react"
 
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
 
 const CustomerDashboard = () => {
+    const [userData, setUserData] = useState({
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        phoneNumber: '',
+        password: '********', // Placeholder for security
+        role: '' // Added role field
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // State for customer-specific statistics
+    const [stats, setStats] = useState({
+        activeRepairs: 1,
+        completedRepairs: 5,
+        warrantyItems: 2,
+        totalSpent: "$1,249.99"
+    });
+
+    // State for repair history data
+    const [repairData, setRepairData] = useState([]);
+    const [repairLoading, setRepairLoading] = useState(true);
+    const [repairError, setRepairError] = useState(null);
+
+    // Modal state for repair details
+    const [modalData, setModalData] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5);
+
+    const parseJwt = (token) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Function to show the repair details modal
+    const showRepairDetailsModal = (item) => {
+        setModalData(item);
+    };
+
+    // Function to close the modal
+    const closeModal = () => {
+        setModalData(null);
+    };
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                setLoading(true);
+
+                // Check if we have cached user data in sessionStorage first
+                const cachedUserData = sessionStorage.getItem('userData');
+                if (cachedUserData) {
+                    const parsedData = JSON.parse(cachedUserData);
+                    setUserData(parsedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // Get token from localStorage if no cached data
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Not authenticated. Please log in.");
+                }
+
+                // Try to parse token to get user info
+                const decodedToken = parseJwt(token);
+
+                if (decodedToken) {
+                    const userData = {
+                        firstName: decodedToken.firstName || '',
+                        lastName: decodedToken.lastName || '',
+                        username: decodedToken.username || decodedToken.sub || '',
+                        email: decodedToken.email || decodedToken.sub || '',
+                        phoneNumber: decodedToken.phoneNumber || '',
+                        password: '********', // Mask password for security
+                        role: decodedToken.role || '' // Extract role from token
+                    };
+
+                    setUserData(userData);
+
+                    // Cache the user data in sessionStorage for persistence across refreshes
+                    sessionStorage.setItem('userData', JSON.stringify(userData));
+                } else {
+                    // If token can't be decoded, could attempt API call to get user data
+                    throw new Error("Could not retrieve user information");
+                }
+                setError(null);
+            } catch (err) {
+                console.error("Error fetching user data:", err);
+                setError("Failed to load account information. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    // Add useEffect to fetch customer repair stats
+    useEffect(() => {
+        // In a real application, you would fetch actual repair statistics from your backend
+        const fetchRepairStats = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                // This would be replaced with an actual API call
+                // Example: const response = await fetch('http://localhost:8080/repair/getCustomerStats', {
+                //     method: 'GET',
+                //     headers: {
+                //         'Authorization': `Bearer ${token}`
+                //     }
+                // });
+
+                // For now, we'll just use the default stats
+                // setStats(await response.json());
+            } catch (err) {
+                console.error("Error fetching repair statistics:", err);
+            }
+        };
+
+        fetchRepairStats();
+    }, []);
+
+    // Add useEffect to fetch repair history
+    useEffect(() => {
+        const fetchRepairHistory = async () => {
+            try {
+                setRepairLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                // This would be replaced with an actual API call
+                // Example: const response = await fetch('http://localhost:8080/repair/getCustomerRepairs', {
+                //     method: 'GET',
+                //     headers: {
+                //         'Authorization': `Bearer ${token}`
+                //     }
+                // });
+
+                // Mock data for now
+                const mockRepairData = [
+                    { id: 1, device: "iPhone 13", status: "In Progress", date: "May 28, 2025" },
+                    { id: 2, device: "MacBook Pro", status: "Completed", date: "May 20, 2025" },
+                    { id: 3, device: "iPad Pro", status: "Completed", date: "April 15, 2025" }
+                ];
+
+                setRepairData(mockRepairData);
+                setRepairError(null);
+            } catch (err) {
+                console.error("Error fetching repair history:", err);
+                setRepairError("Failed to load repair history");
+            } finally {
+                setRepairLoading(false);
+            }
+        };
+
+        fetchRepairHistory();
+    }, []);
+
+    // Get current repair items for pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = repairData.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(repairData.length / itemsPerPage);
+
+    // Change page
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Previous page
+    const goToPreviousPage = () => {
+        setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
+    };
+
+    // Next page
+    const goToNextPage = () => {
+        setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
+    };
+
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
@@ -50,7 +246,7 @@ const CustomerDashboard = () => {
 
                 {/* Dashboard Content */}
                 <div className="p-8">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Hello Customer's First Name</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Hello {userData.firstName}</h1>
 
                     {/* Active Repair Card */}
                     <div className="bg-white p-6 rounded-lg shadow-sm mb-8">

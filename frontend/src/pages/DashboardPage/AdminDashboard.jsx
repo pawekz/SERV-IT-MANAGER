@@ -17,11 +17,234 @@ import {
     Mail,
     HandHelpingIcon as HelpIcon,
 } from "lucide-react"
+import {useEffect, useState} from "react";
+
+
+
 
 
 
 const AdminDashboard = () => {
-    return (
+
+
+    const [userData, setUserData] = useState({
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        phoneNumber:'',
+        password: '********', // Placeholder for security
+        role: '' // Added role field
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    // State for dashboard statistics
+    const [stats, setStats] = useState({
+        users: 0,
+        devicesInRepair: 87,
+        warrantyRequests: 32,
+        satisfactionRate: "94%",
+    });
+    // State for inventory data
+    const [inventoryData, setInventoryData] = useState([]);
+    const [inventoryLoading, setInventoryLoading] = useState(true);
+    const [inventoryError, setInventoryError] = useState(null);
+
+    // Modal state for description
+    const [modalData, setModalData] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+
+    const parseJwt = (token) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Function to show the description modal
+    const showDescriptionModal = (item) => {
+        setModalData(item);
+    };
+
+    // Function to close the modal
+    const closeModal = () => {
+        setModalData(null);
+    };
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                setLoading(true);
+
+                // Check if we have cached user data in sessionStorage first
+                const cachedUserData = sessionStorage.getItem('userData');
+                if (cachedUserData) {
+                    const parsedData = JSON.parse(cachedUserData);
+                    setUserData(parsedData);
+                    setLoading(false);
+                    return;
+                }
+
+                // Get token from localStorage if no cached data
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Not authenticated. Please log in.");
+                }
+
+                // Try to parse token to get user info
+                const decodedToken = parseJwt(token);
+
+                if (decodedToken) {
+                    const userData = {
+                        firstName: decodedToken.firstName || '',
+                        lastName: decodedToken.lastName || '',
+                        username: decodedToken.username || decodedToken.sub || '',
+                        email: decodedToken.email || decodedToken.sub || '',
+                        phoneNumber: decodedToken.phoneNumber || '',
+                        password: '********', // Mask password for security
+                        role: decodedToken.role || '' // Extract role from token
+                    };
+
+                    setUserData(userData);
+
+                    // Cache the user data in sessionStorage for persistence across refreshes
+                    sessionStorage.setItem('userData', JSON.stringify(userData));
+                } else {
+                    // If token can't be decoded, could attempt API call to get user data
+                    throw new Error("Could not retrieve user information");
+                }
+                setError(null);
+            } catch (err) {
+                console.error("Error fetching user data:", err);
+                setError("Failed to load account information. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    // Add useEffect to fetch user count from the backend
+    useEffect(() => {
+        const fetchUserCount = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/user/getUserCount', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching user count: ${response.status}`);
+                }
+
+                const count = await response.json();
+                setStats(prevStats => ({
+                    ...prevStats,
+                    users: count
+                }));
+            } catch (err) {
+                console.error("Error fetching user count:", err);
+            }
+        };
+
+        fetchUserCount();
+    }, []);
+
+    // Add useEffect to fetch inventory data from the backend
+    useEffect(() => {
+        const fetchInventoryData = async () => {
+            try {
+                setInventoryLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/part/getAllParts', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching inventory: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setInventoryData(data);
+                setInventoryError(null);
+            } catch (err) {
+                console.error("Error fetching inventory data:", err);
+                setInventoryError("Failed to load inventory data");
+            } finally {
+                setInventoryLoading(false);
+            }
+        };
+
+        fetchInventoryData();
+    }, []);
+
+    // Chart data
+    const chartData = {
+        months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        values: [5, 8, 12, 9, 11, 14],
+    }
+
+    // Calendar data
+    const currentDate = new Date()
+    const currentMonth = currentDate.toLocaleString("default", { month: "long" })
+    const currentYear = currentDate.getFullYear()
+    const daysInMonth = new Date(currentYear, currentDate.getMonth() + 1, 0).getDate()
+    const firstDayOfMonth = new Date(currentYear, currentDate.getMonth(), 1).getDay()
+
+    // Generate calendar days
+    const calendarDays = []
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        calendarDays.push(null) // Empty cells for days before the 1st of the month
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+        calendarDays.push(i)
+    }
+
+    // Get current inventory items for pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = inventoryData.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(inventoryData.length / itemsPerPage);
+
+    // Change page
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Previous page
+    const goToPreviousPage = () => {
+        setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
+    };
+
+    // Next page
+    const goToNextPage = () => {
+        setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
+    }
+
+        return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
             <Sidebar />
@@ -36,7 +259,7 @@ const AdminDashboard = () => {
                 {/* Header with Search and User Menu */}
                 <div className="bg-white px-8 py-4 flex justify-between items-center border-b border-gray-200">
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-800">Hello Administrator's First Name</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
                     <div className="flex-1 max-w-md mx-8">
                         <input

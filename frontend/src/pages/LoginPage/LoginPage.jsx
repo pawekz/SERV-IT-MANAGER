@@ -450,10 +450,12 @@ const LoginPage = () => {
                 setError("Your account is inactive. Please contact support.");
             }else {
                 // User is verified or verification status wasn't explicitly returned as false
-                if (data.role === 'ADMIN' || data.role === 'TECHNICIAN') {
-                    navigate('/dashboard');
-                } else {
-                    navigate('/dashboard');
+                if (data.role === 'ADMIN') {
+                    navigate('/admindashboard');
+                } if(data.role === 'TECHNICIAN') {
+                    navigate('/techniciandashboard');
+                } if(data.role === 'CUSTOMER') {
+                    navigate('/customerdashboard');
                 }
             }
         } catch (err) {
@@ -515,7 +517,7 @@ const LoginPage = () => {
             showToast('Account verified successfully.');
             const userRole = localStorage.getItem('userRole');
             if (userRole === 'ADMIN') {
-                navigate('/admin/dashboard');
+                navigate('/admindashboard');
             } else {
                 navigate('/accountinformation');
             }
