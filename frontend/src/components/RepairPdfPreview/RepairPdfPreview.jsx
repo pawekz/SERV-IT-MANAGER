@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
@@ -12,6 +12,17 @@ function dataURLtoBlob(dataURL) {
     const array = Array.from(binary, (char) => char.charCodeAt(0));
     return new Blob([new Uint8Array(array)], { type: mime });
 }
+
+const Spinner = ({ size = "normal" }) => {
+    const sizeClasses = {
+        small: "w-5 h-5 border-t-2 border-b-2",
+        normal: "w-8 h-8 border-t-3 border-b-3",
+        large: "w-16 h-16 border-t-4 border-b-4"
+    };
+    return (
+        <div className={`${sizeClasses[size]} border-[#33e407] rounded-full animate-spin`}></div>
+    );
+};
 
 const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -41,40 +52,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
         navigate("/dashboard");
     };
 
-    const uploadPdf = async (ticketNumber) => {
-        try {
-            const pdfBlob = await pdf(
-                <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
-            ).toBlob();
-
-            const form = new FormData();
-            form.append("file", pdfBlob, `${ticketNumber}.pdf`);
-
-            const token = localStorage.getItem("authToken");
-            const response = await fetch(
-                `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: form,
-                }
-            );
-            if (!response.ok) {
-                const errorText = await response.text();
-                const errorMessage = errorText || `Server returned ${response.status}: ${response.statusText}`;
-                showToast("PDF upload failed: " + errorMessage, "error");
-                return;
-            }
-
-            showToast("Repair ticket submitted successfully!", "success");
-
-        } catch (err) {
-            showToast("PDF upload failed: " + err.message, "error");
-        }
-    };
-
     const handleSubmit = async () => {
         setLoading(true);
         setError(null);
@@ -100,6 +77,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     }
                 });
             }
+            // Submit the repair ticket
             const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
@@ -118,11 +96,36 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
             const result = await response.json();
             setSuccess(result);
 
-            if (result && result.ticketNumber) {
-                await uploadPdf(result.ticketNumber);
-            } else if (formData.ticketNumber) {
-                await uploadPdf(formData.ticketNumber);
+            // Generate and upload the PDF
+            const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
+            if (ticketNumber) {
+                const pdfBlob = await pdf(
+                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                ).toBlob();
+
+                const pdfForm = new FormData();
+                pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
+
+                const pdfResponse = await fetch(
+                    `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: pdfForm,
+                    }
+                );
+                if (!pdfResponse.ok) {
+                    const errorText = await pdfResponse.text();
+                    const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
+                    showToast("PDF upload failed: " + errorMessage, "error");
+                    return;
+                }
             }
+
+            showToast("Repair ticket submitted successfully!", "success");
+            setTimeout(() => setLoading(false), 500);
         } catch (err) {
             setError(err.message);
             showToast(err.message, "error");
@@ -158,7 +161,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         onClick={success ? handleFinishClick : handleSubmit}
                         disabled={loading}
                     >
-                        {success ? "Done" : "Submit"}
+                        {success ? (loading ? "Processing..." : "Done") : (loading ? "Submitting..." : "Submit")}
                     </button>
                 </div>
             </div>
@@ -187,7 +190,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                                 className="w-full px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition"
                                 onClick={handleGoDashboard}
                             >
-                                Go to Dashboard
+                                Return to Dashboard
                             </button>
                         </div>
                         <button
@@ -225,6 +228,17 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 type={toast.type}
                 onClose={closeToast}
             />
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl text-center">
+                        <div className="flex flex-col items-center">
+                            <Spinner size="large" />
+                            <h3 className="text-lg font-medium text-gray-800 mt-4">Processing</h3>
+                            <p className="text-sm text-gray-600 mt-2">Please wait while we submit the repair ticket...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
