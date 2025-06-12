@@ -52,7 +52,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
             const token = localStorage.getItem("authToken");
             const response = await fetch(
-                `http://localhost:8080/repairTicket/uploadRepairTicketDocument/${ticketNumber}`,
+                `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
                 {
                     method: "PATCH",
                     headers: {
@@ -62,14 +62,10 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 }
             );
             if (!response.ok) {
-                let errorMessage;
-                try {
-                    const errorData = await response.text();
-                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                } catch (e) {
-                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                }
-                throw new Error(errorMessage);
+                const errorText = await response.text();
+                const errorMessage = errorText || `Server returned ${response.status}: ${response.statusText}`;
+                showToast("PDF upload failed: " + errorMessage, "error");
+                return;
             }
 
             showToast("Repair ticket submitted successfully!", "success");
