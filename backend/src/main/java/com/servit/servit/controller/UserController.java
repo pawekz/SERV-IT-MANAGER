@@ -169,4 +169,9 @@ public class UserController {
         return ResponseEntity.ok(userSvc.getUserCount());
     }
 
+    @GetMapping("/getWeeklyUsers")
+    public ResponseEntity<List<GetUserResponseDTO>> getWeeklyUsers() {
+        return ResponseEntity.ok(userSvc.getWeeklyUsers());
+    }
+//
 }

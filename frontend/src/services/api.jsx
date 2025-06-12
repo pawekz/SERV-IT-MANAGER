@@ -9,13 +9,21 @@ const api = axios.create({
 // Helper to decode JWT and check expiration and role
 function parseJwt(token) {
   try {
-    const base64Url = token.split('.')[1];
+    if (!token || typeof token !== 'string' || !token.includes('.')) {
+      return null;
+    }
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    const base64Url = parts[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
   } catch (e) {
+    console.error('Error parsing JWT:', e);
     return null;
   }
 }
@@ -23,31 +31,47 @@ function parseJwt(token) {
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('authToken');
   if (token) {
-    /*testing, uncomment after debugging*/
-    /*const payload = parseJwt(token);
+    // Validate token format
+    if (!token.includes('.') || token.split('.').length !== 3) {
+      localStorage.removeItem('authToken');
+      window.dispatchEvent(new Event('tokenExpired'));
+      throw new axios.Cancel('Invalid token format. Please log in again.');
+    }
+
+    // Parse and validate token
+    const payload = parseJwt(token);
+    if (!payload) {
+      localStorage.removeItem('authToken');
+      window.dispatchEvent(new Event('tokenExpired'));
+      throw new axios.Cancel('Invalid token. Please log in again.');
+    }
+
+    // Check expiration
     const now = Math.floor(Date.now() / 1000);
-    if (!payload || !payload.exp || payload.exp < now) {
-      // Token expired
+    if (!payload.exp || payload.exp < now) {
       localStorage.removeItem('authToken');
       window.dispatchEvent(new Event('tokenExpired'));
       throw new axios.Cancel('Session expired. Please log in again.');
     }
-    // Only allow if user is ADMIN
-    if (!payload.role || payload.role !== 'ADMIN') {
-      throw new axios.Cancel('Access denied: Administrator only.');
-    }*/
+
+    // Add token to headers
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, error => {
+  return Promise.reject(error);
 });
 
-// Optionally, handle token expiration globally
+// Handle token expiration and other errors globally
 api.interceptors.response.use(
   response => response,
   error => {
     if (axios.isCancel(error)) {
-      // Optionally show a toast or redirect to login
       window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
+    } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      // Clear token on authentication/authorization errors
+      localStorage.removeItem('authToken');
+      window.dispatchEvent(new Event('tokenExpired'));
     }
     return Promise.reject(error);
   }
