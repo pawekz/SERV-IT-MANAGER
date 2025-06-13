@@ -50,7 +50,9 @@ public class SecurityConfig {
                             "/user/resendOtp",
                             "/user/forgotPassword",
                             "/user/resetPassword",
-                            "/feedback/submitFeedback"
+                            "/feedback/submitFeedback",
+                            "/ws/**",
+                            "/topic/**"
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",

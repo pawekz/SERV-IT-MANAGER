@@ -119,4 +119,29 @@ public class EmailService {
         String attachmentName = String.format("%s-repair-ticket.pdf", ticketNumber);
         emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
     }
+
+    public void sendGenericNotificationEmail(String to, String subject, String message) throws MessagingException {
+        String htmlContent = "<html>" +
+                "<head>" +
+                "<style>" +
+                "  body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; }" +
+                "  .email-container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }" +
+                "  .header { background: #33e407; color: #fff; padding: 20px; font-size: 24px; font-weight: bold; letter-spacing: 1px; text-align: center; }" +
+                "  .content { padding: 30px 24px; color: #222; font-size: 16px; }" +
+                "  .footer { text-align: center; padding: 10px; font-size: 12px; color: #888888; background-color: #f4f4f9; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "  <div class='email-container'>" +
+                "    <div class='header'>Notification</div>" +
+                "    <div class='content'>" +
+                "      <h2 style='margin-top:0;'>" + subject + "</h2>" +
+                "      <p>" + message + "</p>" +
+                "    </div>" +
+                "    <div class='footer'>© 2025 IOCONNECT. All rights reserved.</div>" +
+                "  </div>" +
+                "</body>" +
+                "</html>";
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
 }

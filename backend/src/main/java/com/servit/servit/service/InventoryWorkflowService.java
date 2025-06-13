@@ -30,17 +30,17 @@ public class InventoryWorkflowService {
     private final PartRepository partRepository;
     private final InventoryTransactionRepository transactionRepository;
     private final PartService partService;
-    private final NotificationService notificationService;
+    private final AlertService alertService;
 
     @Autowired
     public InventoryWorkflowService(PartRepository partRepository, 
                                    InventoryTransactionRepository transactionRepository,
                                    PartService partService,
-                                   NotificationService notificationService) {
+                                   AlertService alertService) {
         this.partRepository = partRepository;
         this.transactionRepository = transactionRepository;
         this.partService = partService;
-        this.notificationService = notificationService;
+        this.alertService = alertService;
     }
 
     /**
@@ -173,7 +173,7 @@ public class InventoryWorkflowService {
                           getCurrentUsername(), "PART_UNAVAILABLE", "No replacement part available - flagging for special handling",
                           "AUTO_REPLACEMENT");
             
-            notificationService.sendLowStockAlert("No replacement available for auto-replacement ticket: " + repairTicketId,
+            alertService.sendLowStockAlert("No replacement available for auto-replacement ticket: " + repairTicketId,
                                                 originalPart.getName(), 0, 10); // Default threshold since it's managed at part number level
             throw new IllegalStateException("No replacement part available for auto-replacement");
         }
@@ -195,7 +195,7 @@ public class InventoryWorkflowService {
                       "AUTO_REPLACEMENT");
 
         // Notify technician that replacement is ready
-        notificationService.sendTechnicianNotification(repairTicketId, 
+        alertService.sendTechnicianNotification(repairTicketId,
                 "Replacement part reserved for auto-replacement ticket: " + repairTicketId);
     }
 
@@ -288,7 +288,7 @@ public class InventoryWorkflowService {
         }
 
         // Notify technician that parts are reserved and repair can proceed
-        notificationService.sendTechnicianNotification(repairTicketId,
+        alertService.sendTechnicianNotification(repairTicketId,
                 "Parts reserved for approved quotation. Repair can proceed.");
     }
 
@@ -328,7 +328,7 @@ public class InventoryWorkflowService {
             partService.reservePart(reserveRequest);
 
             // Notify technician that supplier part has arrived
-            notificationService.sendTechnicianNotification(request.getOriginatingRepairTicketId(),
+            alertService.sendTechnicianNotification(request.getOriginatingRepairTicketId(),
                     "Supplier replacement part has arrived and is reserved for your ticket: " + 
                     request.getOriginatingRepairTicketId());
         }
@@ -364,7 +364,7 @@ public class InventoryWorkflowService {
                       "SUPPLIER_REPLACEMENT");
         
         // Notify admin about the supplier order
-        notificationService.sendAdminNotification("Supplier replacement part ordered for ticket: " + repairTicketId +
+        alertService.sendAdminNotification("Supplier replacement part ordered for ticket: " + repairTicketId +
                                                  ", Part: " + originalPart.getName());
     }
 
