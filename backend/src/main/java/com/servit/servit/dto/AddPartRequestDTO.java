@@ -25,4 +25,10 @@ public class AddPartRequestDTO {
     private String supplierPartNumber;
     private LocalDateTime supplierOrderDate;
     private LocalDateTime supplierExpectedDelivery;
+
+    private String brand;
+    private String model;
+    
+    // New field to indicate if we're adding to an existing part number
+    private Boolean addToExisting = false;
 } 

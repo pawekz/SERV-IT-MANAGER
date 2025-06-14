@@ -27,10 +27,17 @@ public class BulkAddPartRequestDTO {
     // Individual serial numbers for each part
     private List<String> serialNumbers;
     
+    // New fields
+    private String brand;
+    private String model;
+    
+    // New field to indicate if we're adding to an existing part number
+    private Boolean addToExisting = false;
+    
     // Validation method
     public boolean isValid() {
         return serialNumbers != null && !serialNumbers.isEmpty() &&
                basePartNumber != null && !basePartNumber.trim().isEmpty() &&
-               name != null && !name.trim().isEmpty();
+               (addToExisting || (name != null && !name.trim().isEmpty()));
     }
 } 

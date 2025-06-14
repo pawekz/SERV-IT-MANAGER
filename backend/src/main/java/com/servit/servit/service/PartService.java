@@ -20,14 +20,10 @@ import com.servit.servit.enumeration.PartEnum;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.entity.UserEntity;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.Set;
-import java.util.HashSet;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,62 +55,73 @@ public class PartService {
 
     /**
      * Creates a new part in the system. Only ADMIN and TECHNICIAN roles can add parts.
-     * @param partDto The DTO containing part information to create
+     * @param req The DTO containing part information to create
      * @return The created part as a DTO
      * @throws IllegalArgumentException if serial number already exists
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public PartResponseDTO addpart(AddPartRequestDTO partDto) {
-        logger.info("Adding new part: {}", partDto);
-        // Check for duplicate serial number instead of part number
-        if (partRepository.findBySerialNumber(partDto.getSerialNumber()).isPresent()) {
-            throw new IllegalArgumentException("Serial number already exists");
+    public PartResponseDTO addpart(AddPartRequestDTO req) {
+        logger.info("Adding part: {}", req);
+        
+        // Check if serial number already exists
+        if (partRepository.findBySerialNumber(req.getSerialNumber()).isPresent()) {
+            throw new IllegalArgumentException("Serial number already exists: " + req.getSerialNumber());
         }
         
-        String currentUser = getCurrentUserEmail();
+        // Create new part entity
+        PartEntity part = new PartEntity();
+        part.setPartNumber(req.getPartNumber());
+        part.setSerialNumber(req.getSerialNumber());
+        part.setAddedBy(getCurrentUserEmail());
         
-        PartEntity partEntity = new PartEntity();
-        partEntity.setPartNumber(partDto.getPartNumber());
-        partEntity.setName(partDto.getName());
-        partEntity.setDescription(partDto.getDescription());
-        partEntity.setUnitCost(partDto.getUnitCost());
-        // Default to 1 if currentStock is null or 0 (since we're adding 1 item)
-        partEntity.setCurrentStock(partDto.getCurrentStock() != null && partDto.getCurrentStock() > 0 ? 
-                                  partDto.getCurrentStock() : 1);
-        // Low stock threshold is now managed in PartNumberStockTrackingEntity
-        partEntity.setSerialNumber(partDto.getSerialNumber());
-        partEntity.setPartType(partDto.getPartType() != null ? partDto.getPartType() : PartEnum.STANDARD);
-        // dateAdded is handled by @CreationTimestamp annotation - don't set manually
-        // Only set datePurchasedByCustomer if it's actually provided (not null)
-        if (partDto.getDatePurchasedByCustomer() != null) {
-            partEntity.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
-        }
-        partEntity.setWarrantyExpiration(partDto.getWarrantyExpiration());
-        partEntity.setAddedBy(currentUser);
-        
-        // Set supplier information if it's a supplier replacement part
-        if (partDto.getPartType() == PartEnum.SUPPLIER_REPLACEMENT) {
-            partEntity.setSupplierName(partDto.getSupplierName());
-            partEntity.setSupplierPartNumber(partDto.getSupplierPartNumber());
-            partEntity.setSupplierOrderDate(partDto.getSupplierOrderDate());
-            partEntity.setSupplierExpectedDelivery(partDto.getSupplierExpectedDelivery());
-        }
-
-        PartEntity savedPartEntity = partRepository.save(partEntity);
-        
-        // Update stock tracking for this part number
-        stockTrackingService.updateStockTracking(savedPartEntity.getPartNumber());
-        
-        // If low stock threshold was provided, update the tracking entity
-        if (partDto.getLowStockThreshold() != null) {
-            UpdatePartNumberStockTrackingDTO trackingDto = new UpdatePartNumberStockTrackingDTO();
-            trackingDto.setPartNumber(savedPartEntity.getPartNumber());
-            trackingDto.setLowStockThreshold(partDto.getLowStockThreshold());
-            stockTrackingService.updateTrackingSettings(trackingDto);
+        // If adding to existing part number, copy the details from an existing part
+        if (Boolean.TRUE.equals(req.getAddToExisting())) {
+            List<PartEntity> existingParts = partRepository.findAllByPartNumber(req.getPartNumber())
+                .stream()
+                .filter(p -> !p.getIsDeleted())
+                .collect(Collectors.toList());
+            
+            if (existingParts.isEmpty()) {
+                throw new IllegalArgumentException("No active parts found with part number: " + req.getPartNumber());
+            }
+            
+            // Use the first non-deleted part to get the common details
+            PartEntity existingPart = existingParts.get(0);
+            part.setName(existingPart.getName());
+            part.setDescription(existingPart.getDescription());
+            part.setUnitCost(existingPart.getUnitCost());
+            part.setPartType(existingPart.getPartType());
+            part.setBrand(existingPart.getBrand());
+            part.setModel(existingPart.getModel());
+            
+            logger.info("Found {} existing parts with part number: {}", existingParts.size(), req.getPartNumber());
+        } else {
+            // Set new part details
+            part.setName(req.getName());
+            part.setDescription(req.getDescription());
+            part.setUnitCost(req.getUnitCost());
+            part.setPartType(req.getPartType());
+            part.setBrand(req.getBrand());
+            part.setModel(req.getModel());
         }
         
-        logger.info("Part added successfully: {}", savedPartEntity);
-        return convertToDto(savedPartEntity);
+        // Set common fields
+        part.setCurrentStock(1); // Each part represents 1 item
+        part.setIsDeleted(false);
+        part.setIsCustomerPurchased(false);
+        
+        try {
+            PartEntity savedPart = partRepository.save(part);
+            logger.info("Successfully added part with ID: {}", savedPart.getPartId());
+            
+            // Update stock tracking for this part number
+            stockTrackingService.updateStockTracking(req.getPartNumber());
+            
+            return convertToDto(savedPart);
+        } catch (Exception e) {
+            logger.error("Error adding part: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to add part: " + e.getMessage());
+        }
     }
 
     /**
@@ -134,8 +141,15 @@ public class PartService {
         String currentUser = getCurrentUserEmail();
         List<PartEntity> partsToSave = new ArrayList<>();
         
-        // Use the same part number for all items - this is the key change
+        // Use the same part number for all items
         String partNumber = bulkDto.getBasePartNumber();
+        
+        // If adding to existing part number, fetch and copy the details
+        PartEntity existingPart = null;
+        if (Boolean.TRUE.equals(bulkDto.getAddToExisting())) {
+            existingPart = partRepository.findByPartNumber(partNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Part number does not exist: " + partNumber));
+        }
         
         // First, check for duplicates within the request itself
         Set<String> serialNumbersInRequest = new HashSet<>();
@@ -166,25 +180,35 @@ public class PartService {
                 String.join(", ", conflictingSerialNumbers));
         }
         
-        for (int i = 0; i < bulkDto.getSerialNumbers().size(); i++) {
-            String serialNumber = bulkDto.getSerialNumbers().get(i);
-            
+        for (String serialNumber : bulkDto.getSerialNumbers()) {
             PartEntity partEntity = new PartEntity();
-            partEntity.setPartNumber(partNumber); // Same part number for all items
-            partEntity.setName(bulkDto.getName());
-            partEntity.setDescription(bulkDto.getDescription());
-            partEntity.setUnitCost(bulkDto.getUnitCost());
-            // Each individual part represents 1 physical item
-            partEntity.setCurrentStock(1);
-            // Low stock threshold is now managed in PartNumberStockTrackingEntity
-            partEntity.setSerialNumber(serialNumber); // Unique serial number per item
-            partEntity.setPartType(bulkDto.getPartType());
-            // dateAdded is handled by @CreationTimestamp annotation - don't set manually
-            // Warranty information is not set during bulk add - can be added later when parts are sold to customers
+            partEntity.setPartNumber(partNumber);
+            
+            if (existingPart != null) {
+                // Copy details from existing part
+                partEntity.setName(existingPart.getName());
+                partEntity.setDescription(existingPart.getDescription());
+                partEntity.setUnitCost(existingPart.getUnitCost());
+                partEntity.setBrand(existingPart.getBrand());
+                partEntity.setModel(existingPart.getModel());
+                partEntity.setPartType(existingPart.getPartType());
+            } else {
+                // Set new part details
+                partEntity.setName(bulkDto.getName());
+                partEntity.setDescription(bulkDto.getDescription());
+                partEntity.setUnitCost(bulkDto.getUnitCost());
+                partEntity.setBrand(bulkDto.getBrand());
+                partEntity.setModel(bulkDto.getModel());
+                partEntity.setPartType(bulkDto.getPartType());
+            }
+            
+            // Set common fields
+            partEntity.setCurrentStock(1); // Each individual part represents 1 item
+            partEntity.setSerialNumber(serialNumber);
             partEntity.setAddedBy(currentUser);
             
             // Set supplier information if it's a supplier replacement part
-            if (bulkDto.getPartType() == PartEnum.SUPPLIER_REPLACEMENT) {
+            if (partEntity.getPartType() == PartEnum.SUPPLIER_REPLACEMENT) {
                 partEntity.setSupplierName(bulkDto.getSupplierName());
                 partEntity.setSupplierPartNumber(bulkDto.getSupplierPartNumber());
                 partEntity.setSupplierOrderDate(bulkDto.getSupplierOrderDate());
@@ -196,7 +220,7 @@ public class PartService {
         
         List<PartEntity> savedParts = partRepository.saveAll(partsToSave);
         
-        // Update stock tracking for the part number (only need to update once since all parts have same part number)
+        // Update stock tracking for the part number
         stockTrackingService.updateStockTracking(partNumber);
         
         // If low stock threshold was provided, update the tracking entity
@@ -248,6 +272,9 @@ public class PartService {
                 part.setWarrantyExpiration(null);
             }
         }
+
+        if (partDto.getBrand() != null) part.setBrand(partDto.getBrand());
+        if (partDto.getModel() != null) part.setModel(partDto.getModel());
 
         part.setModifiedBy(getCurrentUserEmail());
         part.setDateModified(LocalDateTime.now());
@@ -677,6 +704,8 @@ public class PartService {
             dto.setAvailabilityStatus("UNKNOWN");
         }
         dto.setVersion(partEntity.getVersion());
+        dto.setBrand(partEntity.getBrand());
+        dto.setModel(partEntity.getModel());
         
         logger.info("Part converted to DTO: {}", dto);
         return dto;

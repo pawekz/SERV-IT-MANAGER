@@ -22,11 +22,15 @@ import com.servit.servit.dto.SupplierReplacementRequestDTO;
 import com.servit.servit.dto.PartNumberStockSummaryDTO;
 import com.servit.servit.dto.UpdatePartNumberStockTrackingDTO;
 import com.servit.servit.entity.InventoryTransactionEntity;
+import com.servit.servit.entity.PartEntity;
+import com.servit.servit.repository.PartRepository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,9 @@ public class PartController {
     
     @Autowired
     private PartNumberStockTrackingService stockTrackingService;
+
+    @Autowired
+    private PartRepository partRepository;
 
     public PartController(PartService partService) {
         this.partService = partService;
@@ -626,6 +633,41 @@ public class PartController {
             logger.error("Error verifying warranty: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to verify warranty: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getPartDetailsByPartNumber/{partNumber}")
+    public ResponseEntity<?> getPartDetailsByPartNumber(@PathVariable String partNumber) {
+        logger.info("API Request: Getting part details by part number: {}", partNumber);
+        try {
+            List<PartEntity> parts = partRepository.findAllByPartNumber(partNumber)
+                .stream()
+                .filter(part -> !part.getIsDeleted())
+                .collect(Collectors.toList());
+            
+            if (!parts.isEmpty()) {
+                // Use the first non-deleted part to get the common details
+                PartEntity existingPart = parts.get(0);
+                Map<String, Object> details = new HashMap<>();
+                details.put("name", existingPart.getName());
+                details.put("description", existingPart.getDescription());
+                details.put("unitCost", existingPart.getUnitCost());
+                details.put("brand", existingPart.getBrand());
+                details.put("model", existingPart.getModel());
+                details.put("partType", existingPart.getPartType());
+                details.put("exists", true);
+                details.put("totalParts", parts.size());
+                
+                logger.info("API Response: Found {} parts for part number: {}", parts.size(), partNumber);
+                return ResponseEntity.ok(details);
+            } else {
+                logger.info("API Response: No active parts found for part number: {}", partNumber);
+                return ResponseEntity.ok(Map.of("exists", false));
+            }
+        } catch (Exception e) {
+            logger.error("API Error: Error getting part details - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting part details: " + e.getMessage());
         }
     }
 }

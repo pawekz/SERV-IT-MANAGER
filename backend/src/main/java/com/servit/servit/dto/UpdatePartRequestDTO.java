@@ -31,4 +31,7 @@ public class UpdatePartRequestDTO {
     
     // New warranty-related fields
     private Boolean isCustomerPurchased;
+
+    private String brand;
+    private String model;
 } 

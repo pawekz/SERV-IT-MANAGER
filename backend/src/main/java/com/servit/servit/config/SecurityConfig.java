@@ -72,7 +72,7 @@ public class SecurityConfig {
                             "/warranty/generateWarrantyNumber",
                             "/warranty/check/**",
                             "/part/workflow/verifyWarranty",
-                            "part/getPartByPartNumber/"
+                            "/part/getPartByPartNumber/*"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",

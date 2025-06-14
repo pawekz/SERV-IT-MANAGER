@@ -41,4 +41,7 @@ public class PartResponseDTO {
     private Long version;
 
     private Boolean isCustomerPurchased;
+
+    private String brand;
+    private String model;
 } 

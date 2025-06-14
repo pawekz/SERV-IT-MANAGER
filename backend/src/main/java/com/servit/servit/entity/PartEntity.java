@@ -104,4 +104,10 @@ public class PartEntity {
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
     private WarrantyEntity warranty;
+
+    @Column(name = "brand")
+    private String brand;
+
+    @Column(name = "model")
+    private String model;
 }
