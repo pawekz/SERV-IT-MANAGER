@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, CheckCircle } from 'lucide-react';
+import api from '../../../services/api';
 
 const AddPartModal = ({ 
     isOpen, 
@@ -11,13 +12,146 @@ const AddPartModal = ({
     success,
     error
 }) => {
+    const [partExists, setPartExists] = useState(false);
+    const [checkingPart, setCheckingPart] = useState(false);
+
+    // Function to check if part number exists and auto-fill fields
+    const checkPartNumber = useCallback(async (partNumber) => {
+        if (!partNumber) {
+            setPartExists(false);
+            return;
+        }
+        
+        setCheckingPart(true);
+        console.log('Checking part number:', partNumber);
+        try {
+            const token = localStorage.getItem('authToken');
+            console.log('Auth token present:', !!token);
+            
+            console.log('Making API request to:', `/part/getPartDetailsByPartNumber/${partNumber}`);
+            const response = await api.get(`/part/getPartDetailsByPartNumber/${partNumber}`);
+            console.log('API response status:', response.status);
+            console.log('API response headers:', response.headers);
+            console.log('API response data:', response.data);
+            
+            const details = response.data;
+            console.log('Part details:', details);
+            
+            if (details.exists) {
+                console.log('Part exists, setting fields');
+                setPartExists(true);
+                // Auto-fill fields based on existing part
+                onInputChange({
+                    target: {
+                        name: 'name',
+                        value: details.name || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'description',
+                        value: details.description || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'unitCost',
+                        value: details.unitCost || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'brand',
+                        value: details.brand || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'model',
+                        value: details.model || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'partType',
+                        value: details.partType || ''
+                    }
+                });
+                onInputChange({
+                    target: {
+                        name: 'addToExisting',
+                        value: true
+                    }
+                });
+            } else {
+                console.log('Part does not exist');
+                setPartExists(false);
+                onInputChange({
+                    target: {
+                        name: 'addToExisting',
+                        value: false
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error checking part number:', error);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                headers: error.response?.headers
+            });
+            setPartExists(false);
+            onInputChange({
+                target: {
+                    name: 'addToExisting',
+                    value: false
+                }
+            });
+        } finally {
+            setCheckingPart(false);
+        }
+    }, [onInputChange]);
+
+    // Handle part number input change with proper debouncing
+    const handlePartNumberChange = useCallback((e) => {
+        const value = e.target.value;
+        onInputChange(e);
+
+        // Clear any existing timeout
+        if (window.partNumberCheckTimeout) {
+            clearTimeout(window.partNumberCheckTimeout);
+        }
+        
+        // Set a new timeout
+        window.partNumberCheckTimeout = setTimeout(() => {
+            checkPartNumber(value);
+        }, 500);
+    }, [onInputChange, checkPartNumber]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (window.partNumberCheckTimeout) {
+                clearTimeout(window.partNumberCheckTimeout);
+            }
+        };
+    }, []);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 rounded-lg max-w-2xl w-full">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">Add New Part</h2>
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-800">
+                            {partExists ? 'Add to Existing Part' : 'Add New Part'}
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                            {partExists ? 'Adding to existing part number. Other fields are locked.' : 'Fill in the details for the new part.'}
+                        </p>
+                    </div>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -26,98 +160,154 @@ const AddPartModal = ({
                     </button>
                 </div>
 
-                {/* Success Message */}
-                {success && (
-                    <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md flex items-center">
-                        <CheckCircle size={20} className="mr-2" />
-                        Part added successfully!
+                {/* Part Exists Message */}
+                {partExists && (
+                    <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md flex items-center">
+                        <CheckCircle className="mr-2" size={16} />
+                        Part number exists. Adding to existing part.
                     </div>
                 )}
 
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
-                        {error}
+                {/* Checking Part Message */}
+                {checkingPart && (
+                    <div className="mb-4 p-3 bg-gray-100 text-gray-800 rounded-md">
+                        Checking part number...
                     </div>
                 )}
 
-                {/* Add Part Form */}
-                <form onSubmit={onSubmit}>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                <form onSubmit={onSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Part Number</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Part Number *
+                            </label>
                             <input
                                 type="text"
                                 name="partNumber"
-                                value={newPart.partNumber}
-                                onChange={onInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={newPart.partNumber || ''}
+                                onChange={handlePartNumberChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter part number"
                                 required
+                                disabled={checkingPart}
                             />
                         </div>
                         <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Name</label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={newPart.name}
-                                onChange={onInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-medium mb-1">Description</label>
-                        <textarea
-                            name="description"
-                            value={newPart.description}
-                            onChange={onInputChange}
-                            rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Unit Cost (₱)</label>
-                            <input
-                                type="number"
-                                name="unitCost"
-                                value={newPart.unitCost}
-                                onChange={onInputChange}
-                                min="0"
-                                step="0.01"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Serial Number</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Serial Number *
+                            </label>
                             <input
                                 type="text"
                                 name="serialNumber"
-                                value={newPart.serialNumber}
+                                value={newPart.serialNumber || ''}
                                 onChange={onInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter serial number"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Name *
+                            </label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={newPart.name || ''}
+                                onChange={onInputChange}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${partExists ? 'bg-gray-50' : ''}`}
+                                placeholder="Enter part name"
+                                required
+                                readOnly={partExists}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Brand
+                            </label>
+                            <input
+                                type="text"
+                                name="brand"
+                                value={newPart.brand || ''}
+                                onChange={onInputChange}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${partExists ? 'bg-gray-50' : ''}`}
+                                placeholder="Enter brand"
+                                readOnly={partExists}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Model
+                            </label>
+                            <input
+                                type="text"
+                                name="model"
+                                value={newPart.model || ''}
+                                onChange={onInputChange}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${partExists ? 'bg-gray-50' : ''}`}
+                                placeholder="Enter model"
+                                readOnly={partExists}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Unit Cost *
+                            </label>
+                            <input
+                                type="number"
+                                name="unitCost"
+                                value={newPart.unitCost || ''}
+                                onChange={onInputChange}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${partExists ? 'bg-gray-50' : ''}`}
+                                placeholder="Enter unit cost"
+                                min="0"
+                                step="0.01"
+                                required
+                                readOnly={partExists}
                             />
                         </div>
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Description
+                        </label>
+                        <textarea
+                            name="description"
+                            value={newPart.description || ''}
+                            onChange={onInputChange}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${partExists ? 'bg-gray-50' : ''}`}
+                            placeholder="Enter part description"
+                            rows="3"
+                            readOnly={partExists}
+                        />
+                    </div>
 
-                    <div className="flex justify-end mt-6">
+                    {error && (
+                        <div className="p-3 bg-red-100 text-red-800 rounded-md">
+                            {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="p-3 bg-green-100 text-green-800 rounded-md">
+                            Part added successfully!
+                        </div>
+                    )}
+
+                    <div className="flex justify-end space-x-3 mt-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 mr-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
-                            className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            disabled={loading || checkingPart}
+                            className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${(loading || checkingPart) ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            {loading ? 'Adding...' : 'Add Part'}
+                            {loading ? 'Adding...' : checkingPart ? 'Checking...' : partExists ? 'Add to Existing Part' : 'Add Part'}
                         </button>
                     </div>
                 </form>

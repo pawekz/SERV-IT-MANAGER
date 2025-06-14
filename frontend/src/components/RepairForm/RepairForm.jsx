@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from '../../services/api';
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
@@ -16,6 +17,9 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
     const [photoFiles, setPhotoFiles] = useState([]);
     const [isTamperModalOpen, setIsTamperModalOpen] = useState(false);
+
+    const [warrantyStatus, setWarrantyStatus] = useState(null);
+    const [warrantyIndicator, setWarrantyIndicator] = useState(null);
 
     const [formData, setFormData] = useState({
         ticketNumber: "",
@@ -172,6 +176,40 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
 
+    const handleSerialNumberChange = async (e) => {
+        handleChange(e);
+        const serial = e.target.value.trim();
+        if (!serial) {
+            setWarrantyStatus(null);
+            setWarrantyIndicator(null);
+            return;
+        }
+        try {
+            const response = await api.get(`/warranty/check/${serial}`);
+            const data = response.data;
+            setWarrantyStatus(data);
+            if (data && data.serialNumber === serial && data.deviceName) {
+                setFormData((prev) => ({
+                    ...prev,
+                    deviceBrand: data.brand || prev.deviceBrand,
+                    deviceModel: data.model || prev.deviceModel,
+                    deviceType: data.deviceType || prev.deviceType,
+                    deviceSerialNumber: data.serialNumber,
+                }));
+                if (data.withinWarranty) {
+                    setWarrantyIndicator({ status: "Under Warranty", color: "bg-green-100 text-green-600" });
+                } else {
+                    setWarrantyIndicator({ status: "No Warranty / Contact Admin", color: "bg-red-100 text-red-600" });
+                }
+            } else {
+                setWarrantyIndicator({ status: "Serial Not Found", color: "bg-yellow-100 text-yellow-600" });
+            }
+        } catch (err) {
+            setWarrantyStatus(null);
+            setWarrantyIndicator({ status: "Warranty Check Failed", color: "bg-gray-100 text-gray-600" });
+        }
+    };
+
     return (
         <>
             <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -302,7 +340,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             <input
                                                 id="deviceSerialNumber"
                                                 value={formData.deviceSerialNumber}
-                                                onChange={handleChange}
+                                                onChange={handleSerialNumberChange}
                                                 placeholder="Enter serial number"
                                                 required
                                                 disabled={success}
@@ -319,6 +357,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                 </button>
                                             )}
                                         </div>
+                                        {warrantyIndicator && (
+                                            <div className={`mt-2 px-3 py-1 rounded text-sm font-semibold inline-block ${warrantyIndicator.color}`}>
+                                                {warrantyIndicator.status}
+                                                {warrantyStatus && warrantyStatus.withinWarranty && warrantyStatus.daysLeft != null && (
+                                                    <span className="ml-2">({warrantyStatus.daysLeft} days left)</span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="deviceColor" className="block text-sm font-medium text-gray-700">Color:</label>

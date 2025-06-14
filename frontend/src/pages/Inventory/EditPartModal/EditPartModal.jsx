@@ -198,6 +198,31 @@ const EditPartModal = ({
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-gray-700 text-sm font-medium mb-1">Brand</label>
+                            <input
+                                type="text"
+                                name="brand"
+                                value={editPart.brand || ''}
+                                onChange={onInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Brand"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-gray-700 text-sm font-medium mb-1">Model</label>
+                            <input
+                                type="text"
+                                name="model"
+                                value={editPart.model || ''}
+                                onChange={onInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Model"
+                            />
+                        </div>
+                    </div>
+
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-medium mb-1">Description</label>
                         <textarea
