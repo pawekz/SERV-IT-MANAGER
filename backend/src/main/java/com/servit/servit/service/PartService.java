@@ -17,7 +17,6 @@ import com.servit.servit.dto.BulkAddPartRequestDTO;
 import com.servit.servit.dto.ReservePartRequestDTO;
 import com.servit.servit.dto.PartNumberStockSummaryDTO;
 import com.servit.servit.enumeration.PartEnum;
-import com.servit.servit.service.NotificationService;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.entity.UserEntity;
 
@@ -25,8 +24,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.time.temporal.ChronoUnit;
@@ -44,16 +41,16 @@ import org.slf4j.LoggerFactory;
 public class PartService {
 
     private final PartRepository partRepository;
-    private final NotificationService notificationService;
+    private final AlertService alertService;
     private final PartNumberStockTrackingService stockTrackingService;
     private final UserRepository userRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(PartService.class);
 
     @Autowired
-    public PartService(PartRepository partRepository, NotificationService notificationService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository) {
+    public PartService(PartRepository partRepository, AlertService alertService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository) {
         this.partRepository = partRepository;
-        this.notificationService = notificationService;
+        this.alertService = alertService;
         this.stockTrackingService = stockTrackingService;
         this.userRepository = userRepository;
     }
@@ -570,12 +567,12 @@ public class PartService {
             if (stockSummary != null && 
                 stockSummary.getCurrentAvailableStock() <= stockSummary.getLowStockThreshold()) {
                 
-                // Use the NotificationService for proper low stock alerts
+                // Use the AlertService for proper low stock alerts
                 String alertMessage = String.format("Part Number: %s (%s). Available Stock: %d, Threshold: %d",
                                                    stockSummary.getPartNumber(), stockSummary.getPartName(), 
                                                    stockSummary.getCurrentAvailableStock(), stockSummary.getLowStockThreshold());
                 
-                notificationService.sendLowStockAlert(alertMessage, stockSummary.getPartName(), 
+                alertService.sendLowStockAlert(alertMessage, stockSummary.getPartName(),
                                                     stockSummary.getCurrentAvailableStock(), stockSummary.getLowStockThreshold());
             }
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage/LandingPage";
 import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LoginPage from "./pages/LoginPage/LoginPage";
@@ -23,6 +23,7 @@ import NewRepair from "./pages/NewRepair/NewRepair.jsx";
 import AdminDashboard from "./pages/DashboardPage/AdminDashboard.jsx";
 import CustomerDashboard from "./pages/DashboardPage/CustomerDashboard.jsx";
 import Techniciandashboard from "./pages/DashboardPage/techniciandashboard.jsx";
+import MockUpUpdateStatusAndPushNotifications from "./pages/MockUpUpdateStatusAndPushNotifications/MockUpUpdateStatusAndPushNotifications";
 import { useEffect, useState } from "react";
 
 function App() {
@@ -162,6 +163,7 @@ function App() {
           <Route path="/newrepair" element={
             <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
           } />
+          <Route path="/mockupstatus" element={<MockUpUpdateStatusAndPushNotifications />} />
         </Routes>
       </Router>
   )
