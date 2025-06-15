@@ -188,12 +188,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
             const response = await api.get(`/warranty/check/${serial}`);
             const data = response.data;
             setWarrantyStatus(data);
+            const allowedDeviceTypes = ["LAPTOP", "COMPUTER", "PRINTER"];
             if (data && data.serialNumber === serial && data.deviceName) {
                 setFormData((prev) => ({
                     ...prev,
                     deviceBrand: data.brand || prev.deviceBrand,
                     deviceModel: data.model || prev.deviceModel,
-                    deviceType: data.deviceType || prev.deviceType,
+                    deviceType: allowedDeviceTypes.includes(data.deviceType) ? data.deviceType : "",
                     deviceSerialNumber: data.serialNumber,
                 }));
                 if (data.withinWarranty) {
