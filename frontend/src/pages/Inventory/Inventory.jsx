@@ -4,8 +4,7 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import axios from "axios";
-
-
+import InventoryTable from './InventoryTable';
 
 // Import modal components
 import DescriptionModal from "./DescriptionModal/DescriptionModal.jsx";
@@ -29,7 +28,7 @@ const Inventory = () => {
     const [addPartSuccess, setAddPartSuccess] = useState(false);
     const [addPartError, setAddPartError] = useState(null);
     const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-    const [selectedDescription, setSelectedDescription] = useState({ title: "", content: "" });
+    const [selectedDescription, setSelectedDescription] = useState({ title: "", content: "", part: null });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [partToDelete, setPartToDelete] = useState(null);
@@ -57,12 +56,10 @@ const Inventory = () => {
         currentStock: 1,
         lowStockThreshold: 10,
         serialNumber: "",
-        /*category: "GENERAL",*/
-        datePurchasedByCustomer: null,
-        warrantyExpiration: ""
+        addToExisting: false
     }]);
     const [bulkAddLoading, setBulkAddLoading] = useState(false);
-    const [showCalendar, setShowCalendar] = useState({});
+
     const [isMasterRow, setIsMasterRow] = useState(true); // First row is master
 
     // Edit functionality state variables
@@ -88,7 +85,8 @@ const Inventory = () => {
         datePurchasedByCustomer: null,
         warrantyExpiration: "",
         /*category: "GENERAL",*/
-        addedBy: ""
+        addedBy: "",
+        addToExisting: false
     });
 
     // Stock settings form state
@@ -182,6 +180,22 @@ const Inventory = () => {
         setTimeout(() => {
             setNotification({ show: false, message: '', type: '' });
         }, 4000);
+    };
+
+    // Highlight matching text in search results
+    const highlightText = (text, searchTerm) => {
+        if (!searchTerm.trim() || !text) return text;
+        
+        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const parts = text.split(regex);
+        
+        return parts.map((part, index) => 
+            regex.test(part) ? (
+                <span key={index} className="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">
+                    {part}
+                </span>
+            ) : part
+        );
     };
 
     // Get token from various storage locations
@@ -385,9 +399,11 @@ const Inventory = () => {
 
     // Handle description click to show modal
     const handleDescriptionClick = (item) => {
+        const title = `${item.brand || ''} ${item.model || ''}`.trim() || item.name || "Part Description";
         setSelectedDescription({
-            title: item.name || "Part Description",
-            content: item.description || "No description available"
+            title: title,
+            content: item.description || "No description available",
+            part: item
         });
         setShowDescriptionModal(true);
     };
@@ -433,6 +449,8 @@ const Inventory = () => {
                         totalReserved: (item.reservedQuantity || 0),
                         lowStockThreshold: item.lowStockThreshold,
                         serialNumber: item.serialNumber,
+                        brand: item.brand,
+                        model: item.model,
                         /*category: item.category || "GENERAL",*/
                         totalParts: 1,
                         suppliers: new Set([item.supplierName || 'Unknown']),
@@ -584,11 +602,7 @@ const Inventory = () => {
         });
     };
 
-    // Handle date change for calendar
-    const handleDateChange = (index, date) => {
-        handleBulkItemChange(index, 'datePurchasedByCustomer', date);
-        setShowCalendar(prev => ({ ...prev, [index]: false }));
-    };
+
 
     // Copy master row to new row
     const copyMasterToNewRow = () => {
@@ -596,23 +610,13 @@ const Inventory = () => {
             const masterRow = prev[0];
             const newRow = {
                 ...masterRow,
-                serialNumber: "" // Keep serial number empty, but copy purchase date from master
+                serialNumber: "" // Keep serial number empty for each new row
             };
             return [...prev, newRow];
         });
     };
 
-    // Close calendar when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (!event.target.closest('.react-calendar') && !event.target.closest('button')) {
-                setShowCalendar({});
-            }
-        };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Add new bulk item (copy from master row)
     const addBulkItem = () => {
@@ -646,9 +650,13 @@ const Inventory = () => {
             // Filter out empty items
             const validItems = bulkAddItems.filter(item => 
                 item.partNumber.trim() && 
-                item.name.trim() && 
+                item.brand?.trim() && 
+                item.model?.trim() && 
                 item.serialNumber.trim()
-            );
+            ).map(item => ({
+                ...item,
+                name: `${item.brand?.trim() || ''} ${item.model?.trim() || ''}`.trim()
+            }));
 
             if (validItems.length === 0) {
                 showNotification("No valid items to add", "error");
@@ -661,14 +669,13 @@ const Inventory = () => {
                 name: validItems[0].name,
                 description: validItems[0].description,
                 unitCost: parseFloat(validItems[0].unitCost),
-                stockPerItem: 1, // Each item represents 1 physical part
+                stockPerItem: 1,
                 lowStockThreshold: parseInt(validItems[0].lowStockThreshold),
                 partType: "STANDARD",
                 serialNumbers: validItems.map(item => item.serialNumber),
-                datePurchasedByCustomer: validItems[0].datePurchasedByCustomer ? 
-                    new Date(validItems[0].datePurchasedByCustomer).toISOString() : null,
-                warrantyExpiration: validItems[0].warrantyExpiration ? 
-                    new Date(validItems[0].warrantyExpiration).toISOString() : null
+                brand: validItems[0].brand,
+                model: validItems[0].model,
+                addToExisting: validItems[0].addToExisting || false // Include the addToExisting flag
             };
 
             const response = await axios.post('http://localhost:8080/part/addBulkParts', bulkData, {
@@ -678,7 +685,9 @@ const Inventory = () => {
                 }
             });
 
-            showNotification(`Successfully added ${response.data.length} parts`);
+            showNotification(validItems[0].addToExisting ? 
+                `Successfully added ${response.data.length} parts to existing part number` : 
+                `Successfully added ${response.data.length} parts`);
             
             // Reset form
             setBulkAddItems([{
@@ -689,10 +698,8 @@ const Inventory = () => {
                 currentStock: 1,
                 lowStockThreshold: 10,
                 serialNumber: "",
-                datePurchasedByCustomer: null,
-                warrantyExpiration: ""
+                addToExisting: false
             }]);
-            setShowCalendar({});
 
             // Refresh inventory
             await fetchInventory();
@@ -712,7 +719,6 @@ const Inventory = () => {
             if (err.response?.status === 400) {
                 const responseData = err.response.data;
                 if (typeof responseData === 'string' && responseData.includes('Serial number already exists')) {
-                    // Extract the serial number from the error message
                     const serialMatch = responseData.match(/Serial number already exists: (\w+)/);
                     if (serialMatch) {
                         errorMessage = `Serial number "${serialMatch[1]}" already exists in the database. Please use a unique serial number.`;
@@ -721,6 +727,8 @@ const Inventory = () => {
                     }
                 } else if (responseData.includes('duplicate') || responseData.includes('already exists')) {
                     errorMessage = "Duplicate data detected. Please check your input values.";
+                } else if (responseData.includes('Part number does not exist')) {
+                    errorMessage = "The part number does not exist. Please check the part number or add as new parts.";
                 } else {
                     errorMessage = responseData || "Invalid data provided";
                 }
@@ -797,7 +805,12 @@ const Inventory = () => {
                 description: editPart.description || "",
                 unitCost: parseFloat(editPart.unitCost) || 0,
                 serialNumber: editPart.serialNumber,
-                addedBy: userEmail
+                isCustomerPurchased: editPart.isCustomerPurchased || false,
+                datePurchasedByCustomer: editPart.datePurchasedByCustomer,
+                warrantyExpiration: editPart.warrantyExpiration,
+                addedBy: userEmail,
+                brand: editPart.brand || '',
+                model: editPart.model || ''
             };
 
             await axios.patch(
@@ -858,7 +871,8 @@ const Inventory = () => {
                 unitCost: parseFloat(newPart.unitCost),
                 currentStock: parseInt(newPart.currentStock),
                 lowStockThreshold: parseInt(newPart.lowStockThreshold),
-                addedBy: userEmail
+                addedBy: userEmail,
+                addToExisting: newPart.addToExisting || false // Include the addToExisting flag
             };
 
             await axios.post('http://localhost:8080/part/addPart', partData, {
@@ -869,7 +883,7 @@ const Inventory = () => {
             });
 
             setAddPartSuccess(true);
-            showNotification("Part added successfully");
+            showNotification(newPart.addToExisting ? "Part added to existing part number successfully" : "Part added successfully");
 
             // Reset form
             setNewPart({
@@ -880,11 +894,11 @@ const Inventory = () => {
                 currentStock: 0,
                 lowStockThreshold: 10,
                 serialNumber: "",
-                dateAdded: null, // Will be set by backend
+                dateAdded: null,
                 datePurchasedByCustomer: null,
                 warrantyExpiration: "",
-                /*category: "GENERAL",*/
-                addedBy: ""
+                addedBy: "",
+                addToExisting: false
             });
 
             // Refresh inventory
@@ -904,7 +918,6 @@ const Inventory = () => {
             if (err.response?.status === 400) {
                 const responseData = err.response.data;
                 if (typeof responseData === 'string' && responseData.includes('Serial number already exists')) {
-                    // Extract the serial number from the error message
                     const serialMatch = responseData.match(/Serial number already exists: (\w+)/);
                     if (serialMatch) {
                         errorMessage = `Serial number "${serialMatch[1]}" already exists in the database. Please use a unique serial number.`;
@@ -913,6 +926,8 @@ const Inventory = () => {
                     }
                 } else if (responseData.includes('duplicate') || responseData.includes('already exists')) {
                     errorMessage = "Duplicate data detected. Please check your input values.";
+                } else if (responseData.includes('Part number does not exist')) {
+                    errorMessage = "The part number does not exist. Please check the part number or add as a new part.";
                 } else {
                     errorMessage = responseData || "Invalid data provided";
                 }
@@ -933,7 +948,11 @@ const Inventory = () => {
         item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         /*item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||*/
-        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        // Search in serial numbers of all parts in the group
+        (item.allParts && item.allParts.some(part => 
+            part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        ))
     );
 
     // Pagination
@@ -1091,7 +1110,7 @@ const Inventory = () => {
                                     <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="Search by name or SKU..."
+                                            placeholder="Search by name, SKU, part number, or serial number..."
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1147,195 +1166,19 @@ const Inventory = () => {
                         </div>
 
                         {/* Inventory Table */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                <tr className="bg-gray-50">
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <div className="flex items-center">
-                                            <ChevronDown size={14} className="mr-1 text-gray-400" />
-                                            Part Number Groups
-                                        </div>
-                                        {/*<div className="text-xs normal-case text-gray-400 mt-1">Click to expand individual items</div>*/}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Description / Serial Numbers
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Stock Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                {paginatedItems.length > 0 ? (
-                                    paginatedItems.map((item) => (
-                                        <React.Fragment key={item.partNumber}>
-                                            {/* Main Group Row */}
-                                            <tr className="group transition-all duration-200 ease-in-out hover:bg-gray-50 border-l-4 border-blue-500 cursor-pointer" onClick={() => toggleGroupExpansion(item.partNumber)}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <button
-                                                            className="mr-3 p-1 hover:bg-gray-200 rounded-md transition-all duration-200 ease-in-out"
-                                                            title={expandedGroups.has(item.partNumber) ? "Collapse" : "Expand"}
-                                                        >
-                                                            <ChevronDown 
-                                                                size={16} 
-                                                                className={`transform transition-transform duration-200 ease-in-out ${
-                                                                    expandedGroups.has(item.partNumber) ? 'rotate-180' : 'rotate-0'
-                                                                }`}
-                                                            />
-                                                        </button>
-                                                        <div>
-                                                            <div className="text-sm font-medium text-gray-900">{item.partNumber}</div>
-                                                            <div className="text-sm text-gray-500">{item.category} • {item.totalParts} items</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900 max-w-xs truncate">{item.name}</div>
-                                                    <button
-                                                        onClick={() => handleDescriptionClick(item)}
-                                                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                                                    >
-                                                        View details
-                                                    </button>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center mb-1">
-                                                            <span className={`px-2 py-1 text-xs rounded-full ${item.availability?.color}`}>
-                                                                {item.availability?.status}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            Available: {item.availableStock} | Threshold: {item.lowStockThreshold} | Reserved: {item.reservedStock}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <div className="flex space-x-3 items-center">
-                                                        {isAdmin() && (
-                                                            <div className="relative group">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleStockSettings(item.partNumber);
-                                                                    }}
-                                                                    className="p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 hover:text-purple-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                                                                    title="Stock Settings & Thresholds"
-                                                                >
-                                                                    <Settings size={18} />
-                                                                </button>
-                                                                {/* Enhanced Tooltip */}
-                                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                                                    Configure stock settings & low stock thresholds
-                                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex items-center space-x-2">
-                                                            <div className="flex items-center text-gray-400">
-                                                                {expandedGroups.has(item.partNumber) ? (
-                                                                    <>
-                                                                        <ChevronDown size={14} className="transform rotate-180 transition-transform duration-200 ease-in-out" />
-                                                                        <span className="text-xs text-gray-500 ml-1 transition-opacity duration-200">Expanded</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <ChevronDown size={14} className="transform rotate-0 transition-transform duration-200 ease-in-out" />
-                                                                        <span className="text-xs text-gray-500 ml-1 transition-opacity duration-200">Click to view {item.totalParts} items</span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-
-                                            {/* Individual Items (Accordion Content) */}
-                                            {expandedGroups.has(item.partNumber) && item.allParts && (
-                                                item.allParts.map((part, index) => (
-                                                    <tr key={`${item.partNumber}-${part.id}`} className="animate-in slide-in-from-top-1 duration-200 ease-in-out bg-gray-50 border-l-4 border-gray-300 hover:bg-gray-100 transition-colors duration-150">
-                                                        <td className="px-6 py-3 whitespace-nowrap pl-12">
-                                                            <div className="text-sm text-gray-700">
-                                                                <span className="font-medium">Item #{index + 1}</span>
-                                                                <div className="text-xs text-gray-500">ID: {part.id}</div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-3">
-                                                            <div className="text-sm text-gray-700">
-                                                                <div className="font-medium">Serial: {part.serialNumber}</div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    Added: {part.dateAdded ? new Date(part.dateAdded).toLocaleDateString() : 'N/A'}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    By: {part.addedBy || 'Unknown'}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-3 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-700">
-                                                                <div className="flex items-center">
-                                                                    <span className={`px-2 py-1 text-xs rounded-full ${
-                                                                        part.isReserved ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                                                                    }`}>
-                                                                        {part.isReserved ? 'Reserved' : 'Available'}
-                                                                    </span>
-                                                                </div>
-                                                                {part.isReserved && (
-                                                                    <div className="text-xs text-gray-500 mt-1">
-                                                                        Reserved for: {part.reservedForTicketId || 'Unknown'}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
-                                                            <div className="flex space-x-2">
-                                                                {isAdmin() ? (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => handleEditClick(part)}
-                                                                            className="text-indigo-600 hover:text-indigo-900 transition-colors duration-150"
-                                                                            title="Edit this individual part"
-                                                                        >
-                                                                            <Pen size={16} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDeletePart(part.id)}
-                                                                            className="text-red-600 hover:text-red-900 transition-colors duration-150"
-                                                                            title="Delete this individual part"
-                                                                        >
-                                                                            <Trash size={16} />
-                                                                        </button>
-                                                                    </>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={() => handleDescriptionClick(part)}
-                                                                        className="text-blue-600 hover:text-blue-800 transition-colors duration-150"
-                                                                        title="View details"
-                                                                    >
-                                                                        <Eye size={16} />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </React.Fragment>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                            No inventory items found. Add a new part to get started.
-                                        </td>
-                                    </tr>
-                                )}
-                                </tbody>
-                            </table>
+                        <div className="mt-4 flex flex-col">
+                            <InventoryTable
+                                paginatedItems={paginatedItems}
+                                searchQuery={searchQuery}
+                                expandedGroups={expandedGroups}
+                                isAdmin={isAdmin}
+                                onToggleGroupExpansion={toggleGroupExpansion}
+                                onDescriptionClick={handleDescriptionClick}
+                                onStockSettings={handleStockSettings}
+                                onEditClick={handleEditClick}
+                                onDeletePart={handleDeletePart}
+                                highlightText={highlightText}
+                            />
                         </div>
 
                         {/* Pagination */}
@@ -1401,6 +1244,7 @@ const Inventory = () => {
                     onClose={() => setShowDescriptionModal(false)}
                     title={selectedDescription.title}
                     content={selectedDescription.content}
+                    part={selectedDescription.part}
                 />
             )}
 
@@ -1442,9 +1286,7 @@ const Inventory = () => {
                     onSubmit={handleBulkAdd}
                     bulkAddItems={bulkAddItems}
                     onBulkItemChange={handleBulkItemChange}
-                    onDateChange={handleDateChange}
-                    showCalendar={showCalendar}
-                    setShowCalendar={setShowCalendar}
+
                     onAddBulkItem={addBulkItem}
                     onRemoveBulkItem={removeBulkItem}
                     loading={bulkAddLoading}

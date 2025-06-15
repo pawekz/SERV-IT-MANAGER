@@ -16,6 +16,7 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -43,6 +44,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(withDefaults())
             .authorizeHttpRequests(authz -> authz
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers(
                             "/user/register",
                             "/auth/login",
@@ -66,13 +68,14 @@ public class SecurityConfig {
                             "/user/updateCurrentUsername",
                             "/repairTicket/getRepairTicket/*",
                             "/repairTicket/getRepairTicketDocument/*",
+                            "/repairTicket/files/**",
                             "/warranty/checkInWarranty",
                             "/warranty/getWarrantyByCustomerEmail",
                             "/warranty/getWarrantyByNumber",
                             "/warranty/generateWarrantyNumber",
                             "/warranty/check/**",
                             "/part/workflow/verifyWarranty",
-                            "part/getPartByPartNumber/"
+                            "/part/getPartByPartNumber/*"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",

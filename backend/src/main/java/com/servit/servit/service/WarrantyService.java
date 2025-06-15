@@ -287,6 +287,8 @@ public class WarrantyService {
         }
         dto.setDeviceName(part.getName());
         dto.setDeviceType(part.getDescription());
+        dto.setBrand(part.getBrand());
+        dto.setModel(part.getModel());
         LocalDateTime expiration = part.getWarrantyExpiration();
         LocalDateTime now = LocalDateTime.now();
 

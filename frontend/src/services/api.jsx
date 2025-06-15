@@ -31,7 +31,7 @@ function parseJwt(token) {
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('authToken');
   if (token) {
-    // Validate token format
+    // Validate token format as it will trigger the error handling
     if (!token.includes('.') || token.split('.').length !== 3) {
       localStorage.removeItem('authToken');
       window.dispatchEvent(new Event('tokenExpired'));
@@ -68,8 +68,7 @@ api.interceptors.response.use(
   error => {
     if (axios.isCancel(error)) {
       window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
-    } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Clear token on authentication/authorization errors
+    } else if (error.response && error.response.status === 401) {
       localStorage.removeItem('authToken');
       window.dispatchEvent(new Event('tokenExpired'));
     }

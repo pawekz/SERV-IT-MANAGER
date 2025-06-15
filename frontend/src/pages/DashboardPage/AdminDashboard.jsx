@@ -56,6 +56,13 @@ const AdminDashboard = () => {
     const [ticketsLoading, setTicketsLoading] = useState(true);
     const [ticketsError, setTicketsError] = useState(null);
 
+    // New state for tracking ticket changes
+    const [ticketChanges, setTicketChanges] = useState({
+        value: 0,
+        isIncrease: false,
+        lastUpdated: null
+    });
+
     // Modal state for description
     const [modalData, setModalData] = useState(null);
 
@@ -107,13 +114,13 @@ const AdminDashboard = () => {
 
                 if (decodedToken) {
                     const userData = {
-                        firstName: decodedToken.firstName || '',
+                        firstName: decodedToken.firstName || 'User',
                         lastName: decodedToken.lastName || '',
-                        username: decodedToken.username || decodedToken.sub || '',
-                        email: decodedToken.email || decodedToken.sub || '',
+                        username: decodedToken.sub || 'username',
+                        email: decodedToken.email || 'email@example.com',
                         phoneNumber: decodedToken.phoneNumber || '',
-                        password: '********', // Mask password for security
-                        role: decodedToken.role || '' // Extract role from token
+                        password: '********', // Placeholder for security
+                        role: decodedToken.role || 'ROLE_USER'
                     };
 
                     setUserData(userData);
@@ -222,6 +229,99 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
+    // Fetch active repair tickets from backend with change tracking and persistence
+    useEffect(() => {
+        // First, load any saved ticket changes from localStorage
+        const savedTicketChanges = localStorage.getItem('ticketChanges');
+        if (savedTicketChanges) {
+            setTicketChanges(JSON.parse(savedTicketChanges));
+        }
+
+        const fetchActiveRepairTickets = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/repairTicket/getActiveRepairTickets', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching active repair tickets: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const newCount = data.totalElements || 0;
+
+                // Get previous count from localStorage
+                const prevCountData = localStorage.getItem('previousTicketCount');
+                let prevCount = 0;
+                let shouldUpdateChanges = false;
+
+                if (prevCountData) {
+                    prevCount = JSON.parse(prevCountData).count;
+
+                    // Calculate change
+                    const change = newCount - prevCount;
+
+                    // Only update if there's a NEW change - different from what we're already showing
+                    if (change !== 0) {
+                        // Check if this is different from what we're currently showing
+                        const currentChange = ticketChanges.value * (ticketChanges.isIncrease ? 1 : -1);
+                        if (change !== currentChange) {
+                            shouldUpdateChanges = true;
+                            const newTicketChanges = {
+                                value: Math.abs(change),
+                                isIncrease: change > 0,
+                                lastUpdated: new Date().toISOString()
+                            };
+
+                            setTicketChanges(newTicketChanges);
+
+                            // Save ticket changes to localStorage
+                            localStorage.setItem('ticketChanges', JSON.stringify(newTicketChanges));
+                        }
+                    }
+                }
+
+                // Only update the count in localStorage if we found a new change
+                // or if this is the first time we're checking
+                if (shouldUpdateChanges || !prevCountData) {
+                    localStorage.setItem('previousTicketCount', JSON.stringify({
+                        count: newCount,
+                        timestamp: new Date().toISOString()
+                    }));
+                }
+
+                // Always update the current open tickets count
+                setStats(prevStats => ({
+                    ...prevStats,
+                    openTickets: newCount
+                }));
+
+            } catch (err) {
+                console.error("Error fetching active repair tickets:", err);
+                setStats(prevStats => ({
+                    ...prevStats,
+                    openTickets: prevStats.openTickets || 0
+                }));
+            }
+        };
+
+        fetchActiveRepairTickets();
+
+        // Set up polling to refresh active tickets count every 2 minutes
+        const intervalId = setInterval(fetchActiveRepairTickets, 120000);
+
+        return () => clearInterval(intervalId);
+    }, []);
+
     // Fetch repair tickets from backend
     useEffect(() => {
         const fetchRepairTickets = async () => {
@@ -247,15 +347,6 @@ const AdminDashboard = () => {
 
                 const data = await response.json();
                 setRepairTickets(data);
-
-                // Count open tickets (assuming a ticket is open if status is not "COMPLETED")
-                const openTicketsCount = data.filter(ticket =>
-                    ticket.status !== 'COMPLETED' && ticket.status !== 'CANCELLED').length;
-
-                setStats(prevStats => ({
-                    ...prevStats,
-                    openTickets: openTicketsCount
-                }));
 
                 setTicketsError(null);
             } catch (err) {
@@ -296,7 +387,7 @@ const AdminDashboard = () => {
                 setInventoryData(data);
 
                 // Count low stock items (assuming items with quantity <= 5 are considered low stock)
-                const lowStockCount = data.filter(item => item.quantity <= 5).length;
+                const lowStockCount = data.filter(item => item.currentStock <= 5).length;
                 setStats(prevStats => ({
                     ...prevStats,
                     lowStockItems: lowStockCount
@@ -456,7 +547,15 @@ const AdminDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <div className="text-gray-600 text-sm mb-2">Open Tickets</div>
                             <div className="text-2xl font-bold text-gray-800">{stats.openTickets}</div>
-                            <div className="text-xs text-gray-500 mt-1">-2 since yesterday</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                                {ticketChanges.value > 0 ? (
+                                    ticketChanges.isIncrease ?
+                                        `+${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check` :
+                                        `-${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check`
+                                ) : (
+                                    "No change in ticket count"
+                                )}
+                            </div>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <div className="text-gray-600 text-sm mb-2">Pending Approvals</div>
@@ -638,5 +737,5 @@ const AdminDashboard = () => {
         </div>
     )
 }
-
+//
 export default AdminDashboard

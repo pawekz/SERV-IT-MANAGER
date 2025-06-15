@@ -23,9 +23,11 @@ public class ConfigurationService {
     public static final String BACKUP_PATH_CONFIG_KEY = "backup.base.path";
     public static final String BACKUP_SCHEDULE_CRON_KEY = "backup.schedule.cron";
     public static final String BACKUP_SCHEDULE_ENABLED_KEY = "backup.schedule.enabled";
+    public static final String TICKET_FILES_PATH_CONFIG_KEY = "ticketfiles.base.path";
     
     private static final String DEFAULT_BACKUP_PATH = "./src/main/resources/"; // Changed to avoid conflict, default SQL dump location
     private static final String DEFAULT_BACKUP_SCHEDULE = "DISABLED";
+    private static final String DEFAULT_TICKET_FILES_PATH = "./src/main/resources/static/";
 
     private final SystemConfigurationRepository systemConfigurationRepository;
 
@@ -149,5 +151,26 @@ public class ConfigurationService {
             logger.warn("Could not validate interval for CRON expression: {}", cronExpression, e);
             // Allow the CRON expression if we can't validate the interval
         }
+    }
+
+    @Transactional(readOnly = true)
+    public String getTicketFilesBasePath() {
+        return getConfigurationValue(TICKET_FILES_PATH_CONFIG_KEY, DEFAULT_TICKET_FILES_PATH);
+    }
+
+    @Transactional
+    public void setTicketFilesBasePath(String path) {
+        if (!StringUtils.hasText(path)) {
+            logger.error("Ticket files path cannot be null, empty or blank.");
+            throw new IllegalArgumentException("Ticket files path cannot be null, empty or blank.");
+        }
+        try {
+            Paths.get(path);
+        } catch (InvalidPathException e) {
+            logger.error("Invalid ticket files path format: {}", path, e);
+            throw new IllegalArgumentException("Invalid ticket files path format: " + path, e);
+        }
+        logger.info("Setting ticket files path to: {}", path);
+        setConfigurationValue(TICKET_FILES_PATH_CONFIG_KEY, path);
     }
 }

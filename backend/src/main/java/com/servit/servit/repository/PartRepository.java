@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,4 +54,23 @@ public interface PartRepository extends JpaRepository<PartEntity, Long> {
     
     @Query("SELECT SUM(p.currentStock) FROM PartEntity p WHERE p.isDeleted = false")
     Long getTotalStock();
+
+    // Warranty-related queries
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND p.isCustomerPurchased = true")
+    List<PartEntity> findCustomerPurchasedParts();
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+           "p.isCustomerPurchased = true AND p.warrantyExpiration IS NOT NULL AND " +
+           "p.warrantyExpiration < CURRENT_TIMESTAMP")
+    List<PartEntity> findExpiredWarrantyParts();
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+           "p.isCustomerPurchased = true AND p.warrantyExpiration IS NOT NULL AND " +
+           "p.warrantyExpiration BETWEEN CURRENT_TIMESTAMP AND :expirationDate")
+    List<PartEntity> findPartsWithWarrantyExpiringBefore(@Param("expirationDate") LocalDateTime expirationDate);
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND " +
+           "p.isCustomerPurchased = true AND p.warrantyExpiration IS NOT NULL AND " +
+           "p.warrantyExpiration > CURRENT_TIMESTAMP")
+    List<PartEntity> findPartsWithValidWarranty();
 } 

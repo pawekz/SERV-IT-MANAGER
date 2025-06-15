@@ -39,4 +39,6 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
             "LOWER(r.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     Page<RepairTicketEntity> searchRepairTicketsByEmail(@Param("email") String email, @Param("searchTerm") String searchTerm, Pageable pageable);
 
+    @Query("SELECT r FROM RepairTicketEntity r WHERE r.repairStatus IN ('RECEIVED', 'DIAGNOSING', 'AWAITING_PARTS', 'REPAIRING', 'READY_FOR_PICKUP')")
+    Page<RepairTicketEntity> findActiveRepairTickets(Pageable pageable);
 }

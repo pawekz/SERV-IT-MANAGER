@@ -395,6 +395,19 @@ public class RepairTicketService {
                 .collect(Collectors.toList());
     }
 
+    public Page<GetRepairTicketResponseDTO> getActiveRepairTickets(Pageable pageable) {
+        logger.info("Fetching active repair tickets");
+        try {
+            Page<GetRepairTicketResponseDTO> activeTickets = repairTicketRepository.findActiveRepairTickets(pageable)
+                    .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Found {} active repair tickets", activeTickets.getTotalElements());
+            return activeTickets;
+        } catch (Exception e) {
+            logger.error("Error fetching active repair tickets", e);
+            throw new RuntimeException("Failed to fetch active repair tickets", e);
+        }
+    }
+
     private RepairStatusHistoryResponseDTO mapToStatusHistoryResponseDTO(RepairStatusHistoryEntity entity) {
         if (entity == null) {
             logger.error("RepairStatusHistoryEntity is null.");

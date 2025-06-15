@@ -22,11 +22,15 @@ import com.servit.servit.dto.SupplierReplacementRequestDTO;
 import com.servit.servit.dto.PartNumberStockSummaryDTO;
 import com.servit.servit.dto.UpdatePartNumberStockTrackingDTO;
 import com.servit.servit.entity.InventoryTransactionEntity;
+import com.servit.servit.entity.PartEntity;
+import com.servit.servit.repository.PartRepository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,9 @@ public class PartController {
     
     @Autowired
     private PartNumberStockTrackingService stockTrackingService;
+
+    @Autowired
+    private PartRepository partRepository;
 
     public PartController(PartService partService) {
         this.partService = partService;
@@ -97,22 +104,29 @@ public class PartController {
     @PatchMapping("/updatePart/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updatePart(@PathVariable Long id, @RequestBody UpdatePartRequestDTO req) {
-        logger.info("API Request: Updating part with ID: {}", id);
         try {
-            PartResponseDTO result = partService.updatePart(id, req);
-            logger.info("API Response: Part updated successfully - ID: {}, Part Number: {}", 
-                       result.getId(), result.getPartNumber());
-            return ResponseEntity.ok(result);
-        } catch (EntityNotFoundException e) {
-            logger.warn("API Error: Part not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException e) {
-            logger.warn("API Error: Bad request while updating part - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+            logger.info("Updating part with ID: {}", id);
+            logger.debug("Update request data: {}", req);
+
+            // Validate warranty dates if customer purchased
+            if (req.getIsCustomerPurchased() != null && req.getIsCustomerPurchased()) {
+                if (req.getDatePurchasedByCustomer() == null) {
+                    return ResponseEntity.badRequest().body("Purchase date is required for customer purchased items");
+                }
+                if (req.getWarrantyExpiration() == null) {
+                    return ResponseEntity.badRequest().body("Warranty expiration date is required for customer purchased items");
+                }
+                if (req.getDatePurchasedByCustomer().isAfter(req.getWarrantyExpiration())) {
+                    return ResponseEntity.badRequest().body("Warranty expiration date must be after purchase date");
+                }
+            }
+
+            PartResponseDTO updatedPart = partService.updatePart(id, req);
+            return ResponseEntity.ok(updatedPart);
         } catch (Exception e) {
-            logger.error("API Error: Internal server error while updating part - {}", e.getMessage(), e);
+            logger.error("Error updating part: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+                    .body("Failed to update part: " + e.getMessage());
         }
     }
 
@@ -604,6 +618,56 @@ public class PartController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error resolving stock alert: " + e.getMessage());
+        }
+    }
+
+    // Add new endpoint to verify warranty
+    @GetMapping("/verifyWarranty/{partId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> verifyWarranty(@PathVariable Long partId) {
+        try {
+            logger.info("Verifying warranty for part ID: {}", partId);
+            Map<String, Object> warrantyInfo = partService.verifyWarranty(partId);
+            return ResponseEntity.ok(warrantyInfo);
+        } catch (Exception e) {
+            logger.error("Error verifying warranty: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to verify warranty: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getPartDetailsByPartNumber/{partNumber}")
+    public ResponseEntity<?> getPartDetailsByPartNumber(@PathVariable String partNumber) {
+        logger.info("API Request: Getting part details by part number: {}", partNumber);
+        try {
+            List<PartEntity> parts = partRepository.findAllByPartNumber(partNumber)
+                .stream()
+                .filter(part -> !part.getIsDeleted())
+                .collect(Collectors.toList());
+            
+            if (!parts.isEmpty()) {
+                // Use the first non-deleted part to get the common details
+                PartEntity existingPart = parts.get(0);
+                Map<String, Object> details = new HashMap<>();
+                details.put("name", existingPart.getName());
+                details.put("description", existingPart.getDescription());
+                details.put("unitCost", existingPart.getUnitCost());
+                details.put("brand", existingPart.getBrand());
+                details.put("model", existingPart.getModel());
+                details.put("partType", existingPart.getPartType());
+                details.put("exists", true);
+                details.put("totalParts", parts.size());
+                
+                logger.info("API Response: Found {} parts for part number: {}", parts.size(), partNumber);
+                return ResponseEntity.ok(details);
+            } else {
+                logger.info("API Response: No active parts found for part number: {}", partNumber);
+                return ResponseEntity.ok(Map.of("exists", false));
+            }
+        } catch (Exception e) {
+            logger.error("API Error: Error getting part details - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting part details: " + e.getMessage());
         }
     }
 }
