@@ -60,7 +60,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
@@ -90,7 +90,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
@@ -132,7 +132,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>

@@ -68,8 +68,7 @@ api.interceptors.response.use(
   error => {
     if (axios.isCancel(error)) {
       window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
-    } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Clear token on authentication/authorization errors
+    } else if (error.response && error.response.status === 401) {
       localStorage.removeItem('authToken');
       window.dispatchEvent(new Event('tokenExpired'));
     }
