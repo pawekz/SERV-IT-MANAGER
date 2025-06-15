@@ -82,6 +82,7 @@ public class SecurityConfig {
                             "/repairTicket/getAllRepairTickets",
                             "/repairTicket/uploadRepairTicketPdf/*",
                             "/repairTicket/searchRepairTickets",
+                            "/repairTicket/files/**",
                             "/part/addPart",
                             "/part/addBulkParts",
                             "/part/stock/updateStocks/*",

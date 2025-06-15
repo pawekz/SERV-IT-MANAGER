@@ -2,6 +2,7 @@ package com.servit.servit.controller;
 
 import com.servit.servit.dto.*;
 import com.servit.servit.entity.RepairTicketEntity;
+import com.servit.servit.service.ConfigurationService;
 import com.servit.servit.service.RepairTicketService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/repairTicket")
@@ -21,6 +28,9 @@ public class RepairTicketController {
 
     @Autowired
     private final RepairTicketService repairTicketService;
+
+    @Autowired
+    private ConfigurationService configurationService;
 
     public RepairTicketController(RepairTicketService repairTicketService) {
         this.repairTicketService = repairTicketService;
@@ -203,5 +213,47 @@ public class RepairTicketController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/files/{type}/{filename:.+}")
+    public ResponseEntity<Resource> getTicketFile(@PathVariable String type, @PathVariable String filename) {
+        try {
+            // Path traversal protection
+            if (type.contains("..") || filename.contains("..")) {
+                return ResponseEntity.badRequest().build();
+            }
+            String basePath = configurationService.getTicketFilesBasePath();
+            // Split type by '/' to support nested folders
+            Path file = Paths.get(basePath, type.split("/"));
+            file = file.resolve(filename);
+            org.slf4j.LoggerFactory.getLogger(getClass()).info("Serving ticket file: {}", file);
+            Resource resource = new UrlResource(file.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            String contentDisposition = "inline; filename=\"" + filename + "\"";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .body(resource);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(getClass()).error("Error serving ticket file", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/ticketfiles/directory")
+    public ResponseEntity<Map<String, String>> getTicketFilesDirectory() {
+        String path = configurationService.getTicketFilesBasePath();
+        return ResponseEntity.ok(Map.of("path", path));
+    }
+
+    @PostMapping("/ticketfiles/directory")
+    public ResponseEntity<?> setTicketFilesDirectory(@RequestBody Map<String, String> payload) {
+        String newPath = payload.get("path");
+        if (newPath == null || newPath.isBlank()) {
+            return ResponseEntity.badRequest().body("Path is required");
+        }
+        configurationService.setTicketFilesBasePath(newPath);
+        return ResponseEntity.ok(Map.of("path", newPath));
     }
 }

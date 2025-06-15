@@ -25,6 +25,7 @@ import CustomerDashboard from "./pages/DashboardPage/CustomerDashboard.jsx";
 import Techniciandashboard from "./pages/DashboardPage/techniciandashboard.jsx";
 import MockUpUpdateStatusAndPushNotifications from "./pages/MockUpUpdateStatusAndPushNotifications/MockUpUpdateStatusAndPushNotifications";
 import { useEffect, useState } from "react";
+import HistoryPage from "./pages/History/HistoryPage.jsx";
 
 function App() {
   // Function to parse JWT token
@@ -99,6 +100,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/history" element={<HistoryPage />} /> {/*remove this sheet after testing*/}
 
           {/* Dashboard redirect */}
           <Route path="/dashboard" element={<DashboardRedirect />} />

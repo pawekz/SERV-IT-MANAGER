@@ -1,6 +1,11 @@
 package com.servit.servit.util;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.servit.servit.service.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,14 +20,12 @@ import java.util.List;
 @Service
 public class FileUtil {
 
-    @Value("${upload.dir}/images/repair_photos/")
-    private String repairPhotosDir;
+    private final ConfigurationService configurationService;
 
-    @Value("${upload.dir}/images/digital_signatures/")
-    private String digitalSignaturesDir;
-
-    @Value("${upload.dir}/documents/claim_forms/")
-    private String claimFormsDir;
+    @Autowired
+    public FileUtil(ConfigurationService configurationService) {
+        this.configurationService = configurationService;
+    }
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final List<String> VALID_IMAGE_EXTENSIONS = List.of(".png", ".jpg", ".jpeg");
@@ -34,7 +37,8 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-rp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
 
-        Path filePath = Paths.get(repairPhotosDir).resolve(fileName);
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "images", "repair_photos", fileName);
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, file.getBytes());
 
@@ -50,7 +54,8 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-sig-%s%s", ticketNumber, date, fileExtension);
 
-        Path filePath = Paths.get(digitalSignaturesDir).resolve(fileName);
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "images", "digital_signatures", fileName);
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, file.getBytes());
 
@@ -64,7 +69,8 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-repair-ticket-%s%s", ticketNumber, date, fileExtension);
 
-        Path filePath = Paths.get(claimFormsDir).resolve(fileName);
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "documents", "claim_forms", fileName);
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, file.getBytes());
 
