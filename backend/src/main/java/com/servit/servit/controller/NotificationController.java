@@ -119,12 +119,12 @@ public class NotificationController {
         }
     }
 
-    @GetMapping("/getAllUnreadNotificationsPageable")
-    public ResponseEntity<?> getAllUnreadNotificationsPageable(
+    @GetMapping("/getAllUnreadNotificationsFromUserPageable")
+    public ResponseEntity<?> getAllUnreadNotificationsFromUserPageable(
             @RequestParam String email,
             @PageableDefault(size = 10) Pageable pageable) {
         try {
-            Page<NotificationDTO> unreadNotifications = notificationService.getUnreadNotificationsPageable(email, pageable);
+            Page<NotificationDTO> unreadNotifications = notificationService.getAllUnreadNotificationsFromUserPageable(email, pageable);
             return ResponseEntity.ok(unreadNotifications);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

@@ -166,7 +166,7 @@ public class NotificationService {
         }
     }
 
-    public Page<NotificationDTO> getUnreadNotificationsPageable(String email, Pageable pageable) {
+    public Page<NotificationDTO> getAllUnreadNotificationsFromUserPageable(String email, Pageable pageable) {
         try {
             return notificationRepository.findByRecipientEmailAndIsReadFalseOrderByCreatedAtDesc(email, pageable)
                     .map(this::toDto);
