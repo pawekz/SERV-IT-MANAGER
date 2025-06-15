@@ -215,20 +215,17 @@ public class RepairTicketController {
         }
     }
 
-    @GetMapping("/files/{type}/{filename:.+}")
-    public ResponseEntity<Resource> getTicketFile(@PathVariable String type, @PathVariable String filename) {
+    @GetMapping("/files/{category}/{subfolder}/{filename:.+}")
+    public ResponseEntity<Resource> getTicketFileV2(@PathVariable String category,
+                                                    @PathVariable String subfolder,
+                                                    @PathVariable String filename) {
         try {
-            // Path traversal protection
-            if (type.contains("..") || filename.contains("..")) {
-                return ResponseEntity.badRequest().build();
-            }
             String basePath = configurationService.getTicketFilesBasePath();
-            // Split type by '/' to support nested folders
-            Path file = Paths.get(basePath, type.split("/"));
-            file = file.resolve(filename);
-            org.slf4j.LoggerFactory.getLogger(getClass()).info("Serving ticket file: {}", file);
-            Resource resource = new UrlResource(file.toUri());
+            Path filePath = Paths.get(basePath, category, subfolder, filename);
+            System.out.println("DEBUG: [V2] Full file path: " + filePath);
+            Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
+                System.out.println("DEBUG: [V2] File not found or not readable: " + filePath);
                 return ResponseEntity.notFound().build();
             }
             String contentDisposition = "inline; filename=\"" + filename + "\"";
@@ -236,7 +233,7 @@ public class RepairTicketController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .body(resource);
         } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(getClass()).error("Error serving ticket file", e);
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

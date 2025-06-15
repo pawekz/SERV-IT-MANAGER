@@ -100,7 +100,11 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/history" element={<HistoryPage />} /> {/*remove this sheet after testing*/}
+
+          {/* Protected History route */}
+          <Route path="/history" element={
+            <ProtectedRoute element={<HistoryPage />} allowedRoles={['admin', 'technician', 'customer']} />
+          } />
 
           {/* Dashboard redirect */}
           <Route path="/dashboard" element={<DashboardRedirect />} />
