@@ -82,7 +82,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
         <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
           <button
             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -138,47 +138,53 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
           </div>
         </div>
       </div>
-      {/* Image Modal */}
+      {/* Image Modal - increased z-index to be above the ticket details modal */}
       {imageModalOpen && (
-        <div className="fixed inset-0 z-60 bg-black bg-opacity-70 flex items-center justify-center" onClick={closeImageModal}>
-          <div className="relative bg-white rounded-lg shadow-lg p-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={closeImageModal}>
+          <div className="relative max-w-[90vw] max-h-[90vh] bg-black rounded-lg shadow-lg" onClick={e => e.stopPropagation()}>
             <button
-              className="absolute top-2 right-2 text-2xl text-gray-400 hover:text-gray-700"
+              className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300 z-10"
               onClick={closeImageModal}
             >
               &times;
             </button>
-            <div className="w-[24rem] h-48 flex items-center justify-center relative">
+            <div className="relative flex items-center justify-center">
               <TicketImage
                 path={images[currentImageIdx]}
                 alt={`Repair Photo ${currentImageIdx + 1}`}
-                className="w-full h-48 object-cover rounded"
+                className="max-w-[90vw] max-h-[85vh] object-contain"
               />
               {images.length > 1 && (
                 <>
                   <button
                     onClick={goLeft}
-                    className="absolute top-1/2 left-2 -translate-y-1/2 bg-transparent border-none p-2 cursor-pointer"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
                     style={{ outline: 'none' }}
                     aria-label="Previous image"
                   >
-                    <span style={{ fontSize: 24, color: 'rgba(0,0,0,0.3)' }}>&#8592;</span>
+                    <span style={{ fontSize: 24 }}>&#8592;</span>
                   </button>
                   <button
                     onClick={goRight}
-                    className="absolute top-1/2 right-2 -translate-y-1/2 bg-transparent border-none p-2 cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
                     style={{ outline: 'none' }}
                     aria-label="Next image"
                   >
-                    <span style={{ fontSize: 24, color: 'rgba(0,0,0,0.3)' }}>&#8594;</span>
+                    <span style={{ fontSize: 24 }}>&#8594;</span>
                   </button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
                     {images.map((_, idx) => (
                       <span
                         key={idx}
-                        className={`inline-block w-2 h-2 rounded-full ${idx === currentImageIdx ? 'bg-blue-600' : 'bg-gray-300'}`}
-                        style={{ transition: 'background 0.2s', cursor: 'pointer' }}
-                        onClick={() => setCurrentImageIdx(idx)}
+                        className={`inline-block w-3 h-3 rounded-full cursor-pointer transition-all ${
+                          idx === currentImageIdx 
+                            ? 'bg-white scale-125' 
+                            : 'bg-gray-400 hover:bg-gray-300'
+                        }`}
+                        onClick={e => {
+                          e.stopPropagation();
+                          setCurrentImageIdx(idx);
+                        }}
                       />
                     ))}
                   </div>
