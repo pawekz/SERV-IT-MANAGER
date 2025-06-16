@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {Wrench, TabletSmartphone, Images, Headphones, Archive, Search, Bell, Plus} from "lucide-react";
+import {Wrench, Images, Archive, Search, Bell, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
-
-
 
 const RepairQueue = () => {
     const navigate = useNavigate()
@@ -18,6 +16,7 @@ const RepairQueue = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [filterBy, setFilterBy] = useState("serial");
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
 
     const filterByLabel = {
         serial: "Serial Number",
@@ -26,9 +25,39 @@ const RepairQueue = () => {
         customer: "Customer Name",
     }[filterBy];
 
+    const statusOptions = [
+        "Received",
+        "Diagnosed",
+        "Awaiting Parts",
+        "Repairing",
+        "Ready for Pickup",
+        "Completed"
+    ];
+
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
+    };
+
+    const handleStatusClick = (e, requestId) => {
+        e.stopPropagation(); // Prevent triggering the card click
+        setStatusDropdownOpen(statusDropdownOpen === requestId ? null : requestId);
+    };
+
+    const changeStatus = (e, requestId, newStatus) => {
+        e.stopPropagation(); // Prevent triggering the card click
+
+        // Update the status in state
+        setWarrantyRequests(prevRequests =>
+            prevRequests.map(request =>
+                request.id === requestId ? { ...request, status: newStatus } : request
+            )
+        );
+
+        setStatusDropdownOpen(null); // Close the dropdown
+
+        // Here you would normally update the database
+        console.log(`Status for request ${requestId} changed to ${newStatus}`);
     };
 
     useEffect(() => {
@@ -49,7 +78,9 @@ const RepairQueue = () => {
                         issueDescription: "Screen flickers randomly during use.",
                         reasons: ["Defective/Not Working", "Performance Issues"],
                         status: "Requested",
-                        color: "blue"
+                        color: "blue",
+                        deviceName: "RAZER BLADE 15",
+
                     },
                     {
                         id: 2,
@@ -63,7 +94,9 @@ const RepairQueue = () => {
                         issueDescription: "Received a different model than ordered.",
                         reasons: ["Wrong Item Received"],
                         status: "Approved",
-                        color: "black"
+                        color: "black",
+                        deviceName: "ASUS ROG",
+
                     },
                     {
                         id: 3,
@@ -77,7 +110,9 @@ const RepairQueue = () => {
                         issueDescription: "Bluetooth connection keeps dropping.",
                         reasons: ["Performance Issues", "Defective/Not Working"],
                         status: "Claimed",
-                        color: "pink"
+                        color: "pink",
+                        deviceName: "MACBOOK AIR",
+
                     },
                     {
                         id: 4,
@@ -91,7 +126,9 @@ const RepairQueue = () => {
                         issueDescription: "Requesting upgrade to a newer model.",
                         reasons: ["Upgrade Request"],
                         status: "Denied",
-                        color: "red"
+                        color: "red",
+                        deviceName: "Dell XPS 13",
+
                     }
                 ];
                 setWarrantyRequests(fetchedData);
@@ -109,6 +146,7 @@ const RepairQueue = () => {
         const name = deviceType.toLowerCase();
 
         if (name.includes("laptop") || name.includes("computer") || name.includes("pc")) {
+
             return <Images className="text-[#10B981] size-10" />;
         } else if (name.includes("phone") || name.includes("smartphone") || name.includes("tablet")) {
             return <Images className="text-[#10B981] size-10" />;
@@ -116,6 +154,37 @@ const RepairQueue = () => {
             return <Images className="text-[#10B981] size-20" />;
         } else {
             return <Archive className="text-[#10B981] size-10" />;
+        }
+    };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => {
+            setStatusDropdownOpen(null);
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
+
+    const getStatusColor = (status) => {
+        switch(status) {
+            case "Received":
+                return "text-blue-600";
+            case "Diagnosed":
+                return "text-purple-600";
+            case "Awaiting Parts":
+                return "text-orange-600";
+            case "Repairing":
+                return "text-yellow-600";
+            case "Ready for Pickup":
+                return "text-green-600";
+            case "Completed":
+                return "text-gray-600";
+            default:
+                return "text-yellow-600";
         }
     };
 
@@ -139,12 +208,6 @@ const RepairQueue = () => {
                         <button className="p-2 rounded-full hover:bg-gray-100">
                             <Bell className="w-5 h-5 text-gray-600" />
                         </button>
-                        {/*<Link to="/newrepair">*/}
-                        {/*    <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">*/}
-                        {/*        <Plus className="w-5 h-5 mr-1" />*/}
-                        {/*        Add Ticket*/}
-                        {/*    </button>*/}
-                        {/*</Link>*/}
                     </div>
                 </div>
             </header>
@@ -195,25 +258,7 @@ const RepairQueue = () => {
                                     <h1 className="text-xl font-semibold text-gray-800">Pending Repairs</h1>
 
                                     <div className="flex items-center gap-2">
-                                        {/*<select*/}
-                                        {/*    className=" text-sm text-gray-700 px-2 py-1 rounded-lg"*/}
-                                        {/*    value={filterBy}*/}
-                                        {/*    onChange={(e) => setFilterBy(e.target.value)}*/}
-                                        {/*>*/}
-                                        {/*    <option value="serial">Serial Number</option>*/}
-                                        {/*    <option value="tracking">Tracking Number</option>*/}
-                                        {/*    <option value="device">Device Type</option>*/}
-                                        {/*    <option value="customer">Customer Name</option>*/}
-                                        {/*</select>*/}
 
-                                        {/*<input*/}
-                                        {/*    type="text"*/}
-                                        {/*    className=" text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"*/}
-                                        {/*    placeholder={`Search by ${filterByLabel}`}*/}
-
-                                        {/*    value={searchQuery}*/}
-                                        {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
-                                        {/*/>*/}
                                     </div>
                                     <Link to="/newrepair">
                                         <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
@@ -228,9 +273,13 @@ const RepairQueue = () => {
                                     </p>
 
                                 ) : (
+
+                                    // Pending Repairs
+
                                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                         {warrantyRequests
-                                            .filter((request) => request.status === "Requested" || request.status === "Approved")
+                                            .filter((request) => request.status === "Requested" || request.status === "Approved" ||
+                                                statusOptions.includes(request.status))
                                             .map((request) => (
                                                 <div
                                                     key={request.id}
@@ -238,23 +287,56 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <Images className="text-[#10B981] size-60" />;
+
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+
+                                                        {/*<Images className="text-[#10B981] size-60" />*/}
+
+
+
+                                                        <p className="text-[12px]">Ticket Number</p>
                                                     </div>
-                                                    <div className="my-2 h-px bg-[#33e407]"></div>
+                                                    <div className="my-2 h-px bg-[#33e407]">
+                                                    </div>
 
                                                     <div>
-                                                        <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.serialNumber}
+                                                        <h2 className="text-[16px] font-semibold text-gray-800 mb-1">
+                                                            {request.deviceName}
+
                                                         </h2>
+                                                        <p className="text-[14px] text-gray-600">
+                                                            {/*<strong>Customer:</strong> {request.deviceType}*/}
+                                                            {request.issueDescription}
+                                                        </p>
+                                                        <div className="mt-[5px]"></div>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Customer:</strong> {request.deviceType}
+                                                            {request.serialNumber}
+
                                                         </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            <strong>Date:</strong> {request.purchaseDate}
-                                                        </p>
-                                                        <p className={`text-sm font-medium mt-1 ${request.status === "Requested" ? "text-yellow-600" : "text-green-600"}`}>
-                                                            Status: {request.status}
-                                                        </p>
+                                                        <div className="relative">
+                                                            <p
+                                                                onClick={(e) => handleStatusClick(e, request.id)}
+                                                                className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
+                                                            >
+                                                                <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.status}
+                                                            </p>
+
+                                                            {statusDropdownOpen === request.id && (
+                                                                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
+                                                                    {statusOptions.map((status) => (
+                                                                        <button
+                                                                            key={status}
+                                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                                request.status === status ? 'font-bold' : ''
+                                                                            }`}
+                                                                            onClick={(e) => changeStatus(e, request.id, status)}
+                                                                        >
+                                                                            {status}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -267,6 +349,7 @@ const RepairQueue = () => {
                                         No warranty request has been resolved yet.
                                     </p>
 
+                                    // Resolved Repairs
                                 ) : (
                                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                         {warrantyRequests
@@ -278,23 +361,46 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <Images className="text-[#10B981] size-60" />;
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+                                                        <p className="text-[12px]">Ticket Number</p>
+
                                                     </div>
                                                     <div className="my-2 h-px bg-[#33e407]"></div>
 
                                                     <div>
                                                         <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.serialNumber}
+                                                            {request.deviceName}
                                                         </h2>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Device Type:</strong> {request.deviceType}
+                                                            {request.issueDescription}
                                                         </p>
                                                         <p className="text-sm text-gray-600">
-                                                            <strong>Date:</strong> {request.purchaseDate}
+                                                            {request.serialNumber}
                                                         </p>
-                                                        <p className={`text-sm font-medium mt-1 ${request.status === "Denied" ? "text-yellow-600" : "text-green-600"}`}>
-                                                            Status: {request.status}
-                                                        </p>
+                                                        <div className="relative">
+                                                            <p
+                                                                onClick={(e) => handleStatusClick(e, request.id)}
+                                                                className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
+                                                            >
+                                                                <ChevronUp className="ml-1 w-4 h-4" />   Status: {request.status}
+                                                            </p>
+
+                                                            {statusDropdownOpen === request.id && (
+                                                                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
+                                                                    {statusOptions.map((status) => (
+                                                                        <button
+                                                                            key={status}
+                                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                                request.status === status ? 'font-bold' : ''
+                                                                            }`}
+                                                                            onClick={(e) => changeStatus(e, request.id, status)}
+                                                                        >
+                                                                            {status}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
