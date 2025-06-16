@@ -60,6 +60,9 @@ public class RepairTicketEntity {
     @Column(name = "accessories", columnDefinition = "TEXT")
     private String accessories;
 
+    @Column(name = "is_device_tampered")
+    private Boolean isDeviceTampered; // <-- Added
+
     @ManyToOne
     @JoinColumn(name = "technician_email", referencedColumnName = "email", nullable = false)
     private UserEntity technicianEmail;

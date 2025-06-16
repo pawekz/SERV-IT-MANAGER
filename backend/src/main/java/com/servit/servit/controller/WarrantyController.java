@@ -100,7 +100,10 @@ public class WarrantyController {
 
     //verify warranty by serial number
     @GetMapping("/check/{serialNumber}")
-    public VerifyWarrantyDTO checkWarranty(@PathVariable String serialNumber) {
-        return warrantyService.checkWarranty(serialNumber);
+    public VerifyWarrantyDTO checkWarranty(
+            @PathVariable String serialNumber,
+            @RequestParam(required = false) Boolean isDeviceTampered
+    ) {
+        return warrantyService.checkWarranty(serialNumber, isDeviceTampered);
     }
 }
