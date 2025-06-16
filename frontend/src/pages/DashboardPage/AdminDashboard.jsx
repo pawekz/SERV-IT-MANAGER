@@ -3,19 +3,8 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import { Link } from 'react-router-dom';
 
 import {
-    HelpCircle,
-    Bell,
+    Bell, Plus,
     User,
-    Clock,
-    Calendar,
-    ClipboardList,
-    CheckCircle,
-    AlertTriangle,
-    FileText,
-    MessageSquare,
-    Phone,
-    Mail,
-    HandHelpingIcon as HelpIcon,
 } from "lucide-react"
 import {useEffect, useState} from "react";
 
@@ -511,11 +500,7 @@ const AdminDashboard = () => {
                         <h2 className="text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
                     <div className="flex-1 max-w-md mx-8">
-                        <input
-                            type="text"
-                            placeholder="Search users, tickets, inventory..."
-                            className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+
                     </div>
                     <div className="flex items-center space-x-5">
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
@@ -529,7 +514,17 @@ const AdminDashboard = () => {
 
                 {/* Dashboard Content */}
                 <div className="p-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard Overview</h1>
+
+                    <div className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
+
+                        <Link to="/newrepair">
+                            <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                <Plus className="w-5 h-5 mr-1" />
+                                Add Ticket
+                            </button>
+                        </Link>
+                    </div>
 
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
