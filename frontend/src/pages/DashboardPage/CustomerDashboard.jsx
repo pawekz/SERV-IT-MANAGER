@@ -412,14 +412,14 @@ const CustomerDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Support Options</h3>
                             <div className="space-y-3">
-                                <button className="flex items-center w-full px-4 py-3 bg-blue-50 text-blue-600 rounded-md">
-                                    <MessageSquare className="h-5 w-5 mr-3" />
-                                    Live Chat with Support
-                                </button>
-                                <button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-600 rounded-md">
-                                    <Phone className="h-5 w-5 mr-3" />
-                                    Call Support Center
-                                </button>
+                                {/*<button className="flex items-center w-full px-4 py-3 bg-blue-50 text-blue-600 rounded-md">*/}
+                                {/*    <MessageSquare className="h-5 w-5 mr-3" />*/}
+                                {/*    Live Chat with Support*/}
+                                {/*</button>*/}
+                                {/*<button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-600 rounded-md">*/}
+                                {/*    <Phone className="h-5 w-5 mr-3" />*/}
+                                {/*    Call Support Center*/}
+                                {/*</button>*/}
                                 <button className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md">
                                     <Mail className="h-5 w-5 mr-3" />
                                     Email Support Team
