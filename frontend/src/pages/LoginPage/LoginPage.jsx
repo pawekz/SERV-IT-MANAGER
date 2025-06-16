@@ -450,13 +450,7 @@ const LoginPage = () => {
                 setError("Your account is inactive. Please contact support.");
             }else {
                 // User is verified or verification status wasn't explicitly returned as false
-                if (data.role === 'ADMIN') {
-                    navigate('/admindashboard');
-                } if(data.role === 'TECHNICIAN') {
-                    navigate('/techniciandashboard');
-                } if(data.role === 'CUSTOMER') {
-                    navigate('/customerdashboard');
-                }
+                navigate('/dashboard');
             }
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
@@ -514,13 +508,13 @@ const LoginPage = () => {
             }
 
             setShowOTPModal(false);
-            showToast('Account verified successfully.');
-            const userRole = localStorage.getItem('userRole');
-            if (userRole === 'ADMIN') {
-                navigate('/admindashboard');
-            } else {
-                navigate('/accountinformation');
-            }
+            showToast('Account verified successfully. Please login to continue.');
+            // Clear any existing auth data since we want them to login again
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userEmail');
+            // Redirect to login page
+            navigate('/login');
         } catch (err) {
             setOtpError(err.message || 'OTP verification failed');
         } finally {
