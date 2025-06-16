@@ -26,6 +26,7 @@ import Techniciandashboard from "./pages/DashboardPage/techniciandashboard.jsx";
 import MockUpUpdateStatusAndPushNotifications from "./pages/MockUpUpdateStatusAndPushNotifications/MockUpUpdateStatusAndPushNotifications";
 import { useEffect, useState } from "react";
 import HistoryPage from "./pages/History/HistoryPage.jsx";
+import FAQ from "./pages/FAQ/FAQ.jsx";
 
 function App() {
   // Function to parse JWT token
@@ -121,6 +122,11 @@ function App() {
           } />
 
           {/* Protected routes */}
+
+          <Route path="/faq" element={
+            <ProtectedRoute element={<FAQ />} allowedRoles={['customer']} />
+          } />
+
           <Route path="/accountinformation" element={
             <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
