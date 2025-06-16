@@ -9,8 +9,8 @@ public class WarrantyVerificationRequestDTO {
     private String deviceModel;
     private String deviceBrand;
     private String repairTicketId;
-    private Boolean isTampered; // From check-in form
+    private Boolean isDeviceTampered;
     private LocalDateTime purchaseDate;
     private LocalDateTime warrantyExpiration;
     private String retailerInfo;
-} 
+}

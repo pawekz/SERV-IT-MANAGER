@@ -265,24 +265,31 @@ public class WarrantyService {
 //        }
 //    }
 
-    public VerifyWarrantyDTO checkWarranty(String serialNumber) {
-        Optional<PartEntity> optionalPart = partRepository.findBySerialNumber(serialNumber);
-
+    public VerifyWarrantyDTO checkWarranty(String serialNumber, Boolean isDeviceTampered) {
         VerifyWarrantyDTO dto = new VerifyWarrantyDTO();
         dto.setSerialNumber(serialNumber);
+
+        if (Boolean.TRUE.equals(isDeviceTampered)) {
+            dto.setWithinWarranty(false);
+            dto.setMessage("Device is tampered. Out-of-Warranty (Chargeable).");
+            dto.setDaysLeft(null);
+            return dto;
+        }
+
+        Optional<PartEntity> optionalPart = partRepository.findBySerialNumber(serialNumber);
 
         if (optionalPart.isEmpty()) {
             dto.setWithinWarranty(false);
             dto.setMessage("Serial number not found");
-            dto.setDaysLeft(null); // Or consider using Optional<LocalDate> or -1 to represent "not applicable"
+            dto.setDaysLeft(null);
             return dto;
         }
 
         PartEntity part = optionalPart.get();
-        if(part.getWarranty() != null) {
+        if (part.getWarranty() != null) {
             dto.setWithinWarranty(false);
             dto.setMessage("This item already has a warranty: " + part.getWarranty().getWarrantyNumber());
-            dto.setDaysLeft(null); // Or consider using Optional<LocalDate> or -1 to represent "not applicable"
+            dto.setDaysLeft(null);
             return dto;
         }
         dto.setDeviceName(part.getName());
@@ -294,7 +301,7 @@ public class WarrantyService {
 
         if (expiration == null) {
             dto.setWithinWarranty(false);
-            dto.setMessage("An Issue has been found. Please contact support.");
+            dto.setMessage("This item does not have a warranty expiration date set.");
             dto.setDaysLeft(null);
             return dto;
         }
@@ -305,13 +312,15 @@ public class WarrantyService {
         if (isWithinWarranty) {
             long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate());
             dto.setDaysLeft(days);
-            dto.setMessage("Item still with in warranty: " + days + " days left");
+            dto.setMessage("Item still within warranty: " + days + " days left");
         } else {
-            dto.setDaysLeft(0L); // Warranty expired
-            dto.setMessage("Item is passed warranty: " + expiration);
+            dto.setDaysLeft(0L);
+            dto.setMessage("Item is past warranty: " + expiration);
         }
 
         return dto;
     }
+
+
 
 }

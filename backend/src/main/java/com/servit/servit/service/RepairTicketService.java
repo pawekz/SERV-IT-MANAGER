@@ -110,6 +110,7 @@ public class RepairTicketService {
             repairTicket.setDevicePassword(
                     req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
             );
+            repairTicket.setIsDeviceTampered(req.getIsDeviceTampered() != null && req.getIsDeviceTampered());
             repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
             repairTicket.setReportedIssue(req.getReportedIssue());
             repairTicket.setTechnicianEmail(technician);

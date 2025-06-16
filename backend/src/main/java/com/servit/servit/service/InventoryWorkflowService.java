@@ -55,7 +55,7 @@ public class InventoryWorkflowService {
         WarrantyVerificationResponseDTO response = new WarrantyVerificationResponseDTO();
 
         // Step 1: Check for tamper status override
-        if (Boolean.TRUE.equals(request.getIsTampered())) {
+        if (Boolean.TRUE.equals(request.getIsDeviceTampered())) {
             response.setWarrantyClass("OUT_OF_WARRANTY_CHARGEABLE");
             response.setIsInWarranty(false);
             response.setWarrantyStatus("TAMPERED");

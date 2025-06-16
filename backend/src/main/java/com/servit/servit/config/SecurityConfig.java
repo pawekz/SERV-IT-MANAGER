@@ -103,7 +103,8 @@ public class SecurityConfig {
                             "/part/stock/lowStockPartNumbers",
                             "/part/stock/searchPartNumbers",
                             "/part/addPart",
-                            "/warranty/getAllWarranties"
+                            "/warranty/getAllWarranties",
+                            "/warranty/check/*"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
