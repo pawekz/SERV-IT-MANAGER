@@ -42,6 +42,9 @@ public class RepairTicketService {
     @Autowired
     private FileUtil fileUtil;
 
+    @Autowired
+    private NotificationService notificationService;
+
     private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
     @Autowired
     private EmailService emailService;
@@ -107,6 +110,7 @@ public class RepairTicketService {
             repairTicket.setDevicePassword(
                     req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
             );
+            repairTicket.setIsDeviceTampered(req.getIsDeviceTampered() != null && req.getIsDeviceTampered());
             repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
             repairTicket.setReportedIssue(req.getReportedIssue());
             repairTicket.setTechnicianEmail(technician);
@@ -341,6 +345,7 @@ public class RepairTicketService {
                 });
 
         RepairStatusEnum newStatus;
+
         try {
             newStatus = RepairStatusEnum.valueOf(request.getRepairStatus());
         } catch (IllegalArgumentException ex) {
@@ -355,6 +360,16 @@ public class RepairTicketService {
         statusHistory.setRepairStatusEnum(newStatus);
 
         repairTicket.getRepairStatusHistory().add(statusHistory);
+
+        // Compose notification
+        NotificationDTO notification = new NotificationDTO();
+        notification.setTicketNumber(repairTicket.getTicketNumber());
+        notification.setStatus(newStatus.name());
+        notification.setRecipientEmail(repairTicket.getCustomerEmail());
+        notification.setMessage("Your repair ticket " + repairTicket.getTicketNumber() +
+                " status changed to: " + newStatus.name());
+
+        notificationService.sendNotification(notification);
 
         logger.info("Repair status updated to {} for ticket: {}", newStatus, request.getTicketNumber());
         return repairTicketRepository.save(repairTicket);

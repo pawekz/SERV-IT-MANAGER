@@ -151,6 +151,69 @@ const RealTimeStatus = () => {
                     </div>
                 </div>
 
+                {/* Stepper */}
+                <ol className="items-center w-full space-y-4 sm:flex sm:space-x-8 sm:space-y-0 rtl:space-x-reverse mb-6">
+                    {/* Step 1 - Received */}
+                    <li className="flex items-center text-blue-600 dark:text-blue-500 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-blue-600 rounded-full shrink-0 dark:border-blue-500">
+                            1
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Received</h3>
+                        </span>
+                    </li>
+                    
+                    {/* Step 2 - Diagnosed */}
+                    <li className="flex items-center text-gray-500 dark:text-gray-400 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-gray-500 rounded-full shrink-0 dark:border-gray-400">
+                            2
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Diagnosed</h3>
+                        </span>
+                    </li>
+                    
+                    {/* Step 3 - Awaiting Parts */}
+                    <li className="flex items-center text-gray-500 dark:text-gray-400 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-gray-500 rounded-full shrink-0 dark:border-gray-400">
+                            3
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Awaiting Parts</h3>
+                        </span>
+                    </li>
+
+                    {/* Step 4 - Repairing */}
+                    <li className="flex items-center text-gray-500 dark:text-gray-400 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-gray-500 rounded-full shrink-0 dark:border-gray-400">
+                            4
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Repairing</h3>
+                        </span>
+                    </li>
+
+                    {/* Step 5 - Ready For Pickup */}
+                    <li className="flex items-center text-gray-500 dark:text-gray-400 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-gray-500 rounded-full shrink-0 dark:border-gray-400">
+                            5
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Ready For Pickup</h3>
+                        </span>
+                    </li>
+
+                    {/* Step 6 - Completed */}
+                    <li className="flex items-center text-gray-500 dark:text-gray-400 space-x-2.5 rtl:space-x-reverse">
+                        <span className="flex items-center justify-center w-8 h-8 border border-gray-500 rounded-full shrink-0 dark:border-gray-400">
+                            6
+                        </span>
+                        <span>
+                            <h3 className="font-medium leading-tight">Completed</h3>
+                        </span>
+                    </li>
+                </ol>
+
                 {/* Repair Cards */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filteredRepairs.map((repair) => (
@@ -168,8 +231,8 @@ const RealTimeStatus = () => {
                                     <span
                                         className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(repair.status)}`}
                                     >
-                    {repair.status}
-                  </span>
+                                        {repair.status}
+                                    </span>
                                 </div>
 
                                 {/* Progress Bar */}

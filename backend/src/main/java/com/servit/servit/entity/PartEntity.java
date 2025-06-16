@@ -57,6 +57,9 @@ public class PartEntity {
     @Column(name = "warranty_expiration")
     private LocalDateTime warrantyExpiration;
 
+    @Column(name = "is_customer_purchased", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isCustomerPurchased = false;
+
     @Column(name = "added_by", nullable = false)
     private String addedBy;
 
@@ -101,4 +104,10 @@ public class PartEntity {
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
     private WarrantyEntity warranty;
+
+    @Column(name = "brand")
+    private String brand;
+
+    @Column(name = "model")
+    private String model;
 }

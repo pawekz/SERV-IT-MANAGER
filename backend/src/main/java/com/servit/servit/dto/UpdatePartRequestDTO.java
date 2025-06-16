@@ -28,4 +28,10 @@ public class UpdatePartRequestDTO {
     private LocalDateTime supplierOrderDate;
     private LocalDateTime supplierExpectedDelivery;
     private LocalDateTime supplierActualDelivery;
+    
+    // New warranty-related fields
+    private Boolean isCustomerPurchased;
+
+    private String brand;
+    private String model;
 } 

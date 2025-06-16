@@ -13,4 +13,6 @@ public class VerifyWarrantyDTO {
     String deviceType;
     String serialNumber;
     Long daysLeft;
+    String brand;
+    String model;
 }

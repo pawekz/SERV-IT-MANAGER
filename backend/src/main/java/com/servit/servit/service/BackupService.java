@@ -175,6 +175,8 @@ public class BackupService {
                 "repair_photo",
                 "warranty_photo",
                 "digital_signature",
+                "part_number_stock_tracking",
+                "inventory_transaction",
                 "feedback"
             );
 

@@ -214,7 +214,7 @@ const ContactPage = () => {
                     </div>
                 </section>
 
-                {/* FAQ Section */}
+                {/* x Section */}
                 <section className="py-20 bg-white">
                     <div className="max-w-7xl mx-auto px-8">
                         <div className="text-center mb-12">

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from '../../services/api';
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();
@@ -16,6 +17,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
     const [photoFiles, setPhotoFiles] = useState([]);
     const [isTamperModalOpen, setIsTamperModalOpen] = useState(false);
+
+    const [warrantyStatus, setWarrantyStatus] = useState(null);
+    const [warrantyIndicator, setWarrantyIndicator] = useState(null);
+    const [warrantyClass, setWarrantyClass] = useState(null);
 
     const [formData, setFormData] = useState({
         ticketNumber: "",
@@ -131,7 +136,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
         const submitData = {
             ...formData,
-            customerPhoneNumber: formattedPhoneNumber
+            customerPhoneNumber: formattedPhoneNumber,
+            warrantyClass: warrantyClass
         };
 
         if (onNext) {
@@ -163,7 +169,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
     const showQuestionMark = formData.deviceSerialNumber && formData.deviceSerialNumber.trim() !== '';
 
-    // Image viewer navigation
     const openImageViewer = (idx) => {
         setImageViewerIndex(idx);
         setImageViewerOpen(true);
@@ -171,6 +176,85 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     const closeImageViewer = () => setImageViewerOpen(false);
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.repairPhotos.length);
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.repairPhotos.length) % formData.repairPhotos.length);
+
+    const fetchWarrantyStatus = async (serial, isTampered) => {
+        try {
+            setWarrantyStatus(null);
+            setWarrantyIndicator(null);
+            setWarrantyClass(null);
+
+            const token = localStorage.getItem("token");
+            const response = await api.get(
+                `/warranty/check/${serial}?isDeviceTampered=${isTampered}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const data = response.data;
+            setWarrantyStatus(data);
+            setWarrantyClass(data.warrantyClass || null);
+
+            const allowedDeviceTypes = ["LAPTOP", "COMPUTER", "PRINTER"];
+            if (data && data.serialNumber === serial && data.brand) {
+                setFormData((prev) => ({
+                    ...prev,
+                    deviceBrand: data.brand || prev.deviceBrand,
+                    deviceModel: data.model || prev.deviceModel,
+                    deviceType: allowedDeviceTypes.includes(data.deviceType) ? data.deviceType : "",
+                    deviceSerialNumber: data.serialNumber,
+                }));
+            }
+
+            if (data && data.serialNumber === serial) {
+                let color = "bg-gray-100 text-gray-600";
+                let statusText = data.warrantyClass
+                    ? data.warrantyClass.replace(/_/g, " ")
+                    : (data.message || "Warranty Status Unknown");
+                if (data.warrantyClass === "AUTO_REPLACEMENT") color = "bg-blue-100 text-blue-600";
+                else if (data.warrantyClass === "IN_WARRANTY_REPAIR") color = "bg-green-100 text-green-600";
+                else if (data.warrantyClass === "OUT_OF_WARRANTY_CHARGEABLE") color = "bg-red-100 text-red-600";
+                else if (data.warrantyClass === "PENDING_ADMIN_REVIEW") color = "bg-yellow-100 text-yellow-600";
+                setWarrantyIndicator({ status: statusText, color });
+            } else {
+                setWarrantyIndicator({ status: "Serial Not Found", color: "bg-yellow-100 text-yellow-600" });
+            }
+        } catch (err) {
+            setWarrantyStatus(null);
+            setWarrantyClass(null);
+            setWarrantyIndicator({ status: "Warranty Check Failed", color: "bg-gray-100 text-gray-600" });
+        }
+    };
+
+    const serialScanTimeout = useRef(null);
+
+    const handleSerialNumberChange = (e) => {
+        handleChange(e);
+        const serial = e.target.value.trim();
+        if (serialScanTimeout.current) {
+            clearTimeout(serialScanTimeout.current);
+        }
+        if (!serial) {
+            setWarrantyStatus(null);
+            setWarrantyIndicator(null);
+            setWarrantyClass(null);
+            return;
+        }
+        setWarrantyIndicator({ status: "Scanning...", color: "bg-gray-100 text-gray-600" });
+        serialScanTimeout.current = setTimeout(() => {
+            fetchWarrantyStatus(serial, formData.isDeviceTampered);
+        }, 2000);
+    };
+
+    const handleTamperChange = (isTampered) => {
+        setFormData(prev => ({ ...prev, isDeviceTampered: isTampered }));
+        if (formData.deviceSerialNumber && formData.deviceSerialNumber.trim() !== '') {
+            fetchWarrantyStatus(formData.deviceSerialNumber, isTampered);
+        }
+        closeTamperModal();
+    };
 
     return (
         <>
@@ -182,7 +266,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                     </div>
                     <div className="p-6">
                         <form onSubmit={handleSubmit}>
-                            {/* Customer Check-In */}
                             <div className="flex flex-col md:flex-row justify-between mb-6">
                                 <div className="text-xl font-semibold text-gray-800">Customer Check-In</div>
                                 <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -194,7 +277,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     />
                                 </div>
                             </div>
-                            {/* Customer Information */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
@@ -250,7 +332,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     </div>
                                 </div>
                             </div>
-                            {/* Device Information */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
@@ -302,7 +383,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             <input
                                                 id="deviceSerialNumber"
                                                 value={formData.deviceSerialNumber}
-                                                onChange={handleChange}
+                                                onChange={handleSerialNumberChange}
                                                 placeholder="Enter serial number"
                                                 required
                                                 disabled={success}
@@ -319,6 +400,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                 </button>
                                             )}
                                         </div>
+                                        {warrantyIndicator && (
+                                            <div className={`mt-2 px-3 py-1 rounded text-sm font-semibold inline-block ${warrantyIndicator.color}`}>
+                                                {warrantyIndicator.status}
+                                                {warrantyStatus && warrantyStatus.daysFromPurchase != null && (
+                                                    <span className="ml-2">({warrantyStatus.daysFromPurchase} days from purchase)</span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="deviceColor" className="block text-sm font-medium text-gray-700">Color:</label>
@@ -333,7 +422,9 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="devicePassword" className="block text-sm font-medium text-gray-700">Device Password (if any):</label>
+                                        <label htmlFor="devicePassword" className="block text-sm font-medium text-gray-700">
+                                            Device Password: <span className="text-gray-400">(If Any)</span>
+                                        </label>
                                         <input
                                             id="devicePassword"
                                             value={formData.devicePassword}
@@ -345,14 +436,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     </div>
                                 </div>
                             </div>
-                            {/* Accessories */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">ACCESSORIES</h2>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label htmlFor="accessories" className="block text-sm font-medium text-gray-700">Customer Owned Accessories:</label>
+                                        <label htmlFor="accessories" className="block text-sm font-medium text-gray-700">Customer Owned Accessories: <span className="text-gray-400">(If Any)</span></label>
                                         <textarea
                                             id="accessories"
                                             value={formData.accessories}
@@ -364,7 +454,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     </div>
                                 </div>
                             </div>
-                            {/* Problem Description */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">PROBLEM DESCRIPTION</h2>
@@ -398,7 +487,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     )}
                                 </div>
                             </div>
-                            {/* Device Condition Photos */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
@@ -506,10 +594,9 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             </div>
                                         )}
                                         <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
-                                </div>
+                                    </div>
                                 </div>
                             </div>
-                            {/* Navigation Buttons */}
                             <div className="flex justify-between gap-4">
                                 <button
                                     type="button"
@@ -528,7 +615,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                         </form>
                     </div>
                 </div>
-                {/* Tamper Check Modal */}
                 {isTamperModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
                         <div className="relative bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
@@ -547,7 +633,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                         id="deviceTamperedYes"
                                         name="deviceTampered"
                                         checked={formData.isDeviceTampered === true}
-                                        onChange={() => setFormData(prev => ({ ...prev, isDeviceTampered: true }))}
+                                        onChange={() => handleTamperChange(true)}
                                         className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                                     />
                                     <label htmlFor="deviceTamperedYes" className="ml-2 block text-sm font-medium text-gray-700">
@@ -560,7 +646,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                         id="deviceTamperedNo"
                                         name="deviceTampered"
                                         checked={formData.isDeviceTampered === false}
-                                        onChange={() => setFormData(prev => ({ ...prev, isDeviceTampered: false }))}
+                                        onChange={() => handleTamperChange(false)}
                                         className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                                     />
                                     <label htmlFor="deviceTamperedNo" className="ml-2 block text-sm font-medium text-gray-700">
@@ -580,7 +666,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                         </div>
                     </div>
                 )}
-                {/* Image Viewer Modal */}
                 {imageViewerOpen && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
@@ -630,7 +715,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                         </div>
                     </div>
                 )}
-                {/* Sticky nav style */}
                 <style>{`
                     .sticky-nav {
                         position: fixed;

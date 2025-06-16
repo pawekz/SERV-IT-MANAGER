@@ -42,7 +42,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/customerdashboard" className={linkClass('dashboard')}>
+                <Link to="/dashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -60,7 +60,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
@@ -72,7 +72,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/techniciandashboard" className={linkClass('dashboard')}>
+                <Link to="/dashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -90,7 +90,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>
@@ -114,7 +114,7 @@ const Sidebar = ({ activePage }) => {
         <>
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
-                <Link to="/admindashboard" className={linkClass('dashboard')}>
+                <Link to="/dashboard" className={linkClass('dashboard')}>
                     <LayoutGrid size={18} className="mr-3" />
                     <span>Dashboard</span>
                 </Link>
@@ -132,7 +132,7 @@ const Sidebar = ({ activePage }) => {
                 </Link>
             </li>
             <li className="mb-1">
-                <Link to="#" className={linkClass('history')}>
+                <Link to="/history" className={linkClass('history')}>
                     <FileClock size={18} className="mr-3" />
                     <span>History</span>
                 </Link>

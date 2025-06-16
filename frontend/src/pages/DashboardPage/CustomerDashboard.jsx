@@ -9,7 +9,6 @@ import {
     CheckCircle,
     AlertTriangle,
     FileText,
-    MessageSquare,
     Phone,
     Mail,
     HandHelpingIcon as HelpIcon,
@@ -282,18 +281,12 @@ const CustomerDashboard = () => {
                         </div>
 
                         <div className="flex flex-wrap gap-3 mt-6">
-                            <button className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-md font-medium">
-                                <ClipboardList className="h-4 w-4 mr-2" />
-                                View Details
-                            </button>
-                            <button className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-md font-medium">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Track Status
-                            </button>
-                            <button className="flex items-center px-4 py-2 bg-amber-50 text-amber-600 rounded-md font-medium">
-                                <AlertTriangle className="h-4 w-4 mr-2" />
-                                Action Required
-                            </button>
+                            <Link to="/realtimestatus">
+                                <button className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-md font-medium">
+                                    <ClipboardList className="h-4 w-4 mr-2" />
+                                    View Details
+                                </button>
+                            </Link>
                         </div>
                     </div>
 
@@ -410,22 +403,19 @@ const CustomerDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Support Options</h3>
                             <div className="space-y-3">
-                                <button className="flex items-center w-full px-4 py-3 bg-blue-50 text-blue-600 rounded-md">
-                                    <MessageSquare className="h-5 w-5 mr-3" />
-                                    Live Chat with Support
-                                </button>
-                                <button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-600 rounded-md">
-                                    <Phone className="h-5 w-5 mr-3" />
-                                    Call Support Center
-                                </button>
-                                <button className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md">
+
+                                <a href="mailto:servit.validation@gmail.com?subject=Support%20Request&body=Hello%20Support%20Team," className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md no-underline cursor-pointer">
                                     <Mail className="h-5 w-5 mr-3" />
                                     Email Support Team
-                                </button>
-                                <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md">
-                                    <HelpIcon className="h-5 w-5 mr-3" />
-                                    FAQ / Help Center
-                                </button>
+                                </a>
+
+                                <Link to="/FAQ">
+                                    <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
+                                        <HelpIcon className="h-5 w-5 mr-3" />
+                                        FAQ / Help Center
+                                    </button>
+                                </Link>
+
                             </div>
                         </div>
                     </div>
