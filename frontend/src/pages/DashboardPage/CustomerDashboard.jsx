@@ -288,14 +288,6 @@ const CustomerDashboard = () => {
                                     View Details
                                 </button>
                             </Link>
-                            {/*<button className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-md font-medium">*/}
-                            {/*    <CheckCircle className="h-4 w-4 mr-2" />*/}
-                            {/*    Track Status*/}
-                            {/*</button>*/}
-                            {/*<button className="flex items-center px-4 py-2 bg-amber-50 text-amber-600 rounded-md font-medium">*/}
-                            {/*    <AlertTriangle className="h-4 w-4 mr-2" />*/}
-                            {/*    Action Required*/}
-                            {/*</button>*/}
                         </div>
                     </div>
 
@@ -412,14 +404,7 @@ const CustomerDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Support Options</h3>
                             <div className="space-y-3">
-                                {/*<button className="flex items-center w-full px-4 py-3 bg-blue-50 text-blue-600 rounded-md">*/}
-                                {/*    <MessageSquare className="h-5 w-5 mr-3" />*/}
-                                {/*    Live Chat with Support*/}
-                                {/*</button>*/}
-                                {/*<button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-600 rounded-md">*/}
-                                {/*    <Phone className="h-5 w-5 mr-3" />*/}
-                                {/*    Call Support Center*/}
-                                {/*</button>*/}
+
                                 <button className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md">
                                     <Mail className="h-5 w-5 mr-3" />
                                     Email Support Team
@@ -427,7 +412,7 @@ const CustomerDashboard = () => {
 
 
                                 <Link to="/FAQ">
-                                    <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md">
+                                    <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
                                         <HelpIcon className="h-5 w-5 mr-3" />
                                         FAQ / Help Center
                                     </button>
