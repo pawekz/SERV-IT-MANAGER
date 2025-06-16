@@ -49,47 +49,34 @@ function App() {
     // Check if role matches
     const decodedToken = parseJwt(token);
     if (!decodedToken || !allowedRoles.includes(decodedToken.role?.toLowerCase())) {
-      // Redirect to appropriate dashboard based on user role
-      if (decodedToken && decodedToken.role) {
-        switch (decodedToken.role.toLowerCase()) {
-          case 'admin':
-            return <Navigate to="/admindashboard" />;
-          case 'technician':
-            return <Navigate to="/techniciandashboard" />;
-          case 'customer':
-            return <Navigate to="/customerdashboard" />;
-          default:
-            return <Navigate to="/login" />;
-        }
-      }
       return <Navigate to="/login" />;
     }
 
     return element;
   };
 
-  // Dashboard redirect based on role
-  const DashboardRedirect = () => {
+  // Dashboard component based on role
+  const Dashboard = () => {
     const token = localStorage.getItem('authToken');
     if (!token) {
       return <Navigate to="/login" />;
     }
 
     const decodedToken = parseJwt(token);
-    if (decodedToken && decodedToken.role) {
-      switch (decodedToken.role.toLowerCase()) {
-        case 'admin':
-          return <Navigate to="/admindashboard" />;
-        case 'technician':
-          return <Navigate to="/techniciandashboard" />;
-        case 'customer':
-          return <Navigate to="/customerdashboard" />;
-        default:
-          return <Navigate to="/login" />;
-      }
+    if (!decodedToken || !decodedToken.role) {
+      return <Navigate to="/login" />;
     }
 
-    return <Navigate to="/login" />;
+    switch (decodedToken.role.toLowerCase()) {
+      case 'admin':
+        return <AdminDashboard />;
+      case 'technician':
+        return <Techniciandashboard />;
+      case 'customer':
+        return <CustomerDashboard />;
+      default:
+        return <Navigate to="/login" />;
+    }
   };
 
   return (
@@ -107,18 +94,9 @@ function App() {
             <ProtectedRoute element={<HistoryPage />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
 
-          {/* Dashboard redirect */}
-          <Route path="/dashboard" element={<DashboardRedirect />} />
-
-          {/* Role-specific dashboards */}
-          <Route path="/admindashboard" element={
-            <ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />
-          } />
-          <Route path="/techniciandashboard" element={
-            <ProtectedRoute element={<Techniciandashboard />} allowedRoles={['technician']} />
-          } />
-          <Route path="/customerdashboard" element={
-            <ProtectedRoute element={<CustomerDashboard />} allowedRoles={['customer']} />
+          {/* Single dashboard route that renders different components based on role */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
 
           {/* Protected routes */}
@@ -161,7 +139,7 @@ function App() {
             <ProtectedRoute element={<SignatureCapturePad />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
           <Route path="/repairqueue" element={
-            <ProtectedRoute element={<RepairQueue />} allowedRoles={['admin', 'technician']} />
+            <ProtectedRoute element={<RepairQueue />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
           <Route path="/profilemanage" element={
             <ProtectedRoute element={<UserManagement />} allowedRoles={['admin']} />
