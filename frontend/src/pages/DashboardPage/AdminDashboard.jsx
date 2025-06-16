@@ -38,7 +38,7 @@ const AdminDashboard = () => {
         lowStockItems: 0,
         devicesInRepair: 87,
         warrantyRequests: 32,
-        satisfactionRate: "94%",
+        satisfactionRate: "0%",
     });
 
     // Initialize with zeros instead of dummy data
@@ -132,19 +132,19 @@ const AdminDashboard = () => {
                     const userData = {
                         firstName: decodedToken.firstName || '',
                         lastName: decodedToken.lastName || '',
-                        username: decodedToken.username || decodedToken.sub || '',
+                        username: decodedToken.username || '',
                         email: decodedToken.email || '',
                         phoneNumber: decodedToken.phoneNumber || '',
-                        role: decodedToken.role || '',
+                        password: '********', // For security, never display actual password
+                        role: decodedToken.role || ''
                     };
 
                     setUserData(userData);
 
-                    // Cache the user data in sessionStorage for persistence across refreshes
+                    // Cache the data in sessionStorage
                     sessionStorage.setItem('userData', JSON.stringify(userData));
                 } else {
-                    // If token can't be decoded, could attempt API call to get user data
-                    throw new Error("Could not retrieve user information");
+                    throw new Error("Invalid token format");
                 }
                 setError(null);
             } catch (err) {
@@ -287,17 +287,26 @@ const AdminDashboard = () => {
 
                     // Only update if there's a NEW change - different from what we're already showing
                     if (change !== 0) {
-                        // Check if this is different from what we're currently showing
-                        const currentChange = ticketChanges.value * (ticketChanges.isIncrease ? 1 : -1);
+                        // Get current displayed change value
+                        const currentChange = ticketChanges.value;
+
+                        // Only update if this is a different change than what we're already showing
                         if (change !== currentChange) {
-                            shouldUpdateChanges = true;
-                            const newChanges = {
-                                value: Math.abs(change),
+                            setTicketChanges({
+                                value: change,
+                                isIncrease: change > 0,
+                                lastUpdated: new Date().toISOString()
+                            });
+
+                            // Save the new ticket changes to localStorage
+                            const newTicketChanges = {
+                                value: change,
                                 isIncrease: change > 0,
                                 lastUpdated: new Date().toISOString()
                             };
-                            setTicketChanges(newChanges);
-                            localStorage.setItem('ticketChanges', JSON.stringify(newChanges));
+
+                            localStorage.setItem('ticketChanges', JSON.stringify(newTicketChanges));
+                            shouldUpdateChanges = true;
                         }
                     }
                 }
@@ -455,7 +464,7 @@ const AdminDashboard = () => {
         fetchFeedbacks();
     }, []);
 
-    // Add useEffect to fetch satisfaction ratings from the backend
+    // Updated useEffect to fetch satisfaction ratings from the backend
     useEffect(() => {
         const fetchSatisfactionRate = async () => {
             try {
@@ -479,62 +488,72 @@ const AdminDashboard = () => {
                 const data = await response.json();
                 console.log("Ratings data from backend:", data);
 
-                // Calculate average satisfaction rating
-                if (data && data.length > 0) {
-                    // Store total number of ratings
-                    setTotalRatings(data.length);
-                    console.log("Total ratings:", data.length);
+                // Process the ratings data (map of rating -> count)
+                if (data && Object.keys(data).length > 0) {
+                    // Calculate total number of ratings
+                    const totalCount = Object.values(data).reduce((sum, count) => sum + count, 0);
+                    setTotalRatings(totalCount);
 
-                    // Sum all overall satisfaction ratings
-                    const totalRating = data.reduce((sum, rating) => sum + rating.overallSatisfactionRating, 0);
-                    const averageRating = totalRating / data.length;
-                    console.log("Average rating:", averageRating);
+                    // Find the maximum count to set as 100%
+                    const maxCount = Math.max(...Object.values(data));
 
-                    // Convert to percentage (assuming ratings are 1-5, so multiply by 20)
-                    const satisfactionPercentage = Math.round(averageRating * 20);
+                    // Calculate distribution percentages
+                    const distribution = {};
+                    let weightedSum = 0;
 
-                    // Update stats with the calculated percentage
+                    // Ensure all ratings 1-5 are represented
+                    for (let i = 1; i <= 5; i++) {
+                        const count = data[i] || 0;
+                        // Calculate percentage relative to the maximum count (for the bar display)
+                        // This makes the highest count show as 100%
+                        const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
+                        distribution[i] = percentage;
+
+                        // For weighted average calculation
+                        weightedSum += i * count;
+                    }
+
+                    // Calculate average rating and convert to percentage
+                    const averageRating = totalCount > 0 ? weightedSum / totalCount : 0;
+                    const satisfactionPercentage = Math.round(averageRating * 20); // Convert 1-5 scale to percentage
+
+                    // Update the ratings distribution
+                    setRatingDistribution(distribution);
+
+                    // Update the overall satisfaction rate
                     setStats(prevStats => ({
                         ...prevStats,
-                        satisfactionRate: `${satisfactionPercentage}%`
+                        satisfactionRate: satisfactionPercentage + "%"
                     }));
 
-                    // Calculate distribution of ratings
-                    const ratings = {
+                    console.log("Processed rating distribution:", distribution);
+                    console.log("Overall satisfaction rate:", satisfactionPercentage + "%");
+                } else {
+                    console.log("No ratings data found or empty object returned");
+                    // Reset to zeros if no data
+                    setRatingDistribution({
                         '5': 0,
                         '4': 0,
                         '3': 0,
                         '2': 0,
                         '1': 0
-                    };
-
-                    // Count ratings by star level
-                    data.forEach(feedback => {
-                        const rating = Math.round(feedback.overallSatisfactionRating).toString();
-                        if (ratings[rating] !== undefined) {
-                            ratings[rating] += 1; // This was the missing line
-                        }
                     });
-                    console.log("Raw rating counts:", ratings);
-
-                    // Calculate percentages
-                    const totalRatingsCount = data.length;
-                    const distribution = {};
-                    Object.keys(ratings).forEach(star => {
-                        distribution[star] = Math.round((ratings[star] / totalRatingsCount) * 100);
-                    });
-
-                    console.log("Rating distribution percentages:", distribution);
-                    setRatingDistribution(distribution);
-                } else {
-                    console.log("No ratings data found or empty array returned");
+                    setTotalRatings(0);
                 }
             } catch (err) {
                 console.error("Error fetching satisfaction ratings:", err);
-                // Fallback to default value if error occurs
+                // Fallback to default values if error occurs
+                setRatingDistribution({
+                    '5': 0,
+                    '4': 0,
+                    '3': 0,
+                    '2': 0,
+                    '1': 0
+                });
+                setTotalRatings(0);
                 setStats(prevStats => ({
                     ...prevStats,
-                    satisfactionRate: prevStats.satisfactionRate || "94%" // Keep existing value or use default
+                    satisfactionRate: "0%"
                 }));
             }
         };
@@ -683,7 +702,7 @@ const AdminDashboard = () => {
                                     "Unable to track new users"
                                 ) : (
                                     <>
-                                        <span className="text-green-500">+{stats.usersAddedThisWeek}</span> new this week
+                                        <span className="text-green-500 font-medium">+{stats.usersAddedThisWeek}</span> this week
                                     </>
                                 )}
                             </div>
@@ -694,10 +713,10 @@ const AdminDashboard = () => {
                             <div className="text-xs text-gray-500 mt-1">
                                 {ticketChanges.value > 0 ? (
                                     ticketChanges.isIncrease ?
-                                        <span className="text-red-500">+{ticketChanges.value} since last check</span> :
-                                        <span className="text-green-500">-{ticketChanges.value} since last check</span>
+                                        <span className="text-red-500 font-medium">+{ticketChanges.value} since last check</span> :
+                                        <span className="text-green-500 font-medium">{ticketChanges.value} since last check</span>
                                 ) : (
-                                    "No changes recently"
+                                    "No recent changes"
                                 )}
                             </div>
                         </div>
@@ -721,7 +740,7 @@ const AdminDashboard = () => {
                             <div className="flex flex-col items-center">
                                 <div className="relative w-44 h-44 mb-5">
                                     <div
-                                        className="absolute inset-0 rounded-full"
+                                        className="w-full h-full rounded-full"
                                         style={{
                                             background: `conic-gradient(
                         #2196f3 0% 25%,
@@ -765,24 +784,29 @@ const AdminDashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
                             <div className="h-48 flex items-end justify-around pt-5">
                                 <div className="flex flex-col items-center">
-                                    <div className="h-32 w-8 bg-blue-500 rounded-t-md"></div>
-                                    <div className="mt-2 text-xs text-gray-600">John</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '50%' }}></div>
+                                    <div className="mt-2 text-xs">Alex</div>
+                                    <div className="text-xs text-gray-500">12</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="h-24 w-8 bg-blue-500 rounded-t-md"></div>
-                                    <div className="mt-2 text-xs text-gray-600">Sarah</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '80%' }}></div>
+                                    <div className="mt-2 text-xs">Maria</div>
+                                    <div className="text-xs text-gray-500">18</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="h-40 w-8 bg-blue-500 rounded-t-md"></div>
-                                    <div className="mt-2 text-xs text-gray-600">Mike</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '30%' }}></div>
+                                    <div className="mt-2 text-xs">John</div>
+                                    <div className="text-xs text-gray-500">7</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="h-28 w-8 bg-blue-500 rounded-t-md"></div>
-                                    <div className="mt-2 text-xs text-gray-600">Amy</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '65%' }}></div>
+                                    <div className="mt-2 text-xs">Sarah</div>
+                                    <div className="text-xs text-gray-500">15</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="h-20 w-8 bg-blue-500 rounded-t-md"></div>
-                                    <div className="mt-2 text-xs text-gray-600">Dave</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '45%' }}></div>
+                                    <div className="mt-2 text-xs">Mike</div>
+                                    <div className="text-xs text-gray-500">10</div>
                                 </div>
                             </div>
                         </div>
@@ -794,9 +818,6 @@ const AdminDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">
                                 Customer Satisfaction Ratings
-                                <span className="text-sm font-normal text-gray-500 ml-2">
-                                    (Based on {totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})
-                                </span>
                             </h3>
                             <div className="space-y-4">
                                 {[5, 4, 3, 2, 1].map(star => (
@@ -804,11 +825,15 @@ const AdminDashboard = () => {
                                         <div className="w-20 text-sm">{star} Star{star !== 1 ? 's' : ''}</div>
                                         <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
                                             <div
-                                                className="h-full bg-yellow-400"
-                                                style={{ width: `${ratingDistribution[star.toString()]}%` }}
+                                                className={`h-full ${
+                                                    star >= 4 ? 'bg-green-500' :
+                                                        star === 3 ? 'bg-yellow-400' :
+                                                            'bg-red-500'
+                                                }`}
+                                                style={{ width: `${ratingDistribution[star]}%` }}
                                             ></div>
                                         </div>
-                                        <div className="w-10 text-sm font-bold text-right">{ratingDistribution[star.toString()]}%</div>
+                                        <div className="w-10 text-sm font-bold text-right">{ratingDistribution[star]}%</div>
                                     </div>
                                 ))}
                             </div>
