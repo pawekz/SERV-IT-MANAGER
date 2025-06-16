@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/feedback")
 public class FeedbackController {
@@ -16,6 +19,18 @@ public class FeedbackController {
     @Autowired
     public FeedbackController(FeedbackService feedbackService) {
         this.feedbackService = feedbackService;
+    }
+
+    @GetMapping("/getAllRatings")
+    public ResponseEntity<Map<Integer, Long>> getAllRatings() {
+        Map<Integer, Long> ratings = feedbackService.getAllRatings();
+        return ResponseEntity.ok(ratings);
+    }
+
+    @GetMapping("/getAllFeedback")
+    public ResponseEntity<List<FeedbackEntity>> getAllFeedback() {
+        List<FeedbackEntity> feedbackList = feedbackService.getAllFeedback();
+        return ResponseEntity.ok(feedbackList);
     }
 
     @PostMapping("/submitFeedback")

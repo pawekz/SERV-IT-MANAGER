@@ -40,6 +40,19 @@ const AdminDashboard = () => {
         warrantyRequests: 32,
         satisfactionRate: "94%",
     });
+
+    // Initialize with zeros instead of dummy data
+    const [ratingDistribution, setRatingDistribution] = useState({
+        '5': 0,
+        '4': 0,
+        '3': 0,
+        '2': 0,
+        '1': 0
+    });
+
+    // State for total number of ratings
+    const [totalRatings, setTotalRatings] = useState(0);
+
     // State for tracking errors specifically for weekly user stats
     const [statsErrors, setStatsErrors] = useState({
         usersAddedThisWeek: false
@@ -60,6 +73,11 @@ const AdminDashboard = () => {
         isIncrease: false,
         lastUpdated: null
     });
+
+    // State for feedback data
+    const [feedbacks, setFeedbacks] = useState([]);
+    const [feedbacksLoading, setFeedbacksLoading] = useState(true);
+    const [feedbacksError, setFeedbacksError] = useState(null);
 
     // Modal state for description
     const [modalData, setModalData] = useState(null);
@@ -112,13 +130,12 @@ const AdminDashboard = () => {
 
                 if (decodedToken) {
                     const userData = {
-                        firstName: decodedToken.firstName || 'User',
+                        firstName: decodedToken.firstName || '',
                         lastName: decodedToken.lastName || '',
-                        username: decodedToken.sub || 'username',
-                        email: decodedToken.email || 'email@example.com',
+                        username: decodedToken.username || decodedToken.sub || '',
+                        email: decodedToken.email || '',
                         phoneNumber: decodedToken.phoneNumber || '',
-                        password: '********', // Placeholder for security
-                        role: decodedToken.role || 'ROLE_USER'
+                        role: decodedToken.role || '',
                     };
 
                     setUserData(userData);
@@ -274,16 +291,13 @@ const AdminDashboard = () => {
                         const currentChange = ticketChanges.value * (ticketChanges.isIncrease ? 1 : -1);
                         if (change !== currentChange) {
                             shouldUpdateChanges = true;
-                            const newTicketChanges = {
+                            const newChanges = {
                                 value: Math.abs(change),
                                 isIncrease: change > 0,
                                 lastUpdated: new Date().toISOString()
                             };
-
-                            setTicketChanges(newTicketChanges);
-
-                            // Save ticket changes to localStorage
-                            localStorage.setItem('ticketChanges', JSON.stringify(newTicketChanges));
+                            setTicketChanges(newChanges);
+                            localStorage.setItem('ticketChanges', JSON.stringify(newChanges));
                         }
                     }
                 }
@@ -401,6 +415,136 @@ const AdminDashboard = () => {
         };
 
         fetchInventoryData();
+    }, []);
+
+    // Add useEffect to fetch feedback data from the backend
+    useEffect(() => {
+        const fetchFeedbacks = async () => {
+            try {
+                setFeedbacksLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+                const response = await fetch('http://localhost:8080/feedback/getAllFeedback', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching feedback: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Get most recent feedbacks (limit to 3)
+                const recentFeedbacks = data.slice(0, 3);
+                setFeedbacks(recentFeedbacks);
+                setFeedbacksError(null);
+            } catch (err) {
+                console.error("Error fetching feedback:", err);
+                setFeedbacksError("Failed to load feedback data");
+            } finally {
+                setFeedbacksLoading(false);
+            }
+        };
+
+        fetchFeedbacks();
+    }, []);
+
+    // Add useEffect to fetch satisfaction ratings from the backend
+    useEffect(() => {
+        const fetchSatisfactionRate = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/feedback/getAllRatings', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching satisfaction ratings: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Ratings data from backend:", data);
+
+                // Calculate average satisfaction rating
+                if (data && data.length > 0) {
+                    // Store total number of ratings
+                    setTotalRatings(data.length);
+                    console.log("Total ratings:", data.length);
+
+                    // Sum all overall satisfaction ratings
+                    const totalRating = data.reduce((sum, rating) => sum + rating.overallSatisfactionRating, 0);
+                    const averageRating = totalRating / data.length;
+                    console.log("Average rating:", averageRating);
+
+                    // Convert to percentage (assuming ratings are 1-5, so multiply by 20)
+                    const satisfactionPercentage = Math.round(averageRating * 20);
+
+                    // Update stats with the calculated percentage
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        satisfactionRate: `${satisfactionPercentage}%`
+                    }));
+
+                    // Calculate distribution of ratings
+                    const ratings = {
+                        '5': 0,
+                        '4': 0,
+                        '3': 0,
+                        '2': 0,
+                        '1': 0
+                    };
+
+                    // Count ratings by star level
+                    data.forEach(feedback => {
+                        const rating = Math.round(feedback.overallSatisfactionRating).toString();
+                        if (ratings[rating] !== undefined) {
+                            ratings[rating] += 1; // This was the missing line
+                        }
+                    });
+                    console.log("Raw rating counts:", ratings);
+
+                    // Calculate percentages
+                    const totalRatingsCount = data.length;
+                    const distribution = {};
+                    Object.keys(ratings).forEach(star => {
+                        distribution[star] = Math.round((ratings[star] / totalRatingsCount) * 100);
+                    });
+
+                    console.log("Rating distribution percentages:", distribution);
+                    setRatingDistribution(distribution);
+                } else {
+                    console.log("No ratings data found or empty array returned");
+                }
+            } catch (err) {
+                console.error("Error fetching satisfaction ratings:", err);
+                // Fallback to default value if error occurs
+                setStats(prevStats => ({
+                    ...prevStats,
+                    satisfactionRate: prevStats.satisfactionRate || "94%" // Keep existing value or use default
+                }));
+            }
+        };
+
+        fetchSatisfactionRate();
+
+        // Set up polling to refresh data periodically
+        const intervalId = setInterval(fetchSatisfactionRate, 300000); // Refresh every 5 minutes
+
+        return () => clearInterval(intervalId);
     }, []);
 
     // Fetch pending approvals
@@ -538,7 +682,9 @@ const AdminDashboard = () => {
                                 {statsErrors.usersAddedThisWeek ? (
                                     "Unable to track new users"
                                 ) : (
-                                    `+${stats.usersAddedThisWeek} this week`
+                                    <>
+                                        <span className="text-green-500">+{stats.usersAddedThisWeek}</span> new this week
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -548,10 +694,10 @@ const AdminDashboard = () => {
                             <div className="text-xs text-gray-500 mt-1">
                                 {ticketChanges.value > 0 ? (
                                     ticketChanges.isIncrease ?
-                                        `+${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check` :
-                                        `-${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check`
+                                        <span className="text-red-500">+{ticketChanges.value} since last check</span> :
+                                        <span className="text-green-500">-{ticketChanges.value} since last check</span>
                                 ) : (
-                                    "No change in ticket count"
+                                    "No changes recently"
                                 )}
                             </div>
                         </div>
@@ -575,7 +721,7 @@ const AdminDashboard = () => {
                             <div className="flex flex-col items-center">
                                 <div className="relative w-44 h-44 mb-5">
                                     <div
-                                        className="w-full h-full rounded-full relative"
+                                        className="absolute inset-0 rounded-full"
                                         style={{
                                             background: `conic-gradient(
                         #2196f3 0% 25%,
@@ -619,34 +765,24 @@ const AdminDashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
                             <div className="h-48 flex items-end justify-around pt-5">
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "40%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">8</div>
-                                    </div>
-                                    <div className="text-xs mt-2">John</div>
+                                    <div className="h-32 w-8 bg-blue-500 rounded-t-md"></div>
+                                    <div className="mt-2 text-xs text-gray-600">John</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "60%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">12</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Sarah</div>
+                                    <div className="h-24 w-8 bg-blue-500 rounded-t-md"></div>
+                                    <div className="mt-2 text-xs text-gray-600">Sarah</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "25%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">5</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Mike</div>
+                                    <div className="h-40 w-8 bg-blue-500 rounded-t-md"></div>
+                                    <div className="mt-2 text-xs text-gray-600">Mike</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "45%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">9</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Lisa</div>
+                                    <div className="h-28 w-8 bg-blue-500 rounded-t-md"></div>
+                                    <div className="mt-2 text-xs text-gray-600">Amy</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "35%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">7</div>
-                                    </div>
-                                    <div className="text-xs mt-2">David</div>
+                                    <div className="h-20 w-8 bg-blue-500 rounded-t-md"></div>
+                                    <div className="mt-2 text-xs text-gray-600">Dave</div>
                                 </div>
                             </div>
                         </div>
@@ -656,43 +792,25 @@ const AdminDashboard = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Satisfaction Ratings */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Satisfaction Ratings</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                                Customer Satisfaction Ratings
+                                <span className="text-sm font-normal text-gray-500 ml-2">
+                                    (Based on {totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})
+                                </span>
+                            </h3>
                             <div className="space-y-4">
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">5 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-green-500 rounded-full" style={{ width: "65%" }}></div>
+                                {[5, 4, 3, 2, 1].map(star => (
+                                    <div key={star} className="flex items-center">
+                                        <div className="w-20 text-sm">{star} Star{star !== 1 ? 's' : ''}</div>
+                                        <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
+                                            <div
+                                                className="h-full bg-yellow-400"
+                                                style={{ width: `${ratingDistribution[star.toString()]}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="w-10 text-sm font-bold text-right">{ratingDistribution[star.toString()]}%</div>
                                     </div>
-                                    <div className="w-10 text-sm font-bold text-right">65%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">4 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-green-400 rounded-full" style={{ width: "20%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">20%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">3 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-yellow-500 rounded-full" style={{ width: "10%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">10%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">2 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-orange-500 rounded-full" style={{ width: "3%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">3%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">1 Star</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-red-500 rounded-full" style={{ width: "2%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">2%</div>
-                                </div>
+                                ))}
                             </div>
                         </div>
 
@@ -700,33 +818,35 @@ const AdminDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Customer Feedback</h3>
                             <div className="space-y-4">
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">iPhone 13 Screen Repair</div>
-                                        <div className="text-yellow-500">★★★★★</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Excellent service! My phone was fixed in less than 2 hours and works perfectly now."
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">MacBook Battery Replacement</div>
-                                        <div className="text-yellow-500">★★★★☆</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Good service, but took a day longer than estimated. Battery life is great now."
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">iPad Screen Repair</div>
-                                        <div className="text-yellow-500">★★★★★</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Very professional technician. Fixed my cracked screen and it looks brand new!"
-                                    </div>
-                                </div>
+                                {feedbacksLoading ? (
+                                    <div className="text-center py-4">Loading feedback...</div>
+                                ) : feedbacksError ? (
+                                    <div className="text-center text-red-500 py-4">{feedbacksError}</div>
+                                ) : feedbacks.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-4">No feedback available</div>
+                                ) : (
+                                    feedbacks.map((feedback, index) => (
+                                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                                            <div className={`flex ${feedback.anonymous ? "justify-end" : "justify-between"} items-center mb-2`}>
+                                                {!feedback.anonymous && (
+                                                    <div className="font-medium">
+                                                        {feedback.repairTicketNumber || "Repair Ticket"}
+                                                    </div>
+                                                )}
+                                                <div className="text-yellow-500">
+                                                    {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
+                                                    {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-gray-600">
+                                                "{feedback.comments || "No comments provided"}"
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {feedback.anonymous ? "Anonymous" : feedback.customerName || "Customer"}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
