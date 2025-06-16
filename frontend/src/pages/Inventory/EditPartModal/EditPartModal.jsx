@@ -23,9 +23,11 @@ const EditPartModal = ({
     useEffect(() => {
         if (editPart) {
             setIsCustomerPurchased(editPart.isCustomerPurchased || editPart.datePurchasedByCustomer ? true : false);
-            // Reset warranty type to default when loading part
-            setWarrantyType('7_DAYS');
-            setCustomWarrantyDays(7);
+            // Only set initial warranty type if it hasn't been set yet
+            if (!warrantyType) {
+                setWarrantyType('7_DAYS');
+                setCustomWarrantyDays(7);
+            }
         }
     }, [editPart]);
 
