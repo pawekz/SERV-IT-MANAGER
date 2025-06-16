@@ -1,7 +1,8 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import KanbanBoard from "../../components/Kanban/KanbanBoard.jsx"
-import { Bell, User, Search, CheckCircle, X, Clock } from "lucide-react"
+import {Bell, User, Search, CheckCircle, X, Clock, Plus} from "lucide-react"
 import { useEffect, useState } from "react"
+import {Link} from "react-router-dom";
 
 const TechnicianDashboard = () => {
     const [userData, setUserData] = useState({
@@ -249,7 +250,21 @@ const TechnicianDashboard = () => {
 
                 {/* Dashboard Content */}
                 <div className="p-4 md:p-8 max-w-full">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">My Tasks Today</h1>
+                    {/*<h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">My Tasks Today</h1>*/}
+
+
+                        <div className="flex justify-between items-center mb-8">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">My Tasks Today</h1>
+
+                            <Link to="/newrepair">
+                                <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                    <Plus className="w-5 h-5 mr-1" />
+                                    Add Ticket
+                                </button>
+                            </Link>
+                        </div>
+
+
 
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
