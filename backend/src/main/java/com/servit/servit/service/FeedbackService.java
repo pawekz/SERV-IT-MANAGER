@@ -6,7 +6,10 @@ import com.servit.servit.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class FeedbackService {
@@ -16,6 +19,19 @@ public class FeedbackService {
     @Autowired
     public FeedbackService(FeedbackRepository feedbackRepository) {
         this.feedbackRepository = feedbackRepository;
+    }
+
+    public List<FeedbackEntity> getAllFeedback() {
+        return feedbackRepository.findAll();
+    }
+
+    public Map<Integer, Long> getAllRatings() {
+        List<FeedbackEntity> allFeedback = feedbackRepository.findAll();
+        return allFeedback.stream()
+                .collect(Collectors.groupingBy(
+                    FeedbackEntity::getRating,
+                    Collectors.counting()
+                ));
     }
 
     public FeedbackEntity submitFeedback(FeedbackRequestDTO feedbackRequestDTO) {

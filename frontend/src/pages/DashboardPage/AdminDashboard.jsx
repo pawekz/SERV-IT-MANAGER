@@ -1,7 +1,5 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
-
 import { Link } from 'react-router-dom';
-
 import {
     Bell, Plus,
     User,
@@ -29,8 +27,21 @@ const AdminDashboard = () => {
         lowStockItems: 0,
         devicesInRepair: 87,
         warrantyRequests: 32,
-        satisfactionRate: "94%",
+        satisfactionRate: "0%",
     });
+
+    // Initialize with zeros instead of dummy data
+    const [ratingDistribution, setRatingDistribution] = useState({
+        '5': 0,
+        '4': 0,
+        '3': 0,
+        '2': 0,
+        '1': 0
+    });
+
+    // State for total number of ratings
+    const [totalRatings, setTotalRatings] = useState(0);
+
     // State for tracking errors specifically for weekly user stats
     const [statsErrors, setStatsErrors] = useState({
         usersAddedThisWeek: false
@@ -51,6 +62,11 @@ const AdminDashboard = () => {
         isIncrease: false,
         lastUpdated: null
     });
+
+    // State for feedback data
+    const [feedbacks, setFeedbacks] = useState([]);
+    const [feedbacksLoading, setFeedbacksLoading] = useState(true);
+    const [feedbacksError, setFeedbacksError] = useState(null);
 
     // Modal state for description
     const [modalData, setModalData] = useState(null);
@@ -103,22 +119,21 @@ const AdminDashboard = () => {
 
                 if (decodedToken) {
                     const userData = {
-                        firstName: decodedToken.firstName || 'User',
+                        firstName: decodedToken.firstName || '',
                         lastName: decodedToken.lastName || '',
-                        username: decodedToken.sub || 'username',
-                        email: decodedToken.email || 'email@example.com',
+                        username: decodedToken.username || '',
+                        email: decodedToken.email || '',
                         phoneNumber: decodedToken.phoneNumber || '',
-                        password: '********', // Placeholder for security
-                        role: decodedToken.role || 'ROLE_USER'
+                        password: '********', // For security, never display actual password
+                        role: decodedToken.role || ''
                     };
 
                     setUserData(userData);
 
-                    // Cache the user data in sessionStorage for persistence across refreshes
+                    // Cache the data in sessionStorage
                     sessionStorage.setItem('userData', JSON.stringify(userData));
                 } else {
-                    // If token can't be decoded, could attempt API call to get user data
-                    throw new Error("Could not retrieve user information");
+                    throw new Error("Invalid token format");
                 }
                 setError(null);
             } catch (err) {
@@ -261,20 +276,26 @@ const AdminDashboard = () => {
 
                     // Only update if there's a NEW change - different from what we're already showing
                     if (change !== 0) {
-                        // Check if this is different from what we're currently showing
-                        const currentChange = ticketChanges.value * (ticketChanges.isIncrease ? 1 : -1);
+                        // Get current displayed change value
+                        const currentChange = ticketChanges.value;
+
+                        // Only update if this is a different change than what we're already showing
                         if (change !== currentChange) {
-                            shouldUpdateChanges = true;
+                            setTicketChanges({
+                                value: change,
+                                isIncrease: change > 0,
+                                lastUpdated: new Date().toISOString()
+                            });
+
+                            // Save the new ticket changes to localStorage
                             const newTicketChanges = {
-                                value: Math.abs(change),
+                                value: change,
                                 isIncrease: change > 0,
                                 lastUpdated: new Date().toISOString()
                             };
 
-                            setTicketChanges(newTicketChanges);
-
-                            // Save ticket changes to localStorage
                             localStorage.setItem('ticketChanges', JSON.stringify(newTicketChanges));
+                            shouldUpdateChanges = true;
                         }
                     }
                 }
@@ -392,6 +413,146 @@ const AdminDashboard = () => {
         };
 
         fetchInventoryData();
+    }, []);
+
+    // Add useEffect to fetch feedback data from the backend
+    useEffect(() => {
+        const fetchFeedbacks = async () => {
+            try {
+                setFeedbacksLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+                const response = await fetch('http://localhost:8080/feedback/getAllFeedback', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching feedback: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Get most recent feedbacks (limit to 3)
+                const recentFeedbacks = data.slice(0, 3);
+                setFeedbacks(recentFeedbacks);
+                setFeedbacksError(null);
+            } catch (err) {
+                console.error("Error fetching feedback:", err);
+                setFeedbacksError("Failed to load feedback data");
+            } finally {
+                setFeedbacksLoading(false);
+            }
+        };
+
+        fetchFeedbacks();
+    }, []);
+
+    // Updated useEffect to fetch satisfaction ratings from the backend
+    useEffect(() => {
+        const fetchSatisfactionRate = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error("No auth token found");
+                    return;
+                }
+
+                const response = await fetch('http://localhost:8080/feedback/getAllRatings', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching satisfaction ratings: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Ratings data from backend:", data);
+
+                // Process the ratings data (map of rating -> count)
+                if (data && Object.keys(data).length > 0) {
+                    // Calculate total number of ratings
+                    const totalCount = Object.values(data).reduce((sum, count) => sum + count, 0);
+                    setTotalRatings(totalCount);
+
+                    // Find the maximum count to set as 100%
+                    const maxCount = Math.max(...Object.values(data));
+
+                    // Calculate distribution percentages
+                    const distribution = {};
+                    let weightedSum = 0;
+
+                    // Ensure all ratings 1-5 are represented
+                    for (let i = 1; i <= 5; i++) {
+                        const count = data[i] || 0;
+                        // Calculate percentage relative to the maximum count (for the bar display)
+                        // This makes the highest count show as 100%
+                        const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
+                        distribution[i] = percentage;
+
+                        // For weighted average calculation
+                        weightedSum += i * count;
+                    }
+
+                    // Calculate average rating and convert to percentage
+                    const averageRating = totalCount > 0 ? weightedSum / totalCount : 0;
+                    const satisfactionPercentage = Math.round(averageRating * 20); // Convert 1-5 scale to percentage
+
+                    // Update the ratings distribution
+                    setRatingDistribution(distribution);
+
+                    // Update the overall satisfaction rate
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        satisfactionRate: satisfactionPercentage + "%"
+                    }));
+
+                    console.log("Processed rating distribution:", distribution);
+                    console.log("Overall satisfaction rate:", satisfactionPercentage + "%");
+                } else {
+                    console.log("No ratings data found or empty object returned");
+                    // Reset to zeros if no data
+                    setRatingDistribution({
+                        '5': 0,
+                        '4': 0,
+                        '3': 0,
+                        '2': 0,
+                        '1': 0
+                    });
+                    setTotalRatings(0);
+                }
+            } catch (err) {
+                console.error("Error fetching satisfaction ratings:", err);
+                // Fallback to default values if error occurs
+                setRatingDistribution({
+                    '5': 0,
+                    '4': 0,
+                    '3': 0,
+                    '2': 0,
+                    '1': 0
+                });
+                setTotalRatings(0);
+                setStats(prevStats => ({
+                    ...prevStats,
+                    satisfactionRate: "0%"
+                }));
+            }
+        };
+
+        fetchSatisfactionRate();
+
+        // Set up polling to refresh data periodically
+        const intervalId = setInterval(fetchSatisfactionRate, 300000); // Refresh every 5 minutes
+
+        return () => clearInterval(intervalId);
     }, []);
 
     // Fetch pending approvals
@@ -535,7 +696,9 @@ const AdminDashboard = () => {
                                 {statsErrors.usersAddedThisWeek ? (
                                     "Unable to track new users"
                                 ) : (
-                                    `+${stats.usersAddedThisWeek} this week`
+                                    <>
+                                        <span className="text-green-500 font-medium">+{stats.usersAddedThisWeek}</span> this week
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -545,10 +708,10 @@ const AdminDashboard = () => {
                             <div className="text-xs text-gray-500 mt-1">
                                 {ticketChanges.value > 0 ? (
                                     ticketChanges.isIncrease ?
-                                        `+${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check` :
-                                        `-${ticketChanges.value} ticket${ticketChanges.value !== 1 ? 's' : ''} since last check`
+                                        <span className="text-red-500 font-medium">+{ticketChanges.value} since last check</span> :
+                                        <span className="text-green-500 font-medium">{ticketChanges.value} since last check</span>
                                 ) : (
-                                    "No change in ticket count"
+                                    "No recent changes"
                                 )}
                             </div>
                         </div>
@@ -572,7 +735,7 @@ const AdminDashboard = () => {
                             <div className="flex flex-col items-center">
                                 <div className="relative w-44 h-44 mb-5">
                                     <div
-                                        className="w-full h-full rounded-full relative"
+                                        className="w-full h-full rounded-full"
                                         style={{
                                             background: `conic-gradient(
                         #2196f3 0% 25%,
@@ -616,34 +779,29 @@ const AdminDashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
                             <div className="h-48 flex items-end justify-around pt-5">
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "40%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">8</div>
-                                    </div>
-                                    <div className="text-xs mt-2">John</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '50%' }}></div>
+                                    <div className="mt-2 text-xs">Alex</div>
+                                    <div className="text-xs text-gray-500">12</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "60%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">12</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Sarah</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '80%' }}></div>
+                                    <div className="mt-2 text-xs">Maria</div>
+                                    <div className="text-xs text-gray-500">18</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "25%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">5</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Mike</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '30%' }}></div>
+                                    <div className="mt-2 text-xs">John</div>
+                                    <div className="text-xs text-gray-500">7</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "45%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">9</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Lisa</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '65%' }}></div>
+                                    <div className="mt-2 text-xs">Sarah</div>
+                                    <div className="text-xs text-gray-500">15</div>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-blue-900 rounded-t relative" style={{ height: "35%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">7</div>
-                                    </div>
-                                    <div className="text-xs mt-2">David</div>
+                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '45%' }}></div>
+                                    <div className="mt-2 text-xs">Mike</div>
+                                    <div className="text-xs text-gray-500">10</div>
                                 </div>
                             </div>
                         </div>
@@ -653,77 +811,62 @@ const AdminDashboard = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Satisfaction Ratings */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Satisfaction Ratings</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                                Customer Satisfaction Ratings
+                            </h3>
                             <div className="space-y-4">
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">5 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-green-500 rounded-full" style={{ width: "65%" }}></div>
+                                {[5, 4, 3, 2, 1].map(star => (
+                                    <div key={star} className="flex items-center">
+                                        <div className="w-20 text-sm">{star} Star{star !== 1 ? 's' : ''}</div>
+                                        <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
+                                            <div
+                                                className={`h-full ${
+                                                    star >= 4 ? 'bg-green-500' :
+                                                        star === 3 ? 'bg-yellow-400' :
+                                                            'bg-red-500'
+                                                }`}
+                                                style={{ width: `${ratingDistribution[star]}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="w-10 text-sm font-bold text-right">{ratingDistribution[star]}%</div>
                                     </div>
-                                    <div className="w-10 text-sm font-bold text-right">65%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">4 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-green-400 rounded-full" style={{ width: "20%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">20%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">3 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-yellow-500 rounded-full" style={{ width: "10%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">10%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">2 Stars</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-orange-500 rounded-full" style={{ width: "3%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">3%</div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-20 text-sm">1 Star</div>
-                                    <div className="flex-1 h-5 bg-gray-200 rounded-full overflow-hidden mx-3">
-                                        <div className="h-full bg-red-500 rounded-full" style={{ width: "2%" }}></div>
-                                    </div>
-                                    <div className="w-10 text-sm font-bold text-right">2%</div>
-                                </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Recent Feedback */}
+                        {/* Recent Feedbacks */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Customer Feedback</h3>
                             <div className="space-y-4">
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">iPhone 13 Screen Repair</div>
-                                        <div className="text-yellow-500">★★★★★</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Excellent service! My phone was fixed in less than 2 hours and works perfectly now."
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">MacBook Battery Replacement</div>
-                                        <div className="text-yellow-500">★★★★☆</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Good service, but took a day longer than estimated. Battery life is great now."
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="font-medium">iPad Screen Repair</div>
-                                        <div className="text-yellow-500">★★★★★</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        "Very professional technician. Fixed my cracked screen and it looks brand new!"
-                                    </div>
-                                </div>
+                                {feedbacksLoading ? (
+                                    <div className="text-center py-4">Loading feedback...</div>
+                                ) : feedbacksError ? (
+                                    <div className="text-center text-red-500 py-4">{feedbacksError}</div>
+                                ) : feedbacks.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-4">No feedback available</div>
+                                ) : (
+                                    feedbacks.map((feedback, index) => (
+                                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                                            <div className={`flex ${feedback.anonymous ? "justify-end" : "justify-between"} items-center mb-2`}>
+                                                {!feedback.anonymous && (
+                                                    <div className="font-medium">
+                                                        {feedback.repairTicketNumber || "Repair Ticket"}
+                                                    </div>
+                                                )}
+                                                <div className="text-yellow-500">
+                                                    {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
+                                                    {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-gray-600">
+                                                "{feedback.comments || "No comments provided"}"
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {feedback.anonymous ? "Anonymous" : feedback.customerName || "Customer"}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
@@ -732,5 +875,5 @@ const AdminDashboard = () => {
         </div>
     )
 }
-//
+
 export default AdminDashboard
