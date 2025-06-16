@@ -404,10 +404,10 @@ const CustomerDashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Support Options</h3>
                             <div className="space-y-3">
 
-                                <button className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md">
+                                <a href="mailto:servit.validation@gmail.com?subject=Support%20Request&body=Hello%20Support%20Team," className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md no-underline cursor-pointer">
                                     <Mail className="h-5 w-5 mr-3" />
                                     Email Support Team
-                                </button>
+                                </a>
 
                                 <Link to="/FAQ">
                                     <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
