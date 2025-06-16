@@ -3,19 +3,8 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import { Link } from 'react-router-dom';
 
 import {
-    HelpCircle,
     Bell,
     User,
-    Clock,
-    Calendar,
-    ClipboardList,
-    CheckCircle,
-    AlertTriangle,
-    FileText,
-    MessageSquare,
-    Phone,
-    Mail,
-    HandHelpingIcon as HelpIcon,
 } from "lucide-react"
 import {useEffect, useState} from "react";
 
@@ -512,13 +501,6 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex-1 max-w-md mx-8">
 
-                        {/*search bar */}
-
-                        {/*<input*/}
-                        {/*    type="text"*/}
-                        {/*    placeholder="Search users, tickets, inventory..."*/}
-                        {/*    className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"*/}
-                        {/*/>*/}
                     </div>
                     <div className="flex items-center space-x-5">
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">

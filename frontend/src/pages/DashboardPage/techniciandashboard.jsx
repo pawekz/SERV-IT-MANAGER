@@ -236,18 +236,6 @@ const TechnicianDashboard = () => {
                         <h2 className="text-lg md:text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
                     <div className="flex-1 max-w-md mx-0 md:mx-8 w-full md:w-auto">
-
-                        {/*Search bar placeholder*/}
-
-                        {/*<div className="relative">*/}
-                        {/*    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />*/}
-                        {/*    <input*/}
-                        {/*        type="text"*/}
-                        {/*        placeholder="Search tickets, parts..."*/}
-                        {/*        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500"*/}
-                        {/*    />*/}
-                        {/*</div>*/}
-
                     </div>
                     <div className="flex items-center space-x-3 flex-shrink-0">
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">

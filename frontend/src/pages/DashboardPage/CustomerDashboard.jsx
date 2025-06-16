@@ -9,7 +9,6 @@ import {
     CheckCircle,
     AlertTriangle,
     FileText,
-    MessageSquare,
     Phone,
     Mail,
     HandHelpingIcon as HelpIcon,
@@ -409,7 +408,6 @@ const CustomerDashboard = () => {
                                     <Mail className="h-5 w-5 mr-3" />
                                     Email Support Team
                                 </button>
-
 
                                 <Link to="/FAQ">
                                     <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
