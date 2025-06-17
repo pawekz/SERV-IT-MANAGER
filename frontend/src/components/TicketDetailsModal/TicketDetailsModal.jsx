@@ -62,6 +62,8 @@ function TicketDocumentLink({ path, children }) {
 const TicketDetailsModal = ({ ticket, onClose }) => {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+
   if (!ticket) return null;
 
   const images = ticket.repairPhotosUrls || [];
@@ -78,6 +80,26 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
   const goRight = e => {
     e.stopPropagation();
     setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  // Download PDF handler
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get(`/repairTicket/getRepairTicketDocument/${ticket.ticketNumber}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${ticket.ticketNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Failed to download PDF.', severity: 'error' } }));
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -115,6 +137,22 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
           </div>
           <div className="mb-4">
             <strong>Documents:</strong>
+            {/* Download PDF button */}
+            <div className="my-2">
+              <button
+                onClick={handleDownloadPdf}
+                className="inline-flex items-center px-3 py-2 bg-[#3B82F6] text-white rounded hover:bg-[#2563EB] transition-colors font-semibold text-sm disabled:opacity-60"
+                style={{ textDecoration: 'none' }}
+                disabled={downloading}
+              >
+                {/* PDF SVG Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="#fff" viewBox="0 0 24 24" width="20" height="20" className="mr-2">
+                  <rect width="24" height="24" rx="4" fill="#D32D2F"/>
+                  <path d="M7 17h2v-2H7v2zm0-4h2v-6H7v6zm4 4h2v-4h-2v4zm0-6h2V7h-2v4zm4 6h2v-8h-2v8zm0-10v2h2V7h-2z" fill="#fff"/>
+                </svg>
+                {downloading ? 'Downloading...' : 'Download Repair Ticket'}
+              </button>
+            </div>
             <ul className="list-disc ml-6 mt-2">
               {(ticket.documentUrls || []).map((url, idx) => (
                 <li key={idx}>
@@ -123,9 +161,9 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
                   </TicketDocumentLink>
                 </li>
               ))}
-              {(!ticket.documentUrls || ticket.documentUrls.length === 0) && (
+              {/*{(!ticket.documentUrls || ticket.documentUrls.length === 0) && (
                 <li className="text-gray-400">No documents</li>
-              )}
+              )}*/}
             </ul>
           </div>
           <div className="flex justify-end">

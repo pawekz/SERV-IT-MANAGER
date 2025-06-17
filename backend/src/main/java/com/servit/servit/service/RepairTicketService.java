@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 public class RepairTicketService {
@@ -260,13 +262,15 @@ public class RepairTicketService {
             throw new RuntimeException("Failed to upload repair ticket document", e);
         }
     }
-
+    //it will get the latest ticket number from the latest to the oldest
     public List<GetRepairTicketResponseDTO> getAllRepairTickets() {
         logger.info("Fetching all repair tickets.");
         try {
-            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findAll().stream()
-                    .map(this::mapToGetRepairTicketResponseDTO)
-                    .collect(Collectors.toList());
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "repairTicketId"))
+                .stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
             logger.info("Fetched {} repair tickets.", tickets.size());
             return tickets;
         } catch (Exception e) {
@@ -275,12 +279,37 @@ public class RepairTicketService {
         }
     }
 
+    public Page<GetRepairTicketResponseDTO> getAllRepairTicketsPaginated(Pageable pageable) {
+        logger.info("Fetching paginated repair tickets.");
+        try {
+            // Create a new Pageable with the same pagination but with DESC sort
+            Pageable pageableWithSort = PageRequest.of(
+                pageable.getPageNumber(), 
+                pageable.getPageSize(), 
+                Sort.by(Sort.Direction.DESC, "repairTicketId")
+            );
+            
+            Page<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(pageableWithSort)
+                .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Fetched {} repair tickets (page {} of {}).", 
+                tickets.getContent().size(), pageable.getPageNumber(), tickets.getTotalPages());
+            return tickets;
+        } catch (Exception e) {
+            logger.error("Error fetching paginated repair tickets.", e);
+            throw new RuntimeException("Failed to fetch paginated repair tickets", e);
+        }
+    }
+
     public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
         logger.info("Fetching repair tickets for customer email: {}", email);
         try {
-            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findByCustomerEmail(email).stream()
-                    .map(this::mapToGetRepairTicketResponseDTO)
-                    .collect(Collectors.toList());
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "repairTicketId"))
+                .stream()
+                .filter(ticket -> email.equalsIgnoreCase(ticket.getCustomerEmail()))
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
             logger.info("Fetched {} repair tickets for customer email: {}", tickets.size(), email);
             return tickets;
         } catch (Exception e) {
