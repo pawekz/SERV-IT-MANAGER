@@ -189,7 +189,7 @@ const SignatureCapturePad = ({
                             ></canvas>
                         </div>
                         <p className="text-center text-gray-500 text-sm mt-6">
-                            By signing, you confirm that all information provided is accurate and complete.
+                            By signing, you acknowledge that this signature is legally binding and that all information provided is accurate and complete.
                         </p>
                         {/* Terms Checkbox */}
                         <label className="flex items-center justify-between my-4 w-full">
