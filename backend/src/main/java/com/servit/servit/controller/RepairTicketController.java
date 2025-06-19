@@ -202,7 +202,12 @@ public class RepairTicketController {
     public ResponseEntity<?> updateRepairStatus(@RequestBody UpdateRepairStatusRequestDTO request) {
         try {
             RepairTicketEntity ticket = repairTicketService.updateRepairStatus(request);
-            return ResponseEntity.ok(ticket);
+            UpdateRepairStatusResponseDTO response = new UpdateRepairStatusResponseDTO(
+                ticket.getTicketNumber(),
+                ticket.getRepairStatus().name(),
+                "Ticket " + ticket.getTicketNumber() + " status updated to " + ticket.getRepairStatus().name()
+            );
+            return ResponseEntity.ok(response);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (IllegalArgumentException e) {
