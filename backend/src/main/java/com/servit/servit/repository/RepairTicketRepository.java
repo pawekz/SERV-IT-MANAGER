@@ -1,6 +1,7 @@
 package com.servit.servit.repository;
 
 import com.servit.servit.entity.RepairTicketEntity;
+import com.servit.servit.enumeration.RepairStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,4 +42,8 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
 
     @Query("SELECT r FROM RepairTicketEntity r WHERE r.repairStatus IN ('RECEIVED', 'DIAGNOSING', 'AWAITING_PARTS', 'REPAIRING', 'READY_FOR_PICKUP')")
     Page<RepairTicketEntity> findActiveRepairTickets(Pageable pageable);
+
+    List<RepairTicketEntity> findRepairTicketsByStatus(RepairStatusEnum repairStatus);
+
+    Page<RepairTicketEntity> findRepairTicketsByStatusPageable(RepairStatusEnum repairStatus, Pageable pageable);
 }

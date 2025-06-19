@@ -281,4 +281,35 @@ public class RepairTicketController {
         configurationService.setTicketFilesBasePath(newPath);
         return ResponseEntity.ok(Map.of("path", newPath));
     }
+
+    @GetMapping("/getRepairTicketsByStatus")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByStatus(@RequestParam String status) {
+        try {
+            List<GetRepairTicketResponseDTO> tickets = repairTicketService.getRepairTicketsByStatus(status);
+            return tickets.isEmpty()
+                    ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+                    : ResponseEntity.ok(tickets);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getRepairTicketsByStatusPageable")
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getRepairTicketsByStatusPageable(
+            @RequestParam String status,
+            @PageableDefault(size = 20) Pageable pageable) {
+        try {
+            Page<GetRepairTicketResponseDTO> tickets = repairTicketService.getRepairTicketsByStatusPageable(status, pageable);
+            if (tickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.ok(tickets);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
