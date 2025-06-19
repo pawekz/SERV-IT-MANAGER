@@ -106,11 +106,11 @@ public class SecurityConfig {
                             "/part/addPart",
                             "/warranty/getAllWarranties",
                             "/warranty/check/*",
+                            "/warranty/updateWarrantyStatus",
+                            "/warranty/uploadWarrantyDocument/",
                             "/repairTicket/updateRepairStatus",
                             "/repairTicket/getRepairTicketsByStatus",
-                            "/repairTicket/getRepairTicketsByStatusPageable",
-                            "/warranty/updateWarrantyStatus",
-                            "/warranty/uploadWarrantyDocument/"
+                            "/repairTicket/getRepairTicketsByStatusPageable"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
