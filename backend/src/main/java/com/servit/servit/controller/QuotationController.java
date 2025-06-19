@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -18,41 +20,83 @@ public class QuotationController {
 
     @PostMapping("/addQuotation")
     public QuotationDTO addQuotation(@RequestBody QuotationDTO dto) {
-        return quotationService.addQuotation(dto);
+        try {
+            return quotationService.addQuotation(dto);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add quotation", e);
+        }
     }
 
     @PatchMapping("/approveQuotation/{quotationId}")
     public QuotationDTO approveQuotation(@PathVariable Long quotationId, @RequestParam String customerSelection) {
-        return quotationService.approveQuotation(quotationId, customerSelection);
+        try {
+            return quotationService.approveQuotation(quotationId, customerSelection);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to approve quotation", e);
+        }
     }
 
     @PatchMapping("/denyQuotation/{quotationId}")
     public QuotationDTO denyQuotation(@PathVariable Long quotationId) {
-        return quotationService.denyQuotation(quotationId);
+        try {
+            return quotationService.denyQuotation(quotationId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to deny quotation", e);
+        }
     }
 
     @DeleteMapping("/deleteQuotation/{quotationId}")
     public void deleteQuotation(@PathVariable Long quotationId) {
-        quotationService.deleteQuotation(quotationId);
+        try {
+            quotationService.deleteQuotation(quotationId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete quotation", e);
+        }
     }
 
     @GetMapping("/getQuotation/{quotationId}")
     public QuotationDTO getQuotation(@PathVariable Long quotationId) {
-        return quotationService.getQuotation(quotationId);
+        try {
+            return quotationService.getQuotation(quotationId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get quotation", e);
+        }
     }
 
     @GetMapping("/getAllQuotation")
     public List<QuotationDTO> getAllQuotation() {
-        return quotationService.getAllQuotation();
+        try {
+            return quotationService.getAllQuotation();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get all quotations", e);
+        }
     }
 
     @GetMapping("/getAllQuotationPaginated")
     public Page<QuotationDTO> getAllQuotationPaginated(Pageable pageable) {
-        return quotationService.getAllQuotationPaginated(pageable);
+        try {
+            return quotationService.getAllQuotationPaginated(pageable);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get paginated quotations", e);
+        }
     }
 
     @GetMapping("/getQuotationByRepairTicketNumber/{repairTicketNumber}")
     public List<QuotationDTO> getQuotationByRepairTicketNumber(@PathVariable String repairTicketNumber) {
-        return quotationService.getQuotationByRepairTicketNumber(repairTicketNumber);
+        try {
+            return quotationService.getQuotationByRepairTicketNumber(repairTicketNumber);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get quotations by repair ticket number", e);
+        }
     }
 }
