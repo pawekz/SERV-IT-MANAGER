@@ -54,7 +54,8 @@ public class SecurityConfig {
                             "/user/resetPassword",
                             "/feedback/submitFeedback",
                             "/ws/**",
-                            "/topic/**"
+                            "/topic/**",
+                            "/error"
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
@@ -75,7 +76,8 @@ public class SecurityConfig {
                             "/warranty/generateWarrantyNumber",
                             "/warranty/check/**",
                             "/part/workflow/verifyWarranty",
-                            "/part/getPartByPartNumber/*"
+                            "/part/getPartByPartNumber/*",
+                            "/images/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",
@@ -103,8 +105,10 @@ public class SecurityConfig {
                             "/part/stock/lowStockPartNumbers",
                             "/part/stock/searchPartNumbers",
                             "/part/addPart",
+                            "/warranty/check/*",
                             "/warranty/getAllWarranties",
-                            "/warranty/check/*"
+                            "/warranty/updateWarrantyStatus",
+                            "/warranty/uploadWarrantyDocument/"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
@@ -156,4 +160,6 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
+
+
 }

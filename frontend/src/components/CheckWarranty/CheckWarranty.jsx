@@ -4,7 +4,7 @@ import WarrantyRequest from "../WarrantyRequest/WarrantyRequest.jsx";
 import {Archive, Computer, Headphones, TabletSmartphone} from "lucide-react";
 import axios from "axios";
 
-const CheckWarranty = ({ isOpen, onClose }) => {
+const CheckWarranty = ({ onSuccess }) => {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -99,7 +99,7 @@ const CheckWarranty = ({ isOpen, onClose }) => {
                     <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-md transform scale-100 transition duration-300">
                         {result.withinWarranty  ? (
                             <>
-                                <h3 className="text-lg font-bold text-green-600 mb-2">Device: {result.deviceName}</h3>
+                                <h3 className="text-lg font-bold text-green-600 mb-2">Device: {result.deviceName} - {result.brand} {result.model}</h3>
                                 <p>Serial Number: {result.serialNumber}</p>
                                 <p>{result.daysLeft} days left.</p>
                                 <button
@@ -124,7 +124,7 @@ const CheckWarranty = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             )}
-            <RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false)} serialNumber={query}/>
+            <RequestReturn isOpen={openReturnRequest} onClose={() => setOpenReturnRequest(false) } serialNumber={query} onSuccess={onSuccess}/>
         </div>
     );
 };

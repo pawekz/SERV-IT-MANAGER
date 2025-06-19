@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from "react";
 
-const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
+const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
     const [deviceType, setDeviceType] = useState("");
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const [isChecked, setIsChecked] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -18,6 +19,11 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
         reportedIssue: "",
         returnReason: "",
     });
+
+    const handleCheckboxChange = (e) => {
+        const checked = e.target.checked;
+        setIsChecked(checked);
+    }
 
     useEffect(() => {
         if (role === "customer" && isOpen) {
@@ -136,6 +142,12 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                     return;
                 }
 
+                if (!isChecked) {
+                    setError("Please check the terms and conditions box.");
+                    setLoading(false);
+                    return;
+                }
+
                 const payload = new FormData();
                     payload.append("customerName", formData.customerName);
                     payload.append("customerPhoneNumber", formData.customerPhoneNumber);
@@ -162,6 +174,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
 
                 const result = await response.json();
                 console.log("Return request submitted:", result);
+                onSuccess();
                 onClose(); // Close the modal after successful submission
             } catch (err) {
                 setError(err.message);
@@ -180,6 +193,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 transform transition-all duration-700 scale-95 opacity-0 ${isOpen ? 'scale-100 opacity-100' : ''}`}
             ><div className="bg-gray-100 p-3 rounded-r-2xl  mb-8 border-l-8 border-[#33e407]">
                 <h2 className="text-2xl font-semibold text-center ">Return Request (RMA)</h2>
+                <p className="float-left text-red-700 p-5 pl-0 -ml-3">* {error}</p>
                 <p className="float-right text-gray-500 p-5 pr-0">Warranty Number: {formData.warrantyNumber}</p>
             </div>
                 {/* Customer Info */}
@@ -294,6 +308,24 @@ const RequestReturn = ({ isOpen, onClose, serialNumber }) => {
                 <p className=" italic text-green-600 mb-6">
                     * Note: Device must be brought to the office for diagnosis and repair processing.
                 </p>
+
+                {role === "customer" && (
+                    <div className="mb-6">
+                        <div className="flex items-start gap-2">
+                            <input
+                                type="checkbox"
+                                id="terms"
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#33e407] focus:ring-[#33e407]"
+                                required
+                                checked={isChecked}
+                                onChange={handleCheckboxChange}
+                            />
+                            <label htmlFor="terms" className="text-sm text-gray-600">
+                                I have read and agree to the warranty <span>terms and conditions</span>
+                            </label>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex justify-end space-x-4">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>

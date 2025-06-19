@@ -17,7 +17,5 @@ public class CheckInWarrantyDTO {
     private String returnReason;
     private String reportedIssue;
     private String serialNumber;
-//    private MultipartFile digitalSignature;
-//    private List<MultipartFile> warrantyPhotos;
 
 }
