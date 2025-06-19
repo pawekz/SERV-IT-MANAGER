@@ -106,4 +106,34 @@ public class FileUtil {
         }
         return originalFilename.substring(originalFilename.lastIndexOf("."));
     }
+
+    public String saveWarrantyTicketPdf(MultipartFile file, String warrantyNumber) throws IOException {
+        validateDocument(file);
+
+        String fileExtension = getFileExtension(file);
+        String date = LocalDate.now().format(DATE_FORMATTER);
+        String fileName = String.format("%s-warranty-ticket-%s%s", warrantyNumber, date, fileExtension);
+
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "documents", "claim_forms", fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
+
+        return filePath.toString();
+    }
+
+    public String saveWarrantyPhoto(MultipartFile file, String warrantyNumber, int incrementalNumber) throws IOException {
+        validatePhoto(file);
+
+        String fileExtension = getFileExtension(file);
+        String date = LocalDate.now().format(DATE_FORMATTER);
+        String fileName = String.format("%s-rp-%s-%02d%s", warrantyNumber, date, incrementalNumber, fileExtension);
+
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "images", "repair_photos", fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
+
+        return filePath.toString();
+    }
 }

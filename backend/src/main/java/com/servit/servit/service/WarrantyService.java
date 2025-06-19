@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -122,16 +123,17 @@ public class WarrantyService {
         dto.setDeviceName(partEntity.getName());
         dto.setDeviceType(partEntity.getDescription());
         dto.setSerialNumber(partEntity.getSerialNumber());
+        dto.setTechObservation(warranty.getTechObservation());
 
-//        if (warranty.getWarrantyPhotos() != null) {
-//            dto.setRepairPhotosUrls(
-//                    warranty.getWarrantyPhotos().stream()
-//                            .map(WarrantyPhotoEntity::getPhotoUrl)
-//                            .collect(Collectors.toList())
-//            );
-//        } else {
-//            dto.setRepairPhotosUrls(List.of());
-//        }
+        if (warranty.getWarrantyPhotos() != null) {
+            dto.setWarrantyPhotosUrls(
+                    warranty.getWarrantyPhotos().stream()
+                            .map(photo -> "/images/repair_photos/" + Paths.get(photo.getPhotoUrl()).getFileName())
+                            .collect(Collectors.toList())
+            );
+        } else {
+            dto.setWarrantyPhotosUrls(List.of());
+        }
         return dto;
     }
 
@@ -169,8 +171,6 @@ public class WarrantyService {
             partRepository.save(part);
 
 // Finally set the reverse relationship if needed
-            warranty.setItem(part);
-
             logger.info("Successfully created Warranty ticket: {}", warranty.getWarrantyNumber());
 
             return warrantyRepository.save(warranty);
@@ -225,45 +225,97 @@ public class WarrantyService {
 
         warranty.setStatus(newStatus);
 
+        if (newStatus == WarrantyStatus.ITEM_RETURNED) {
+            warranty.setTechObservation(request.getTechObservation());
+
+            AtomicInteger counter = new AtomicInteger(1);
+            try {
+                // ⚠️ DO NOT REPLACE COLLECTION — clear and add instead
+                List<WarrantyPhotoEntity> newPhotos = request.getWarrantyPhotosUrls().stream()
+                        .map(photo -> {
+                            try {
+                                String photoPath = fileUtil.saveWarrantyPhoto(photo, warranty.getWarrantyNumber(), counter.getAndIncrement());
+                                WarrantyPhotoEntity warrantyPhoto = new WarrantyPhotoEntity();
+                                warrantyPhoto.setPhotoUrl(photoPath);
+                                warrantyPhoto.setWarranty(warranty);
+                                logger.info("Saved repair photo for ticket: {} at {}", warranty.getWarrantyNumber(), photoPath);
+                                return warrantyPhoto;
+                            } catch (IOException e) {
+                                logger.error("Failed to save repair photo for ticket: {}", warranty.getWarrantyNumber(), e);
+                                throw new RuntimeException("Failed to save repair photo. Please retry.", e);
+                            }
+                        })
+                        .collect(Collectors.toList());
+
+                // ✅ Clear existing photos and add new ones (to avoid orphan cascade issues)
+                if (warranty.getWarrantyPhotos() != null) {
+                    warranty.getWarrantyPhotos().clear();
+                    warranty.getWarrantyPhotos().addAll(newPhotos);
+                } else {
+                    warranty.setWarrantyPhotos(newPhotos);
+                }
+
+            } catch (Exception e) {
+                logger.error("Error processing repair photos for ticket: {}", warranty.getWarrantyNumber(), e);
+                throw e;
+            }
+
+
+            String digitalSignaturePath;
+            try {
+                digitalSignaturePath = fileUtil.saveDigitalSignature(request.getDigitalSignature(), warranty.getWarrantyNumber());
+                logger.info("Successfully saved digital signature for repair ticket: {}", warranty.getWarrantyNumber());
+            } catch (IOException e) {
+                logger.error("Failed to save digital signature for ticket: {}", warranty.getWarrantyNumber(), e);
+                throw new RuntimeException("Failed to save digital signature. Please retry.", e);
+            }
+
+            DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
+            digitalSignature.setImageUrl(digitalSignaturePath);
+            digitalSignature.setWarranty(warranty);
+
+            warranty.setDigitalSignature(digitalSignature);
+        }
+
         logger.info("Warranty status updated to {} for warranty number: {}", newStatus, request.getWarrantyNumber());
         return warrantyRepository.save(warranty);
     }
 
-//    public void uploadWarrantyDocument(String warrantyNumber, MultipartFile file) throws IOException {
-//        logger.info("Uploading document for repair ticket: {}", warrantyNumber);
-//
-//        try {
-//            if (file == null || file.isEmpty()) {
-//                logger.warn("Uploaded file is null or empty for warranty: {}", warrantyNumber);
-//                throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
-//            }
-//
-//            String originalFilename = file.getOriginalFilename();
-//            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
-//                logger.warn("Invalid file type for warranty: {}. Only PDF files are allowed.", warrantyNumber);
-//                throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
-//            }
-//
-//            WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
-//                    .orElseThrow(() -> {
-//                        logger.error("Repair ticket not found: {}", warrantyNumber);
-//                        return new EntityNotFoundException("Repair warranty with warranty number " + warrantyNumber + " not found.");
-//                    });
-//
-//            String pdfPath = fileUtil.saveRepairTicketDocument(file, warrantyNumber);
-//            warranty.setDocumentPath(pdfPath);
-//
-//            warrantyRepository.save(warranty);
-//
-//            logger.info("Successfully uploaded document for warranty: {}", warrantyNumber);
-//        } catch (IllegalArgumentException | EntityNotFoundException e) {
-//            logger.error("Validation error while uploading document for warranty: {}", warrantyNumber, e);
-//            throw e;
-//        } catch (Exception e) {
-//            logger.error("Unexpected error while uploading document for warranty: {}", warrantyNumber, e);
-//            throw new RuntimeException("Failed to upload warranty document", e);
-//        }
-//    }
+    public void uploadWarrantyDocument(String warrantyNumber, MultipartFile file) throws IOException {
+        logger.info("Uploading document for repair ticket: {}", warrantyNumber);
+
+        try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("Uploaded file is null or empty for warranty: {}", warrantyNumber);
+                throw new IllegalArgumentException("Uploaded file is null or empty. Please provide a valid file.");
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
+                logger.warn("Invalid file type for warranty: {}. Only PDF files are allowed.", warrantyNumber);
+                throw new IllegalArgumentException("Invalid file type. Only PDF files are allowed.");
+            }
+
+            WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
+                    .orElseThrow(() -> {
+                        logger.error("Repair ticket not found: {}", warrantyNumber);
+                        return new EntityNotFoundException("Repair warranty with warranty number " + warrantyNumber + " not found.");
+                    });
+
+            String pdfPath = fileUtil.saveWarrantyTicketPdf(file, warrantyNumber);
+            warranty.setDocumentPath(pdfPath);
+
+            warrantyRepository.save(warranty);
+
+            logger.info("Successfully uploaded document for warranty: {}", warrantyNumber);
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.error("Validation error while uploading document for warranty: {}", warrantyNumber, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error while uploading document for warranty: {}", warrantyNumber, e);
+            throw new RuntimeException("Failed to upload warranty document", e);
+        }
+    }
 
     public VerifyWarrantyDTO checkWarranty(String serialNumber, Boolean isDeviceTampered) {
         VerifyWarrantyDTO dto = new VerifyWarrantyDTO();
@@ -286,41 +338,46 @@ public class WarrantyService {
         }
 
         PartEntity part = optionalPart.get();
-        if (part.getWarranty() != null) {
-            dto.setWithinWarranty(false);
-            dto.setMessage("This item already has a warranty: " + part.getWarranty().getWarrantyNumber());
-            dto.setDaysLeft(null);
+
+            if (part.getWarranty() != null) {
+
+                if (!part.getWarranty().getStatus().equals(WarrantyStatus.DENIED)) {
+
+                dto.setWithinWarranty(false);
+                dto.setMessage("This item already has a warranty: " + part.getWarranty().getWarrantyNumber());
+                dto.setDaysLeft(null);
+                return dto;
+                }
+            }
+
+            dto.setDeviceName(part.getName());
+            dto.setDeviceType(part.getDescription());
+            dto.setBrand(part.getBrand());
+            dto.setModel(part.getModel());
+            LocalDateTime expiration = part.getWarrantyExpiration();
+            LocalDateTime now = LocalDateTime.now();
+
+            // determine if the item is inventory but not sold yet
+            if (expiration == null) {
+                dto.setWithinWarranty(false);
+                dto.setMessage("This item does not have a warranty expiration date set.");
+                dto.setDaysLeft(null);
+                return dto;
+            }
+
+            boolean isWithinWarranty = now.isBefore(expiration);
+            dto.setWithinWarranty(isWithinWarranty);
+
+            if (isWithinWarranty) {
+                long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate());
+                dto.setDaysLeft(days);
+                dto.setMessage("Item still within warranty: " + days + " days left");
+            } else {
+                dto.setDaysLeft(0L);
+                dto.setMessage("Item is past warranty: " + expiration);
+            }
             return dto;
-        }
-        dto.setDeviceName(part.getName());
-        dto.setDeviceType(part.getDescription());
-        dto.setBrand(part.getBrand());
-        dto.setModel(part.getModel());
-        LocalDateTime expiration = part.getWarrantyExpiration();
-        LocalDateTime now = LocalDateTime.now();
 
-        if (expiration == null) {
-            dto.setWithinWarranty(false);
-            dto.setMessage("This item does not have a warranty expiration date set.");
-            dto.setDaysLeft(null);
-            return dto;
-        }
-
-        boolean isWithinWarranty = now.isBefore(expiration);
-        dto.setWithinWarranty(isWithinWarranty);
-
-        if (isWithinWarranty) {
-            long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate());
-            dto.setDaysLeft(days);
-            dto.setMessage("Item still within warranty: " + days + " days left");
-        } else {
-            dto.setDaysLeft(0L);
-            dto.setMessage("Item is past warranty: " + expiration);
-        }
-
-        return dto;
     }
 
-
-
-}
+};

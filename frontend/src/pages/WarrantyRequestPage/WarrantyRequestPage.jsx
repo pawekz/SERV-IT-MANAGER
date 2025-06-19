@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {Package, TabletSmartphone, Computer, Headphones, Archive, Search} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
@@ -13,13 +13,26 @@ const WarrantyRequestPage = () => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [warrantyRequests, setWarrantyRequests] = useState([]);
     const [warranty, setWarranty] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [filterBy, setFilterBy] = useState("serial");
     const [searchQuery, setSearchQuery] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
+    const [pendingStatus, setPendingStatus] = useState("");
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState({
+        status: ""
+    });
+
+    const onClose = () => {
+        setIsModalOpen(false);
+        setModalOpen(false);
+        setShowModal(false);
+        setSelectedRequest(null);
+        setPendingStatus("");
+    };
 
     const filterByLabel = {
         serial: "Serial Number",
@@ -27,6 +40,17 @@ const WarrantyRequestPage = () => {
         device: "Device Type",
         customer: "Customer Name",
     }[filterBy];
+
+    const STATUS_OPTIONS = [
+        "CHECKED_IN",
+        "ITEM_RETURNED",
+        "WAITING_FOR_WARRANTY_REPLACEMENT",
+        "WARRANTY_REPLACEMENT_ARRIVED",
+        "WARRANTY_REPLACEMENT_COMPLETED",
+        "DENIED"
+    ];
+
+    const currentStatusIndex = STATUS_OPTIONS.indexOf(warranty.status);
 
     const handleCardClick = (request) => {
         setSelectedRequest(request);
@@ -48,6 +72,8 @@ const WarrantyRequestPage = () => {
                     'Authorization': `Bearer ${token}`
                 },
             });
+
+            console.log("Warranties fetched successfully:", warranty);
 
             if (response.status === 204) {
                 // No warranties found, set warranty to an empty array
@@ -88,9 +114,17 @@ const WarrantyRequestPage = () => {
 
             const text = await response.text();
 
-            const data = JSON.parse(text);
-            setWarranty(data);
-            console.log("Warranties fetched successfully:", warranty);
+            if (response.status === 204) {
+                // No warranties found, set warranty to an empty array
+                setWarranty([]);
+                console.log("No warranties found");
+            } else if (response.ok) {
+                const data = JSON.parse(text);
+                setWarranty(data);
+                console.log("Warranties by email fetched successfully:", data);
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
         } catch (err) {
             setError(err.message);
         } finally {
@@ -121,6 +155,75 @@ const WarrantyRequestPage = () => {
             }
         }, 1000);
     }, []);
+
+    const UpdateStatus = async (warranty) => {
+
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("Not authenticated. Please log in.");
+
+        const form = new FormData();
+        if (warranty) {
+            form.append("warrantyNumber", warranty.toString());
+        }
+        if (pendingStatus) {
+            form.append("status", pendingStatus.toString());
+        }
+
+        const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+            method: "PATCH",
+            headers: {Authorization: `Bearer ${token}`},
+            body: form,
+        });
+        if (!response.ok) {
+            let errorMessage;
+            try {
+                const errorData = await response.text();
+                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+            } catch (e) {
+                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+        const result = await response.json();
+
+        if(role === "customer") {
+            fetchWarrantiesbyemail(userData.email);
+        } else {
+            fetchWarranties();
+        }
+
+    }
+
+    const handleStatusChange = (e,currentStatus, request) => {
+        const newStatus = e.target.value;
+
+        console.log(newStatus, currentStatus);
+
+        // Determine which message to show
+        if (currentStatus === "CHECKED_IN" && newStatus === "ITEM_RETURNED") {
+            setModalMessage("Please check device condition and upload photos.");
+        } else {
+            setModalMessage(`Are you sure you want to change status to "${newStatus.replace(/_/g, " ")}"?`);
+        }
+        setSelectedRequest(request);
+        setPendingStatus(newStatus);
+        setShowModal(true);
+    };
+
+    const confirmStatusChange = () => {
+        setFormData({ ...formData, status: pendingStatus });
+        setShowModal(false);
+        UpdateStatus(selectedRequest.warrantyNumber)
+            .then(() => {
+                setModalMessage(`Status changed to "${pendingStatus.replace(/_/g, " ")}" successfully.`);
+                setSelectedRequest(null);
+                setPendingStatus("");
+            })
+            .catch((error) => {
+                setError(error.message);
+                console.error("Error updating status:", error);
+            });
+    };
 
     const getProductIcon = (deviceType) => {
         if (!deviceType || typeof deviceType !== "string") return <Archive className="text-gray-500 w-8 h-8" />;
@@ -174,6 +277,8 @@ const WarrantyRequestPage = () => {
                                     <div className="flex-1 bg-white rounded-lg shadow-md p-6">
                                         <div className="flex justify-between items-end mb-6">
                                             <h1 className="text-xl font-semibold text-gray-800">Pending Warranty</h1>
+
+                                            {/* Filter and Search */}
                                             <div className="flex items-center gap-2">
                                                 <select
                                                     className="text-sm text-gray-700 px-2 py-1 rounded-lg"
@@ -195,19 +300,20 @@ const WarrantyRequestPage = () => {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                            {warranty.filter(w => w.status !== "REPAIR_REPLACEMENT_COMPLETED").length === 0 ? (
+                                        {/* Pending Warranties Cards */}
+                                        <div className="grid gap-6 grid-cols-2 lg:grid-cols-3">
+                                            {warranty.filter(warranty => warranty.status !== "WARRANTY_REPLACEMENT_COMPLETED").length === 0 ? (
                                                 <p className="text-gray-400 col-span-full text-center">
                                                     No pending warranties found. <br/>Use the checker to verify serial number and start a warranty request.
                                                 </p>
                                             ) : (
                                                 warranty
-                                                    .filter(w => w.status !== "REPAIR_REPLACEMENT_COMPLETED")
+                                                    .filter(warranty => warranty.status !== "WARRANTY_REPLACEMENT_COMPLETED")
                                                     .map((request, index) => (
                                                         <div
                                                             key={index}
                                                             onClick={() => handleCardClick(request)}
-                                                            className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition min-w-[35vh]"
+                                                            className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition overflow-hidden"
                                                         >
                                                             <div className="mr-4 flex items-start">{getProductIcon(request.deviceType)}</div>
                                                             <div>
@@ -220,13 +326,32 @@ const WarrantyRequestPage = () => {
                                                                 <p className="text-sm text-gray-600">
                                                                     <strong>Customer:</strong> {request.customerName}
                                                                 </p>
-                                                                <p
-                                                                    className={`text-sm font-medium mt-1 ${
-                                                                        request.status === "Requested" ? "text-yellow-600" : "text-green-600"
-                                                                    }`}
-                                                                >
-                                                                    Status: {request.status}
-                                                                </p>
+                                                                {role === "customer" ? (
+                                                                    <p
+                                                                        className={`text-sm font-medium mt-1 ${
+                                                                            request.status === "CHECKED_IN" ? "text-green-600" : "text-yellow-600"
+                                                                        }`}
+                                                                    >
+                                                                        Status: {request.status}
+                                                                    </p>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="text-sm font-semibold text-gray-600 pr-2">Status:</span>
+                                                                        <select
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            onChange={(e) => handleStatusChange(e, request.status, request)}
+                                                                            value={request.status}
+                                                                            className="text-xs px-2 border rounded-md bg-[rgba(51,228,7,0.05)] border-[0] text-gray-800 w-32 h-7"
+                                                                        >
+                                                                            {STATUS_OPTIONS.map((status, index) => (
+                                                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                                                                    {status.replace(/_/g, " ")}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </>
+                                                                )}
+
                                                             </div>
                                                         </div>
                                                     ))
@@ -235,11 +360,14 @@ const WarrantyRequestPage = () => {
                                     </div>
 
                                         <div className="lg:w-[30%] w-full bg-white rounded-lg shadow-md p-6 h-fit">
-                                            <CheckWarranty />
-                                            <WarrantyRequest
-                                                isOpen={isModalOpen}
-                                                onClose={() => setIsModalOpen(false)}
-                                                readonly={false}
+                                            <CheckWarranty
+                                                onSuccess={() => {
+                                                if (role === "customer") {
+                                                    fetchWarrantiesbyemail(userData.email);
+                                                } else {
+                                                    fetchWarranties();
+                                                }
+                                            }}
                                             />
                                         </div>
                                 </section>
@@ -269,14 +397,14 @@ const WarrantyRequestPage = () => {
                                                 />
                                             </div>
                                         </div>
-                                    {warranty.filter(w => w.status === "REPAIR_REPLACEMENT_COMPLETED").length === 0 ? (
+                                    {warranty.filter(w => w.status === "WARRANTY_REPLACEMENT_COMPLETED").length === 0 ? (
                                         <p className="text-center text-gray-400">
                                             No resolved warranties found. <br /> Use the checker to verify serial number and start a warranty request.
                                         </p>
                                     ) : (
-                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-3">
                                             {warranty
-                                                .filter((request) => request.status === "REPAIR_REPLACEMENT_COMPLETED" )
+                                                .filter((warranty) => warranty.status === "WARRANTY_REPLACEMENT_COMPLETED" )
                                                 .map((request,index) => (
                                                     <div
                                                         key={index}
@@ -289,10 +417,10 @@ const WarrantyRequestPage = () => {
                                                                 {request.serialNumber}
                                                             </h2>
                                                             <p className="text-sm text-gray-600">
-                                                                <strong>Device Type:</strong> {request.deviceType}
+                                                                <strong>Device Name:</strong> {request.deviceName}
                                                             </p>
                                                             <p className="text-sm text-gray-600">
-                                                                <strong>Date:</strong> {request.purchaseDate}
+                                                                <strong>Customer:</strong> {request.customerName}
                                                             </p>
                                                             <p
                                                                 className={`text-sm font-medium mt-1 ${
@@ -313,16 +441,56 @@ const WarrantyRequestPage = () => {
                                 {/* View-Only Modal */}
                                 <WarrantyRequest
                                     isOpen={modalOpen}
-                                    onClose={() => setModalOpen(false)}
+                                    onClose={onClose}
                                     data={selectedRequest}
-                                    readonly={true}
+                                    onSuccess={() => {
+                                        if (role === "customer") {
+                                            fetchWarrantiesbyemail(userData.email);
+                                        } else {
+                                            fetchWarranties();
+                                        }
+                                    }}
                                 />
                             </>
                         )}
                     </div>
                 </div>
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-md w-96">
+                        <p className="text-gray-800 mb-4">{modalMessage}</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-sm rounded"
+                            >
+                                Cancel
+                            </button>
+                            {pendingStatus === "ITEM_RETURNED" ? (
+                                <button
+                                    onClick={() => {
+                                        handleCardClick(selectedRequest);
+                                    }}
+                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded"
+                                >
+                                    Confirm
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={confirmStatusChange}
+                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded"
+                                >
+                                    Confirm
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+
     );
 };
 

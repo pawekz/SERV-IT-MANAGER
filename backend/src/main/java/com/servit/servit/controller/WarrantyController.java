@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -75,7 +76,7 @@ public class WarrantyController {
     }
 
     @PatchMapping("/updateWarrantyStatus")
-    public ResponseEntity<?> updateWarrantyStatus(@RequestBody UpdateWarrantyStatusDTO request) {
+    public ResponseEntity<?> updateWarrantyStatus(@ModelAttribute UpdateWarrantyStatusDTO request) {
         try {
             WarrantyEntity warranty = warrantyService.updateWarrantyStatus(request);
             return ResponseEntity.ok(warranty);
@@ -105,5 +106,18 @@ public class WarrantyController {
             @RequestParam(required = false) Boolean isDeviceTampered
     ) {
         return warrantyService.checkWarranty(serialNumber, isDeviceTampered);
+    }
+
+    @PatchMapping("/uploadWarrantyDocument/{WarrantyNumber}")
+    public ResponseEntity<Void> uploadWarrantyDocument(@PathVariable String WarrantyNumber,
+                                                           @RequestParam("file") MultipartFile file) {
+        try {
+            warrantyService.uploadWarrantyDocument(WarrantyNumber, file);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

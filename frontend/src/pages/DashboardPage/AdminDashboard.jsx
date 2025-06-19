@@ -415,7 +415,7 @@ const AdminDashboard = () => {
         fetchInventoryData();
     }, []);
 
-    // Add useEffect to fetch feedback data from the backend
+    // Add useEffect to fetch feedback data from the backend with auto-refresh
     useEffect(() => {
         const fetchFeedbacks = async () => {
             try {
@@ -438,9 +438,14 @@ const AdminDashboard = () => {
                 }
 
                 const data = await response.json();
-                // Get most recent feedbacks (limit to 3)
-                const recentFeedbacks = data.slice(0, 3);
-                setFeedbacks(recentFeedbacks);
+                // Sort by newest first (assuming there's a createdAt field)
+                const sortedData = [...data].sort((a, b) => {
+                    // If you have a timestamp field, use that
+                    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                });
+
+                // Show all feedback instead of limiting to 3
+                setFeedbacks(sortedData);
                 setFeedbacksError(null);
             } catch (err) {
                 console.error("Error fetching feedback:", err);
@@ -451,6 +456,11 @@ const AdminDashboard = () => {
         };
 
         fetchFeedbacks();
+
+        // Set up polling to refresh feedback data every minute
+        const intervalId = setInterval(fetchFeedbacks, 60000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     // Updated useEffect to fetch satisfaction ratings from the backend
@@ -862,7 +872,7 @@ const AdminDashboard = () => {
                                                 "{feedback.comments || "No comments provided"}"
                                             </div>
                                             <div className="text-xs text-gray-500 mt-1">
-                                                {feedback.anonymous ? "Anonymous" : feedback.customerName || "Customer"}
+                                                {feedback.anonymous ? "Anonymous" : feedback.customerName || userData.firstName || "Customer"}
                                             </div>
                                         </div>
                                     ))

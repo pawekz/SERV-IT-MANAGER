@@ -13,7 +13,7 @@ function dataURLtoBlob(dataURL) {
     return new Blob([new Uint8Array(array)], { type: mime });
 }
 
-const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess }) => {
+const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess, kind }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -44,32 +44,118 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
     const handleSubmit = async () => {
         setLoading(true);
         setError(null);
-        try {
+        if(kind==="repair" ) {
+            try {
+                const token = localStorage.getItem("authToken");
+                if (!token) throw new Error("Not authenticated. Please log in.");
+                const form = new FormData();
+                Object.entries(formData).forEach(([key, value]) => {
+                    if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
+                        form.append(key, value.toString());
+                });
+                if (signatureDataURL) {
+                    const signatureBlob = dataURLtoBlob(signatureDataURL);
+                    form.append("digitalSignature", signatureBlob, "signature.png");
+                } else {
+                    throw new Error("Digital signature is required");
+                }
+                if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
+                    formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
+                        if (base64DataURL) {
+                            const blob = dataURLtoBlob(base64DataURL);
+                            form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                        }
+                    });
+                }
+                // Submit the repair ticket
+                const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
+                    method: "POST",
+                    headers: {Authorization: `Bearer ${token}`},
+                    body: form,
+                });
+                if (!response.ok) {
+                    let errorMessage;
+                    try {
+                        const errorData = await response.text();
+                        errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                    } catch (e) {
+                        errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                const result = await response.json();
+                setSuccess(result);
+
+                // Generate and upload the PDF
+                const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
+                if (ticketNumber) {
+                    const pdfBlob = await pdf(
+                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData}/>
+                    ).toBlob();
+
+                    const pdfForm = new FormData();
+                    pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
+
+                    const pdfResponse = await fetch(
+                        `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: pdfForm,
+                        }
+                    );
+                    if (!pdfResponse.ok) {
+                        const errorText = await pdfResponse.text();
+                        const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
+                        showToast("PDF upload failed: " + errorMessage, "error");
+                        return;
+                    }
+                }
+
+                showToast("Repair ticket submitted successfully!", "success");
+                setTimeout(() => setLoading(false), 500);
+            } catch (err) {
+                setError(err.message);
+                showToast(err.message, "error");
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            try{
             const token = localStorage.getItem("authToken");
             if (!token) throw new Error("Not authenticated. Please log in.");
             const form = new FormData();
-            Object.entries(formData).forEach(([key, value]) => {
-                if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
-                    form.append(key, value.toString());
-            });
+            if (formData.warrantyNumber) {
+                form.append("warrantyNumber", formData.warrantyNumber.toString());
+            }
+            if (formData.status) {
+                form.append("status", formData.status.toString());
+            }
+            if (formData.returnReason) {
+                form.append("returnReason", formData.returnReason.toString());
+            }
+
             if (signatureDataURL) {
                 const signatureBlob = dataURLtoBlob(signatureDataURL);
                 form.append("digitalSignature", signatureBlob, "signature.png");
             } else {
                 throw new Error("Digital signature is required");
             }
-            if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
-                formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
+            if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
+                formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
                     if (base64DataURL) {
                         const blob = dataURLtoBlob(base64DataURL);
-                        form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                        form.append("warrantyPhotosUrls", blob, `photo-${index + 1}.png`);
                     }
                 });
             }
-            // Submit the repair ticket
-            const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
+
+            // Submit the warranty ticket
+            const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+                method: "PATCH",
+                headers: {Authorization: `Bearer ${token}`},
                 body: form,
             });
             if (!response.ok) {
@@ -86,17 +172,17 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
             setSuccess(result);
 
             // Generate and upload the PDF
-            const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
-            if (ticketNumber) {
+            const warrantyNumber = result && result.warrantyNumber ? result.warrantyNumber : formData.warrantyNumber;
+            if (warrantyNumber) {
                 const pdfBlob = await pdf(
-                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData}/>
                 ).toBlob();
 
                 const pdfForm = new FormData();
-                pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
+                pdfForm.append("file", pdfBlob, `${warrantyNumber}.pdf`);
 
                 const pdfResponse = await fetch(
-                    `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
+                    `http://localhost:8080/warranty/uploadWarrantyDocument/${warrantyNumber}`,
                     {
                         method: "PATCH",
                         headers: {
@@ -113,13 +199,14 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 }
             }
 
-            showToast("Repair ticket submitted successfully!", "success");
+            showToast("Warranty ticket submitted successfully!", "success");
             setTimeout(() => setLoading(false), 500);
         } catch (err) {
             setError(err.message);
             showToast(err.message, "error");
         } finally {
             setLoading(false);
+        }
         }
     };
 
@@ -134,7 +221,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 </div>
                 <div className="max-h-[720px] overflow-y-auto p-4">
                     <PDFViewer width="100%" height="600px">
-                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData} />
+                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
                     </PDFViewer>
                 </div>
                 <div className="flex justify-between mt-6">

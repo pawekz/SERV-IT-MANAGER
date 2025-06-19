@@ -20,6 +20,7 @@ public class GetAllWarrantyDTO {
     private LocalDateTime expirationDate;
     private String deviceName;
     private String deviceType;
+    private String techObservation;
     private String serialNumber;
-    private List<String> repairPhotosUrls;
+    private List<String> warrantyPhotosUrls;
 }

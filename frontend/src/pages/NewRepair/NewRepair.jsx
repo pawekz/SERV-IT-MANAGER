@@ -43,6 +43,7 @@ export default function NewRepair() {
                         setStep(2);
                     }}
                     success={success}
+                    kind ="repair"
                 />
             );
         }
@@ -55,6 +56,7 @@ export default function NewRepair() {
                     onBack={() => setStep(1)}
                     success={success}
                     setSuccess={setSuccess}
+                    kind="repair"
                 />
             );
         }

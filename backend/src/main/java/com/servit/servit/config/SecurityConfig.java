@@ -75,7 +75,8 @@ public class SecurityConfig {
                             "/warranty/generateWarrantyNumber",
                             "/warranty/check/**",
                             "/part/workflow/verifyWarranty",
-                            "/part/getPartByPartNumber/*"
+                            "/part/getPartByPartNumber/*",
+                            "/images/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",
@@ -107,7 +108,9 @@ public class SecurityConfig {
                             "/warranty/check/*",
                             "/repairTicket/updateRepairStatus",
                             "/repairTicket/getRepairTicketsByStatus",
-                            "/repairTicket/getRepairTicketsByStatusPageable"
+                            "/repairTicket/getRepairTicketsByStatusPageable",
+                            "/warranty/updateWarrantyStatus",
+                            "/warranty/uploadWarrantyDocument/"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
