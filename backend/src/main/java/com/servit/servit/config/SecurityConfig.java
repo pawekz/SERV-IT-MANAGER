@@ -124,7 +124,7 @@ public class SecurityConfig {
                             "/user/deleteUser/*",
                             "/user/updatePhoneNuber/*",
                             "/user/updateUsername/*",
-                            "/user/getTechnicians",
+                            "/user/getAllTechnicians",
                             "/user/getUserCount",
                             "/api/backup/**",
                             "/part/updatePart/*",

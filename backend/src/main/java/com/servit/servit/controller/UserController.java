@@ -6,7 +6,6 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
@@ -154,9 +153,17 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/getTechnicians")
-    public ResponseEntity<List<GetUserResponseDTO>> getTechnicians() {
-        return ResponseEntity.ok(userSvc.getTechnicians());
+    @GetMapping("/getAllTechnicians")
+    public ResponseEntity<List<GetUserResponseDTO>> getAllTechnicians() {
+        try {
+            List<GetUserResponseDTO> technicians = userSvc.getAllTechnicians();
+            if (technicians.isEmpty()) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.ok(technicians);
+        } catch (Exception e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/getTechnicianByEmail")
@@ -173,5 +180,34 @@ public class UserController {
     public ResponseEntity<List<GetUserResponseDTO>> getWeeklyUsers() {
         return ResponseEntity.ok(userSvc.getWeeklyUsers());
     }
-//
+
+    @GetMapping("/searchTechnicians")
+    public ResponseEntity<List<GetUserResponseDTO>> searchTechnicians(@RequestParam String query) {
+        try {
+            return ResponseEntity.ok(userSvc.searchTechnicians(query));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PatchMapping("/assignTechnician")
+    public ResponseEntity<Void> assignTechnicianToTicket(@RequestBody AssignTechnicianRequestDTO req) {
+        try {
+            userSvc.assignTechnicianToTicket(req.getTicketNumber(), req.getTechnicianEmail());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getTopTechniciansByWorkload")
+    public ResponseEntity<List<TechnicianWorkloadDTO>> getTopTechniciansByWorkload() {
+        try {
+            return ResponseEntity.ok(userSvc.getTopTechniciansByWorkload(5));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

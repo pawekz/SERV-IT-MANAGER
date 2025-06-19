@@ -1,7 +1,9 @@
 package com.servit.servit.service;
 
 import com.servit.servit.dto.*;
+import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.entity.UserEntity;
+import com.servit.servit.repository.RepairTicketRepository;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.enumeration.UserRoleEnum;
 import jakarta.mail.MessagingException;
@@ -27,6 +29,9 @@ public class UserService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private RepairTicketRepository repairTicketRepository;
 
     private final PasswordEncoder passwordEncoder;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -299,13 +304,21 @@ public class UserService {
     }
 
     @Transactional
-    public List<GetUserResponseDTO> getTechnicians() {
-        return userRepo.findAll().stream()
-                .filter(user -> user.getRole() == UserRoleEnum.TECHNICIAN)
-                .map(user -> new GetUserResponseDTO(
-                        user.getUserId(), user.getFirstName(), user.getLastName(),
-                        user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
-                .toList();
+    public List<GetUserResponseDTO> getAllTechnicians() {
+        logger.info("Fetching all technicians.");
+        try {
+            List<GetUserResponseDTO> technicians = userRepo.findAll().stream()
+                    .filter(user -> user.getRole() == UserRoleEnum.TECHNICIAN)
+                    .map(user -> new GetUserResponseDTO(
+                            user.getUserId(), user.getFirstName(), user.getLastName(),
+                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                    .toList();
+            logger.info("Fetched {} technicians.", technicians.size());
+            return technicians;
+        } catch (Exception e) {
+            logger.error("Error fetching all technicians.", e);
+            throw new RuntimeException("Failed to fetch all technicians", e);
+        }
     }
 
     @Transactional
@@ -338,5 +351,83 @@ public class UserService {
                         user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
                 .toList();
     }
-    //
+
+    public List<GetUserResponseDTO> searchTechnicians(String query) {
+        try {
+            logger.info("Searching technicians with query: {}", query);
+            List<GetUserResponseDTO> result = userRepo.findAll().stream()
+                    .filter(u -> u.getRole() == UserRoleEnum.TECHNICIAN &&
+                            (u.getFirstName().toLowerCase().contains(query.toLowerCase()) ||
+                                    u.getLastName().toLowerCase().contains(query.toLowerCase()) ||
+                                    u.getEmail().toLowerCase().contains(query.toLowerCase())))
+                    .limit(3)
+                    .map(u -> new GetUserResponseDTO(
+                            u.getUserId(), u.getFirstName(), u.getLastName(),
+                            u.getEmail(), u.getRole().name(), u.getPhoneNumber(), u.getStatus()))
+                    .toList();
+            logger.info("Found {} technicians for query '{}'", result.size(), query);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error searching technicians with query '{}': {}", query, e.getMessage(), e);
+            throw new RuntimeException("Failed to search technicians", e);
+        }
+    }
+
+    public void assignTechnicianToTicket(String ticketNumber, String technicianEmail) {
+        try {
+            logger.info("Assigning technician {} to ticket {}", technicianEmail, ticketNumber);
+            RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(ticketNumber)
+                    .orElseThrow(() -> {
+                        logger.error("Ticket not found: {}", ticketNumber);
+                        return new IllegalArgumentException("Ticket not found");
+                    });
+            UserEntity technician = userRepo.findByEmail(technicianEmail)
+                    .orElseThrow(() -> {
+                        logger.error("Technician not found: {}", technicianEmail);
+                        return new IllegalArgumentException("Technician not found");
+                    });
+            if (technician.getRole() != UserRoleEnum.TECHNICIAN) {
+                logger.error("User {} is not a technician", technicianEmail);
+                throw new IllegalArgumentException("User is not a technician");
+            }
+            ticket.setTechnicianEmail(technician);
+            ticket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+            repairTicketRepository.save(ticket);
+            logger.info("Technician {} assigned to ticket {}", technicianEmail, ticketNumber);
+        } catch (IllegalArgumentException e) {
+            logger.error("Assignment error: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error assigning technician: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to assign technician to ticket", e);
+        }
+    }
+
+    public List<TechnicianWorkloadDTO> getTopTechniciansByWorkload(int limit) {
+        try {
+            logger.info("Fetching top {} technicians by workload", limit);
+            List<TechnicianWorkloadDTO> result = userRepo.findAll().stream()
+                    .filter(u -> u.getRole() == UserRoleEnum.TECHNICIAN)
+                    .map(u -> {
+                        int ticketCount = (int) repairTicketRepository.findAll().stream()
+                                .filter(t -> t.getTechnicianEmail() != null && t.getTechnicianEmail().getUserId().equals(u.getUserId()))
+                                .count();
+                        TechnicianWorkloadDTO dto = new TechnicianWorkloadDTO();
+                        dto.setUserId(u.getUserId());
+                        dto.setFirstName(u.getFirstName());
+                        dto.setLastName(u.getLastName());
+                        dto.setEmail(u.getEmail());
+                        dto.setTicketCount(ticketCount);
+                        return dto;
+                    })
+                    .sorted((a, b) -> Integer.compare(b.getTicketCount(), a.getTicketCount()))
+                    .limit(limit)
+                    .toList();
+            logger.info("Top {} technicians fetched", result.size());
+            return result;
+        } catch (Exception e) {
+            logger.error("Error fetching top technicians by workload: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch top technicians by workload", e);
+        }
+    }
 }
