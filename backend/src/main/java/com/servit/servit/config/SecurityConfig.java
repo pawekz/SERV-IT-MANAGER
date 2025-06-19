@@ -134,7 +134,10 @@ public class SecurityConfig {
                             "/part/stock/updateTracking",
                             "/part/stock/refreshTracking/*",
                             "/part/stock/refreshAllTracking",
-                            "/part/stock/resolveAlert/*"
+                            "/part/stock/resolveAlert/*",
+                            "/user/assignTechnician",
+                            "/user/searchTechnicians",
+                            "/user/getTopTechniciansByWorkload"
                     ).hasRole("ADMIN")
                     .requestMatchers("/parts/create").permitAll()
                     .anyRequest().authenticated()
