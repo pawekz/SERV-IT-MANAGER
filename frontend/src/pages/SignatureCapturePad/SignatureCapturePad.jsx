@@ -13,7 +13,8 @@ const SignatureCapturePad = ({
                                  setTermsAccepted,
                                  onDashboard,
                                  onSubmit,
-                                 success = false
+                                 success = false,
+    kind
                              }) => {
     // --- State ---
     const canvasRef = useRef(null);
@@ -121,14 +122,36 @@ const SignatureCapturePad = ({
 
     // --- Form Validation & Submission ---
     const validateFormData = (data = formData) => {
-        const requiredFields = [
-            "ticketNumber", "customerName", "customerEmail", "customerPhoneNumber", "deviceColor",
-            "deviceType", "deviceBrand", "deviceModel", "reportedIssue", "accessories",
-        ];
-        const missingFields = requiredFields.filter(
-            (field) => !data[field] || data[field].trim() === ""
-        );
-        if (missingFields.length > 0) return `Missing required fields: ${missingFields.join(", ")}`;
+        let requiredFields = [];
+
+        if (kind === "repair") {
+            requiredFields = [
+                "ticketNumber", "customerName", "customerEmail", "customerPhoneNumber", "deviceColor",
+                "deviceType", "deviceBrand", "deviceModel", "reportedIssue", "accessories",
+            ];
+        } else {
+            requiredFields = [
+                "warrantyNumber", "status", "warrantyPhotosUrls"
+            ];
+        }
+
+        const missingFields = requiredFields.filter((field) => {
+            const value = data[field];
+
+            if (value === undefined || value === null) return true;
+
+            if (typeof value === "string") return value.trim() === "";
+
+            if (Array.isArray(value)) return value.length === 0;
+
+            if (typeof value === "object") return Object.keys(value).length === 0;
+
+            return false; // assume number/boolean are valid if defined
+        });
+
+        if (missingFields.length > 0) {
+            return `Missing required fields: ${missingFields.join(", ")}`;
+        }
         return null;
     };
 

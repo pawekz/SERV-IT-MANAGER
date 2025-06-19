@@ -191,7 +191,7 @@ const RepairQueue = () => {
     return (
         <div className="flex-1 overflow-auto">
 
-            <Sidebar activePage={'repairqueue'}/>
+            <Sidebar activePage={'repair'}/>
 
             <header className="bg-white shadow-sm p-4">
                 <div className="flex justify-between items-center">
@@ -228,13 +228,6 @@ const RepairQueue = () => {
                             Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
                         </p>
                     </div>
-                    {role === "technician" && (
-                        <div className=" w-64 shrink right-0 -mr-5">
-                            <button onClick={() => navigate('/newrepair')} className=" flex py-3 px-6 rounded-md font-medium transition-all w-50 md:w-auto text-gray-800 bg-[#33e407] hover:bg-[#2bc706]">
-                                <Wrench  className="mr-2"/>  Start Repair
-                            </button>
-                        </div>
-                    )}
                 </div>
                 <div className="px-10 py-8">
                     {loading ? (
@@ -406,12 +399,12 @@ const RepairQueue = () => {
                                             ))}
                                     </div>
                                 )}
-                                <WarrantyRequest
-                                    isOpen={modalOpen}
-                                    onClose={() => setModalOpen(false)}
-                                    data={selectedRequest}
-                                    readonly={true}
-                                />
+                                {/*<WarrantyRequest*/}
+                                {/*    isOpen={modalOpen}*/}
+                                {/*    onClose={() => setModalOpen(false)}*/}
+                                {/*    data={selectedRequest}*/}
+                                {/*    readonly={true}*/}
+                                {/*/>*/}
                             </div>
                         </section>
                     )}

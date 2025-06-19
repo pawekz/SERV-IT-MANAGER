@@ -41,6 +41,9 @@ public class WarrantyEntity {
     @Column(name = "reported_issue", nullable = false, columnDefinition = "TEXT")
     private String reportedIssue;
 
+    @Column(name = "tech_observation")
+    private String techObservation;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -49,16 +52,16 @@ public class WarrantyEntity {
     @JsonManagedReference
     private PartEntity item;
 
-//    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonManagedReference
-//    private List<WarrantyPhotoEntity> warrantyPhotos;
-//
-//    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
-//    @JsonManagedReference
-//    private DigitalSignatureEntity digitalSignature;
-//
-//    @Column(name = "document_path")
-//    private String documentPath;
+    @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<WarrantyPhotoEntity> warrantyPhotos;
+
+    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private DigitalSignatureEntity digitalSignature;
+
+    @Column(name = "document_path")
+    private String documentPath;
 
 }
 
