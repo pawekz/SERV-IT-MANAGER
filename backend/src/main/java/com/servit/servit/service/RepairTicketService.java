@@ -495,6 +495,20 @@ public class RepairTicketService {
         return new RepairTicketPdfResponseDTO(fileBytes, fileName);
     }
 
+    public List<GetRepairTicketResponseDTO> getRepairTicketsByStatus(String status) {
+        RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
+        return repairTicketRepository.findByRepairStatus(repairStatus)
+                .stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Page<GetRepairTicketResponseDTO> getRepairTicketsByStatusPageable(String status, Pageable pageable) {
+        RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
+        return repairTicketRepository.findByRepairStatus(repairStatus, pageable)
+                .map(this::mapToGetRepairTicketResponseDTO);
+    }
+
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
         GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
         dto.setTicketNumber(repairTicket.getTicketNumber());
