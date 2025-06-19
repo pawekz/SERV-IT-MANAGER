@@ -43,7 +43,7 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
     @Query("SELECT r FROM RepairTicketEntity r WHERE r.repairStatus IN ('RECEIVED', 'DIAGNOSING', 'AWAITING_PARTS', 'REPAIRING', 'READY_FOR_PICKUP')")
     Page<RepairTicketEntity> findActiveRepairTickets(Pageable pageable);
 
-    List<RepairTicketEntity> findRepairTicketsByStatus(RepairStatusEnum repairStatus);
+    List<RepairTicketEntity> findByRepairStatus(RepairStatusEnum repairStatus);
 
-    Page<RepairTicketEntity> findRepairTicketsByStatusPageable(RepairStatusEnum repairStatus, Pageable pageable);
+    Page<RepairTicketEntity> findByRepairStatus(RepairStatusEnum repairStatus, Pageable pageable);
 }

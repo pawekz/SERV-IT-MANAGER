@@ -497,7 +497,7 @@ public class RepairTicketService {
 
     public List<GetRepairTicketResponseDTO> getRepairTicketsByStatus(String status) {
         RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
-        return repairTicketRepository.findRepairTicketsByStatus(repairStatus)
+        return repairTicketRepository.findByRepairStatus(repairStatus)
                 .stream()
                 .map(this::mapToGetRepairTicketResponseDTO)
                 .collect(Collectors.toList());
@@ -505,7 +505,7 @@ public class RepairTicketService {
 
     public Page<GetRepairTicketResponseDTO> getRepairTicketsByStatusPageable(String status, Pageable pageable) {
         RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
-        return repairTicketRepository.findRepairTicketsByStatusPageable(repairStatus, pageable)
+        return repairTicketRepository.findByRepairStatus(repairStatus, pageable)
                 .map(this::mapToGetRepairTicketResponseDTO);
     }
 
