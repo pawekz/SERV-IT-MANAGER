@@ -26,6 +26,12 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.util.Map;
 
 @Service
 public class RepairTicketService {
@@ -45,9 +51,13 @@ public class RepairTicketService {
     @Autowired
     private NotificationService notificationService;
 
-    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
 
     public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
@@ -260,13 +270,15 @@ public class RepairTicketService {
             throw new RuntimeException("Failed to upload repair ticket document", e);
         }
     }
-
+    //it will get the latest ticket number from the latest to the oldest
     public List<GetRepairTicketResponseDTO> getAllRepairTickets() {
         logger.info("Fetching all repair tickets.");
         try {
-            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findAll().stream()
-                    .map(this::mapToGetRepairTicketResponseDTO)
-                    .collect(Collectors.toList());
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "repairTicketId"))
+                .stream()
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
             logger.info("Fetched {} repair tickets.", tickets.size());
             return tickets;
         } catch (Exception e) {
@@ -275,12 +287,37 @@ public class RepairTicketService {
         }
     }
 
+    public Page<GetRepairTicketResponseDTO> getAllRepairTicketsPaginated(Pageable pageable) {
+        logger.info("Fetching paginated repair tickets.");
+        try {
+            // Create a new Pageable with the same pagination but with DESC sort
+            Pageable pageableWithSort = PageRequest.of(
+                pageable.getPageNumber(), 
+                pageable.getPageSize(), 
+                Sort.by(Sort.Direction.DESC, "repairTicketId")
+            );
+            
+            Page<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(pageableWithSort)
+                .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Fetched {} repair tickets (page {} of {}).", 
+                tickets.getContent().size(), pageable.getPageNumber(), tickets.getTotalPages());
+            return tickets;
+        } catch (Exception e) {
+            logger.error("Error fetching paginated repair tickets.", e);
+            throw new RuntimeException("Failed to fetch paginated repair tickets", e);
+        }
+    }
+
     public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
         logger.info("Fetching repair tickets for customer email: {}", email);
         try {
-            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findByCustomerEmail(email).stream()
-                    .map(this::mapToGetRepairTicketResponseDTO)
-                    .collect(Collectors.toList());
+            List<GetRepairTicketResponseDTO> tickets = repairTicketRepository
+                .findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "repairTicketId"))
+                .stream()
+                .filter(ticket -> email.equalsIgnoreCase(ticket.getCustomerEmail()))
+                .map(this::mapToGetRepairTicketResponseDTO)
+                .collect(Collectors.toList());
             logger.info("Fetched {} repair tickets for customer email: {}", tickets.size(), email);
             return tickets;
         } catch (Exception e) {
@@ -371,8 +408,34 @@ public class RepairTicketService {
 
         notificationService.sendNotification(notification);
 
+        // Save the updated repair ticket
+        RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
+
+        // Broadcast repair ticket update to all connected clients via WebSocket
+        try {
+            // Create a simplified DTO for WebSocket broadcast
+            Map<String, Object> broadcastUpdate = Map.of(
+                "ticketNumber", repairTicket.getTicketNumber(),
+                "newStatus", newStatus.name(),
+                "customerEmail", repairTicket.getCustomerEmail(),
+                "updatedAt", LocalDateTime.now().toString(),
+                "message", "Repair ticket " + repairTicket.getTicketNumber() + " status updated to " + newStatus.name()
+            );
+            
+            // Broadcast to general repair tickets topic
+            messagingTemplate.convertAndSend("/topic/repair-tickets", broadcastUpdate);
+            
+            // Also broadcast to technician-specific topic for real-time updates
+            messagingTemplate.convertAndSend("/topic/technician-updates", broadcastUpdate);
+            
+            logger.info("Broadcasted repair ticket update for ticket: {}", repairTicket.getTicketNumber());
+        } catch (Exception e) {
+            logger.error("Failed to broadcast repair ticket update: {}", e.getMessage(), e);
+            // Don't throw exception here as the main operation succeeded
+        }
+
         logger.info("Repair status updated to {} for ticket: {}", newStatus, request.getTicketNumber());
-        return repairTicketRepository.save(repairTicket);
+        return savedTicket;
     }
 
     public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {

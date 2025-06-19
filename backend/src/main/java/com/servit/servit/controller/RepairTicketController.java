@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/repairTicket")
@@ -88,15 +89,22 @@ public class RepairTicketController {
     @GetMapping("/searchRepairTickets")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
             @RequestParam String searchTerm,
-            @PageableDefault(size = 20) Pageable pageable) {
-        try {
-            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTickets(searchTerm, pageable);
-            if (repairTickets.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-            }
-            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            @PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+        String email = authentication.getName();
+
+        if (role.equals("ROLE_CUSTOMER")) {
+            // Only show tickets for this customer
+            return ResponseEntity.ok(
+                repairTicketService.searchRepairTicketsByEmail(email, searchTerm, pageable)
+            );
+        } else {
+            // Admin/Tech: show all
+            return ResponseEntity.ok(
+                repairTicketService.searchRepairTickets(searchTerm, pageable)
+            );
         }
     }
 
@@ -127,6 +135,21 @@ public class RepairTicketController {
         return repairTickets.isEmpty()
                 ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
                 : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
+    }
+
+    // Paginated version of getAllRepairTickets (ADMIN SIDE)
+    @GetMapping("/getAllRepairTicketsPaginated")
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getAllRepairTicketsPaginated(
+            @PageableDefault(size = 20) Pageable pageable) {
+        try {
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTicketsPaginated(pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
@@ -179,7 +202,12 @@ public class RepairTicketController {
     public ResponseEntity<?> updateRepairStatus(@RequestBody UpdateRepairStatusRequestDTO request) {
         try {
             RepairTicketEntity ticket = repairTicketService.updateRepairStatus(request);
-            return ResponseEntity.ok(ticket);
+            UpdateRepairStatusResponseDTO response = new UpdateRepairStatusResponseDTO(
+                ticket.getTicketNumber(),
+                ticket.getRepairStatus().name(),
+                "Ticket " + ticket.getTicketNumber() + " status updated to " + ticket.getRepairStatus().name()
+            );
+            return ResponseEntity.ok(response);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -214,7 +242,7 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
+    // this is the new endpoint for getting the files, the old one is still working (possible bug due to capturing only the first part of the path)
     @GetMapping("/files/{category}/{subfolder}/{filename:.+}")
     public ResponseEntity<Resource> getTicketFileV2(@PathVariable String category,
                                                     @PathVariable String subfolder,

@@ -54,8 +54,7 @@ public class SecurityConfig {
                             "/user/resetPassword",
                             "/feedback/submitFeedback",
                             "/ws/**",
-                            "/topic/**",
-                            "/error"
+                            "/topic/**"
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
@@ -160,6 +159,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
-
-
 }
