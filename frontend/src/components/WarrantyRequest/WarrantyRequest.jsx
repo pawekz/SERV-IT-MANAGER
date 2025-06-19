@@ -4,7 +4,7 @@ import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 
 
-const WarrantyRequest = ({ isOpen, onClose,data = {}}) => {
+const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     if (!data) return null;
     const [showWarrantyReceive, setShowWarrantyReceive] = useState(false);
     const role = localStorage.getItem('userRole')?.toLowerCase();
@@ -53,6 +53,8 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}}) => {
             const fetchImageWithAuth = async () => {
                 try {
                     const token = localStorage.getItem("authToken");
+                    if (!token) throw new Error("Not authenticated. Please log in.");
+
                     const response = await fetch(`http://localhost:8080${src}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -115,6 +117,40 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}}) => {
         }
     }, [role]);
 
+    const UpdateStatus = async () => {
+
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("Not authenticated. Please log in.");
+
+        const form = new FormData();
+        if (formData.warrantyNumber) {
+            form.append("warrantyNumber", formData.warrantyNumber.toString());
+        }
+        if (formData.status) {
+            form.append("status", formData.status.toString());
+        }
+
+        const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+            method: "PATCH",
+            headers: {Authorization: `Bearer ${token}`},
+            body: form,
+        });
+        if (!response.ok) {
+            let errorMessage;
+            try {
+                const errorData = await response.text();
+                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+            } catch (e) {
+                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+        const result = await response.json();
+        setSuccess(result);
+        onSuccess();
+
+    }
+
 
     const handlePhotoUpload = (e) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -144,18 +180,23 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const hasPhotos =
-            (photoFiles && photoFiles.length > 0) ||
-            (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
+        if(formData.status === "ITEM_RETURNED") {
+            const hasPhotos =
+                (photoFiles && photoFiles.length > 0) ||
+                (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
 
-        if (!hasPhotos) {
-            setPhotoError("Please upload at least one photo of the device condition.");
-            return;
+            if (!hasPhotos) {
+                setPhotoError("Please upload at least one photo of the device condition.");
+                return;
+            } else {
+                setPhotoError("");
+            }
+
+            setShowWarrantyReceive(true);
         } else {
-            setPhotoError("");
+            UpdateStatus();
+            onClose();
         }
-
-        setShowWarrantyReceive(true);
     };
 
     const handleStatusChange = (e) => {

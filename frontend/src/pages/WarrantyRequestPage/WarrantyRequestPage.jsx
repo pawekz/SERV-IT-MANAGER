@@ -23,7 +23,7 @@ const WarrantyRequestPage = () => {
     const [pendingStatus, setPendingStatus] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
-        status: warranty.status,
+        status: ""
     });
 
     const onClose = () => {
@@ -156,6 +156,44 @@ const WarrantyRequestPage = () => {
         }, 1000);
     }, []);
 
+    const UpdateStatus = async (warranty) => {
+
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("Not authenticated. Please log in.");
+
+        const form = new FormData();
+        if (warranty) {
+            form.append("warrantyNumber", warranty.toString());
+        }
+        if (pendingStatus) {
+            form.append("status", pendingStatus.toString());
+        }
+
+        const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+            method: "PATCH",
+            headers: {Authorization: `Bearer ${token}`},
+            body: form,
+        });
+        if (!response.ok) {
+            let errorMessage;
+            try {
+                const errorData = await response.text();
+                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+            } catch (e) {
+                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+        const result = await response.json();
+
+        if(role === "customer") {
+            fetchWarrantiesbyemail(userData.email);
+        } else {
+            fetchWarranties();
+        }
+
+    }
+
     const handleStatusChange = (e,currentStatus, request) => {
         const newStatus = e.target.value;
 
@@ -167,7 +205,6 @@ const WarrantyRequestPage = () => {
         } else {
             setModalMessage(`Are you sure you want to change status to "${newStatus.replace(/_/g, " ")}"?`);
         }
-        // Set pending status and open modal
         setSelectedRequest(request);
         setPendingStatus(newStatus);
         setShowModal(true);
@@ -176,6 +213,16 @@ const WarrantyRequestPage = () => {
     const confirmStatusChange = () => {
         setFormData({ ...formData, status: pendingStatus });
         setShowModal(false);
+        UpdateStatus(selectedRequest.warrantyNumber)
+            .then(() => {
+                setModalMessage(`Status changed to "${pendingStatus.replace(/_/g, " ")}" successfully.`);
+                setSelectedRequest(null);
+                setPendingStatus("");
+            })
+            .catch((error) => {
+                setError(error.message);
+                console.error("Error updating status:", error);
+            });
     };
 
     const getProductIcon = (deviceType) => {
@@ -396,6 +443,13 @@ const WarrantyRequestPage = () => {
                                     isOpen={modalOpen}
                                     onClose={onClose}
                                     data={selectedRequest}
+                                    onSuccess={() => {
+                                        if (role === "customer") {
+                                            fetchWarrantiesbyemail(userData.email);
+                                        } else {
+                                            fetchWarranties();
+                                        }
+                                    }}
                                 />
                             </>
                         )}
