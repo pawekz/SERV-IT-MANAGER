@@ -104,7 +104,8 @@ public class SecurityConfig {
                             "/part/stock/searchPartNumbers",
                             "/part/addPart",
                             "/warranty/getAllWarranties",
-                            "/warranty/check/*"
+                            "/warranty/check/*",
+                            "/repairTicket/updateRepairStatus"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")

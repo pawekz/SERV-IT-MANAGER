@@ -29,6 +29,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.util.Map;
+
 @Service
 public class RepairTicketService {
 
@@ -47,9 +51,13 @@ public class RepairTicketService {
     @Autowired
     private NotificationService notificationService;
 
-    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
 
     public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
         this.repairTicketRepository = repairTicketRepository;
@@ -400,8 +408,34 @@ public class RepairTicketService {
 
         notificationService.sendNotification(notification);
 
+        // Save the updated repair ticket
+        RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
+
+        // Broadcast repair ticket update to all connected clients via WebSocket
+        try {
+            // Create a simplified DTO for WebSocket broadcast
+            Map<String, Object> broadcastUpdate = Map.of(
+                "ticketNumber", repairTicket.getTicketNumber(),
+                "newStatus", newStatus.name(),
+                "customerEmail", repairTicket.getCustomerEmail(),
+                "updatedAt", LocalDateTime.now().toString(),
+                "message", "Repair ticket " + repairTicket.getTicketNumber() + " status updated to " + newStatus.name()
+            );
+            
+            // Broadcast to general repair tickets topic
+            messagingTemplate.convertAndSend("/topic/repair-tickets", broadcastUpdate);
+            
+            // Also broadcast to technician-specific topic for real-time updates
+            messagingTemplate.convertAndSend("/topic/technician-updates", broadcastUpdate);
+            
+            logger.info("Broadcasted repair ticket update for ticket: {}", repairTicket.getTicketNumber());
+        } catch (Exception e) {
+            logger.error("Failed to broadcast repair ticket update: {}", e.getMessage(), e);
+            // Don't throw exception here as the main operation succeeded
+        }
+
         logger.info("Repair status updated to {} for ticket: {}", newStatus, request.getTicketNumber());
-        return repairTicketRepository.save(repairTicket);
+        return savedTicket;
     }
 
     public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {
