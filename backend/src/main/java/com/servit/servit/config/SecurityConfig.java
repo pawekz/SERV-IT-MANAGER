@@ -105,7 +105,9 @@ public class SecurityConfig {
                             "/part/addPart",
                             "/warranty/getAllWarranties",
                             "/warranty/check/*",
-                            "/repairTicket/updateRepairStatus"
+                            "/repairTicket/updateRepairStatus",
+                            "/repairTicket/getRepairTicketsByStatus",
+                            "/repairTicket/getRepairTicketsByStatusPageable"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
