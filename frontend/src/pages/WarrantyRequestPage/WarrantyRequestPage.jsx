@@ -302,13 +302,13 @@ const WarrantyRequestPage = () => {
                                         </div>
                                         {/* Pending Warranties Cards */}
                                         <div className="grid gap-6 grid-cols-2 lg:grid-cols-3">
-                                            {warranty.filter(w => w.status !== "REPAIR_REPLACEMENT_COMPLETED").length === 0 ? (
+                                            {warranty.filter(warranty => warranty.status !== "WARRANTY_REPLACEMENT_COMPLETED").length === 0 ? (
                                                 <p className="text-gray-400 col-span-full text-center">
                                                     No pending warranties found. <br/>Use the checker to verify serial number and start a warranty request.
                                                 </p>
                                             ) : (
                                                 warranty
-                                                    .filter(w => w.status !== "REPAIR_REPLACEMENT_COMPLETED")
+                                                    .filter(warranty => warranty.status !== "WARRANTY_REPLACEMENT_COMPLETED")
                                                     .map((request, index) => (
                                                         <div
                                                             key={index}
@@ -397,14 +397,14 @@ const WarrantyRequestPage = () => {
                                                 />
                                             </div>
                                         </div>
-                                    {warranty.filter(w => w.status === "REPAIR_REPLACEMENT_COMPLETED").length === 0 ? (
+                                    {warranty.filter(w => w.status === "WARRANTY_REPLACEMENT_COMPLETED").length === 0 ? (
                                         <p className="text-center text-gray-400">
                                             No resolved warranties found. <br /> Use the checker to verify serial number and start a warranty request.
                                         </p>
                                     ) : (
-                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-3">
                                             {warranty
-                                                .filter((request) => request.status === "REPAIR_REPLACEMENT_COMPLETED" )
+                                                .filter((warranty) => warranty.status === "WARRANTY_REPLACEMENT_COMPLETED" )
                                                 .map((request,index) => (
                                                     <div
                                                         key={index}
@@ -417,10 +417,10 @@ const WarrantyRequestPage = () => {
                                                                 {request.serialNumber}
                                                             </h2>
                                                             <p className="text-sm text-gray-600">
-                                                                <strong>Device Type:</strong> {request.deviceType}
+                                                                <strong>Device Name:</strong> {request.deviceName}
                                                             </p>
                                                             <p className="text-sm text-gray-600">
-                                                                <strong>Date:</strong> {request.purchaseDate}
+                                                                <strong>Customer:</strong> {request.customerName}
                                                             </p>
                                                             <p
                                                                 className={`text-sm font-medium mt-1 ${
