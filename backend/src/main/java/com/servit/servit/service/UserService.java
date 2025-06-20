@@ -430,4 +430,34 @@ public class UserService {
             throw new RuntimeException("Failed to fetch top technicians by workload", e);
         }
     }
+
+    @Transactional
+    public boolean onboardAdmin(RegistrationRequestDTO req) {
+        logger.info("Attempting initial admin onboarding...");
+        if (userRepo.count() > 0) {
+            logger.warn("Initial admin setup attempted but users already exist.");
+            throw new IllegalArgumentException("Initial setup already completed");
+        }
+        if (userRepo.findByEmail(req.getEmail()).isPresent()) {
+            logger.warn("Email already in use during onboarding: {}", req.getEmail());
+            throw new IllegalArgumentException("Email already in use");
+        }
+        if (userRepo.findByUsername(req.getUsername()).isPresent()) {
+            logger.warn("Username already in use during onboarding: {}", req.getUsername());
+            throw new IllegalArgumentException("Username already in use");
+        }
+        UserEntity user = new UserEntity();
+        user.setFirstName(formatName(req.getFirstName()));
+        user.setLastName(formatName(req.getLastName()));
+        user.setEmail(req.getEmail());
+        user.setUsername(req.getUsername());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setPhoneNumber(req.getPhoneNumber());
+        user.setRole(UserRoleEnum.ADMIN);
+        user.setIsVerified(true);
+        user.setStatus("Active");
+        userRepo.save(user);
+        logger.info("Initial admin onboarded successfully.");
+        return true;
+    }
 }

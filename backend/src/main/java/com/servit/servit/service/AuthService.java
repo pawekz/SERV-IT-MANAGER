@@ -2,6 +2,7 @@ package com.servit.servit.service;
 
 import com.servit.servit.dto.*;
 import com.servit.servit.entity.UserEntity;
+import com.servit.servit.enumeration.UserRoleEnum;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.util.JwtUtil;
 import org.slf4j.Logger;
@@ -27,25 +28,36 @@ public class AuthService {
     }
 
     public AuthResponseDTO authenticate(LoginRequestDTO req) {
-        logger.debug("Attempting authentication for identifier: {}", req.getIdentifier());
-        
         UserEntity user = userRepo.findByEmail(req.getIdentifier())
                 .or(() -> userRepo.findByUsername(req.getIdentifier()))
-                .orElseThrow(() -> {
-                    logger.error("User not found for identifier: {}", req.getIdentifier());
-                    return new IllegalArgumentException("Invalid credentials");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
-        logger.debug("Found user: {}, role: {}", user.getUsername(), user.getRole());
-
+        if (user.getRole() != UserRoleEnum.CUSTOMER) {
+            logger.warn("Non-customer tried to login via /login: {}", user.getUsername());
+            throw new IllegalArgumentException("Access denied");
+        }
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
-            logger.error("Invalid password for user: {}", user.getUsername());
+            logger.error("Invalid password for customer: {}", user.getUsername());
             throw new IllegalArgumentException("Invalid credentials");
         }
-
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
-        logger.debug("Generated token for user: {} with role: {}", user.getUsername(), user.getRole());
-        
+        return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
+    }
+
+    public AuthResponseDTO authenticateStaff(LoginRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getIdentifier())
+                .or(() -> userRepo.findByUsername(req.getIdentifier()))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        if (user.getRole() == UserRoleEnum.CUSTOMER) {
+            logger.warn("Customer tried to login via staff endpoint: {}", user.getUsername());
+            throw new IllegalArgumentException("Access denied");
+        }
+        if (!encoder.matches(req.getPassword(), user.getPassword())) {
+            logger.error("Invalid password for staff: {}", user.getUsername());
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
         return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
     }
 }

@@ -56,7 +56,9 @@ public class SecurityConfig {
                             "/ws/**",
                             "/topic/**",
                             "/quotation/approveQuotation/*",
-                            "/quotation/denyQuotation/*"
+                            "/quotation/denyQuotation/*",
+                            "/auth/login/staff",
+                            "/user/register/onboard"
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
