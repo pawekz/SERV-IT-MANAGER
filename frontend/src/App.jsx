@@ -27,6 +27,7 @@ import MockUpUpdateStatusAndPushNotifications from "./pages/MockUpUpdateStatusAn
 import { useEffect, useState } from "react";
 import HistoryPage from "./pages/History/HistoryPage.jsx";
 import FAQ from "./pages/FAQ/FAQ.jsx";
+import EmployeeSignUpPage from './pages/SignUpPage/EmployeeSignUpPage';
 
 function App() {
   // Function to parse JWT token
@@ -85,6 +86,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/employee-signup" element={<EmployeeSignUpPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
