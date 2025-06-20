@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { X, Copy, Trash, Plus } from 'lucide-react';
 import api from '../../../services/api';
 
@@ -52,32 +52,20 @@ const BulkAddModal = ({
         }
     }, [onBulkItemChange]);
 
-    // Handle part number input change with proper debouncing
+    // Handle part number input change ~with proper debouncing~
     const handlePartNumberChange = useCallback((index, value) => {
         onBulkItemChange(index, 'partNumber', value);
-        
-        // Only check for master row (index 0)
-        if (index === 0) {
-            // Clear any existing timeout
-            if (window.bulkPartNumberCheckTimeout) {
-                clearTimeout(window.bulkPartNumberCheckTimeout);
-            }
-            
-            // Set a new timeout
-            window.bulkPartNumberCheckTimeout = setTimeout(() => {
-                checkPartNumber(value, index);
-            }, 500);
-        }
-    }, [onBulkItemChange, checkPartNumber]);
+    }, [onBulkItemChange]);
 
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (window.bulkPartNumberCheckTimeout) {
-                clearTimeout(window.bulkPartNumberCheckTimeout);
-            }
-        };
-    }, []);
+    // NEW: trigger part number check when the user leaves the field
+    const handlePartNumberBlur = useCallback((index, value) => {
+        if (index === 0) {
+            checkPartNumber(value, index);
+        }
+    }, [checkPartNumber]);
+
+    // Cleanup timeout on unmount ~ (removed since debounce no longer used)
+    // ... existing code ...
 
     if (!isOpen) return null;
 
@@ -167,6 +155,7 @@ const BulkAddModal = ({
                                                     type="text"
                                                     value={item.partNumber}
                                                     onChange={(e) => handlePartNumberChange(index, e.target.value)}
+                                                    onBlur={(e) => handlePartNumberBlur(index, e.target.value)}
                                                     className={`w-full px-2 py-1 border border-gray-300 rounded text-sm ${index === 0 ? 'font-semibold bg-blue-50' : ''}`}
                                                     placeholder="Part number"
                                                     required
@@ -199,9 +188,8 @@ const BulkAddModal = ({
                                                 type="text"
                                                 value={item.description}
                                                 onChange={(e) => onBulkItemChange(index, 'description', e.target.value)}
-                                                className={`w-full px-2 py-1 border border-gray-300 rounded text-sm ${index === 0 ? 'font-semibold bg-blue-50' : ''} ${partExists && index === 0 ? 'bg-gray-50' : ''}`}
+                                                className={`w-full px-2 py-1 border border-gray-300 rounded text-sm ${index === 0 ? 'font-semibold bg-blue-50' : ''}`}
                                                 placeholder="Description"
-                                                readOnly={partExists && index === 0}
                                             />
                                         </td>
                                         <td className="px-3 py-2">
@@ -209,10 +197,9 @@ const BulkAddModal = ({
                                                 type="number"
                                                 value={item.unitCost}
                                                 onChange={(e) => onBulkItemChange(index, 'unitCost', e.target.value)}
-                                                className={`w-full px-2 py-1 border border-gray-300 rounded text-sm ${index === 0 ? 'font-semibold bg-blue-50' : ''} ${partExists && index === 0 ? 'bg-gray-50' : ''}`}
+                                                className={`w-full px-2 py-1 border border-gray-300 rounded text-sm ${index === 0 ? 'font-semibold bg-blue-50' : ''}`}
                                                 min="0"
                                                 step="0.01"
-                                                readOnly={partExists && index === 0}
                                             />
                                         </td>
                                         <td className="px-3 py-2">
