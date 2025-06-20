@@ -61,10 +61,10 @@ const DescriptionModal = ({
                             <AlertTriangle size={16} className="mr-2 text-orange-600" />
                             <span><span className="font-semibold">Low Stock Threshold:</span> {part.lowStockThreshold != null ? formatNumber(part.lowStockThreshold) : '-'}</span>
                         </div>
-                        <div className="flex items-center">
+                        {/*<div className="flex items-center">
                             <Hash size={16} className="mr-2 text-red-600" />
                             <span><span className="font-semibold">Serial Number:</span> {part.serialNumber || '-'}</span>
-                        </div>
+                        </div>*/}
                         <div className="flex items-center">
                             <User size={16} className="mr-2 text-teal-600" />
                             <span><span className="font-semibold">Added By:</span> {part.addedBy || '-'}</span>

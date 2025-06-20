@@ -147,8 +147,18 @@ public class PartService {
         // If adding to existing part number, fetch and copy the details
         PartEntity existingPart = null;
         if (Boolean.TRUE.equals(bulkDto.getAddToExisting())) {
-            existingPart = partRepository.findByPartNumber(partNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Part number does not exist: " + partNumber));
+            // There may be many parts with the same part number, so fetch the list and
+            // use the first active (non-deleted) entry instead of expecting a unique result.
+            List<PartEntity> existingParts = partRepository.findAllByPartNumber(partNumber)
+                    .stream()
+                    .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
+                    .collect(Collectors.toList());
+
+            if (existingParts.isEmpty()) {
+                throw new IllegalArgumentException("Part number does not exist: " + partNumber);
+            }
+
+            existingPart = existingParts.get(0);
         }
         
         // First, check for duplicates within the request itself
