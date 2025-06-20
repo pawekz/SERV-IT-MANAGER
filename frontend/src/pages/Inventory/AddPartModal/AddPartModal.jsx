@@ -113,30 +113,15 @@ const AddPartModal = ({
         }
     }, [onInputChange]);
 
-    // Handle part number input change with proper debouncing
+    // Part-number input handlers (no debounce)
     const handlePartNumberChange = useCallback((e) => {
+        onInputChange(e); // just update local state
+    }, [onInputChange]);
+
+    const handlePartNumberBlur = useCallback((e) => {
         const value = e.target.value;
-        onInputChange(e);
-
-        // Clear any existing timeout
-        if (window.partNumberCheckTimeout) {
-            clearTimeout(window.partNumberCheckTimeout);
-        }
-        
-        // Set a new timeout
-        window.partNumberCheckTimeout = setTimeout(() => {
-            checkPartNumber(value);
-        }, 500);
-    }, [onInputChange, checkPartNumber]);
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (window.partNumberCheckTimeout) {
-                clearTimeout(window.partNumberCheckTimeout);
-            }
-        };
-    }, []);
+        checkPartNumber(value);
+    }, [checkPartNumber]);
 
     if (!isOpen) return null;
 
@@ -186,6 +171,7 @@ const AddPartModal = ({
                                 name="partNumber"
                                 value={newPart.partNumber || ''}
                                 onChange={handlePartNumberChange}
+                                onBlur={handlePartNumberBlur}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Enter part number"
                                 required

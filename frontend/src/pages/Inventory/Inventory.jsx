@@ -252,7 +252,7 @@ const Inventory = () => {
     };
 
     // Refresh stock tracking for all part numbers
-    const refreshAllStockTracking = async () => {
+    const refreshAllStockTracking = async (showLowStockModalAfter = true) => {
         if (!isAdmin()) {
             showTechnicianRestrictionMessage();
             return;
@@ -273,9 +273,11 @@ const Inventory = () => {
 
             showNotification("Stock tracking refreshed successfully");
             await fetchInventory();
-            
-            // Check and show low stock modal when refresh is clicked
-            await checkAndShowLowStock();
+
+            // Optionally show low stock modal after refresh
+            if (showLowStockModalAfter) {
+                await checkAndShowLowStock();
+            }
         } catch (err) {
             console.error("Error refreshing stock tracking:", err);
             showNotification("Failed to refresh stock tracking", "error");
@@ -829,8 +831,8 @@ const Inventory = () => {
 
             // Refresh inventory to get updated data including individual parts
             await fetchInventory();
-            // Refresh stock tracking after update
-            await refreshAllStockTracking();
+            // Refresh stock tracking after update (skip low-stock modal for edits)
+            await refreshAllStockTracking(false);
 
             setTimeout(() => {
                 setShowEditModal(false);
