@@ -158,21 +158,6 @@ public class RepairTicketService {
                 throw e;
             }
 
-            String digitalSignaturePath;
-            try {
-                digitalSignaturePath = fileUtil.saveDigitalSignature(req.getDigitalSignature(), repairTicket.getTicketNumber());
-                logger.info("Successfully saved digital signature for repair ticket: {}", repairTicket.getTicketNumber());
-            } catch (IOException e) {
-                logger.error("Failed to save digital signature for ticket: {}", repairTicket.getTicketNumber(), e);
-                throw new RuntimeException("Failed to save digital signature. Please retry.", e);
-            }
-
-            DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
-            digitalSignature.setImageUrl(digitalSignaturePath);
-            digitalSignature.setRepairTicket(repairTicket);
-
-            repairTicket.setDigitalSignature(digitalSignature);
-
             logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
 
             return repairTicketRepository.save(repairTicket);
@@ -528,7 +513,6 @@ public class RepairTicketService {
         dto.setReportedIssue(repairTicket.getReportedIssue());
         dto.setStatus(repairTicket.getStatus());
         dto.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
-        dto.setDigitalSignatureImageUrl(repairTicket.getDigitalSignature() != null ? repairTicket.getDigitalSignature().getImageUrl() : null);
         dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
                 .map(RepairPhotoEntity::getPhotoUrl)
                 .collect(Collectors.toList()));

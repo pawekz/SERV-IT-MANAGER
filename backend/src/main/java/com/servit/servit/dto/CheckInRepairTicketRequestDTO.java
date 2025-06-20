@@ -23,6 +23,5 @@ public class CheckInRepairTicketRequestDTO {
     private String observations;
     private Boolean isDeviceTampered;
 
-    private MultipartFile digitalSignature;
     private List<MultipartFile> repairPhotos;
 }

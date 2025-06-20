@@ -1,7 +1,6 @@
 package com.servit.servit.dto;
 
 import lombok.Data;
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,6 +24,5 @@ public class GetRepairTicketResponseDTO {
     private String status;
     private LocalDate checkInDate;
 
-    private String digitalSignatureImageUrl;
     private List<String> repairPhotosUrls;
 }

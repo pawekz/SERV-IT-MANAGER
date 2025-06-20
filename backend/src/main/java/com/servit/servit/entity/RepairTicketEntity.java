@@ -92,10 +92,6 @@ public class RepairTicketEntity {
     @JsonManagedReference
     private List<RepairPhotoEntity> repairPhotos;
 
-    @OneToOne(mappedBy = "repairTicket", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private DigitalSignatureEntity digitalSignature;
-
     @Column(name = "document_path")
     private String documentPath;
 }
