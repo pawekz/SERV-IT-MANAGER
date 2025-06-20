@@ -76,7 +76,7 @@ public class UserService {
         String rawPhone = req.getPhoneNumber().replaceAll("^\\+?63", "");
         user.setPhoneNumber("+63" + rawPhone);
 
-        user.setRole(userRepo.count() == 0 ? UserRoleEnum.ADMIN : UserRoleEnum.CUSTOMER);
+        user.setRole(UserRoleEnum.CUSTOMER); // Always CUSTOMER
         user.setIsVerified(false);
         user.setStatus("Pending");
         userRepo.save(user);
