@@ -40,6 +40,18 @@ public class UserController {
         }
     }
 
+    @PatchMapping("/register/onboard")
+    public ResponseEntity<?> onboardAdmin(@RequestBody RegistrationRequestDTO req) {
+        try {
+            boolean result = userSvc.onboardAdmin(req);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error");
+        }
+    }
+
     @PostMapping("/verifyOtp")
     public ResponseEntity<Void> verifyOtp(@RequestBody VerifyOtpRequestDTO req) {
         userSvc.verifyOtp(req);
