@@ -13,12 +13,12 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-
+    //login for CUSTOMER
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO req) {
         return ResponseEntity.ok(authService.authenticate(req));
     }
-
+    //login for staff (ADMINISTRATOR and TECHNICIAN)
     @PostMapping("/login/staff")
     public ResponseEntity<AuthResponseDTO> staffLogin(@RequestBody LoginRequestDTO req) {
         return ResponseEntity.ok(authService.authenticateStaff(req));
