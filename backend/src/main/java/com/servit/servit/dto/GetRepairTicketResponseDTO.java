@@ -21,7 +21,7 @@ public class GetRepairTicketResponseDTO {
     private String accessories;
     private String observations;
     private String reportedIssue;
-    private String status;
+    private String repairStatus;
     private LocalDate checkInDate;
 
     private List<String> repairPhotosUrls;

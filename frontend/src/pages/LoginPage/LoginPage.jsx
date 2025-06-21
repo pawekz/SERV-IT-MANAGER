@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Toast from '../../components/Toast/Toast.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
@@ -248,6 +248,8 @@ const NewPasswordModal = ({
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isStaffLogin = location.pathname.includes('/login/staff');
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -386,7 +388,8 @@ const LoginPage = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/auth/login', {
+            const loginEndpoint = isStaffLogin ? 'http://localhost:8080/auth/login/staff' : 'http://localhost:8080/auth/login';
+            const response = await fetch(loginEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

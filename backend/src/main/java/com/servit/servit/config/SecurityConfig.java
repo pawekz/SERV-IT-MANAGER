@@ -81,7 +81,8 @@ public class SecurityConfig {
                             "/part/workflow/verifyWarranty",
                             "/part/getPartByPartNumber/*",
                             "/images/**",
-                            "/quotation/getQuotationByRepairTicketNumber/*"
+                            "/quotation/getQuotationByRepairTicketNumber/*",
+                            "/notification/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",
@@ -116,6 +117,7 @@ public class SecurityConfig {
                             "/repairTicket/updateRepairStatus",
                             "/repairTicket/getRepairTicketsByStatus",
                             "/repairTicket/getRepairTicketsByStatusPageable",
+                            "/repairTicket/getRepairTicketsByStatusPageableAssignedToTech",
                             "/quotation/addQuotation",
                             "/quotation/deleteQuotation/*",
                             "/quotation/getAllQuotation",

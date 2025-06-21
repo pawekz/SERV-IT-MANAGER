@@ -490,7 +490,23 @@ public class RepairTicketService {
 
     public Page<GetRepairTicketResponseDTO> getRepairTicketsByStatusPageable(String status, Pageable pageable) {
         RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
-        return repairTicketRepository.findByRepairStatus(repairStatus, pageable)
+        Pageable pageableWithSort = PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(Sort.Direction.DESC, "repairTicketId")
+        );
+        return repairTicketRepository.findByRepairStatus(repairStatus, pageableWithSort)
+                .map(this::mapToGetRepairTicketResponseDTO);
+    }
+
+    public Page<GetRepairTicketResponseDTO> getRepairTicketsByStatusPageableAssignedToTech(String status, String email, Pageable pageable) {
+        RepairStatusEnum repairStatus = RepairStatusEnum.valueOf(status);
+        Pageable pageableWithSort = PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(Sort.Direction.DESC, "repairTicketId")
+        );
+        return repairTicketRepository.findByRepairStatusAndTechnicianEmail_Email(repairStatus, email, pageableWithSort)
                 .map(this::mapToGetRepairTicketResponseDTO);
     }
 
@@ -511,7 +527,8 @@ public class RepairTicketService {
         dto.setAccessories(repairTicket.getAccessories());
         dto.setObservations(repairTicket.getObservations());
         dto.setReportedIssue(repairTicket.getReportedIssue());
-        dto.setStatus(repairTicket.getStatus());
+        dto.setRepairStatus(repairTicket.getRepairStatus().name());
+        /*dto.setStatus(repairTicket.getStatus());*/
         dto.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
         dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
                 .map(RepairPhotoEntity::getPhotoUrl)
@@ -519,3 +536,4 @@ public class RepairTicketService {
         return dto;
     }
 }
+

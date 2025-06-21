@@ -46,4 +46,6 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
     List<RepairTicketEntity> findByRepairStatus(RepairStatusEnum repairStatus);
 
     Page<RepairTicketEntity> findByRepairStatus(RepairStatusEnum repairStatus, Pageable pageable);
+
+    Page<RepairTicketEntity> findByRepairStatusAndTechnicianEmail_Email(RepairStatusEnum repairStatus, String email, Pageable pageable);
 }
