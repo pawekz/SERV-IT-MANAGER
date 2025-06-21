@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
@@ -16,15 +16,39 @@ function dataURLtoBlob(dataURL) {
 const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess, kind }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [showDialog, setShowDialog] = useState(false);
+    const [pdfBlob, setPdfBlob] = useState(null);
+    const [pdfUrl, setPdfUrl] = useState(null);
+    const navigate = useNavigate();
+    const pdfGeneratedRef = useRef(false);
+
     const showToast = (message, type = "success") => {
         setToast({ show: true, message, type });
     };
     const closeToast = () => setToast({ ...toast, show: false });
 
-    const [showDialog, setShowDialog] = useState(false);
-    const navigate = useNavigate();
+    React.useEffect(() => {
+        let isMounted = true;
+        const generatePdf = async () => {
+            if (!pdfGeneratedRef.current) {
+                const blob = await pdf(
+                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
+                ).toBlob();
+                if (isMounted) {
+                    setPdfBlob(blob);
+                    setPdfUrl(URL.createObjectURL(blob));
+                    pdfGeneratedRef.current = true;
+                }
+            }
+        };
+        generatePdf();
+        return () => {
+            isMounted = false;
+            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+        };
+        // eslint-disable-next-line
+    }, [signatureDataURL, formData, kind]);
 
     const handleFinishClick = () => {
         setShowDialog(true);
@@ -44,7 +68,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
     const handleSubmit = async () => {
         setLoading(true);
         setError(null);
-        if(kind==="repair" ) {
+        if (kind === "repair") {
             try {
                 const token = localStorage.getItem("authToken");
                 if (!token) throw new Error("Not authenticated. Please log in.");
@@ -67,10 +91,9 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
-                // Submit the repair ticket
                 const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
                     method: "POST",
-                    headers: {Authorization: `Bearer ${token}`},
+                    headers: { Authorization: `Bearer ${token}` },
                     body: form,
                 });
                 if (!response.ok) {
@@ -86,16 +109,10 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 const result = await response.json();
                 setSuccess(result);
 
-                // Generate and upload the PDF
                 const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
-                if (ticketNumber) {
-                    const pdfBlob = await pdf(
-                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData}/>
-                    ).toBlob();
-
+                if (ticketNumber && pdfBlob) {
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
-
                     const pdfResponse = await fetch(
                         `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
                         {
@@ -123,90 +140,81 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 setLoading(false);
             }
         } else {
-            try{
-            const token = localStorage.getItem("authToken");
-            if (!token) throw new Error("Not authenticated. Please log in.");
-            const form = new FormData();
-            if (formData.warrantyNumber) {
-                form.append("warrantyNumber", formData.warrantyNumber.toString());
-            }
-            if (formData.status) {
-                form.append("status", formData.status.toString());
-            }
-            if (formData.returnReason) {
-                form.append("returnReason", formData.returnReason.toString());
-            }
-
-            if (signatureDataURL) {
-                const signatureBlob = dataURLtoBlob(signatureDataURL);
-                form.append("digitalSignature", signatureBlob, "signature.png");
-            } else {
-                throw new Error("Digital signature is required");
-            }
-            if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
-                formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
-                    if (base64DataURL) {
-                        const blob = dataURLtoBlob(base64DataURL);
-                        form.append("warrantyPhotosUrls", blob, `photo-${index + 1}.png`);
-                    }
+            try {
+                const token = localStorage.getItem("authToken");
+                if (!token) throw new Error("Not authenticated. Please log in.");
+                const form = new FormData();
+                if (formData.warrantyNumber) {
+                    form.append("warrantyNumber", formData.warrantyNumber.toString());
+                }
+                if (formData.status) {
+                    form.append("status", formData.status.toString());
+                }
+                if (formData.returnReason) {
+                    form.append("returnReason", formData.returnReason.toString());
+                }
+                if (signatureDataURL) {
+                    const signatureBlob = dataURLtoBlob(signatureDataURL);
+                    form.append("digitalSignature", signatureBlob, "signature.png");
+                } else {
+                    throw new Error("Digital signature is required");
+                }
+                if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
+                    formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
+                        if (base64DataURL) {
+                            const blob = dataURLtoBlob(base64DataURL);
+                            form.append("warrantyPhotosUrls", blob, `photo-${index + 1}.png`);
+                        }
+                    });
+                }
+                const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+                    method: "PATCH",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: form,
                 });
-            }
-
-            // Submit the warranty ticket
-            const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
-                method: "PATCH",
-                headers: {Authorization: `Bearer ${token}`},
-                body: form,
-            });
-            if (!response.ok) {
-                let errorMessage;
-                try {
-                    const errorData = await response.text();
-                    errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                } catch (e) {
-                    errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                }
-                throw new Error(errorMessage);
-            }
-            const result = await response.json();
-            setSuccess(result);
-
-            // Generate and upload the PDF
-            const warrantyNumber = result && result.warrantyNumber ? result.warrantyNumber : formData.warrantyNumber;
-            if (warrantyNumber) {
-                const pdfBlob = await pdf(
-                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData}/>
-                ).toBlob();
-
-                const pdfForm = new FormData();
-                pdfForm.append("file", pdfBlob, `${warrantyNumber}.pdf`);
-
-                const pdfResponse = await fetch(
-                    `http://localhost:8080/warranty/uploadWarrantyDocument/${warrantyNumber}`,
-                    {
-                        method: "PATCH",
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: pdfForm,
+                if (!response.ok) {
+                    let errorMessage;
+                    try {
+                        const errorData = await response.text();
+                        errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                    } catch (e) {
+                        errorMessage = `Server returned ${response.status}: ${response.statusText}`;
                     }
-                );
-                if (!pdfResponse.ok) {
-                    const errorText = await pdfResponse.text();
-                    const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
-                    showToast("PDF upload failed: " + errorMessage, "error");
-                    return;
+                    throw new Error(errorMessage);
                 }
-            }
+                const result = await response.json();
+                setSuccess(result);
 
-            showToast("Warranty ticket submitted successfully!", "success");
-            setTimeout(() => setLoading(false), 500);
-        } catch (err) {
-            setError(err.message);
-            showToast(err.message, "error");
-        } finally {
-            setLoading(false);
-        }
+                const warrantyNumber = result && result.warrantyNumber ? result.warrantyNumber : formData.warrantyNumber;
+                if (warrantyNumber && pdfBlob) {
+                    const pdfForm = new FormData();
+                    pdfForm.append("file", pdfBlob, `${warrantyNumber}.pdf`);
+                    const pdfResponse = await fetch(
+                        `http://localhost:8080/warranty/uploadWarrantyDocument/${warrantyNumber}`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: pdfForm,
+                        }
+                    );
+                    if (!pdfResponse.ok) {
+                        const errorText = await pdfResponse.text();
+                        const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
+                        showToast("PDF upload failed: " + errorMessage, "error");
+                        return;
+                    }
+                }
+
+                showToast("Warranty ticket submitted successfully!", "success");
+                setTimeout(() => setLoading(false), 500);
+            } catch (err) {
+                setError(err.message);
+                showToast(err.message, "error");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -220,9 +228,15 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </h1>
                 </div>
                 <div className="max-h-[720px] overflow-y-auto p-4">
-                    <PDFViewer width="100%" height="600px">
-                        <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
-                    </PDFViewer>
+                    {pdfUrl && (
+                        <iframe
+                            src={pdfUrl}
+                            width="100%"
+                            height="600px"
+                            title="PDF Preview"
+                            style={{ border: "none" }}
+                        />
+                    )}
                 </div>
                 <div className="flex justify-between mt-6">
                     <button
@@ -232,6 +246,18 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     >
                         Back
                     </button>
+                    <a
+                        href={pdfUrl || "#"}
+                        download={
+                            (kind === "repair"
+                                ? (formData.ticketNumber || "repair_ticket")
+                                : (formData.warrantyNumber || "warranty_ticket")) + ".pdf"
+                        }
+                        className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+                        style={{ display: pdfUrl ? "inline-block" : "none" }}
+                    >
+                        Download PDF
+                    </a>
                     <button
                         className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
                         onClick={success ? handleFinishClick : handleSubmit}
@@ -241,11 +267,9 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </button>
                 </div>
             </div>
-            {/* Dialog */}
             {showDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full relative animate-fadeIn border border-gray-100">
-                        {/* Checkmark Icon */}
                         <div className="flex justify-center mb-4">
                             <div className="bg-green-100 rounded-full p-3">
                                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#33e407">
@@ -275,7 +299,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         >
                             Cancel
                         </button>
-                        {/* Close button */}
                         <button
                             className="absolute top-3 right-3 text-gray-300 hover:text-red-400 transition"
                             onClick={() => setShowDialog(false)}
@@ -297,7 +320,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </div>
                 </div>
             )}
-            {/* Toast Notification */}
             <Toast
                 show={toast.show}
                 message={toast.message}
