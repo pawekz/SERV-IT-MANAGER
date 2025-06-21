@@ -223,4 +223,9 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/getUserCountInit")
+    public ResponseEntity<Long> getUserCountInit() {
+        return ResponseEntity.ok(userSvc.getUserCount());
+    }
 }
