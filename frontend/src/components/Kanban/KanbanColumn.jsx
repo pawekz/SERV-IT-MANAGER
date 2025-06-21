@@ -1,6 +1,6 @@
 import { useDrop } from "react-dnd"
 // import KanbanTask from "./KanbanTask"
-import KanbanTask from "./KanbanTasks.jsx";
+import KanbanCard from "./KanbanCard.jsx";
 const KanbanColumn = ({ title, tasks, onTaskDrop }) => {
     const [{ isOver }, drop] = useDrop({
         accept: "task",
@@ -22,7 +22,7 @@ const KanbanColumn = ({ title, tasks, onTaskDrop }) => {
             </div>
             <div className="space-y-3">
                 {tasks.map((task) => (
-                    <KanbanTask key={task.id} task={task} />
+                    <KanbanCard key={task.id} task={task} />
                 ))}
             </div>
         </div>

@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import org.springframework.security.core.Authentication;
+import com.servit.servit.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/repairTicket")
@@ -32,6 +34,9 @@ public class RepairTicketController {
 
     @Autowired
     private ConfigurationService configurationService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     public RepairTicketController(RepairTicketService repairTicketService) {
         this.repairTicketService = repairTicketService;
@@ -302,6 +307,39 @@ public class RepairTicketController {
             @PageableDefault(size = 20) Pageable pageable) {
         try {
             Page<GetRepairTicketResponseDTO> tickets = repairTicketService.getRepairTicketsByStatusPageable(status, pageable);
+            if (tickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.ok(tickets);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getRepairTicketsByStatusPageableAssignedToTech")
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getRepairTicketsByStatusPageableAssignedToTech(
+            @RequestParam String status,
+            @PageableDefault(size = 20) Pageable pageable,
+            HttpServletRequest request) {
+        try {
+            // Extract JWT token from Authorization header
+            String authorizationHeader = request.getHeader("Authorization");
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            String jwt = authorizationHeader.substring(7);
+
+            // Extract email claim from JWT token
+            String email;
+            try {
+                email = jwtUtil.extractAllClaims(jwt).get("email", String.class);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Page<GetRepairTicketResponseDTO> tickets = repairTicketService.getRepairTicketsByStatusPageableAssignedToTech(status, email, pageable);
             if (tickets.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             }
