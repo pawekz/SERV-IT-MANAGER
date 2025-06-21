@@ -460,4 +460,84 @@ public class UserService {
         logger.info("Initial admin onboarded successfully.");
         return true;
     }
+
+    // ADMIN SIDE: Create a new employee (Technician) account in pending state and email onboarding code
+    @Transactional
+    public void createEmployee(AddEmployeeRequestDTO req) throws jakarta.mail.MessagingException {
+        // Validate uniqueness
+        if (userRepo.findByEmail(req.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+        if (userRepo.findByUsername(req.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already in use");
+        }
+
+        // Generate 6-digit onboarding code
+        String onboardingCode = String.format("%06d", java.util.concurrent.ThreadLocalRandom.current().nextInt(1000000));
+
+        // Create user entity
+        UserEntity user = new UserEntity();
+        user.setFirstName(formatName(req.getFirstName()));
+        user.setLastName(formatName(req.getLastName()));
+        user.setEmail(req.getEmail());
+        user.setUsername(req.getUsername());
+        user.setPassword(passwordEncoder.encode("TEMP" + onboardingCode)); // Temporary password placeholder
+
+        // Store phone number exactly as provided (whitespace removed)
+        String cleanedPhone = req.getPhoneNumber().replaceAll("\\s+", "");
+        user.setPhoneNumber(cleanedPhone);
+
+        user.setRole(UserRoleEnum.TECHNICIAN);
+        user.setIsVerified(false);
+        user.setStatus("Pending");
+        user.setOnboardingCode(onboardingCode);
+
+        userRepo.save(user);
+
+        // Send onboarding email
+        String subject = "IOCONNECT Employee Onboarding Instructions";
+        String message = "Hello " + formatName(req.getFirstName()) + ",\n\n" +
+                "Welcome to IOCONNECT! We've created your employee account. To activate it, please complete these steps:\n\n" +
+                "1. Open the Employee Onboarding page: https://app.ioconnect.com/employee-onboarding (or paste the link in your browser).\n" +
+                "2. In the form, enter **your email address** ( <b>" + req.getEmail() + "</b> ) in the Email field.\n" +
+                "3. Enter the **Onboarding Code** below in the Onboarding Code field.\n" +
+                "4. Click <b>Verify Code</b>. You will then be prompted to set a secure password and activate your account.\n\n" +
+                "Your Onboarding Code: <b>" + onboardingCode + "</b>\n\n" +
+                "If you did not expect this email, please ignore it or contact your administrator.";
+        emailService.sendGenericNotificationEmail(req.getEmail(), subject, message);
+    }
+
+    // Verify onboarding code (step 1)
+    @Transactional(readOnly = true)
+    public boolean verifyOnboardingCode(VerifyOnboardingCodeRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!"Pending".equalsIgnoreCase(user.getStatus())) {
+            throw new IllegalArgumentException("Account already activated");
+        }
+
+        if (user.getOnboardingCode() == null || !user.getOnboardingCode().equals(req.getOnboardingCode())) {
+            throw new IllegalArgumentException("Invalid onboarding code");
+        }
+        return true;
+    }
+
+    // Complete onboarding: set password & activate
+    @Transactional
+    public void completeEmployeeOnboarding(CompleteOnboardingRequestDTO req) {
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getOnboardingCode() == null || !user.getOnboardingCode().equals(req.getOnboardingCode())) {
+            throw new IllegalArgumentException("Invalid onboarding code");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setIsVerified(true);
+        user.setStatus("Active");
+        user.setOnboardingCode(null); // clear code
+
+        userRepo.save(user);
+    }
 }

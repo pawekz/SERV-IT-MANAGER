@@ -32,6 +32,7 @@ import Quotation from './pages/InventoryAssignmentPanel/InventoryAssignmentPanel
 import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
 import api from "./services/api.jsx";
 import Spinner from "./components/Spinner/Spinner.jsx";
+import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 
 function App() {
   // Function to parse JWT token
@@ -124,7 +125,10 @@ function App() {
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/signup" element={<SignUpPage />} />
-              <Route path="/employee-signup" element={<EmployeeSignUpPage />} />
+              <Route path="/employee-onboarding" element={<EmployeeSignUpPage />} />
+              <Route path="/employee-signup" element={
+                <ProtectedRoute element={<CreateEmployeePage />} allowedRoles={['admin']} />
+              } />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/login/staff" element={<LoginPage />} />
               <Route path="/contact" element={<ContactPage />} />

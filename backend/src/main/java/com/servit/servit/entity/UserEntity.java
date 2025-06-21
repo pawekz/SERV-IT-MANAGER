@@ -52,4 +52,8 @@ public class UserEntity {
 
     @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'Pending'")
     private String status;
+
+    // Stores the 6-digit onboarding code sent to newly created employees.
+    @Column(name = "onboarding_code", length = 6)
+    private String onboardingCode;
 }
