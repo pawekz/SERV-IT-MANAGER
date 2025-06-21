@@ -340,7 +340,7 @@ const UserManagement = () => {
                                 className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                             />
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 items-center">
                             <select
                                 value={selectedStatus}
                                 onChange={handleStatusChange}
@@ -361,6 +361,13 @@ const UserManagement = () => {
                                 <option>Customer</option>
                                 <option>Technician</option>
                             </select>
+                            {/* Create Employee button (visible to Admins as this page is admin-only) */}
+                            <Link
+                                to="/employee-signup"
+                                className="bg-[#33e407] hover:bg-[#2bc906] text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap"
+                            >
+                                Create Employee
+                            </Link>
                         </div>
                     </div>
 

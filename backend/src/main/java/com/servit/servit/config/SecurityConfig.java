@@ -59,7 +59,9 @@ public class SecurityConfig {
                             "/quotation/denyQuotation/*",
                             "/auth/login/staff",
                             "/user/register/onboard",
-                            "/user/getUserCountInit"
+                            "/user/getUserCountInit",
+                            "/user/verifyOnboardingCode",
+                            "/user/completeOnboarding"
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
@@ -122,7 +124,8 @@ public class SecurityConfig {
                             "/quotation/addQuotation",
                             "/quotation/deleteQuotation/*",
                             "/quotation/getAllQuotation",
-                            "/quotation/getAllQuotationPaginated"
+                            "/quotation/getAllQuotationPaginated",
+                            "/user/createEmployee"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")

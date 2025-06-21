@@ -1,6 +1,9 @@
 package com.servit.servit.controller;
 
 import com.servit.servit.dto.*;
+import com.servit.servit.dto.AddEmployeeRequestDTO;
+import com.servit.servit.dto.VerifyOnboardingCodeRequestDTO;
+import com.servit.servit.dto.CompleteOnboardingRequestDTO;
 import com.servit.servit.service.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -227,5 +230,40 @@ public class UserController {
     @GetMapping("/getUserCountInit")
     public ResponseEntity<Long> getUserCountInit() {
         return ResponseEntity.ok(userSvc.getUserCount());
+    }
+
+    // ADMIN: Create new employee (Technician) account
+    @PostMapping("/createEmployee")
+    public ResponseEntity<?> createEmployee(@RequestBody AddEmployeeRequestDTO req) {
+        try {
+            userSvc.createEmployee(req);
+            return ResponseEntity.status(201).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error");
+        }
+    }
+
+    // EMPLOYEE: Verify onboarding code
+    @PostMapping("/verifyOnboardingCode")
+    public ResponseEntity<?> verifyOnboardingCode(@RequestBody VerifyOnboardingCodeRequestDTO req) {
+        try {
+            boolean ok = userSvc.verifyOnboardingCode(req);
+            return ResponseEntity.ok(ok);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // EMPLOYEE: Complete onboarding with password
+    @PostMapping("/completeOnboarding")
+    public ResponseEntity<?> completeOnboarding(@RequestBody CompleteOnboardingRequestDTO req) {
+        try {
+            userSvc.completeEmployeeOnboarding(req);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
