@@ -1,10 +1,10 @@
 import { useDrop } from "react-dnd"
 // import KanbanTask from "./KanbanTask"
 import KanbanCard from "./KanbanCard.jsx";
-const KanbanColumn = ({ title, tasks, onTaskDrop }) => {
+const KanbanColumn = ({ title, status, tasks, onTaskDrop }) => {
     const [{ isOver }, drop] = useDrop({
         accept: "task",
-        drop: (item) => onTaskDrop(item.id, title),
+        drop: (item) => onTaskDrop(item.id, status),
         collect: (monitor) => ({
             isOver: monitor.isOver(),
         }),

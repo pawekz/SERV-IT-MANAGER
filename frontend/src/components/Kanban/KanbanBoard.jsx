@@ -1,135 +1,141 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import KanbanColumn from "./KanbanColumn"
+import api from "../../services/api"
+import StatusChangeConfirmModal from "./StatusChangeConfirmModal"
+import Toast from "../Toast/Toast"
 
 const KanbanBoard = () => {
-    const [tasks, setTasks] = useState([
-        {
-            id: 1,
-            title: "iPhone 13 Screen",
-            ticketId: "Ticket #RT-2023-0042",
-            customer: "John Smith",
-            status: "New",
-            deviceType: "smartphone",
-        },
-        {
-            id: 2,
-            title: "MacBook Battery",
-            ticketId: "Ticket #RT-2023-0043",
-            customer: "Sarah Davis",
-            status: "New",
-            deviceType: "laptop",
-        },
-        {
-            id: 3,
-            title: "Dell XPS Keyboard",
-            ticketId: "Ticket #RT-2023-0039",
-            customer: "Emma Johnson",
-            status: "Diagnosing",
-            deviceType: "laptop",
-        },
-        {
-            id: 4,
-            title: "iPad Not Charging",
-            ticketId: "Ticket #RT-2023-0040",
-            customer: "Michael Brown",
-            status: "Diagnosing",
-            deviceType: "tablet",
-        },
-        {
-            id: 5,
-            title: "HP Laptop Fan",
-            ticketId: "Ticket #RT-2023-0041",
-            customer: "David Wilson",
-            status: "Diagnosing",
-            deviceType: "laptop",
-        },
-        {
-            id: 6,
-            title: "Surface Pro Screen",
-            ticketId: "Ticket #RT-2023-0037",
-            customer: "Lisa Rodriguez",
-            status: "Awaiting Parts",
-            deviceType: "tablet",
-        },
-        {
-            id: 7,
-            title: "iMac Graphics Card",
-            ticketId: "Ticket #RT-2023-0038",
-            customer: "Robert Taylor",
-            status: "Awaiting Parts",
-            deviceType: "monitor",
-        },
-        {
-            id: 8,
-            title: "iPhone 12 Battery",
-            ticketId: "Ticket #RT-2023-0035",
-            customer: "Jennifer White",
-            status: "Repairing",
-            deviceType: "smartphone",
-        },
-        {
-            id: 9,
-            title: "Samsung S21 Screen",
-            ticketId: "Ticket #RT-2023-0036",
-            customer: "Thomas Martin",
-            status: "Repairing",
-            deviceType: "smartphone",
-        },
-        {
-            id: 10,
-            title: "Lenovo Hinge Repair",
-            ticketId: "Ticket #RT-2023-0037",
-            customer: "Patricia Garcia",
-            status: "Repairing",
-            deviceType: "laptop",
-        },
-        {
-            id: 11,
-            title: "MacBook Pro SSD",
-            ticketId: "Ticket #RT-2023-0033",
-            customer: "Richard Moore",
-            status: "Done",
-            deviceType: "laptop",
-        },
-        {
-            id: 12,
-            title: "iPad Screen",
-            ticketId: "Ticket #RT-2023-0034",
-            customer: "Elizabeth Lee",
-            status: "Done",
-            deviceType: "tablet",
-        },
-        {
-            id: 13,
-            title: "Pixel 6 Camera",
-            ticketId: "Ticket #RT-2023-0035",
-            customer: "James Anderson",
-            status: "Done",
-            deviceType: "smartphone",
-        },
-        {
-            id: 14,
-            title: "Asus Keyboard",
-            ticketId: "Ticket #RT-2023-0036",
-            customer: "Susan Thompson",
-            status: "Done",
-            deviceType: "laptop",
-        },
-    ])
+    // All tasks fetched from the backend
+    const [tasks, setTasks] = useState([])
 
-    const columns = ["New", "Diagnosing", "Awaiting Parts", "Repairing", "Done"]
+    // Pending change info for modal confirmation
+    const [pendingChange, setPendingChange] = useState(null) // { taskId, prevStatus, newStatus }
+    const [isUpdating, setIsUpdating] = useState(false)
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" })
+
+    // Kanban columns mapped to backend statuses (RepairStatusEnum)
+    const columns = [
+        { title: "Received", status: "RECEIVED" },
+        { title: "Diagnosing", status: "DIAGNOSING" },
+        { title: "Awaiting Parts", status: "AWAITING_PARTS" },
+        { title: "Repairing", status: "REPAIRING" },
+        { title: "Ready for Pickup", status: "READY_FOR_PICKUP" },
+        { title: "Completed", status: "COMPLETED" },
+    ]
+
+    // Fetch tasks for every status on mount
+    useEffect(() => {
+        const fetchTickets = async () => {
+            try {
+                const promises = columns.map((col) =>
+                    api
+                        .get("/repairTicket/getRepairTicketsByStatusPageableAssignedToTech", {
+                            params: { status: col.status },
+                            validateStatus: (s) => s >= 200 && s < 300 || s === 204, // accept 204
+                        })
+                        .then((res) => ({ res, status: col.status }))
+                        .catch((err) => {
+                            console.warn(`Failed to fetch tickets for ${col.status}:`, err)
+                            return null
+                        })
+                )
+
+                const settled = await Promise.all(promises)
+
+                const fetchedTasks = []
+
+                settled.forEach((entry) => {
+                    if (!entry || !entry.res) return
+
+                    const { res, status } = entry
+
+                    if (res.status === 204 || !res.data) return // nothing to add
+
+                    const data = res.data
+
+                    const tickets = Array.isArray(data) ? data : data.content ?? []
+
+                    tickets.forEach((ticket) => {
+                        fetchedTasks.push({
+                            id: ticket.ticketNumber,
+                            title: ticket.reportedIssue || ticket.deviceModel || ticket.deviceBrand || "Repair Ticket",
+                            ticketId: ticket.ticketNumber,
+                            customer: ticket.customerName,
+                            status: ticket.repairStatus || status,
+                            deviceType: (ticket.deviceType || "").toLowerCase(),
+                        })
+                    })
+                })
+
+                setTasks(fetchedTasks)
+            } catch (error) {
+                console.error("Failed to fetch repair tickets for Kanban board", error)
+            }
+        }
+
+        fetchTickets()
+    }, [])
 
     const updateTaskStatus = (taskId, newStatus) => {
-        setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
+        setTasks((prev) => {
+            const task = prev.find((t) => t.id === taskId)
+            if (!task || task.status === newStatus) return prev
+
+            // Optimistically update UI
+            const updated = prev.map((t) =>
+                t.id === taskId ? { ...t, status: newStatus } : t
+            )
+
+            setPendingChange({ taskId, prevStatus: task.status, newStatus })
+            return updated
+        })
     }
 
-    const getTasksByStatus = (status) => {
-        return tasks.filter((task) => task.status === status)
+    const showToast = (message, type = "success") => setToast({ show: true, message, type })
+    const closeToast = () => setToast({ ...toast, show: false })
+
+    const handleConfirmChange = async () => {
+        if (!pendingChange) return
+        const task = tasks.find((t) => t.id === pendingChange.taskId)
+        try {
+            setIsUpdating(true)
+            const { data } = await api.patch("/repairTicket/updateRepairStatus", {
+                ticketNumber: task.ticketId, // ticketId stores ticketNumber
+                repairStatus: pendingChange.newStatus,
+            })
+
+            // Ensure UI reflects backend-confirmed status
+            if (data && data.newStatus) {
+                setTasks((prev) =>
+                    prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: data.newStatus } : t))
+                )
+            }
+
+            showToast(data?.message || "Status updated successfully")
+        } catch (error) {
+            console.error("Failed to update repair status", error)
+            // Revert UI on failure
+            setTasks((prev) => prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: pendingChange.prevStatus } : t)))
+            alert("Failed to update status. Please try again.")
+        } finally {
+            setIsUpdating(false)
+            setPendingChange(null)
+        }
     }
+
+    const handleCancelChange = () => {
+        if (pendingChange) {
+            // Revert UI
+            setTasks((prev) => prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: pendingChange.prevStatus } : t)))
+            setPendingChange(null)
+        }
+    }
+
+    const getTasksByStatus = (status) => tasks.filter((task) => task.status === status)
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -139,12 +145,25 @@ const KanbanBoard = () => {
                     <div className="flex gap-3 md:gap-4" style={{ minWidth: "800px" }}>
                         {columns.map((column) => (
                             <KanbanColumn
-                                key={column}
-                                title={column}
-                                tasks={getTasksByStatus(column)}
+                                key={column.status}
+                                title={column.title}
+                                status={column.status}
+                                tasks={getTasksByStatus(column.status)}
                                 onTaskDrop={updateTaskStatus}
                             />
                         ))}
+                        <StatusChangeConfirmModal
+                            isOpen={!!pendingChange}
+                            fromStatus={pendingChange?.prevStatus}
+                            toStatus={pendingChange?.newStatus}
+                            ticketNumber={tasks.find((t) => t.id === pendingChange?.taskId)?.ticketId}
+                            onConfirm={handleConfirmChange}
+                            onCancel={handleCancelChange}
+                            loading={isUpdating}
+                        />
+
+                        {/* Toast */}
+                        <Toast show={toast.show} message={toast.message} type={toast.type} onClose={closeToast} />
                     </div>
                 </div>
             </div>
