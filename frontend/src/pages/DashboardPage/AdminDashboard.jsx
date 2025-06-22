@@ -656,7 +656,8 @@ const AdminDashboard = () => {
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
-            <Sidebar />
+            <Sidebar  activePage={'dashboard'}/>
+
 
             {/*to seperate the sidebar and the main content*/}
             <div className="w-60  bg-gray-50 shadow-md">
