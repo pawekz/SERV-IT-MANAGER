@@ -2,6 +2,7 @@ import {BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom
 import LandingPage from "./pages/LandingPage/LandingPage";
 import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LoginPage from "./pages/LoginPage/LoginPage";
+import LoginStaffPage from "./pages/LoginPage/LoginStaffPage.jsx";
 import ContactPage from "./pages/ContactPage/ContactPage";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import AccountInformation from "./pages/AccountInformationPage/AccountInformation";
@@ -130,7 +131,7 @@ function App() {
                 <ProtectedRoute element={<CreateEmployeePage />} allowedRoles={['admin']} />
               } />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/login/staff" element={<LoginPage />} />
+              <Route path="/login/staff" element={<LoginStaffPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/quotation" element={<Quotation />} />
