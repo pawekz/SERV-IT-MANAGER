@@ -183,7 +183,7 @@ const SignatureCapturePad = ({
             {/* Signature Panel */}
             <div className="flex flex-col items-center max-w-2xl w-full mx-auto bg-white rounded-lg shadow-lg overflow-hidden min-w-[500px]">
                 <div className="flex w-full">
-                    <div className="w-1 bg-[#33e407]"></div>
+                    <div className="w-1 bg-[#25D482]"></div>
                     <div className="flex-1 p-8">
                         {/* ...header... */}
                         <div className="text-center mb-6">
@@ -228,7 +228,7 @@ const SignatureCapturePad = ({
                                     I accept the{" "}
                                     <button
                                         type="button"
-                                        className="underline text-[#33e407] hover:text-[#2dc406] focus:outline-none"
+                                        className="underline text-[#25D482] hover:text-[#2dc406] focus:outline-none"
                                         onClick={() => setShowTermsModal(true)}
                                     >
                                         terms and conditions
@@ -256,7 +256,7 @@ const SignatureCapturePad = ({
                                 </button>
                                 <button
                                     onClick={handleNext}
-                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2dc406] text-white rounded-md transition-colors"
+                                    className="px-6 py-2 bg-[#25D482] hover:bg-[#1fab6b] text-white rounded-md transition-colors"
                                 >
                                     Next
                                 </button>
