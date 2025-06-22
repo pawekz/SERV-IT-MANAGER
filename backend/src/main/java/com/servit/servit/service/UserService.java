@@ -498,7 +498,7 @@ public class UserService {
         String subject = "IOCONNECT Employee Onboarding Instructions";
         String message = "Hello " + formatName(req.getFirstName()) + ",\n\n" +
                 "Welcome to IOCONNECT! We've created your employee account. To activate it, please complete these steps:\n\n" +
-                "1. Open the Employee Onboarding page: https://app.ioconnect.com/employee-onboarding (or paste the link in your browser).\n" +
+                "1. Open the Employee Onboarding page: http://localhost:5173/employee-onboarding (or paste the link in your browser).\n" +
                 "2. In the form, enter **your email address** ( <b>" + req.getEmail() + "</b> ) in the Email field.\n" +
                 "3. Enter the **Onboarding Code** below in the Onboarding Code field.\n" +
                 "4. Click <b>Verify Code</b>. You will then be prompted to set a secure password and activate your account.\n\n" +

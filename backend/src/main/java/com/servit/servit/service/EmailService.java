@@ -37,7 +37,7 @@ public class EmailService {
                 "      <div class='otp-box'>" + otp + "</div>" +
                 "      <p>If you did not request this, please ignore this email.</p>" +
                 "    </div>" +
-                "    <div class='footer' style='text-align: center;'>© 2011 IOCONNECT. All rights reserved.</div>" +
+                "    <div class='footer' style='text-align: center;'>© 2025 IOCONNECT. All rights reserved.</div>" +
                 "  </div>" +
                 "</body>" +
                 "</html>";
