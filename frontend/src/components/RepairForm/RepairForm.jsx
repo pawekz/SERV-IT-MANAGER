@@ -278,7 +278,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                 </div>
                             </div>
                             <div className="mb-6">
-                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -291,7 +291,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Enter full name"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -304,12 +304,12 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Enter email address"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="customerPhoneNumber" className="block text-sm font-medium text-gray-700">Phone:</label>
-                                        <div className="flex items-center w-full border border-gray-300 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                        <div className="flex items-center w-full border border-gray-300 rounded-md focus-within:border-[#25D482] focus-within:ring-1 focus-within:ring-[#25D482] transition-colors overflow-hidden">
                                             <div className="flex items-center bg-gray-50 px-3 py-2 border-r border-gray-200">
                                                 <img
                                                     src="https://flagcdn.com/16x12/ph.png"
@@ -333,7 +333,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                 </div>
                             </div>
                             <div className="mb-6">
-                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -345,7 +345,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             onChange={handleChange}
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] bg-white"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482] bg-white"
                                         >
                                             <option value="" disabled hidden>Select device type</option>
                                             <option value="LAPTOP">LAPTOP</option>
@@ -362,7 +362,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Enter brand"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -374,7 +374,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Enter model"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -387,7 +387,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                 placeholder="Enter serial number"
                                                 required
                                                 disabled={success}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                             />
                                             {showQuestionMark && (
                                                 <button
@@ -418,7 +418,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Enter color"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -431,13 +431,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             onChange={handleChange}
                                             placeholder="Enter password"
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                         />
                                     </div>
                                 </div>
                             </div>
                             <div className="mb-6">
-                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">ACCESSORIES</h2>
                                 </div>
                                 <div className="space-y-4">
@@ -449,13 +449,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             onChange={handleChange}
                                             placeholder="Describe the accessories"
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482] min-h-[100px]"
                                         />
                                     </div>
                                 </div>
                             </div>
                             <div className="mb-6">
-                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">PROBLEM DESCRIPTION</h2>
                                 </div>
                                 <div className="space-y-4">
@@ -468,7 +468,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                             placeholder="Describe the issues you're experiencing"
                                             required
                                             disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482] min-h-[100px]"
                                         />
                                     </div>
                                     {status !== "new" && (
@@ -481,14 +481,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                 placeholder="Technician notes (optional)"
                                                 required
                                                 disabled={success}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] min-h-[100px]"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482] min-h-[100px]"
                                             />
                                         </div>
                                     )}
                                 </div>
                             </div>
                             <div className="mb-6">
-                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
                                 </div>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -607,7 +607,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                                    className="px-6 py-2 bg-[#25D482] hover:bg-[#1fab6b] transition text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                                 >
                                     Next
                                 </button>
@@ -658,7 +658,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                 <button
                                     type="button"
                                     onClick={closeTamperModal}
-                                    className="px-4 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none"
+                                    className="px-4 py-2 bg-[#25D482] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none"
                                 >
                                     Confirm
                                 </button>
