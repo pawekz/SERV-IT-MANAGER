@@ -92,7 +92,7 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
                             value={digit}
                             onChange={(e) => handleChange(e, idx)}
                             onKeyDown={(e) => handleKeyDown(e, idx)}
-                            className="w-10 h-10 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482]"
+                            className="w-10 h-10 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb]"
                             disabled={loading}
                         />
                     ))}
@@ -100,7 +100,7 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
                 <button
                     onClick={handleVerify}
                     disabled={loading || otpDigits.some(d => d === "")}
-                    className="w-full bg-[#25D482] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300 mb-2"
+                    className="w-full bg-[#2563eb] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300 mb-2"
                 >
                     {loading ? (
                         <span className="flex items-center justify-center">
@@ -112,7 +112,7 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
                 <button
                     onClick={onResend}
                     disabled={loading || cooldown > 0}
-                    className="w-full text-[#25D482] text-sm hover:underline disabled:text-gray-400 disabled:no-underline"
+                    className="w-full text-[#2563eb] text-sm hover:underline disabled:text-gray-400 disabled:no-underline"
                 >
                     {cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
                 </button>
@@ -156,14 +156,14 @@ const ForgotPasswordModal = ({
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482]"
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb]"
                         placeholder="Enter your email"
                         required
                         disabled={loading}
                     />
                     <button
                         type="submit"
-                        className="w-full bg-[#25D482] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
+                        className="w-full bg-[#2563eb] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
                         disabled={loading || !email}
                     >
                         {loading ? (
@@ -214,7 +214,7 @@ const NewPasswordModal = ({
                         type="password"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482]"
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb]"
                         placeholder="New password"
                         required
                         disabled={loading}
@@ -223,14 +223,14 @@ const NewPasswordModal = ({
                         type="password"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482]"
+                        className="w-full px-4 py-2 mb-4 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb]"
                         placeholder="Confirm new password"
                         required
                         disabled={loading}
                     />
                     <button
                         type="submit"
-                        className="w-full bg-[#25D482] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
+                        className="w-full bg-[#2563eb] text-white rounded py-2 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
                         disabled={loading || !password || !confirmPassword}
                     >
                         {loading ? (
@@ -725,7 +725,7 @@ const LoginPage = () => {
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-xl shadow-2xl relative overflow-hidden">
-                <div className="absolute left-0 top-0 w-1.5 h-full bg-[#25D482]"></div> {/* Accent line */}
+                <div className="absolute left-0 top-0 w-1.5 h-full bg-[#2563eb]"></div> {/* Accent line */}
                 <div className="p-8 md:p-10">
                     <div className="text-center mb-8">
                         <div className="text-3xl font-bold text-gray-800">
@@ -753,7 +753,7 @@ const LoginPage = () => {
                                 id="username"
                                 value={formData.username}
                                 onChange={handleLoginChange}
-                                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482]"
+                                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
                                 placeholder="Enter your username or email"
                                 required
                             />
@@ -771,14 +771,14 @@ const LoginPage = () => {
                                     id="password"
                                     value={formData.password}
                                     onChange={handleLoginChange}
-                                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482]"
+                                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
                                     placeholder="Enter your password"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={togglePasswordVisibility}
-                                    className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-500 hover:text-[#25D482]"
+                                    className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-500 hover:text-[#2563eb]"
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? "Hide" : "Show"}
@@ -788,7 +788,7 @@ const LoginPage = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#25D482] rounded-md hover:bg-[#1fab6b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#25D482] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#2563eb] rounded-md hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">
@@ -806,7 +806,7 @@ const LoginPage = () => {
                                 setShowForgotOTPModal(false);
                                 setShowNewPasswordModal(false);
                             }}
-                            className="block w-full text-center mt-4 text-sm font-medium text-[#25D482] hover:underline bg-transparent border-none p-0"
+                            className="block w-full text-center mt-4 text-sm font-medium text-[#2563eb] hover:underline bg-transparent border-none p-0"
                         >
                             Forgot password?
                         </button>
@@ -817,7 +817,7 @@ const LoginPage = () => {
                         <div className="flex-1 h-px bg-gray-200"></div>
                     </div>
                     <div className="text-center mt-4 text-sm text-gray-600">
-                        Don't have an account? <a href="/signup" className="text-[#25D482] font-medium hover:underline">Sign Up</a>
+                        Don't have an account? <a href="/signup" className="text-[#2563eb] font-medium hover:underline">Sign Up</a>
                     </div>
                 </div>
             </div>

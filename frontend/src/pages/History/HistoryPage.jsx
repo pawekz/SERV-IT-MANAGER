@@ -200,11 +200,11 @@ const HistoryPage = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyPress={e => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] focus:border-[#33e407]"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] focus:border-[#25D482]"
           />
           <button 
             onClick={handleSearch}
-            className="px-4 py-2 bg-[#33e407] text-white rounded-md hover:bg-[#2bc406] transition-colors"
+            className="px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] transition-colors"
           >
             Search
           </button>
@@ -238,7 +238,7 @@ const HistoryPage = () => {
                 {!loadingMore && hasMore && (
                   <button
                     onClick={handleLoadMore}
-                    className="px-6 py-3 bg-[#33e407] text-white rounded-md hover:bg-[#2bc406] transition-colors font-medium"
+                    className="px-6 py-3 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] transition-colors font-medium"
                   >
                     Load More
                   </button>

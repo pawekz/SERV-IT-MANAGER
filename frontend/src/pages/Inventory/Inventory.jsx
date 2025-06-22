@@ -968,7 +968,8 @@ const Inventory = () => {
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
             {/* Sidebar */}
-            <Sidebar />
+            <Sidebar activePage={"inventory"}/>
+
 
             {/* Main Content */}
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
@@ -1010,7 +1011,7 @@ const Inventory = () => {
                                 </button>
                                 <button
                                     onClick={() => setShowAddModal(true)}
-                                    className="px-4 py-2 bg-[#33e407] text-white rounded-md flex items-center hover:bg-[#2bb406] transition-colors shadow-sm hover:shadow-md"
+                                    className="px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
                                     title="Add a single new part to inventory"
                                 >
                                     <Plus size={16} className="mr-1" />

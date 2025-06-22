@@ -333,7 +333,7 @@ const SignUpPage = () => {
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
             <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-md relative overflow-hidden">
-                <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
+                <div className="absolute left-0 top-0 w-1 h-full bg-[#25D482]"></div>
                 <div className="text-center mb-2">
                     <div className="text-2xl font-bold text-gray-800 tracking-wide">
                         IO<span className="text-[#33e407]">CONNECT</span>
@@ -362,7 +362,7 @@ const SignUpPage = () => {
                                 id="firstName"
                                 value={formData.firstName}
                                 onChange={handleNameInput}
-                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                                 placeholder="First name"
                                 required
                             />
@@ -374,7 +374,7 @@ const SignUpPage = () => {
                                 id="lastName"
                                 value={formData.lastName}
                                 onChange={handleNameInput}
-                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                                 placeholder="Last name"
                                 required
                             />
@@ -387,7 +387,7 @@ const SignUpPage = () => {
                             id="username"
                             value={formData.username}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                             placeholder="Enter your username"
                             required
                         />
@@ -399,14 +399,14 @@ const SignUpPage = () => {
                             id="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                             placeholder="Enter your email"
                             required
                         />
                     </div>
                     <div className="mb-5">
                         <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-600">Phone Number</label>
-                        <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                        <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#25D482] focus-within:ring-1 focus-within:ring-[#25D482] transition-colors overflow-hidden">
                             <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
                                 <img
                                     src="https://flagcdn.com/16x12/ph.png"
@@ -438,7 +438,7 @@ const SignUpPage = () => {
                                 className={`w-full px-4 py-3 text-sm border rounded-md focus:outline-none transition-colors ${
                                     formData.password ?
                                         (isPasswordValid ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500')
-                                        : 'border-gray-200 focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407]'
+                                        : 'border-gray-200 focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482]'
                                 }`}
                                 placeholder="Create a password"
                                 required
@@ -516,7 +516,7 @@ const SignUpPage = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#33e407] rounded-md hover:bg-[#2bc906] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#25D482] rounded-md hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
@@ -532,7 +532,7 @@ const SignUpPage = () => {
                     <div className="flex-1 h-px bg-gray-200"></div>
                 </div>
                 <div className="text-center mt-4 text-sm text-gray-600">
-                    Already have an account? <a href="/login" className="text-[#33e407] font-medium hover:underline">Login</a>
+                    Already have an account? <a href="/login" className="text-[#25D482] font-medium hover:underline">Login</a>
                 </div>
             </div>
 
@@ -575,7 +575,7 @@ const SignUpPage = () => {
                                     ref={el => inputsRef.current[idx] = el}
                                     onChange={e => handleOtpChange(e, idx)}
                                     onKeyDown={e => handleOtpKeyDown(e, idx)}
-                                    className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#33e407] transition-colors"
+                                    className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] transition-colors"
                                 />
                             ))}
                         </div>
@@ -584,7 +584,7 @@ const SignUpPage = () => {
                             <button
                                 onClick={handleVerifyOTP}
                                 disabled={otpLoading || otpDigits.some(d => d === "")}
-                                className="w-full bg-[#33e407] text-white rounded py-3 font-medium hover:bg-[#2bc906] transition-colors disabled:bg-gray-300"
+                                className="w-full bg-[#25D482] text-white rounded py-3 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
                             >
                                 {otpLoading ? (
                                     <span className="flex items-center justify-center">
@@ -597,7 +597,7 @@ const SignUpPage = () => {
                             <button
                                 onClick={handleResendOTP}
                                 disabled={otpLoading || resendCooldown > 0}
-                                className="w-full text-[#33e407] text-sm py-2 hover:underline disabled:text-gray-400 disabled:no-underline"
+                                className="w-full text-[#25D482] text-sm py-2 hover:underline disabled:text-gray-400 disabled:no-underline"
                             >
                                 {resendCooldown > 0 ? `Resend OTP Code (${resendCooldown}s)` : "Resend OTP Code"}
                             </button>

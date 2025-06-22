@@ -201,7 +201,7 @@ const RepairQueue = () => {
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#25D482] focus:border-transparent"
                             />
                             <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
                         </div>
@@ -254,7 +254,7 @@ const RepairQueue = () => {
 
                                     </div>
                                     <Link to="/newrepair">
-                                        <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                        <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
                                             <Plus className="w-5 h-5 mr-1" />
                                             Add Ticket
                                         </button>
@@ -277,7 +277,7 @@ const RepairQueue = () => {
                                                 <div
                                                     key={request.id}
                                                     onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
 
@@ -289,7 +289,7 @@ const RepairQueue = () => {
 
                                                         <p className="text-[12px]">Ticket Number</p>
                                                     </div>
-                                                    <div className="my-2 h-px bg-[#33e407]">
+                                                    <div className="my-2 h-px bg-[#25D482]">
                                                     </div>
 
                                                     <div>
@@ -351,14 +351,14 @@ const RepairQueue = () => {
                                                 <div
                                                     key={request.id}
                                                     onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
                                                         <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
                                                         <p className="text-[12px]">Ticket Number</p>
 
                                                     </div>
-                                                    <div className="my-2 h-px bg-[#33e407]"></div>
+                                                    <div className="my-2 h-px bg-[#25D482]"></div>
 
                                                     <div>
                                                         <h2 className="text-lg font-semibold text-gray-800 mb-1">

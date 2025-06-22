@@ -246,20 +246,20 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     >
                         Back
                     </button>
-                    <a
-                        href={pdfUrl || "#"}
-                        download={
-                            (kind === "repair"
-                                ? (formData.ticketNumber || "repair_ticket")
-                                : (formData.warrantyNumber || "warranty_ticket")) + ".pdf"
-                        }
-                        className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
-                        style={{ display: pdfUrl ? "inline-block" : "none" }}
-                    >
-                        Download PDF
-                    </a>
+                    {/*<a*/}
+                    {/*    href={pdfUrl || "#"}*/}
+                    {/*    download={*/}
+                    {/*        (kind === "repair"*/}
+                    {/*            ? (formData.ticketNumber || "repair_ticket")*/}
+                    {/*            : (formData.warrantyNumber || "warranty_ticket")) + ".pdf"*/}
+                    {/*    }*/}
+                    {/*    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"*/}
+                    {/*    style={{ display: pdfUrl ? "inline-block" : "none" }}*/}
+                    {/*>*/}
+                    {/*    Download PDF*/}
+                    {/*</a>*/}
                     <button
-                        className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407]"
+                        className="px-6 py-2 bg-[#25D482] hover:bg-[#1fab6b] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                         onClick={success ? handleFinishClick : handleSubmit}
                         disabled={loading}
                     >
@@ -272,7 +272,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full relative animate-fadeIn border border-gray-100">
                         <div className="flex justify-center mb-4">
                             <div className="bg-green-100 rounded-full p-3">
-                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#33e407">
+                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#25D482">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
@@ -281,7 +281,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         <p className="text-center text-gray-500 mb-6 text-sm">What would you like to do next?</p>
                         <div className="flex flex-col gap-2">
                             <button
-                                className="w-full px-5 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white rounded-lg font-medium transition"
+                                className="w-full px-5 py-2 bg-[#25D482] hover:bg-[#2bc106] text-white rounded-lg font-medium transition"
                                 onClick={handleSubmitAnother}
                             >
                                 Submit Another Ticket

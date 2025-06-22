@@ -337,14 +337,14 @@ const UserManagement = () => {
                                 placeholder="Search by email..."
                                 value={searchTerm}
                                 onChange={handleSearch}
-                                className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                             />
                         </div>
                         <div className="flex gap-3 items-center">
                             <select
                                 value={selectedStatus}
                                 onChange={handleStatusChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                             >
                                 <option>All Status</option>
                                 <option>Active</option>
@@ -354,7 +354,7 @@ const UserManagement = () => {
                             <select
                                 value={selectedRole}
                                 onChange={handleRoleChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                             >
                                 <option>All Roles</option>
                                 <option>Admin</option>
@@ -364,7 +364,7 @@ const UserManagement = () => {
                             {/* Create Employee button (visible to Admins as this page is admin-only) */}
                             <Link
                                 to="/employee-signup"
-                                className="bg-[#33e407] hover:bg-[#2bc906] text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap"
+                                className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap"
                             >
                                 Create Employee
                             </Link>
@@ -434,7 +434,7 @@ const UserManagement = () => {
                                                         <select  name="role"
                                                                  value={editFormData.role}
                                                                  onChange={handleInputChange}
-                                                                 className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                                                 className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                                                         >
                                                             <option hidden>
                                                                 {currentUsers.role.charAt(0).toUpperCase()+currentUsers.role.toLowerCase().slice(1)}
@@ -451,7 +451,7 @@ const UserManagement = () => {
                                                 <div className="flex gap-2">
                                                     {/*Edit button*/}
                                                     {editIndex === index ? (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(currentUsers, index)} >
+                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(currentUsers, index)} >
                                                             <CheckCheck size={16} />
                                                         </button>
 
@@ -463,7 +463,7 @@ const UserManagement = () => {
                                                     {/*Delete button*/}
                                                     {currentUsers.status === "Inactive" ? (
                                                         <button
-                                                            className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#33e407] border-none cursor-pointer transition-all hover:bg-red-100"
+                                                            className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-red-100"
                                                             onClick={() => handleReactivate(currentUsers)}
                                                         >
                                                             <Activity size={16} />
@@ -506,7 +506,7 @@ const UserManagement = () => {
                                 className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
                                     currentPage === 1
                                         ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
-                                        : 'bg-white text-gray-600 hover:border-[#33e407] hover:text-[#33e407]'
+                                        : 'bg-white text-gray-600 hover:border-[#25D482] hover:text-[#25D482]'
                                 }`}
                             >
                                 <ChevronLeft size={16} />
@@ -520,8 +520,8 @@ const UserManagement = () => {
                                         onClick={() => setCurrentPage(pageNum)}
                                         className={`flex items-center justify-center min-w-8 h-8 rounded text-sm ${
                                             currentPage === pageNum
-                                                ? 'bg-[#33e407] text-white border-none'
-                                                : 'bg-white text-gray-600 border border-gray-300 hover:border-[#33e407] hover:text-[#33e407]'
+                                                ? 'bg-[#25D482] text-white border-none'
+                                                : 'bg-white text-gray-600 border border-gray-300 hover:border-[#25D482] hover:text-[#25D482]'
                                         }`}
                                     >
                                         {pageNum}
@@ -535,7 +535,7 @@ const UserManagement = () => {
                                 className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
                                     currentPage === totalPages
                                         ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
-                                        : 'bg-white text-gray-600 hover:border-[#33e407] hover:text-[#33e407]'
+                                        : 'bg-white text-gray-600 hover:border-[#25D482] hover:text-[#25D482]'
                                 }`}
                             >
                                 <ChevronRight size={16} />

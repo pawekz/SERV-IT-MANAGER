@@ -656,7 +656,8 @@ const AdminDashboard = () => {
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
-            <Sidebar />
+            <Sidebar  activePage={'dashboard'}/>
+
 
             {/*to seperate the sidebar and the main content*/}
             <div className="w-60  bg-gray-50 shadow-md">
@@ -690,7 +691,7 @@ const AdminDashboard = () => {
                         <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
 
                         <Link to="/newrepair">
-                            <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                            <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
                                 <Plus className="w-5 h-5 mr-1" />
                                 Add Ticket
                             </button>

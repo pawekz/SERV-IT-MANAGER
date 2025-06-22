@@ -225,8 +225,9 @@ const TechnicianDashboard = () => {
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
+
             <div className="w-60 bg-gray-50 shadow-md">
-                <Sidebar />
+                <Sidebar  activePage={'dashboard'}/>
             </div>
 
             {/* Main Content Area */}
@@ -257,7 +258,7 @@ const TechnicianDashboard = () => {
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">My Tasks Today</h1>
 
                             <Link to="/newrepair">
-                                <button className="flex items-center bg-[#33e407] text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                                <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
                                     <Plus className="w-5 h-5 mr-1" />
                                     Add Ticket
                                 </button>

@@ -66,25 +66,25 @@ export default function NewRepair() {
     return (
         <div className="container mx-auto py-8 px-4 max-w-4xl">
             <ol className="flex justify-center items-center w-full max-w-xl mx-auto ml-56">
-                <li className={`flex w-full items-center text-[#33e407] dark:text-[#33e407] after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
+                <li className={`flex w-full items-center text-[#25D482] dark:text-[#25D482] after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
                     step > 0
-                        ? "after:border-[#33e407]/20 dark:after:border-[#33e407]/40"
+                        ? "after:border-[#25D482]/20 dark:after:border-[#25D482]/40"
                         : "after:border-gray-100 dark:after:border-gray-700"
                 }`}>
-                <span className="flex items-center justify-center w-10 h-10 bg-[#33e407]/20 rounded-full lg:h-12 lg:w-12 dark:bg-[#33e407]/30 shrink-0">
-                    <svg className="w-4 h-4 lg:w-5 lg:h-5 text-[#33e407] dark:text-[#33e407]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
+                <span className="flex items-center justify-center w-10 h-10 bg-[#25D482]/20 rounded-full lg:h-12 lg:w-12 dark:bg-[#25D482]/30 shrink-0">
+                    <svg className="w-4 h-4 lg:w-5 lg:h-5 text-[#25D482] dark:text-[#25D482]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
                         <path d="M18 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2ZM6.5 3a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3.014 13.021l.157-.625A3.427 3.427 0 0 1 6.5 9.571a3.426 3.426 0 0 1 3.322 2.805l.159.622-6.967.023ZM16 12h-3a1 1 0 0 1 0-2h3a1 1 0 0 1 0 2Zm0-3h-3a1 1 0 1 1 0-2h3a1 1 0 1 1 0 2Zm0-3h-3a1 1 0 1 1 0-2h3a1 1 0 1 1 0 2Z" />
                     </svg>
                 </span>
                 </li>
                 <li className={`flex w-full items-center after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block ${
                     step === 2
-                        ? "after:border-[#33e407]/20 dark:after:border-[#33e407]/40"
+                        ? "after:border-[#25D482]/20 dark:after:border-[#25D482]/40"
                         : "after:border-gray-100 dark:after:border-gray-700 text-gray-500 dark:text-gray-700"
                 }`}>
                 <span className={`flex items-center justify-center w-10 h-10 rounded-full lg:h-12 lg:w-12 shrink-0 ${
                     step > 0
-                        ? "bg-[#33e407]/20 dark:bg-[#33e407]/30 text-[#33e407] dark:text-[#33e407]"
+                        ? "bg-[#25D482]/20 dark:bg-[#25D482]/30 text-[#25D482] dark:text-[#25D482]"
                         : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-100"
                 }`}>
                     <svg className="w-4 h-4 lg:w-5 lg:h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
@@ -95,7 +95,7 @@ export default function NewRepair() {
                 <li className="flex items-center w-full">
                 <span className={`flex items-center justify-center w-10 h-10 rounded-full lg:h-12 lg:w-12 shrink-0 ${
                     step === 2
-                        ? "bg-[#33e407]/20 dark:bg-[#33e407]/30 text-[#33e407] dark:text-[#33e407]"
+                        ? "bg-[#25D482]/20 dark:bg-[#25D482]/30 text-[#25D482] dark:text-[#25D482]"
                         : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-100"
                 }`}>
                     <svg className="w-3.5 h-3.5 lg:w-4 lg:h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
