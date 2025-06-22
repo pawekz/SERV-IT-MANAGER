@@ -102,7 +102,7 @@ const BackUpPage = () => {
                         <button
                             onClick={handleManualBackup}
                             disabled={actionLoading}
-                            className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-[#33e407] hover:bg-[#2bc706] disabled:bg-gray-400"
+                            className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-[#25D482] hover:bg-[#1fab6b] disabled:bg-gray-400"
                         >
                             <HardDriveDownload className="mr-2" />
                             {actionLoading ? 'Backing up...' : 'Manual Back Up'}
