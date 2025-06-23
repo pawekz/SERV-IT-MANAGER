@@ -28,8 +28,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         returnReason: '' ,
         serialNumber: '' ,
         techObservation: '',
-        warrantyPhotosUrls: [],
-        digitalSignature: null // will be set after signing
+        warrantyPhotosUrls: []
     }));
     const [reason, setReason] = useState({
         warrantyNumber: data.warrantyNumber,
@@ -55,6 +54,8 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     const token = localStorage.getItem("authToken");
                     if (!token) throw new Error("Not authenticated. Please log in.");
 
+                    console.log(token)
+
                     const response = await fetch(`http://localhost:8080${src}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -75,6 +76,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
             fetchImageWithAuth();
         }, [src]);
+
 
         if (!imageUrl) {
             return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />; // Skeleton while loading

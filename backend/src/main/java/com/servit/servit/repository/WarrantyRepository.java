@@ -18,7 +18,7 @@ public interface WarrantyRepository extends JpaRepository<WarrantyEntity, Long> 
 
     List<WarrantyEntity> findByCustomerEmail(String email);
 
-    @Query(value = "SELECT warranty_number FROM warranty WHERE warranty_number LIKE 'IOWR-%' ORDER BY warranty_id DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT warranty_number FROM warranty WHERE warranty_number LIKE 'IORMA-%' ORDER BY warranty_id DESC LIMIT 1", nativeQuery = true)
     String findLastWarrantyNumber();
 
     @Query("SELECT w FROM WarrantyEntity w WHERE w.customerEmail = :email AND (" +

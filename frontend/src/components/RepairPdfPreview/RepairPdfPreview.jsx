@@ -153,12 +153,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 if (formData.returnReason) {
                     form.append("returnReason", formData.returnReason.toString());
                 }
-                if (signatureDataURL) {
-                    const signatureBlob = dataURLtoBlob(signatureDataURL);
-                    form.append("digitalSignature", signatureBlob, "signature.png");
-                } else {
-                    throw new Error("Digital signature is required");
-                }
                 if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
                     formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
                         if (base64DataURL) {
@@ -267,7 +261,8 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </button>
                 </div>
             </div>
-            {showDialog && (
+            {showDialog ? (
+                kind === "repair" ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full relative animate-fadeIn border border-gray-100">
                         <div className="flex justify-center mb-4">
@@ -319,7 +314,40 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         `}</style>
                     </div>
                 </div>
-            )}
+            ): kind === "warranty" ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full relative animate-fadeIn border border-gray-100">
+                <div className="flex justify-center mb-4">
+                <div className="bg-green-100 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#25D482">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                </div>
+                </div>
+                    <h2 className="text-xl font-semibold text-center text-gray-900 mb-1">Warranty Checked In</h2>
+                    <p className="text-center text-gray-500 mb-6 text-sm">Please bring the device to the store to proceed.</p>
+                    <button
+                        className="absolute top-3 right-3 text-gray-300 hover:text-red-400 transition"
+                        onClick={() => setShowDialog(false)}
+                        aria-label="Close"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <style>{`
+                                            @keyframes fadeIn {
+                                                from { opacity: 0; transform: scale(0.97);}
+                                                to { opacity: 1; transform: scale(1);}
+                                            }
+                                            .animate-fadeIn {
+                                                animation: fadeIn 0.18s cubic-bezier(0.4,0,0.2,1);
+                                            }
+                                        `}</style>
+                </div>
+                </div>
+                ) : null
+            ) : null}
             <Toast
                 show={toast.show}
                 message={toast.message}

@@ -5,6 +5,7 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import RequestReturn from "../../components/RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import CheckWarranty from "../../components/CheckWarranty/CheckWarranty.jsx";
+import WarrantyDetails from "../../components/WarrantyDetails/WarrantyDetails.jsx";
 
 
 
@@ -315,7 +316,7 @@ const WarrantyRequestPage = () => {
                                                             onClick={() => handleCardClick(request)}
                                                             className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition overflow-hidden"
                                                         >
-                                                            <div className="mr-4 flex items-start">{getProductIcon(request.deviceType)}</div>
+                                                            <div className="mr-4 flex items-start">{getProductIcon(request.deviceName)}</div>
                                                             <div>
                                                                 <h2 className="text-lg font-semibold text-gray-800 mb-1">
                                                                     {request.serialNumber}
@@ -429,7 +430,7 @@ const WarrantyRequestPage = () => {
                                                                         : "text-green-600"
                                                                 }`}
                                                             >
-                                                                Status: {request.status}
+                                                                Status: {request.status.replace(/_/g, " ")}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -438,19 +439,24 @@ const WarrantyRequestPage = () => {
                                     )}
                                 </section>
 
-                                {/* View-Only Modal */}
-                                <WarrantyRequest
-                                    isOpen={modalOpen}
-                                    onClose={onClose}
-                                    data={selectedRequest}
-                                    onSuccess={() => {
-                                        if (role === "customer") {
-                                            fetchWarrantiesbyemail(userData.email);
-                                        } else {
-                                            fetchWarranties();
-                                        }
-                                    }}
-                                />
+                                {/* Warranty Modal */}
+                                {role === "customer" ? (
+                                    <WarrantyDetails
+                                        isOpen={modalOpen}
+                                        onClose={onClose}
+                                        data={selectedRequest}
+                                        onSuccess={() => fetchWarrantiesbyemail(userData.email)}
+                                    />
+                                ) : (
+                                    (role === "technician" || role === "admin") && (
+                                        <WarrantyRequest
+                                            isOpen={modalOpen}
+                                            onClose={onClose}
+                                            data={selectedRequest}
+                                            onSuccess={() => fetchWarranties()}
+                                        />
+                                    )
+                                )}
                             </>
                         )}
                     </div>
