@@ -1174,7 +1174,7 @@ const Inventory = () => {
                                 paginatedItems={paginatedItems}
                                 searchQuery={searchQuery}
                                 expandedGroups={expandedGroups}
-                                isAdmin={isAdmin}
+                                isAdmin={isAdmin()}
                                 onToggleGroupExpansion={toggleGroupExpansion}
                                 onDescriptionClick={handleDescriptionClick}
                                 onStockSettings={handleStockSettings}
