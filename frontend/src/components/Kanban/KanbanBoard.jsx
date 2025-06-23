@@ -115,6 +115,21 @@ const KanbanBoard = () => {
                 )
             }
 
+            // If ticket moved to AWAITING_PARTS, create a draft quotation (if not exists)
+            if (data?.newStatus === "AWAITING_PARTS") {
+                try {
+                    await api.post("/quotation/addQuotation", {
+                        repairTicketNumber: task.ticketId,
+                        partIds: [],
+                        laborCost: 0,
+                        totalCost: 0,
+                    })
+                } catch (qErr) {
+                    // Silently ignore if quotation already exists or fails
+                    console.warn("Failed to create quotation draft", qErr)
+                }
+            }
+
             showToast(data?.message || "Status updated successfully")
         } catch (error) {
             console.error("Failed to update repair status", error)

@@ -1,5 +1,6 @@
 import { useDrag } from "react-dnd";
 import { Smartphone, Laptop, Tablet, Monitor } from "lucide-react";
+import { Link } from "react-router-dom";
 
 // Reusable Kanban card representing a single repair ticket or task.
 // Extracted from the previous inline implementation for better reuse and readability.
@@ -44,6 +45,14 @@ const KanbanCard = ({ task }) => {
           <div className="font-medium text-sm">{task.title}</div>
           <div className="text-xs text-gray-500">{task.ticketId}</div>
           <div className="text-xs mt-1">{task.customer}</div>
+          {task.status === "AWAITING_PARTS" && (
+            <Link
+              to={`/quotationeditor?ticketNumber=${encodeURIComponent(task.ticketId)}`}
+              className="inline-block mt-1 text-xs text-green-600 hover:underline"
+            >
+              Build Quotation
+            </Link>
+          )}
         </div>
       </div>
     </div>
