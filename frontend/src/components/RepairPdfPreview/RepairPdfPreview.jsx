@@ -15,6 +15,7 @@ function dataURLtoBlob(dataURL) {
 
 const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess, kind }) => {
     const [loading, setLoading] = useState(false);
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [error, setError] = useState(null);
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
     const [showDialog, setShowDialog] = useState(false);
@@ -141,6 +142,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
             }
         } else {
             try {
+                console.log("Form Data:", userData.email);
                 const token = localStorage.getItem("authToken");
                 if (!token) throw new Error("Not authenticated. Please log in.");
                 const form = new FormData();
@@ -150,9 +152,34 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 if (formData.status) {
                     form.append("status", formData.status.toString());
                 }
+                if (userData.email) {
+                    form.append("technicianEmail", userData.email.toString());
+                }
+
                 if (formData.returnReason) {
                     form.append("returnReason", formData.returnReason.toString());
                 }
+
+                if (formData.color) {
+                    form.append("color", formData.color.toString());
+                }
+
+                if (formData.password) {
+                    form.append("password", formData.password.toString());
+                }
+
+                if (formData.accessories) {
+                    form.append("accessories", formData.accessories.toString());
+                }
+
+                if (formData.type) {
+                    form.append("deviceType", formData.type.toString());
+                }
+
+                if (formData.techObservation) {
+                    form.append("techObservation", formData.techObservation.toString());
+                }
+
                 if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
                     formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
                         if (base64DataURL) {
@@ -161,6 +188,9 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
+
+                console.log("Form Data:");
+                [...form.entries()].forEach(([key, value]) => console.log(key, value));
                 const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
                     method: "PATCH",
                     headers: { Authorization: `Bearer ${token}` },

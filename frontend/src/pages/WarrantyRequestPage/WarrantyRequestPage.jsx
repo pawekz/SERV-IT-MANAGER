@@ -440,22 +440,28 @@ const WarrantyRequestPage = () => {
                                 </section>
 
                                 {/* Warranty Modal */}
-                                {role === "customer" ? (
-                                    <WarrantyDetails
-                                        isOpen={modalOpen}
-                                        onClose={onClose}
-                                        data={selectedRequest}
-                                        onSuccess={() => fetchWarrantiesbyemail(userData.email)}
-                                    />
-                                ) : (
-                                    (role === "technician" || role === "admin") && (
-                                        <WarrantyRequest
-                                            isOpen={modalOpen}
-                                            onClose={onClose}
-                                            data={selectedRequest}
-                                            onSuccess={() => fetchWarranties()}
-                                        />
-                                    )
+                                {modalOpen && (
+                                    <>
+                                        {role === "customer" && (
+                                            <WarrantyDetails
+                                                key="customer"
+                                                isOpen={modalOpen}
+                                                onClose={onClose}
+                                                data={selectedRequest}
+                                                onSuccess={() => fetchWarrantiesbyemail(userData.email)}
+                                            />
+                                        )}
+
+                                        {(role === "technician" || role === "admin") && (
+                                            <WarrantyRequest
+                                                key="staff"
+                                                isOpen={modalOpen}
+                                                onClose={onClose}
+                                                data={selectedRequest}
+                                                onSuccess={() => fetchWarranties()}
+                                            />
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}

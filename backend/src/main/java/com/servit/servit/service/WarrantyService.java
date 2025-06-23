@@ -133,6 +133,7 @@ public class WarrantyService {
         dto.setTechObservation(warranty.getTechObservation());
         dto.setBrand(partEntity.getBrand());
         dto.setModel(partEntity.getModel());
+        dto.setKind(warranty.getKind());
 
         if (warranty.getWarrantyPhotos() != null) {
             dto.setWarrantyPhotosUrls(
@@ -246,11 +247,11 @@ public class WarrantyService {
         if (newStatus == WarrantyStatus.ITEM_RETURNED) {
             warranty.setTechObservation(request.getTechObservation());
 
-//            UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
-//                    .orElseThrow(() -> {
-//                        logger.warn("Technician not found: {}", req.getTechnicianEmail());
-//                        return new IllegalArgumentException("Technician not found");
-//                    });
+            UserEntity technician = userRepository.findByEmail(request.getTechnicianEmail())
+                    .orElseThrow(() -> {
+                        logger.warn("Technician not found: {}", request.getTechnicianEmail());
+                        return new IllegalArgumentException("Technician not found" + request.getTechnicianEmail());
+                    });
 
             AtomicInteger counter = new AtomicInteger(1);
             try {
@@ -296,18 +297,20 @@ public class WarrantyService {
                 ticket.setReportedIssue(warranty.getReportedIssue());
                 ticket.setObservations(warranty.getTechObservation());
 
-                ticket.setTechnicianEmail(null);
-                ticket.setTechnicianName(null);
+                ticket.setTechnicianEmail(technician.getEmail());
+                ticket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+                ticket.setRepairPhotos(request.getWarrantyPhotosUrls());
 
                 if (warranty.getItem() != null) {
-                    ticket.setDeviceType(warranty.getItem().getPartType().toString());
-                    ticket.setDeviceColor(null);
+                    ticket.setDeviceType(request.getDeviceType());
+                    ticket.setDeviceColor(request.getColor());
                     ticket.setDeviceSerialNumber(warranty.getItem().getSerialNumber());
                     ticket.setDeviceModel(warranty.getItem().getModel());
                     ticket.setDeviceBrand(warranty.getItem().getBrand());
-                    ticket.setDevicePassword(null);
-                    ticket.setAccessories(null);
-                    ticket.setIsDeviceTampered(null);
+                    ticket.setDevicePassword(request.getPassword());
+                    ticket.setAccessories(request.getAccessories());
+                    ticket.setIsDeviceTampered(false);
+
                 }
 
                 repairTicketService.checkInRepairTicket(ticket);
@@ -343,6 +346,11 @@ public class WarrantyService {
             warranty.setDocumentPath(pdfPath);
 
             warrantyRepository.save(warranty);
+
+            if(Objects.equals(warranty.getKind(), "IN_WARRANTY_REPAIR")){
+
+                repairTicketService.uploadRepairTicketPdf(warrantyNumber,file);
+            }
 
 
             try {

@@ -11,6 +11,10 @@ public class UpdateWarrantyStatusDTO {
     private String status;
     private String returnReason;
     private String techObservation;
-    private String TechnicianEmail;
+    private String technicianEmail;
+    private String color;
+    private String password;
+    private String accessories;
+    private String deviceType;
     private List<MultipartFile> warrantyPhotosUrls;
 }
