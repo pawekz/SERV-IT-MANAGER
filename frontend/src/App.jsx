@@ -13,7 +13,7 @@ import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
 import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
 import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
 import Sidebar from "./components/SideBar/Sidebar.jsx";
-import InventoryAssignmentPanel from "./pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx";
+import InventoryAssignmentPanel from "./pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx";
 import TermsEditor from "./pages/TermsEditor/TermsEditor.jsx";
 import SignatureCapturePad from "./pages/SignatureCapturePad/SignatureCapturePad.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
@@ -29,7 +29,7 @@ import { useEffect, useState } from "react";
 import HistoryPage from "./pages/History/HistoryPage.jsx";
 import FAQ from "./pages/FAQ/FAQ.jsx";
 import EmployeeSignUpPage from './pages/SignUpPage/EmployeeSignUpPage';
-import Quotation from './pages/InventoryAssignmentPanel/InventoryAssignmentPanel.jsx'
+import Quotation from './pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx'
 import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
 import api from "./services/api.jsx";
 import Spinner from "./components/Spinner/Spinner.jsx";
@@ -173,7 +173,7 @@ function App() {
               <Route path="/sidebar" element={
                 <ProtectedRoute element={<Sidebar />} allowedRoles={['admin', 'technician', 'customer']} />
               } />
-              <Route path="/inventoryassignment" element={
+              <Route path="/quotationeditor" element={
                 <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
               } />
               <Route path="/inventory" element={
