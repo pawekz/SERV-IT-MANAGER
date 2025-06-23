@@ -22,5 +22,8 @@ public class GetAllWarrantyDTO {
     private String deviceType;
     private String techObservation;
     private String serialNumber;
+    private String brand;
+    private String model;
+    private String kind;
     private List<String> warrantyPhotosUrls;
 }

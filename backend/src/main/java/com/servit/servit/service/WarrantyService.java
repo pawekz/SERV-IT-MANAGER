@@ -1,14 +1,12 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.CheckInWarrantyDTO;
-import com.servit.servit.dto.GetAllWarrantyDTO;
-import com.servit.servit.dto.UpdateWarrantyStatusDTO;
-import com.servit.servit.dto.VerifyWarrantyDTO;
+import com.servit.servit.dto.*;
 import com.servit.servit.entity.*;
 import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.repository.PartRepository;
+import com.servit.servit.repository.UserRepository;
 import com.servit.servit.repository.WarrantyRepository;
 import com.servit.servit.util.FileUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,6 +39,12 @@ public class WarrantyService {
 
     private final PartRepository partRepository;
 
+    private final EmailService emailService;
+
+    private final RepairTicketService repairTicketService;
+
+    private final UserRepository userRepository;
+
     private static final Logger logger = LoggerFactory.getLogger(WarrantyService.class);
 
     @Autowired
@@ -49,9 +53,12 @@ public class WarrantyService {
     private PartNumberStockTrackingService partNumberStockTrackingService;
 
     @Autowired
-    public WarrantyService(WarrantyRepository warrantyRepository, PartRepository partRepository) {
+    public WarrantyService(WarrantyRepository warrantyRepository, PartRepository partRepository, EmailService emailService, RepairTicketService repairTicketService, UserRepository userRepository) {
         this.warrantyRepository = warrantyRepository;
         this.partRepository = partRepository;
+        this.emailService = emailService;
+        this.repairTicketService = repairTicketService;
+        this.userRepository = userRepository;
     }
 
 
@@ -124,6 +131,9 @@ public class WarrantyService {
         dto.setDeviceType(partEntity.getDescription());
         dto.setSerialNumber(partEntity.getSerialNumber());
         dto.setTechObservation(warranty.getTechObservation());
+        dto.setBrand(partEntity.getBrand());
+        dto.setModel(partEntity.getModel());
+        dto.setKind(warranty.getKind());
 
         if (warranty.getWarrantyPhotos() != null) {
             dto.setWarrantyPhotosUrls(
@@ -139,7 +149,7 @@ public class WarrantyService {
 
 
     public WarrantyEntity checkinWarranty(CheckInWarrantyDTO req) throws IOException {
-        logger.info("Attempting to check in repair ticket: {}", req.getWarrantyNumber());
+        logger.info("Attempting to check in warranty request: {}", req.getWarrantyNumber());
 
         try {
             if (warrantyRepository.findByWarrantyNumber(req.getWarrantyNumber()).isPresent()) {
@@ -165,6 +175,15 @@ public class WarrantyService {
             warranty.setWarrantyNumber(req.getWarrantyNumber());
             warranty.setReportedIssue(req.getReportedIssue());
 
+            LocalDateTime expiration = part.getDatePurchasedByCustomer();
+            LocalDateTime now = LocalDateTime.now();
+            long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate()) + 1;
+            if (days >= 1) {
+                warranty.setKind("AUTO_REPLACEMENT");
+            } else {
+                warranty.setKind("IN_WARRANTY_REPAIR");
+            }
+
             warranty = warrantyRepository.save(warranty);
 
             part.setWarranty(warranty);
@@ -188,12 +207,12 @@ public class WarrantyService {
         String lastWarrantyNumber = warrantyRepository.findLastWarrantyNumber();
         int nextId = 1;
 
-        if (lastWarrantyNumber != null && lastWarrantyNumber.startsWith("IOWR-")) {
+        if (lastWarrantyNumber != null && lastWarrantyNumber.startsWith("IORMA-")) {
             String numericPart = lastWarrantyNumber.substring(5);
             nextId = Integer.parseInt(numericPart) + 1;
         }
 
-        return "IOWR-" + String.format("%06d", nextId);
+        return "IORMA-" + String.format("%06d", nextId);
     }
 
     public WarrantyEntity updateWarrantyStatus(UpdateWarrantyStatusDTO request) {
@@ -228,6 +247,12 @@ public class WarrantyService {
         if (newStatus == WarrantyStatus.ITEM_RETURNED) {
             warranty.setTechObservation(request.getTechObservation());
 
+            UserEntity technician = userRepository.findByEmail(request.getTechnicianEmail())
+                    .orElseThrow(() -> {
+                        logger.warn("Technician not found: {}", request.getTechnicianEmail());
+                        return new IllegalArgumentException("Technician not found" + request.getTechnicianEmail());
+                    });
+
             AtomicInteger counter = new AtomicInteger(1);
             try {
                 // ⚠️ DO NOT REPLACE COLLECTION — clear and add instead
@@ -260,21 +285,36 @@ public class WarrantyService {
                 throw e;
             }
 
+            // if confirmed to be a Warranty Repair, create a repair ticket
+            if(Objects.equals(warranty.getKind(), "IN_WARRANTY_REPAIR")){
+                CheckInRepairTicketRequestDTO ticket = new CheckInRepairTicketRequestDTO();
 
-            String digitalSignaturePath;
-            try {
-                digitalSignaturePath = fileUtil.saveDigitalSignature(request.getDigitalSignature(), warranty.getWarrantyNumber());
-                logger.info("Successfully saved digital signature for repair ticket: {}", warranty.getWarrantyNumber());
-            } catch (IOException e) {
-                logger.error("Failed to save digital signature for ticket: {}", warranty.getWarrantyNumber(), e);
-                throw new RuntimeException("Failed to save digital signature. Please retry.", e);
+                // Map basic customer and issue details
+                ticket.setTicketNumber(warranty.getWarrantyNumber());
+                ticket.setCustomerName(warranty.getCustomerName());
+                ticket.setCustomerEmail(warranty.getCustomerEmail());
+                ticket.setCustomerPhoneNumber(warranty.getCustomerPhoneNumber());
+                ticket.setReportedIssue(warranty.getReportedIssue());
+                ticket.setObservations(warranty.getTechObservation());
+
+                ticket.setTechnicianEmail(technician.getEmail());
+                ticket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
+                ticket.setRepairPhotos(request.getWarrantyPhotosUrls());
+
+                if (warranty.getItem() != null) {
+                    ticket.setDeviceType(request.getDeviceType());
+                    ticket.setDeviceColor(request.getColor());
+                    ticket.setDeviceSerialNumber(warranty.getItem().getSerialNumber());
+                    ticket.setDeviceModel(warranty.getItem().getModel());
+                    ticket.setDeviceBrand(warranty.getItem().getBrand());
+                    ticket.setDevicePassword(request.getPassword());
+                    ticket.setAccessories(request.getAccessories());
+                    ticket.setIsDeviceTampered(false);
+
+                }
+
+                repairTicketService.checkInRepairTicket(ticket);
             }
-
-            DigitalSignatureEntity digitalSignature = new DigitalSignatureEntity();
-            digitalSignature.setImageUrl(digitalSignaturePath);
-            digitalSignature.setWarranty(warranty);
-
-            warranty.setDigitalSignature(digitalSignature);
         }
 
         logger.info("Warranty status updated to {} for warranty number: {}", newStatus, request.getWarrantyNumber());
@@ -306,6 +346,25 @@ public class WarrantyService {
             warranty.setDocumentPath(pdfPath);
 
             warrantyRepository.save(warranty);
+
+            if(Objects.equals(warranty.getKind(), "IN_WARRANTY_REPAIR")){
+
+                repairTicketService.uploadRepairTicketPdf(warrantyNumber,file);
+            }
+
+
+            try {
+                emailService.sendRepairTicketPdfEmail(
+                        warranty.getCustomerEmail(),
+                        warranty.getWarrantyNumber(),
+                        warranty.getCustomerName(),
+                        pdfPath
+                );
+            } catch (Exception emailEx) {
+                logger.error("Error sending email for repair ticket document: {}", warrantyNumber, emailEx);
+                throw new RuntimeException("Failed to send email.", emailEx);
+            }
+
 
             logger.info("Successfully uploaded document for warranty: {}", warrantyNumber);
         } catch (IllegalArgumentException | EntityNotFoundException e) {
@@ -368,8 +427,9 @@ public class WarrantyService {
             boolean isWithinWarranty = now.isBefore(expiration);
             dto.setWithinWarranty(isWithinWarranty);
 
+
             if (isWithinWarranty) {
-                long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate());
+                long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate()) + 1;
                 dto.setDaysLeft(days);
                 dto.setMessage("Item still within warranty: " + days + " days left");
             } else {

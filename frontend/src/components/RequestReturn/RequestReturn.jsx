@@ -7,6 +7,10 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
     const [isChecked, setIsChecked] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const initialFormData = {
+        reportedIssue: "",
+        returnReason: "",
+    };
 
     const [formData, setFormData] = useState({
         customerName: "",
@@ -68,6 +72,10 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
 
     useEffect(() => {
         if (!isOpen || !serialNumber) return;
+
+        if(role=== "technician" || role === "admin") {
+            setIsChecked(true)
+        }
 
         const getData = async () => {
             try {
@@ -179,6 +187,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             } catch (err) {
                 setError(err.message);
             } finally {
+            setFormData(null)
                 setLoading(false);
             }
     }
@@ -328,7 +337,11 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                 )}
 
                 <div className="flex justify-end space-x-4">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>
+                    <button onClick={() =>{setFormData(prev => ({
+                        ...prev,
+                        reportedIssue: "",
+                        returnReason: ""
+                    })); onClose();}} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>
                         <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600"
                                 onClick={() => {
                                     console.log("Submitting form:", formData);
