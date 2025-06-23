@@ -66,6 +66,12 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
         navigate("/dashboard");
     };
 
+    const handleGoBack = () => {
+        setShowDialog(false);
+        navigate("/warranty");
+    };
+
+
     const handleSubmit = async () => {
         setLoading(true);
         setError(null);
@@ -356,6 +362,12 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 </div>
                     <h2 className="text-xl font-semibold text-center text-gray-900 mb-1">Warranty Checked In</h2>
                     <p className="text-center text-gray-500 mb-6 text-sm">Please bring the device to the store to proceed.</p>
+                    <button
+                        className="w-full px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition"
+                        onClick={handleGoBack}
+                    >
+                        Done
+                    </button>
                     <button
                         className="absolute top-3 right-3 text-gray-300 hover:text-red-400 transition"
                         onClick={() => setShowDialog(false)}
