@@ -160,7 +160,20 @@ public class RepairTicketService {
 
             logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
 
-            return repairTicketRepository.save(repairTicket);
+            RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
+
+            // Add initial status history entry for RECEIVED
+            try {
+                RepairStatusHistoryEntity initHistory = new RepairStatusHistoryEntity();
+                initHistory.setRepairTicket(savedTicket);
+                initHistory.setRepairStatusEnum(RepairStatusEnum.RECEIVED);
+                repairStatusHistoryRepository.save(initHistory);
+            } catch (Exception e) {
+                logger.error("Failed to save initial status history for ticket: {}", repairTicket.getTicketNumber(), e);
+                // continue without blocking the ticket creation
+            }
+
+            return savedTicket;
         } catch (IllegalArgumentException e) {
             logger.error("Validation error during check-in for ticket: {}", req.getTicketNumber(), e);
             throw e;
@@ -463,6 +476,8 @@ public class RepairTicketService {
             throw new IllegalArgumentException("RepairStatusHistoryEntity must not be null.");
         }
         RepairStatusHistoryResponseDTO dto = new RepairStatusHistoryResponseDTO();
+        dto.setRepairStatus(entity.getRepairStatusEnum() != null ? entity.getRepairStatusEnum().name() : null);
+        dto.setUpdatedBy(entity.getRepairTicket() != null ? entity.getRepairTicket().getTechnicianName() : null);
         dto.setTimestamp(entity.getTimestamp());
         return dto;
     }

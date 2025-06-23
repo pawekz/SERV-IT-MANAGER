@@ -18,6 +18,8 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/repairTicket")
 public class RepairTicketController {
+
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketController.class);
 
     @Autowired
     private final RepairTicketService repairTicketService;
@@ -327,6 +331,7 @@ public class RepairTicketController {
             // Extract JWT token from Authorization header
             String authorizationHeader = request.getHeader("Authorization");
             if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                logger.warn("Missing or invalid Authorization header for getRepairTicketsByStatusPageableAssignedToTech");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             String jwt = authorizationHeader.substring(7);
@@ -336,8 +341,11 @@ public class RepairTicketController {
             try {
                 email = jwtUtil.extractAllClaims(jwt).get("email", String.class);
             } catch (Exception e) {
+                logger.error("Failed to extract email claim from JWT when fetching tickets by status. JWT: {}", jwt);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+
+            logger.debug("Fetching tickets for status '{}' assigned to technician '{}'. Page: {}, Size: {}", status, email, pageable.getPageNumber(), pageable.getPageSize());
 
             Page<GetRepairTicketResponseDTO> tickets = repairTicketService.getRepairTicketsByStatusPageableAssignedToTech(status, email, pageable);
             if (tickets.isEmpty()) {
