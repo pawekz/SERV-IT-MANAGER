@@ -42,6 +42,41 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const currentStatusIndex = STATUS_OPTIONS.indexOf(data.status);
 
+    const downloadWarrantyPdf = async (warrantyNumber) => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch(`http://localhost:8080/warranty/getWarrantyPdf/${warrantyNumber}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch PDF. Status: " + response.status);
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get("Content-Disposition");
+            const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("PDF download error:", error);
+            alert("Something went wrong while downloading the PDF.");
+        }
+    };
+
     function SecureImage({ src, idx, openImageViewer }) {
         const [imageUrl, setImageUrl] = useState(null);
         useEffect(() => {
@@ -66,15 +101,19 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     if (!response.ok) {
                         throw new Error("Failed to fetch image");
                     }
+                    console.log("Fetching image for SecureImage src:", src);
 
                     const blob = await response.blob();
                     const blobUrl = URL.createObjectURL(blob);
                     setImageUrl(blobUrl);
                 } catch (err) {
-                    console.error("Error fetching image:", err);
-                    setPhotoError(err);
-                    setError(err);
-                    setShowToast(true);
+
+                        console.error("Error fetching image:", err);
+                    console.log("Fetching image for SecureImage src:", src);
+                        setPhotoError(err instanceof Error ? err.message : String(err));
+                        setError(err instanceof Error ? err.message : String(err));
+                        setShowToast(true);
+
                 }
             };
 
@@ -102,6 +141,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     }
 
     useEffect(() => {
+        console.log(data);
         if (data) {
             setFormData(prev => {
                 if (prev.warrantyNumber === data.warrantyNumber) return prev;
@@ -200,6 +240,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                 setShowToast(true);
                 return;
             } else {
+                setError("");
                 setPhotoError("");
             }
 
@@ -240,8 +281,8 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div
                 className={`relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[95vh]
-                transform transition-all duration-300
-                ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+            transform transition-all duration-300
+            ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
             >
                 {/* Close Button (stays fixed at the top-right of the modal) */}
             <div className=" relative bg-white border-2 border-gray-200 shadow-lg rounded-lg overflow-y-auto max-h-[95vh] scrollbar-hide">
@@ -267,10 +308,29 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         <select
                                             onChange={handleStatusChange}
                                             value={formData.status}
-                                            disabled ={readonly} // disables editing (customer cannot change it)
-                                            className=" font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48">
-                                            {STATUS_OPTIONS.map((status, index) => (
-                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                            disabled={readonly}
+                                            className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
+                                        >
+                                            {STATUS_OPTIONS.filter((status) => {
+                                                const currentIndex = STATUS_OPTIONS.indexOf(formData.status);
+                                                const statusIndex = STATUS_OPTIONS.indexOf(status);
+
+                                                if (status === "DENIED") return true; // Always show DENIED
+
+                                                if (status === formData.status) return true; // Show current status as selected
+
+                                                if (formData.status === "CHECKED_IN") {
+                                                    return status === "ITEM_RETURNED";
+                                                }
+
+                                                if (formData.status === "ITEM_RETURNED") {
+                                                    return role === "admin" && statusIndex > currentIndex;
+                                                }
+
+                                                // For other statuses, only allow forward movement
+                                                return statusIndex > currentIndex;
+                                            }).map((status) => (
+                                                <option key={status} value={status}>
                                                     {status.replace(/_/g, " ")}
                                                 </option>
                                             ))}
@@ -314,7 +374,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                         </div>
 
                         {/* Additional Section if warranty becomes repair*/}
-                        {data.kind === "IN_WARRANTY_REPAIR" && (<div className="mb-6">
+                        {(data.kind === "IN_WARRANTY_REPAIR" && data.status === "CHECKED_IN" ) && (<div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">OTHER INFORMATION</h2>
                             </div>
@@ -399,19 +459,20 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
                                     ></input>
                                 </div>
-                                {role !== "customer" && (
+
                                 <div className="space-y-2">
                                     <label htmlFor="technicianObservations" className="block text-sm font-medium text-gray-700">
                                         Technician Observations:
                                     </label>
                                     <textarea
                                         id="technicianObservations"
-                                        defaultValue={data.techObservation}
+                                        value={data.techObservation}
+                                        onChange={e => setFormData(prev => ({ ...prev, techObservation: e.target.value }))}
                                         placeholder="To be filled by technician (Optional)"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
                                     ></textarea>
                                 </div>
-                                )}
+
                             </div>
                         </div>
 
@@ -438,13 +499,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </label>
                             ))}
                         </div>
-                        {role === "customer" && (
-                        <p className="text-sm italic text-green-500 mb-2">
-                            * Note: Device must be brought to the office for diagnosis and warranty processing.
-                        </p>)}
 
                         {/* Device Condition Section */}
-                        {role !=="customer" && (
+
                         <div className="mb-6 mt-5">
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
@@ -478,7 +535,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                             </p>
                                         )}
                                         {photoError && (
-                                            <p className="text-sm text-red-600">{photoError}</p>
+                                            <p className="text-sm text-red-600">
+                                                {photoError instanceof Error ? photoError.message : photoError}
+                                            </p>
                                         )}
                                         {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
@@ -562,18 +621,36 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </div>
                             </div>
                         </div>
-                        )}
+
 
                         {/* Submit Button */}
-                        <div className="flex justify-end mt-4">
-                            <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 mr-3">Close</button>
+                        <div className="flex justify-between mt-4">
+                            {/* Left side: Download PDF */}
+                            <div>
+                                {data.status !== "CHECKED_IN" && (<button
+                                    onClick={() => downloadWarrantyPdf(data.warrantyNumber)}
+                                    className="px-6 py-2 bg-[#2bc106] text-white rounded hover:bg-green-700"
+                                >
+                                    Download PDF
+                                </button>)}
 
+                            </div>
+
+                            {/* Right side: Close and Confirm buttons */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onClose}
+                                    className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                                >
+                                    Close
+                                </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
+                                    className="px-6 py-2 bg-[#2bc106] hover:bg-green-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                                 >
                                     Confirm Changes
                                 </button>
+                            </div>
                         </div>
 
                         {/* Image Viewer Modal */}
@@ -630,7 +707,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     </form>
                     <Toast
                         show={showToast}
-                        message={error}
+                        message={error instanceof Error ? error.message : error}
                         type="error"
                         onClose={() => setShowToast(false)}
                     />

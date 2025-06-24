@@ -51,13 +51,13 @@ const WarrantyRequestPage = () => {
         "DENIED"
     ];
 
-    const currentStatusIndex = STATUS_OPTIONS.indexOf(warranty.status);
-
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
+        setShowModal(false);
     };
 
+    // Fetch warranties for customer by email
     const fetchWarrantiesbyemail = async (email) => {
         try {
             const token = localStorage.getItem('authToken');
@@ -94,6 +94,7 @@ const WarrantyRequestPage = () => {
         }
     };
 
+    // Fetch warranties for staff
     const fetchWarranties = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -133,8 +134,10 @@ const WarrantyRequestPage = () => {
         }
     };
 
+    // Fetch warranties on component mount
     useEffect(() => {
         setLoading(true);
+        setModalOpen(false);
         try{
             if(role === "customer") {
                 fetchWarrantiesbyemail(userData.email);
@@ -344,8 +347,31 @@ const WarrantyRequestPage = () => {
                                                                             value={request.status}
                                                                             className="text-xs px-2 border rounded-md bg-[rgba(51,228,7,0.05)] border-[0] text-gray-800 w-32 h-7"
                                                                         >
-                                                                            {STATUS_OPTIONS.map((status, index) => (
-                                                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                                                            {STATUS_OPTIONS
+                                                                                .filter((status, index) => {
+                                                                                    // Hide past statuses
+                                                                                    const currentIndex = STATUS_OPTIONS.indexOf(request.status);
+
+                                                                                    if (status === request.status) return true;
+
+                                                                                    if (status === "DENIED") return true;
+
+                                                                                    // If current status is CHECKED_IN, only allow ITEM_RETURNED
+                                                                                    if (request.status === "CHECKED_IN") {
+                                                                                        return status === "ITEM_RETURNED" ;
+                                                                                    }
+
+                                                                                    // If current status is ITEM_RETURNED, only admin can proceed
+                                                                                    if (request.status === "ITEM_RETURNED") {
+                                                                                        const statusIndex = STATUS_OPTIONS.indexOf(status);
+                                                                                        return statusIndex >= currentIndex && (status === "ITEM_RETURNED" || role === "admin");
+                                                                                    }
+
+                                                                                    // For all other cases, show status
+                                                                                    return index >= currentIndex;
+                                                                                })
+                                                                                .map((status) => (
+                                                                                    <option key={status} value={status}>
                                                                                     {status.replace(/_/g, " ")}
                                                                                 </option>
                                                                             ))}

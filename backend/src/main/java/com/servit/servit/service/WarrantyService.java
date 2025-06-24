@@ -2,8 +2,6 @@ package com.servit.servit.service;
 
 import com.servit.servit.dto.*;
 import com.servit.servit.entity.*;
-import com.servit.servit.enumeration.RepairStatusEnum;
-import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.repository.PartRepository;
 import com.servit.servit.repository.UserRepository;
@@ -16,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -177,8 +174,8 @@ public class WarrantyService {
 
             LocalDateTime expiration = part.getDatePurchasedByCustomer();
             LocalDateTime now = LocalDateTime.now();
-            long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate()) + 1;
-            if (days >= 1) {
+            long days = ChronoUnit.DAYS.between(expiration.toLocalDate(),now.toLocalDate()) + 1;
+            if (days <= 7) {
                 warranty.setKind("AUTO_REPLACEMENT");
             } else {
                 warranty.setKind("IN_WARRANTY_REPAIR");
@@ -208,11 +205,22 @@ public class WarrantyService {
         int nextId = 1;
 
         if (lastWarrantyNumber != null && lastWarrantyNumber.startsWith("IORMA-")) {
-            String numericPart = lastWarrantyNumber.substring(5);
-            nextId = Integer.parseInt(numericPart) + 1;
+            try {
+                String numericPart = lastWarrantyNumber.substring(6);
+                nextId = Integer.parseInt(numericPart) + 1;
+                logger.info("Last warranty number found: {}. Next warranty number will be: IORMA-{}", lastWarrantyNumber, String.format("%06d", nextId));
+            } catch (NumberFormatException e) {
+                logger.error("Failed to parse numeric part of last warranty number: {}", lastWarrantyNumber, e);
+                throw new RuntimeException("Invalid last warranty number format: " + lastWarrantyNumber, e);
+            }
+        } else {
+            logger.info("No previous ticket number found. Starting from IORMA-000001.");
         }
 
-        return "IORMA-" + String.format("%06d", nextId);
+        String newWarrantyNumber = "IORMA-" + String.format("%06d", nextId);
+        logger.info("Generated new ticket number: {}", newWarrantyNumber);
+
+        return newWarrantyNumber;
     }
 
     public WarrantyEntity updateWarrantyStatus(UpdateWarrantyStatusDTO request) {
@@ -354,7 +362,7 @@ public class WarrantyService {
 
 
             try {
-                emailService.sendRepairTicketPdfEmail(
+                emailService.sendWarrrantyPdfEmail(
                         warranty.getCustomerEmail(),
                         warranty.getWarrantyNumber(),
                         warranty.getCustomerName(),
@@ -438,6 +446,22 @@ public class WarrantyService {
             }
             return dto;
 
+    }
+
+    public WarrantyPdfResponseDTO getWarrantyPdf(String warrantyNumber) throws IOException {
+        WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Warranty not found: " + warrantyNumber));
+
+        String documentPath = warranty.getDocumentPath();
+        if (documentPath == null) {
+            throw new EntityNotFoundException("No document uploaded for this warranty: " + warrantyNumber);
+        }
+
+        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(path);
+        String fileName = path.getFileName().toString();
+
+        return new WarrantyPdfResponseDTO(fileBytes, fileName);
     }
 
 };

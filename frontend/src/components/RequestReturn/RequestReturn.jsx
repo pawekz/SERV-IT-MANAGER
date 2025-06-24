@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
 
 const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
-    const [deviceType, setDeviceType] = useState("");
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [isChecked, setIsChecked] = useState(false);
