@@ -51,14 +51,13 @@ const WarrantyRequestPage = () => {
         "DENIED"
     ];
 
-    const currentStatusIndex = STATUS_OPTIONS.indexOf(warranty.status);
-
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
         setShowModal(false);
     };
 
+    // Fetch warranties for customer by email
     const fetchWarrantiesbyemail = async (email) => {
         try {
             const token = localStorage.getItem('authToken');
@@ -95,6 +94,7 @@ const WarrantyRequestPage = () => {
         }
     };
 
+    // Fetch warranties for staff
     const fetchWarranties = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -134,8 +134,10 @@ const WarrantyRequestPage = () => {
         }
     };
 
+    // Fetch warranties on component mount
     useEffect(() => {
         setLoading(true);
+        setModalOpen(false);
         try{
             if(role === "customer") {
                 fetchWarrantiesbyemail(userData.email);

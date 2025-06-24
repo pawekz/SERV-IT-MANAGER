@@ -42,6 +42,41 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const currentStatusIndex = STATUS_OPTIONS.indexOf(data.status);
 
+    const downloadWarrantyPdf = async (warrantyNumber) => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch(`http://localhost:8080/warranty/getWarrantyPdf/${warrantyNumber}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch PDF. Status: " + response.status);
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get("Content-Disposition");
+            const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("PDF download error:", error);
+            alert("Something went wrong while downloading the PDF.");
+        }
+    };
+
     function SecureImage({ src, idx, openImageViewer }) {
         const [imageUrl, setImageUrl] = useState(null);
         useEffect(() => {
@@ -424,19 +459,20 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
                                     ></input>
                                 </div>
-                                {role !== "customer" && (
+
                                 <div className="space-y-2">
                                     <label htmlFor="technicianObservations" className="block text-sm font-medium text-gray-700">
                                         Technician Observations:
                                     </label>
                                     <textarea
                                         id="technicianObservations"
-                                        defaultValue={data.techObservation}
+                                        value={data.techObservation}
+                                        onChange={e => setFormData(prev => ({ ...prev, techObservation: e.target.value }))}
                                         placeholder="To be filled by technician (Optional)"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
                                     ></textarea>
                                 </div>
-                                )}
+
                             </div>
                         </div>
 
@@ -588,15 +624,33 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
 
                         {/* Submit Button */}
-                        <div className="flex justify-end mt-4">
-                            <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 mr-3">Close</button>
+                        <div className="flex justify-between mt-4">
+                            {/* Left side: Download PDF */}
+                            <div>
+                                {data.status !== "CHECKED_IN" && (<button
+                                    onClick={() => downloadWarrantyPdf(data.warrantyNumber)}
+                                    className="px-6 py-2 bg-[#2bc106] text-white rounded hover:bg-green-700"
+                                >
+                                    Download PDF
+                                </button>)}
 
+                            </div>
+
+                            {/* Right side: Close and Confirm buttons */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onClose}
+                                    className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                                >
+                                    Close
+                                </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
+                                    className="px-6 py-2 bg-[#2bc106] hover:bg-green-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                                 >
                                     Confirm Changes
                                 </button>
+                            </div>
                         </div>
 
                         {/* Image Viewer Modal */}

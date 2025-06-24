@@ -2,8 +2,6 @@ package com.servit.servit.service;
 
 import com.servit.servit.dto.*;
 import com.servit.servit.entity.*;
-import com.servit.servit.enumeration.RepairStatusEnum;
-import com.servit.servit.enumeration.RepairTicketDeviceType;
 import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.repository.PartRepository;
 import com.servit.servit.repository.UserRepository;
@@ -16,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -208,11 +205,22 @@ public class WarrantyService {
         int nextId = 1;
 
         if (lastWarrantyNumber != null && lastWarrantyNumber.startsWith("IORMA-")) {
-            String numericPart = lastWarrantyNumber.substring(5);
-            nextId = Integer.parseInt(numericPart) + 1;
+            try {
+                String numericPart = lastWarrantyNumber.substring(6);
+                nextId = Integer.parseInt(numericPart) + 1;
+                logger.info("Last warranty number found: {}. Next warranty number will be: IORMA-{}", lastWarrantyNumber, String.format("%06d", nextId));
+            } catch (NumberFormatException e) {
+                logger.error("Failed to parse numeric part of last warranty number: {}", lastWarrantyNumber, e);
+                throw new RuntimeException("Invalid last warranty number format: " + lastWarrantyNumber, e);
+            }
+        } else {
+            logger.info("No previous ticket number found. Starting from IORMA-000001.");
         }
 
-        return "IORMA-" + String.format("%06d", nextId);
+        String newWarrantyNumber = "IORMA-" + String.format("%06d", nextId);
+        logger.info("Generated new ticket number: {}", newWarrantyNumber);
+
+        return newWarrantyNumber;
     }
 
     public WarrantyEntity updateWarrantyStatus(UpdateWarrantyStatusDTO request) {
