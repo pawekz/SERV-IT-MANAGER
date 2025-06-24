@@ -56,6 +56,7 @@ const WarrantyRequestPage = () => {
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
+        setShowModal(false);
     };
 
     const fetchWarrantiesbyemail = async (email) => {

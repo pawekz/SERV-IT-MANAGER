@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight, Upload,X, SquareX} from "lucide-react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
-import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
+
 
 
 const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
@@ -59,6 +58,41 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
             />
         );
     }
+
+    const downloadWarrantyPdf = async (warrantyNumber) => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch(`http://localhost:8080/warranty/getWarrantyPdf/${warrantyNumber}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch PDF. Status: " + response.status);
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get("Content-Disposition");
+            const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("PDF download error:", error);
+            alert("Something went wrong while downloading the PDF.");
+        }
+    };
 
 
     if (!isOpen) return null;
@@ -141,7 +175,7 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
             {/* Buttons */}
             <div className="flex justify-end gap-4 m-6 my-4">
-                <button className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                <button onClick={() => downloadWarrantyPdf(data.warrantyNumber)} className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                     Download PDF
                 </button>
                 <button className="px-6 py-2 border border-gray-400 rounded hover:bg-gray-100" onClick={onClose}>

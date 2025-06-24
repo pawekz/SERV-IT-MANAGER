@@ -66,15 +66,19 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     if (!response.ok) {
                         throw new Error("Failed to fetch image");
                     }
+                    console.log("Fetching image for SecureImage src:", src);
 
                     const blob = await response.blob();
                     const blobUrl = URL.createObjectURL(blob);
                     setImageUrl(blobUrl);
                 } catch (err) {
-                    console.error("Error fetching image:", err);
-                    setPhotoError(err);
-                    setError(err);
-                    setShowToast(true);
+
+                        console.error("Error fetching image:", err);
+                    console.log("Fetching image for SecureImage src:", src);
+                        setPhotoError(err instanceof Error ? err.message : String(err));
+                        setError(err instanceof Error ? err.message : String(err));
+                        setShowToast(true);
+
                 }
             };
 
@@ -102,6 +106,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     }
 
     useEffect(() => {
+        console.log(data);
         if (data) {
             setFormData(prev => {
                 if (prev.warrantyNumber === data.warrantyNumber) return prev;
@@ -200,6 +205,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                 setShowToast(true);
                 return;
             } else {
+                setError("");
                 setPhotoError("");
             }
 
@@ -240,8 +246,8 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div
                 className={`relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[95vh]
-                transform transition-all duration-300
-                ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+            transform transition-all duration-300
+            ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
             >
                 {/* Close Button (stays fixed at the top-right of the modal) */}
             <div className=" relative bg-white border-2 border-gray-200 shadow-lg rounded-lg overflow-y-auto max-h-[95vh] scrollbar-hide">
@@ -314,7 +320,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                         </div>
 
                         {/* Additional Section if warranty becomes repair*/}
-                        {data.kind === "IN_WARRANTY_REPAIR" && (<div className="mb-6">
+                        {(data.kind === "IN_WARRANTY_REPAIR" && data.status === "CHECKED_IN" ) && (<div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">OTHER INFORMATION</h2>
                             </div>
@@ -438,13 +444,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </label>
                             ))}
                         </div>
-                        {role === "customer" && (
-                        <p className="text-sm italic text-green-500 mb-2">
-                            * Note: Device must be brought to the office for diagnosis and warranty processing.
-                        </p>)}
 
                         {/* Device Condition Section */}
-                        {role !=="customer" && (
+
                         <div className="mb-6 mt-5">
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
@@ -478,7 +480,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                             </p>
                                         )}
                                         {photoError && (
-                                            <p className="text-sm text-red-600">{photoError}</p>
+                                            <p className="text-sm text-red-600">
+                                                {photoError instanceof Error ? photoError.message : photoError}
+                                            </p>
                                         )}
                                         {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
@@ -562,7 +566,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </div>
                             </div>
                         </div>
-                        )}
+
 
                         {/* Submit Button */}
                         <div className="flex justify-end mt-4">
@@ -630,7 +634,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     </form>
                     <Toast
                         show={showToast}
-                        message={error}
+                        message={error instanceof Error ? error.message : error}
                         type="error"
                         onClose={() => setShowToast(false)}
                     />

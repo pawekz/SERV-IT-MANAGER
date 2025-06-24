@@ -177,8 +177,8 @@ public class WarrantyService {
 
             LocalDateTime expiration = part.getDatePurchasedByCustomer();
             LocalDateTime now = LocalDateTime.now();
-            long days = ChronoUnit.DAYS.between(now.toLocalDate(), expiration.toLocalDate()) + 1;
-            if (days >= 1) {
+            long days = ChronoUnit.DAYS.between(expiration.toLocalDate(),now.toLocalDate()) + 1;
+            if (days <= 7) {
                 warranty.setKind("AUTO_REPLACEMENT");
             } else {
                 warranty.setKind("IN_WARRANTY_REPAIR");
@@ -438,6 +438,22 @@ public class WarrantyService {
             }
             return dto;
 
+    }
+
+    public WarrantyPdfResponseDTO getWarrantyPdf(String warrantyNumber) throws IOException {
+        WarrantyEntity warranty = warrantyRepository.findByWarrantyNumber(warrantyNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Warranty not found: " + warrantyNumber));
+
+        String documentPath = warranty.getDocumentPath();
+        if (documentPath == null) {
+            throw new EntityNotFoundException("No document uploaded for this warranty: " + warrantyNumber);
+        }
+
+        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(path);
+        String fileName = path.getFileName().toString();
+
+        return new WarrantyPdfResponseDTO(fileBytes, fileName);
     }
 
 };
