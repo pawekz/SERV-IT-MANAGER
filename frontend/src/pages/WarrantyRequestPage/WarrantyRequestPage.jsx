@@ -345,8 +345,31 @@ const WarrantyRequestPage = () => {
                                                                             value={request.status}
                                                                             className="text-xs px-2 border rounded-md bg-[rgba(51,228,7,0.05)] border-[0] text-gray-800 w-32 h-7"
                                                                         >
-                                                                            {STATUS_OPTIONS.map((status, index) => (
-                                                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                                                            {STATUS_OPTIONS
+                                                                                .filter((status, index) => {
+                                                                                    // Hide past statuses
+                                                                                    const currentIndex = STATUS_OPTIONS.indexOf(request.status);
+
+                                                                                    if (status === request.status) return true;
+
+                                                                                    if (status === "DENIED") return true;
+
+                                                                                    // If current status is CHECKED_IN, only allow ITEM_RETURNED
+                                                                                    if (request.status === "CHECKED_IN") {
+                                                                                        return status === "ITEM_RETURNED" ;
+                                                                                    }
+
+                                                                                    // If current status is ITEM_RETURNED, only admin can proceed
+                                                                                    if (request.status === "ITEM_RETURNED") {
+                                                                                        const statusIndex = STATUS_OPTIONS.indexOf(status);
+                                                                                        return statusIndex >= currentIndex && (status === "ITEM_RETURNED" || role === "admin");
+                                                                                    }
+
+                                                                                    // For all other cases, show status
+                                                                                    return index >= currentIndex;
+                                                                                })
+                                                                                .map((status) => (
+                                                                                    <option key={status} value={status}>
                                                                                     {status.replace(/_/g, " ")}
                                                                                 </option>
                                                                             ))}

@@ -273,10 +273,29 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         <select
                                             onChange={handleStatusChange}
                                             value={formData.status}
-                                            disabled ={readonly} // disables editing (customer cannot change it)
-                                            className=" font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48">
-                                            {STATUS_OPTIONS.map((status, index) => (
-                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                            disabled={readonly}
+                                            className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
+                                        >
+                                            {STATUS_OPTIONS.filter((status) => {
+                                                const currentIndex = STATUS_OPTIONS.indexOf(formData.status);
+                                                const statusIndex = STATUS_OPTIONS.indexOf(status);
+
+                                                if (status === "DENIED") return true; // Always show DENIED
+
+                                                if (status === formData.status) return true; // Show current status as selected
+
+                                                if (formData.status === "CHECKED_IN") {
+                                                    return status === "ITEM_RETURNED";
+                                                }
+
+                                                if (formData.status === "ITEM_RETURNED") {
+                                                    return role === "admin" && statusIndex > currentIndex;
+                                                }
+
+                                                // For other statuses, only allow forward movement
+                                                return statusIndex > currentIndex;
+                                            }).map((status) => (
+                                                <option key={status} value={status}>
                                                     {status.replace(/_/g, " ")}
                                                 </option>
                                             ))}
