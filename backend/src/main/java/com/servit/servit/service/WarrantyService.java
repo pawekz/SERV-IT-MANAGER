@@ -362,7 +362,7 @@ public class WarrantyService {
 
 
             try {
-                emailService.sendRepairTicketPdfEmail(
+                emailService.sendWarrrantyPdfEmail(
                         warranty.getCustomerEmail(),
                         warranty.getWarrantyNumber(),
                         warranty.getCustomerName(),
