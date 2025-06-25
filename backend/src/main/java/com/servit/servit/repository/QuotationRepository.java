@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface QuotationRepository extends JpaRepository<QuotationEntity, Long> {
     List<QuotationEntity> findByRepairTicketNumber(String repairTicketNumber);
+
+    List<QuotationEntity> findByStatus(String status);
 }

@@ -441,6 +441,22 @@ public class PartService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves parts that are eligible to be attached to a quotation based on strict criteria.
+     * These parts are not reserved, not deleted, not customer purchased, etc.
+     * Only STANDARD part type is allowed.
+     */
+    @Transactional(readOnly = true)
+    public List<PartResponseDTO> getAllPartsForQuotation() {
+        try {
+            List<PartEntity> parts = partRepository.findEligiblePartsForQuotation();
+            return parts.stream().map(this::convertToDto).collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error retrieving parts for quotation: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to retrieve parts for quotation", e);
+        }
+    }
+
     // ================ Stock Management ================
 
     /**

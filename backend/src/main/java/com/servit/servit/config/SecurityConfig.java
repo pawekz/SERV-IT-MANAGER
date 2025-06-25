@@ -55,8 +55,6 @@ public class SecurityConfig {
                             "/feedback/submitFeedback",
                             "/ws/**",
                             "/topic/**",
-                            "/quotation/approveQuotation/*",
-                            "/quotation/denyQuotation/*",
                             "/auth/login/staff",
                             "/user/register/onboard",
                             "/user/getUserCountInit",
@@ -85,6 +83,9 @@ public class SecurityConfig {
                             "/part/getPartByPartNumber/*",
                             "/images/**",
                             "/quotation/getQuotationByRepairTicketNumber/*",
+                            "/notification/**",
+                            "/quotation/approveQuotation/*",
+                            "/quotation/denyQuotation/*",
                             "/notification/**",
                             "/warranty/getWarrantyPdf/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
@@ -123,10 +124,12 @@ public class SecurityConfig {
                             "/repairTicket/getRepairTicketsByStatusPageable",
                             "/repairTicket/getRepairTicketsByStatusPageableAssignedToTech",
                             "/quotation/addQuotation",
+                            "/quotation/editQuotation/*",
                             "/quotation/deleteQuotation/*",
                             "/quotation/getAllQuotation",
                             "/quotation/getAllQuotationPaginated",
-                            "/user/createEmployee"
+                            "/user/createEmployee",
+                            "/part/getAllPartsForQuotation"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")

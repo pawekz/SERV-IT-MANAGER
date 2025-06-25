@@ -41,4 +41,10 @@ public class QuotationEntity {
 
     @Column(name = "customer_selection")
     private String customerSelection;
+
+    @Column(name = "expiry_at")
+    private LocalDateTime expiryAt;
+
+    @Column(name = "reminder_delay_hours")
+    private Integer reminderDelayHours;
 }
