@@ -25,4 +25,5 @@ public class GetRepairTicketResponseDTO {
     private LocalDate checkInDate;
 
     private List<String> repairPhotosUrls;
+    private List<String> afterRepairPhotosUrls;
 }
