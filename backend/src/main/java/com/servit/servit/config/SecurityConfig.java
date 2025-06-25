@@ -86,7 +86,6 @@ public class SecurityConfig {
                             "/notification/**",
                             "/quotation/approveQuotation/*",
                             "/quotation/denyQuotation/*",
-                            "/notification/**",
                             "/warranty/getWarrantyPdf/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
