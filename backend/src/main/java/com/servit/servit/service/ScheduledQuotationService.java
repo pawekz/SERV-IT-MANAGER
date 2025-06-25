@@ -92,7 +92,7 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
                         dto.setTicketNumber(q.getRepairTicketNumber());
                         dto.setStatus("QUOTATION_EXPIRED");
                         dto.setMessage("Quotation has expired.");
-                        dto.setRecipientEmail(q.getCustomerEmail());
+                        dto.setRecipientEmail("TODO");
                         notificationService.sendNotification(dto);
                     } catch (Exception e) {
                         logger.warn("Failed to send expiry notification for quotation {}", q.getQuotationId());
