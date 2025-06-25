@@ -358,4 +358,23 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PatchMapping("/updateRepairStatusWithPhotos")
+    public ResponseEntity<?> updateRepairStatusWithPhotos(@ModelAttribute UpdateRepairStatusWithPhotosRequestDTO request) {
+        try {
+            RepairTicketEntity ticket = repairTicketService.updateRepairStatusWithAfterPhotos(request);
+            UpdateRepairStatusResponseDTO response = new UpdateRepairStatusResponseDTO(
+                ticket.getTicketNumber(),
+                ticket.getRepairStatus().name(),
+                "Ticket " + ticket.getTicketNumber() + " status updated to " + ticket.getRepairStatus().name()
+            );
+            return ResponseEntity.ok(response);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }

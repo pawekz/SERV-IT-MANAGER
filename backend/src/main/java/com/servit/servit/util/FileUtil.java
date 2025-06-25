@@ -136,4 +136,19 @@ public class FileUtil {
 
         return filePath.toString();
     }
+
+    public String saveAfterRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
+        validatePhoto(file);
+
+        String fileExtension = getFileExtension(file);
+        String date = LocalDate.now().format(DATE_FORMATTER);
+        String fileName = String.format("%s-arp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
+
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "images", "after_repair_photos", fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
+
+        return filePath.toString();
+    }
 }

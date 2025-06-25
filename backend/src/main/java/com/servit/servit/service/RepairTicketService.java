@@ -33,6 +33,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 
+import com.servit.servit.dto.UpdateRepairStatusWithPhotosRequestDTO;
+import com.servit.servit.entity.AfterRepairPhotoEntity;
+
 @Service
 public class RepairTicketService {
 
@@ -436,6 +439,76 @@ public class RepairTicketService {
         return savedTicket;
     }
 
+    public RepairTicketEntity updateRepairStatusWithAfterPhotos(UpdateRepairStatusWithPhotosRequestDTO request) {
+        logger.info("Updating repair status with after-repair photos for ticket: {}", request.getTicketNumber());
+
+        if (request.getTicketNumber() == null || request.getTicketNumber().isEmpty()) {
+            logger.warn("Ticket number is null or empty.");
+            throw new IllegalArgumentException("Ticket number must not be null or empty.");
+        }
+        if (request.getRepairStatus() == null || request.getRepairStatus().isEmpty()) {
+            logger.warn("Repair status is null or empty for ticket: {}", request.getTicketNumber());
+            throw new IllegalArgumentException("Repair status must not be null or empty.");
+        }
+
+        // Ensure the target status is READY_FOR_PICKUP as per business rule
+        if (!"READY_FOR_PICKUP".equalsIgnoreCase(request.getRepairStatus())) {
+            logger.warn("Invalid target status '{}' for after-repair photo upload. Only READY_FOR_PICKUP is supported.", request.getRepairStatus());
+            throw new IllegalArgumentException("After-repair photos can only be uploaded when setting status to READY_FOR_PICKUP.");
+        }
+
+        List<MultipartFile> photos = request.getAfterRepairPhotos();
+        if (photos == null || photos.isEmpty()) {
+            logger.warn("No after-repair photos provided for ticket: {}", request.getTicketNumber());
+            throw new IllegalArgumentException("At least one after-repair photo is required.");
+        }
+        if (photos.size() > 3) {
+            logger.warn("Too many after-repair photos ({} provided) for ticket: {}", photos.size(), request.getTicketNumber());
+            throw new IllegalArgumentException("You can upload a maximum of 3 after-repair photos.");
+        }
+
+        RepairTicketEntity repairTicket = repairTicketRepository.findByTicketNumber(request.getTicketNumber())
+                .orElseThrow(() -> {
+                    logger.error("Repair ticket not found: {}", request.getTicketNumber());
+                    return new EntityNotFoundException("Repair ticket not found");
+                });
+
+        // Save photos
+        AtomicInteger counter = new AtomicInteger(1);
+        List<AfterRepairPhotoEntity> afterPhotos = photos.stream().map(photo -> {
+            try {
+                String photoPath = fileUtil.saveAfterRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
+                AfterRepairPhotoEntity entity = new AfterRepairPhotoEntity();
+                entity.setPhotoUrl(photoPath);
+                entity.setRepairTicket(repairTicket);
+                return entity;
+            } catch (IOException e) {
+                logger.error("Failed to save after-repair photo for ticket: {}", repairTicket.getTicketNumber(), e);
+                throw new RuntimeException("Failed to save after-repair photo. Please retry.", e);
+            }
+        }).collect(Collectors.toList());
+
+        // Attach to ticket
+        if (repairTicket.getAfterRepairPhotos() != null) {
+            repairTicket.getAfterRepairPhotos().clear();
+            repairTicket.getAfterRepairPhotos().addAll(afterPhotos);
+        } else {
+            repairTicket.setAfterRepairPhotos(afterPhotos);
+        }
+
+        // Persist ticket with new photos
+        repairTicketRepository.save(repairTicket);
+
+        // Update status and history using existing logic
+        UpdateRepairStatusRequestDTO bareDto = new UpdateRepairStatusRequestDTO();
+        bareDto.setTicketNumber(request.getTicketNumber());
+        bareDto.setRepairStatus(request.getRepairStatus());
+        // We reuse the existing method to handle notification, broadcast, etc.
+        RepairTicketEntity updatedTicket = updateRepairStatus(bareDto);
+
+        return updatedTicket;
+    }
+
     public List<RepairStatusHistoryResponseDTO> getRepairStatusHistory(String ticketNumber) {
         logger.info("Fetching repair status history for ticket: {}", ticketNumber);
         if (ticketNumber == null || ticketNumber.isEmpty()) {
@@ -548,6 +621,9 @@ public class RepairTicketService {
         dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
                 .map(RepairPhotoEntity::getPhotoUrl)
                 .collect(Collectors.toList()));
+        dto.setAfterRepairPhotosUrls(repairTicket.getAfterRepairPhotos() != null ? repairTicket.getAfterRepairPhotos().stream()
+                .map(AfterRepairPhotoEntity::getPhotoUrl)
+                .collect(Collectors.toList()) : null);
         return dto;
     }
 }
