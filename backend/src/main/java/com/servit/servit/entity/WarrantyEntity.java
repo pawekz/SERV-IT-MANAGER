@@ -59,6 +59,10 @@ public class WarrantyEntity {
     @JsonManagedReference
     private List<WarrantyPhotoEntity> warrantyPhotos;
 
+    @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private DigitalSignatureEntity digitalSignature;
+
     @Column(name = "document_path")
     private String documentPath;
 

@@ -15,4 +15,8 @@ public class QuotationDTO {
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;
     private String customerSelection;
+
+    // Scheduling helpers
+    private LocalDateTime expiryAt;
+    private Integer reminderDelayHours;
 }

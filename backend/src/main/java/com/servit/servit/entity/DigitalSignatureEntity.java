@@ -24,5 +24,9 @@ public class DigitalSignatureEntity {
     @JsonBackReference
     private RepairTicketEntity repairTicket;
 
+    @OneToOne
+    @JoinColumn(name = "warranty_id")
+    @JsonBackReference
+    private WarrantyEntity warranty;
 
 }

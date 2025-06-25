@@ -73,4 +73,7 @@ public interface PartRepository extends JpaRepository<PartEntity, Long> {
            "p.isCustomerPurchased = true AND p.warrantyExpiration IS NOT NULL AND " +
            "p.warrantyExpiration > CURRENT_TIMESTAMP")
     List<PartEntity> findPartsWithValidWarranty();
+
+    @Query("SELECT p FROM PartEntity p WHERE p.isDeleted = false AND p.isReserved = false AND p.isCustomerPurchased = false AND p.partType = com.servit.servit.enumeration.PartEnum.STANDARD AND (p.quotationPart = 0 OR p.quotationPart IS NULL) AND p.datePurchasedByCustomer IS NULL AND p.reservedForTicketId IS NULL AND p.supplierName IS NULL AND p.supplierPartNumber IS NULL AND p.supplierOrderDate IS NULL AND p.supplierExpectedDelivery IS NULL AND p.supplierActualDelivery IS NULL AND p.warrantyExpiration IS NULL AND p.warranty IS NULL")
+    List<PartEntity> findEligiblePartsForQuotation();
 } 
