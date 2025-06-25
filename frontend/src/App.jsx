@@ -34,6 +34,8 @@ import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
 import api from "./services/api.jsx";
 import Spinner from "./components/Spinner/Spinner.jsx";
 import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
+import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'
+import QuotationViewer from "./pages/QuotationViewer/QuotationViewer.jsx";
 
 function App() {
   // Function to parse JWT token
@@ -135,6 +137,9 @@ function App() {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/quotation" element={<Quotation />} />
+              <Route path="/quotationapproval/:ticketNumber" element={
+                <ProtectedRoute element={<QuotationApproval />} allowedRoles={['customer']} />
+              } />
 
               {/* Protected History route */}
               <Route path="/history" element={
@@ -175,6 +180,12 @@ function App() {
               } />
               <Route path="/quotationeditor" element={
                 <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
+              } />
+              <Route path="/quotation-builder/:ticketNumber" element={
+                <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
+              } />
+              <Route path="/quotationviewer/:ticketNumber" element={
+                <ProtectedRoute element={<QuotationViewer />} allowedRoles={['admin', 'technician']} />
               } />
               <Route path="/inventory" element={
                 <ProtectedRoute element={<Inventory />} allowedRoles={['admin', 'technician']} />

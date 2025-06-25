@@ -47,10 +47,18 @@ const KanbanCard = ({ task }) => {
           <div className="text-xs mt-1">{task.customer}</div>
           {task.status === "AWAITING_PARTS" && (
             <Link
-              to={`/quotationeditor?ticketNumber=${encodeURIComponent(task.ticketId)}`}
+              to={`/quotation-builder/${encodeURIComponent(task.ticketId)}`}
               className="inline-block mt-1 text-xs text-green-600 hover:underline"
             >
               Build Quotation
+            </Link>
+          )}
+          {task.status === "REPAIRING" && (
+            <Link
+              to={`/quotationviewer/${encodeURIComponent(task.ticketId)}`}
+              className="inline-block mt-1 text-xs text-blue-600 hover:underline"
+            >
+              View Quotation
             </Link>
           )}
         </div>

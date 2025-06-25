@@ -1,8 +1,10 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import KanbanBoard from "../../components/Kanban/KanbanBoard.jsx"
-import {Bell, User, Search, CheckCircle, X, Clock, Plus} from "lucide-react"
+import {User, Search, CheckCircle, X, Clock, Plus, AlertTriangle} from "lucide-react"
+import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
 import { useEffect, useState } from "react"
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
+import api from "../../services/api.jsx";
 
 const TechnicianDashboard = () => {
     const [userData, setUserData] = useState({
@@ -34,6 +36,14 @@ const TechnicianDashboard = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
+
+    // Recent quotation responses
+    const [recentQuotations, setRecentQuotations] = useState([]);
+
+    // New state for low stock
+    const [lowStock, setLowStock] = useState([]);
+
+    const navigate = useNavigate();
 
     const parseJwt = (token) => {
         try {
@@ -179,6 +189,32 @@ const TechnicianDashboard = () => {
         fetchInventoryData();
     }, []);
 
+    // fetch latest quotations (paginated)
+    useEffect(() => {
+        const fetchQuotations = async () => {
+            try {
+                const { data } = await api.get("/quotation/getAllQuotationPaginated", { params: { page: 0, size: 5, sort: "respondedAt,desc" } });
+                setRecentQuotations(data.content || []);
+            } catch (err) {
+                console.error("Failed to fetch quotations", err);
+            }
+        };
+        fetchQuotations();
+    }, []);
+
+    // Fetch low stock summaries
+    useEffect(() => {
+        const fetchLowStock = async () => {
+            try {
+                const { data } = await api.get("/part/stock/lowStockPartNumbers");
+                setLowStock(data || []);
+            } catch (err) {
+                console.error("Failed to fetch low stock parts", err);
+            }
+        };
+        fetchLowStock();
+    }, []);
+
     // Chart data
     const chartData = {
         months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -240,9 +276,7 @@ const TechnicianDashboard = () => {
                     <div className="flex-1 max-w-md mx-0 md:mx-8 w-full md:w-auto">
                     </div>
                     <div className="flex items-center space-x-3 flex-shrink-0">
-                        <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                            <Bell className="h-5 w-5 text-gray-600" />
-                        </div>
+                        <NotificationBell />
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
                             <User className="h-5 w-5 text-gray-600" />
                         </div>
@@ -297,88 +331,66 @@ const TechnicianDashboard = () => {
                     {/* Charts and Customer Responses */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Parts Usage Statistics</h3>
-                            <div className="bg-teal-50 border-l-4 border-red-500 p-3 mb-4 rounded-r">
-                                <p className="text-sm">
-                                    <strong>Definition:</strong> This chart shows the frequency and quantity of replacement parts used in
-                                    repairs over the past 30 days, helping identify common repair needs and inventory planning
-                                    requirements.
-                                </p>
-                            </div>
-                            <div className="h-64 flex items-end justify-around pt-5">
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-teal-600 rounded-t relative" style={{ height: "60%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">12</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Screens</div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle size={18} className="text-red-600" /> Low-Stock Parts</h3>
+                            {lowStock.length === 0 ? (
+                                <div className="text-sm text-gray-500">All parts are above threshold.</div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-left">
+                                                <th className="px-3 py-2">Part Number</th>
+                                                <th className="px-3 py-2">Name</th>
+                                                <th className="px-3 py-2">Available</th>
+                                                <th className="px-3 py-2">Threshold</th>
+                                                <th className="px-3 py-2">Priority</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {lowStock.slice(0,5).map(item => (
+                                                <tr key={item.partNumber} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/inventory?search=${encodeURIComponent(item.partNumber)}`)}>
+                                                    <td className="px-3 py-2 font-medium text-gray-800">{item.partNumber}</td>
+                                                    <td className="px-3 py-2 text-gray-700">{item.partName}</td>
+                                                    <td className="px-3 py-2 text-gray-700">{item.currentAvailableStock}</td>
+                                                    <td className="px-3 py-2 text-gray-700">{item.lowStockThreshold}</td>
+                                                    <td className="px-3 py-2 text-gray-700">{item.priorityLevel}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-teal-600 rounded-t relative" style={{ height: "40%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">8</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Batteries</div>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-teal-600 rounded-t relative" style={{ height: "15%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">3</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Motherboards</div>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-teal-600 rounded-t relative" style={{ height: "25%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">5</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Cameras</div>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 bg-teal-600 rounded-t relative" style={{ height: "35%" }}>
-                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold">7</div>
-                                    </div>
-                                    <div className="text-xs mt-2">Speakers</div>
-                                </div>
-                            </div>
+                            )}
                         </div>
 
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Responses</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">Quote #4432 Approved</div>
-                                        <div className="text-xs text-gray-500">John Smith • 1h ago</div>
-                                    </div>
+                            {recentQuotations.length === 0 ? (
+                                <div className="text-sm text-gray-500">No recent responses.</div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {recentQuotations.map(q => {
+                                        const status = (q.status || "").toUpperCase();
+                                        let icon = <Clock className="h-4 w-4 text-amber-600" />;
+                                        let bg = "bg-amber-100";
+                                        let textColor = "text-amber-600";
+                                        if (status === "APPROVED") { icon = <CheckCircle className="h-4 w-4 text-green-600" />; bg = "bg-green-100"; textColor = "text-green-600"; }
+                                        else if (status === "REJECTED") { icon = <X className="h-4 w-4 text-red-600" />; bg = "bg-red-100"; textColor = "text-red-600"; }
+
+                                        const created = q.respondedAt || q.createdAt;
+                                        const timeStr = created ? new Date(created).toLocaleString(undefined, { month: "short", day: "numeric" }) : "";
+
+                                        return (
+                                            <button key={q.quotationId} onClick={() => navigate(`/quotationviewer/${encodeURIComponent(q.repairTicketNumber)}`)} className="flex items-center w-full text-left">
+                                                <div className={`w-8 h-8 ${bg} rounded-full flex items-center justify-center mr-3`}>{icon}</div>
+                                                <div>
+                                                    <div className="font-medium">Quote for {q.repairTicketNumber} {status.charAt(0) + status.slice(1).toLowerCase()}</div>
+                                                    <div className="text-xs text-gray-500">{timeStr}</div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                                        <X className="h-4 w-4 text-red-600" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">Quote #4435 Rejected</div>
-                                        <div className="text-xs text-gray-500">Emma Johnson • 3h ago</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center mr-3">
-                                        <Clock className="h-4 w-4 text-amber-600" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">Quote #4438 Pending</div>
-                                        <div className="text-xs text-gray-500">Michael Brown • 5h ago</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">Quote #4441 Approved</div>
-                                        <div className="text-xs text-gray-500">Sarah Davis • 1d ago</div>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

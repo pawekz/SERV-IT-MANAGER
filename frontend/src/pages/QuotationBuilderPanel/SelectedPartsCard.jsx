@@ -1,7 +1,8 @@
 import React from "react";
 import { X, Package, Plus } from "lucide-react";
+import Spinner from "../../components/Spinner/Spinner.jsx";
 
-const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryModal }) => {
+const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryModal, laborCost, setLaborCost, expiryDate, setExpiryDate, reminderHours, setReminderHours, editing, onCancelEditing, processing=false }) => {
   const preferredPart = selectedParts[0] || null;
   const alternativeParts = selectedParts.slice(1);
   return (
@@ -76,14 +77,57 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
           </div>
         </div>
 
+        {/* Labor Cost Input */}
+        {selectedParts.length > 0 && (
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Labor Cost (₱)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={laborCost}
+              onChange={(e) => setLaborCost(e.target.value)}
+              className="w-full md:w-40 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+        )}
+
+        {/* Expiry & Reminder Settings */}
+        {selectedParts.length > 0 && (
+          <div className="mt-6 grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+              {/* Use native date input for simplicity; can swap with react-calendar */}
+              <input type="date" value={expiryDate?.toISOString().substring(0,10)} onChange={e=>setExpiryDate(new Date(e.target.value))}
+                className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reminder (hrs)</label>
+              <input type="number" min="1" value={reminderHours} onChange={e=>setReminderHours(e.target.value)}
+                className="w-full md:w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+          </div>
+        )}
+
         {/* Action */}
         {selectedParts.length > 0 && (
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-end mt-6 space-x-2">
+            {editing && (
+              <button
+                onClick={onCancelEditing}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                disabled={processing}
+              >
+                Cancel Editing
+              </button>
+            )}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("send-quotation"))}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={processing}
             >
-              Send Quotation
+              {processing && <Spinner size="small" />}
+              {processing ? (editing ? "Updating..." : "Sending...") : (editing ? "Update Quotation" : "Send Quotation")}
             </button>
           </div>
         )}

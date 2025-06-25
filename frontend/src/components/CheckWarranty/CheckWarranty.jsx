@@ -12,6 +12,29 @@ const CheckWarranty = ({ onSuccess }) => {
     const [openReturnRequest, setOpenReturnRequest] = useState(false);
     const [error, setError] = useState(null);
 
+    const generateWarrantyNumber = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error(`Failed to generate warranty number: ${response.status}`);
+
+            return await response.text();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = async () => {
         if (!query.trim()) return;

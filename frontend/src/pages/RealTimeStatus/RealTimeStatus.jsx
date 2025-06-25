@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import api from "../../services/api.jsx"
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import BeforePicturesGallery from '../../components/BeforePictures/BeforePicturesGallery.jsx'
@@ -156,6 +156,16 @@ const RealTimeStatus = () => {
                         </span>
                     </li>
                 </ol>
+                    </div>
+                )}
+
+                {ticketNumberParam && currentStatus === "AWAITING_PARTS" && (
+                    <div className="flex justify-center mb-8">
+                        <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block">
+                            <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow">
+                                View Quotation / Approve or Decline
+                            </button>
+                        </Link>
                     </div>
                 )}
 

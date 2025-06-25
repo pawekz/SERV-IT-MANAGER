@@ -9,10 +9,10 @@ import {
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
-import ActiveRepairsCarousel from "../../components/DashboardCards/ActiveRepairsCarousel.jsx";
-import RecentUpdatesCard from "../../components/DashboardCards/RecentUpdatesCard.jsx";
-import RequiredActionsCard from "../../components/DashboardCards/RequiredActionsCard.jsx";
-import DocumentAccessCard from "../../components/DashboardCards/DocumentAccessCard.jsx";
+import ActiveRepairsCarousel from "./CustomerDashboardComponents/ActiveRepairsCarousel.jsx";
+import RecentUpdatesCard from "./CustomerDashboardComponents/RecentUpdatesCard.jsx";
+import RequiredActionsCard from "./CustomerDashboardComponents/RequiredActionsCard.jsx";
+import DocumentAccessCard from "./CustomerDashboardComponents/DocumentAccessCard.jsx";
 
 const CustomerDashboard = () => {
     const [userData, setUserData] = useState({
