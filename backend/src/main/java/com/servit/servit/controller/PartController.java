@@ -252,6 +252,20 @@ public class PartController {
         }
     }
 
+    @GetMapping("/getAllPartsForQuotation")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<List<PartResponseDTO>> getAllPartsForQuotation() {
+        logger.info("API Request: Getting eligible parts for quotation");
+        try {
+            List<PartResponseDTO> parts = partService.getAllPartsForQuotation();
+            logger.info("API Response: Retrieved {} eligible parts", parts.size());
+            return parts.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(parts);
+        } catch (Exception e) {
+            logger.error("API Error: Internal server error while getting parts for quotation - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // ================ Stock Management ================
 
     @PatchMapping("/stock/updateStocks/{id}")

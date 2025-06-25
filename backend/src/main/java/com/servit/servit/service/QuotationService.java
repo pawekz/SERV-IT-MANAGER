@@ -173,6 +173,38 @@ public class QuotationService {
                     // Persist updated part (no warranty created for quotation purchases)
                     partRepository.save(part);
                     logger.info("Part {} updated after quotation approval (customer purchased)", part.getPartId());
+
+                    // 3. Create WarrantyEntity linked to the part (no warranty number assigned)
+                    try {
+                        WarrantyEntity warranty = new WarrantyEntity();
+                        // Populate required fields from repair ticket
+                        RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(entity.getRepairTicketNumber()).orElse(null);
+                        if (ticket != null) {
+                            warranty.setCustomerName(ticket.getCustomerName());
+                            warranty.setCustomerEmail(ticket.getCustomerEmail());
+                            warranty.setCustomerPhoneNumber(ticket.getCustomerPhoneNumber());
+                            warranty.setReturnReason("PART_PURCHASE");
+                            warranty.setReportedIssue("Customer purchased part via quotation");
+                            warranty.setKind("PART_ONLY");
+                        } else {
+                            // Fallback minimal info if ticket is missing
+                            warranty.setCustomerName("UNKNOWN");
+                            warranty.setCustomerEmail("unknown@example.com");
+                            warranty.setCustomerPhoneNumber("N/A");
+                            warranty.setReturnReason("PART_PURCHASE");
+                            warranty.setReportedIssue("Customer purchased part via quotation");
+                            warranty.setKind("PART_ONLY");
+                        }
+                        // Status defaults to CHECKED_IN, warrantyNumber left null by design
+                        warrantyRepository.save(warranty);
+                        // Link warranty <-> part
+                        part.setWarranty(warranty);
+                        warranty.setItem(part);
+                        partRepository.save(part);
+                        logger.info("Warranty {} created and linked to part {}", warranty.getWarrantyId(), part.getPartId());
+                    } catch (Exception exw) {
+                        logger.warn("Failed to create/link warranty for part {}: {}", part.getPartId(), exw.getMessage());
+                    }
                 } catch(Exception ex){
                     logger.warn("Failed to fully update part/warranty after quotation approval: {}", ex.getMessage());
                 }
@@ -313,6 +345,8 @@ public class QuotationService {
             if (dto.getPartIds() != null) entity.setPartIds(dto.getPartIds());
             if (dto.getLaborCost() != null) entity.setLaborCost(dto.getLaborCost());
             if (dto.getTotalCost() != null) entity.setTotalCost(dto.getTotalCost());
+            if (dto.getExpiryAt() != null) entity.setExpiryAt(dto.getExpiryAt());
+            if (dto.getReminderDelayHours() != null) entity.setReminderDelayHours(dto.getReminderDelayHours());
 
             QuotationEntity saved = quotationRepository.save(entity);
             logger.info("Quotation updated: {}", saved.getQuotationId());
@@ -334,6 +368,8 @@ public class QuotationService {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setRespondedAt(entity.getRespondedAt());
         dto.setCustomerSelection(entity.getCustomerSelection());
+        dto.setExpiryAt(entity.getExpiryAt());
+        dto.setReminderDelayHours(entity.getReminderDelayHours());
         return dto;
     }
 }
