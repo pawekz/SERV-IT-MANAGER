@@ -3,6 +3,7 @@ import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
 import { Bell as BellIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 // Simple bell component that shows real-time notifications for the current user.
 // It replicates (in a compact form) the logic previously found in
@@ -179,8 +180,24 @@ export default function NotificationBell() {
 
   const handleNotificationClick = (notif) => {
     setDropdownOpen(false);
-    if (notif.ticketNumber) {
+    const type = notif.status || notif.type; // backend uses status field
+    if (type === 'QUOTATION_APPROVED' || type === 'QUOTATION_REJECTED' || type === 'QUOTATION_PENDING' || type === 'QUOTATION_REMINDER' || type === 'QUOTATION_EXPIRED') {
+      if (notif.ticketNumber) {
+        navigate(`/quotationviewer/${encodeURIComponent(notif.ticketNumber)}`);
+      }
+    } else if (notif.ticketNumber) {
       navigate(`/realtimestatus?ticketNumber=${notif.ticketNumber}`);
+    }
+  };
+
+  // Format createdAt to 'MMM DD, YYYY h:mm A'
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    try {
+      return dayjs(iso).format("MMM D, YYYY h:mm A");
+    } catch {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
     }
   };
 
@@ -226,7 +243,7 @@ export default function NotificationBell() {
               }`}
             >
               <div className={`text-sm ${notif.isRead ? "" : "font-semibold"}`}>{notif.message}</div>
-              <div className="text-xs text-gray-500 mt-1">{notif.createdAt}</div>
+              <div className="text-xs text-gray-500 mt-1">{formatDate(notif.createdAt)}</div>
 
               {/* action buttons (only show on hover?) */}
               <div className="absolute top-2 right-2 space-x-2 opacity-0 hover:opacity-100 transition-opacity">
