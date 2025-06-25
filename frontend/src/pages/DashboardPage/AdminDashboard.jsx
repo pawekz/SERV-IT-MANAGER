@@ -68,6 +68,11 @@ const AdminDashboard = () => {
     const [feedbacksLoading, setFeedbacksLoading] = useState(true);
     const [feedbacksError, setFeedbacksError] = useState(null);
 
+    // State for technician workload
+    const [technicianWorkload, setTechnicianWorkload] = useState([]);
+    const [techWorkloadLoading, setTechWorkloadLoading] = useState(true);
+    const [techWorkloadError, setTechWorkloadError] = useState(null);
+
     // Modal state for description
     const [modalData, setModalData] = useState(null);
 
@@ -463,6 +468,46 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
+    // Add useEffect to fetch technician workload data
+    useEffect(() => {
+        const fetchTechnicianWorkload = async () => {
+            try {
+                setTechWorkloadLoading(true);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+                const response = await fetch('http://localhost:8080/user/getTopTechniciansByWorkload', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching technician workload: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setTechnicianWorkload(data);
+                setTechWorkloadError(null);
+            } catch (err) {
+                console.error("Error fetching technician workload:", err);
+                setTechWorkloadError("Failed to load technician data");
+            } finally {
+                setTechWorkloadLoading(false);
+            }
+        };
+
+        fetchTechnicianWorkload();
+
+        // Refresh data every 5 minutes
+        const intervalId = setInterval(fetchTechnicianWorkload, 300000);
+        return () => clearInterval(intervalId);
+    }, []);
+
     // Updated useEffect to fetch satisfaction ratings from the backend
     useEffect(() => {
         const fetchSatisfactionRate = async () => {
@@ -718,9 +763,14 @@ const AdminDashboard = () => {
                             <div className="text-2xl font-bold text-gray-800">{stats.openTickets}</div>
                             <div className="text-xs text-gray-500 mt-1">
                                 {ticketChanges.value > 0 ? (
-                                    ticketChanges.isIncrease ?
-                                        <span className="text-red-500 font-medium">+{ticketChanges.value} since last check</span> :
-                                        <span className="text-green-500 font-medium">{ticketChanges.value} since last check</span>
+                                    <>
+                                        {ticketChanges.isIncrease ? (
+                                            <span className="text-green-500 font-medium">+{ticketChanges.value}</span>
+                                        ) : (
+                                            <span className="text-green-500 font-medium">{ticketChanges.value}</span>
+                                        )}
+                                        <span> since last check</span>
+                                    </>
                                 ) : (
                                     "No recent changes"
                                 )}
@@ -785,36 +835,42 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Bar Chart Card */}
+                        {/* Bar Chart Card - Now using dynamic data */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
-                            <div className="h-48 flex items-end justify-around pt-5">
-                                <div className="flex flex-col items-center">
-                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '50%' }}></div>
-                                    <div className="mt-2 text-xs">Alex</div>
-                                    <div className="text-xs text-gray-500">12</div>
+                            {techWorkloadLoading ? (
+                                <div className="h-48 flex items-center justify-center">
+                                    <p>Loading technician data...</p>
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '80%' }}></div>
-                                    <div className="mt-2 text-xs">Maria</div>
-                                    <div className="text-xs text-gray-500">18</div>
+                            ) : techWorkloadError ? (
+                                <div className="h-48 flex items-center justify-center text-red-500">
+                                    <p>{techWorkloadError}</p>
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '30%' }}></div>
-                                    <div className="mt-2 text-xs">John</div>
-                                    <div className="text-xs text-gray-500">7</div>
+                            ) : technicianWorkload.length === 0 ? (
+                                <div className="h-48 flex items-center justify-center text-gray-500">
+                                    <p>No technician workload data available</p>
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '65%' }}></div>
-                                    <div className="mt-2 text-xs">Sarah</div>
-                                    <div className="text-xs text-gray-500">15</div>
+                            ) : (
+                                <div className="h-48 flex items-end justify-around pt-5">
+                                    {technicianWorkload.slice(0, 5).map((tech, index) => {
+                                        // Find the maximum workload to calculate relative height
+                                        const maxWorkload = Math.max(...technicianWorkload.map(t => t.ticketCount));
+                                        // Calculate height percentage (minimum 10% for visibility)
+                                        const heightPercentage = Math.max(10, (tech.ticketCount / maxWorkload) * 100);
+
+                                        return (
+                                            <div key={index} className="flex flex-col items-center">
+                                                <div
+                                                    className="w-12 bg-blue-500 rounded-t-sm"
+                                                    style={{ height: `${heightPercentage}%` }}
+                                                ></div>
+                                                <div className="mt-2 text-xs">{tech.firstName || "Tech"}</div>
+                                                <div className="text-xs text-gray-500">{tech.ticketCount}</div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-12 bg-blue-500 rounded-t-sm" style={{ height: '45%' }}></div>
-                                    <div className="mt-2 text-xs">Mike</div>
-                                    <div className="text-xs text-gray-500">10</div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
