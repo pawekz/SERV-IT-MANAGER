@@ -7,7 +7,7 @@ const api = axios.create({
 });
 
 // Helper to decode JWT and check expiration and role
-function parseJwt(token) {
+export function parseJwt(token) {
   try {
     if (!token || typeof token !== 'string' || !token.includes('.')) {
       return null;

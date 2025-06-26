@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Spinner from "../Spinner/Spinner";
+import Spinner from "../../../components/Spinner/Spinner.jsx";
 
 const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onCancel, ticketNumber, loading }) => {
   if (!isOpen) return null;

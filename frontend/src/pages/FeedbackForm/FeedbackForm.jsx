@@ -1,7 +1,7 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import { useState } from "react";
 import { ThumbsUp, Star, Loader } from "lucide-react";
-import axios from "axios";
+import api from "../../services/api.jsx";
 import { useParams, useNavigate } from "react-router-dom";
 
 const FeedbackForm = () => {
@@ -52,20 +52,8 @@ const FeedbackForm = () => {
                 anonymous: submitAnonymously
             };
 
-            // Get token from localStorage
-            const token = localStorage.getItem('token');
-
             // Make the API call
-            const response = await axios.post(
-                'http://localhost:8080/feedback/submitFeedback',
-                feedbackData,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                }
-            );
+            const response = await api.post('/feedback/submitFeedback', feedbackData);
 
             console.log('Feedback submitted successfully:', response.data);
             setSuccess(true);

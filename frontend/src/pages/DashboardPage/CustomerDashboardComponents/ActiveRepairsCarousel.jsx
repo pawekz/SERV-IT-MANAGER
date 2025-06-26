@@ -37,7 +37,9 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
   const prev = () => setCurrent((prev) => (prev - 2 + tickets.length) % tickets.length);
   const next = () => setCurrent((prev) => (prev + 2) % tickets.length);
 
-  const visibleTickets = [tickets[current], tickets[(current + 1) % tickets.length]].filter(Boolean);
+  const visibleTickets = tickets.length === 1
+    ? [tickets[0]]
+    : [tickets[current], tickets[(current + 1) % tickets.length]].filter((t, idx, arr) => arr.indexOf(t) === idx);
 
   return (
     <div className="relative w-full mb-8">

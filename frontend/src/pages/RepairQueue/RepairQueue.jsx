@@ -3,11 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import {Wrench, Images, Archive, Search, Bell, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
+import { parseJwt } from "../../services/api.jsx";
 
 const RepairQueue = () => {
     const navigate = useNavigate()
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const role = localStorage.getItem('userRole')?.toLowerCase();
+
+    // Determine user role from JWT token (stored in localStorage as 'authToken')
+    const token = localStorage.getItem('authToken');
+    const decoded = parseJwt(token);
+    const role = decoded?.role?.toLowerCase();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [warrantyRequests, setWarrantyRequests] = useState([]);
@@ -253,12 +258,14 @@ const RepairQueue = () => {
                                     <div className="flex items-center gap-2">
 
                                     </div>
-                                    <Link to="/newrepair">
-                                        <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
-                                            <Plus className="w-5 h-5 mr-1" />
-                                            Add Ticket
-                                        </button>
-                                    </Link>
+                                    {role !== "customer" && (
+                                        <Link to="/newrepair">
+                                            <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
+                                                <Plus className="w-5 h-5 mr-1" />
+                                                Add Ticket
+                                            </button>
+                                        </Link>
+                                    )}
                                 </div>
                                 {warrantyRequests.length === 0 ? (
                                     <p className="text-center text-gray-600">
