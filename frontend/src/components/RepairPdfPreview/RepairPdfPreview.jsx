@@ -68,6 +68,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
     const handleGoBack = () => {
         setShowDialog(false);
+        setSuccess(true);
         navigate("/warranty");
     };
 

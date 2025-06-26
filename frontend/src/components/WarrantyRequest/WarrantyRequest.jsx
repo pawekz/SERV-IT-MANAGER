@@ -2,34 +2,30 @@ import React, {useEffect, useState} from "react";
 import {ChevronLeft, ChevronRight, Upload,X, SquareX} from "lucide-react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
+import Toast from "../Toast/Toast.jsx";
 
 
 const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     if (!data) return null;
+    if (!isOpen) return null;
     const [showWarrantyReceive, setShowWarrantyReceive] = useState(false);
     const role = localStorage.getItem('userRole')?.toLowerCase();
-    const [agreed, setAgreed] = useState(false);
+    const [showToast, setShowToast] = useState(false);
     const [readonly, setReadonly] = useState(false);
     const [success, setSuccess] = useState(false);
     const [photoFiles, setPhotoFiles] = useState(null);
     const [photoError, setPhotoError] = useState("");
+    const [error, setError] = useState("");
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
     const [formData, setFormData] = useState(() => ({
         warrantyNumber: '',
-        status: '',
-        customerName: '',
-        customerEmail: '',
-        customerPhoneNumber: '',
-        deviceName: '',
-        deviceType: '',
-        expirationDate: '',
-        reportedIssue: '',
-        returnReason: '' ,
-        serialNumber: '' ,
+        accessories: '' ,
+        color: '' ,
+        password: '' ,
+        type: '',
         techObservation: '',
-        warrantyPhotosUrls: [],
-        digitalSignature: null // will be set after signing
+        warrantyPhotosUrls: data.warrantyPhotosUrls
     }));
     const [reason, setReason] = useState({
         warrantyNumber: data.warrantyNumber,
@@ -46,14 +42,55 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const currentStatusIndex = STATUS_OPTIONS.indexOf(data.status);
 
+    const downloadWarrantyPdf = async (warrantyNumber) => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) throw new Error("Not authenticated. Please log in.");
+
+            const response = await fetch(`http://localhost:8080/warranty/getWarrantyPdf/${warrantyNumber}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch PDF. Status: " + response.status);
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get("Content-Disposition");
+            const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("PDF download error:", error);
+            alert("Something went wrong while downloading the PDF.");
+        }
+    };
+
     function SecureImage({ src, idx, openImageViewer }) {
         const [imageUrl, setImageUrl] = useState(null);
-
         useEffect(() => {
             const fetchImageWithAuth = async () => {
                 try {
+                    if (src.startsWith("data:")) {
+                        setImageUrl(src);
+                        return;
+                    }
+
                     const token = localStorage.getItem("authToken");
                     if (!token) throw new Error("Not authenticated. Please log in.");
+
+                    console.log(token)
 
                     const response = await fetch(`http://localhost:8080${src}`, {
                         headers: {
@@ -64,17 +101,25 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                     if (!response.ok) {
                         throw new Error("Failed to fetch image");
                     }
+                    console.log("Fetching image for SecureImage src:", src);
 
                     const blob = await response.blob();
                     const blobUrl = URL.createObjectURL(blob);
                     setImageUrl(blobUrl);
                 } catch (err) {
-                    console.error("Error fetching image:", err);
+
+                        console.error("Error fetching image:", err);
+                    console.log("Fetching image for SecureImage src:", src);
+                        setPhotoError(err instanceof Error ? err.message : String(err));
+                        setError(err instanceof Error ? err.message : String(err));
+                        setShowToast(true);
+
                 }
             };
 
             fetchImageWithAuth();
         }, [src]);
+
 
         if (!imageUrl) {
             return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />; // Skeleton while loading
@@ -95,12 +140,12 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         );
     }
 
-
-        useEffect(() => {
+    useEffect(() => {
+        setSuccess(null);
+        console.log(data);
         if (data) {
             setFormData(prev => {
                 if (prev.warrantyNumber === data.warrantyNumber) return prev;
-
                 return {
                     ...prev,
                     ...data
@@ -108,14 +153,6 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
             });
         }
     }, [data?.warrantyNumber]);
-
-    useEffect(() => {
-        if (role === "customer") {
-            setReadonly(true);
-        } else {
-            setReadonly(false);
-        }
-    }, [role]);
 
     const UpdateStatus = async () => {
 
@@ -140,8 +177,12 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
             try {
                 const errorData = await response.text();
                 errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
+                setError(errorMessage);
+                setShowToast(true);
             } catch (e) {
                 errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+                setError(errorMessage);
+                setShowToast(true);
             }
             throw new Error(errorMessage);
         }
@@ -180,17 +221,31 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        const statusChanged =( formData.status !== data.status);
+
+        if (!statusChanged){
+            setError("Please Update the status above.");
+            setShowToast(true);
+            return;
+        }
+
+        console.log("Form Data Submitted:", formData);
+
         if(formData.status === "ITEM_RETURNED") {
             const hasPhotos =
                 (photoFiles && photoFiles.length > 0) ||
                 (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
 
-            if (!hasPhotos) {
-                setPhotoError("Please upload at least one photo of the device condition.");
+            if (!hasPhotos ) {
+                setError("Please upload at least one photo of the device condition.");
+                setShowToast(true);
                 return;
             } else {
+                setError("");
                 setPhotoError("");
             }
+
+            console.log("Form Data:", formData);
 
             setShowWarrantyReceive(true);
         } else {
@@ -200,7 +255,10 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     };
 
     const handleStatusChange = (e) => {
-        setFormData({ ...data, status: e.target.value });
+        setFormData(prev => ({
+            ...prev,
+            status: e.target.value
+        }));
     };
 
     const reasonsList = [
@@ -220,16 +278,15 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.warrantyPhotosUrls.length);
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.warrantyPhotosUrls.length) % formData.warrantyPhotosUrls.length);
 
-
-
-    if (!isOpen) return null;
-
+    if(success === true){
+        onClose
+    }
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div
                 className={`relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[95vh]
-                  transform transition-all duration-700 scale-95 opacity-0
-                  ${isOpen ? 'scale-100 opacity-100' : ''}`}
+            transform transition-all duration-300
+            ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
             >
                 {/* Close Button (stays fixed at the top-right of the modal) */}
             <div className=" relative bg-white border-2 border-gray-200 shadow-lg rounded-lg overflow-y-auto max-h-[95vh] scrollbar-hide">
@@ -255,10 +312,29 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         <select
                                             onChange={handleStatusChange}
                                             value={formData.status}
-                                            disabled ={readonly} // disables editing (customer cannot change it)
-                                            className=" font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48">
-                                            {STATUS_OPTIONS.map((status, index) => (
-                                                <option key={status} value={status} disabled={index < currentStatusIndex}>
+                                            disabled={readonly}
+                                            className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
+                                        >
+                                            {STATUS_OPTIONS.filter((status) => {
+                                                const currentIndex = STATUS_OPTIONS.indexOf(formData.status);
+                                                const statusIndex = STATUS_OPTIONS.indexOf(status);
+
+                                                if (status === "DENIED") return true; // Always show DENIED
+
+                                                if (status === formData.status) return true; // Show current status as selected
+
+                                                if (formData.status === "CHECKED_IN") {
+                                                    return status === "ITEM_RETURNED";
+                                                }
+
+                                                if (formData.status === "ITEM_RETURNED") {
+                                                    return role === "admin" && statusIndex > currentIndex;
+                                                }
+
+                                                // For other statuses, only allow forward movement
+                                                return statusIndex > currentIndex;
+                                            }).map((status) => (
+                                                <option key={status} value={status}>
                                                     {status.replace(/_/g, " ")}
                                                 </option>
                                             ))}
@@ -269,49 +345,18 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
 
                         {/* Customer Information Section */}
-                        {role !== "customer" && (
+
                         <div className="mb-6">
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                                        Full Name:
-                                    </label>
-                                    <input
-                                        id="fullName"
-                                        defaultValue={data.customerName}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                        Email:
-                                    </label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        defaultValue={data.customerEmail}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                                        Phone:
-                                    </label>
-                                    <input
-                                        id="phone"
-                                        defaultValue={data.customerPhoneNumber}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
+                            <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
+                                <div><strong>Customer Name:</strong><br />{data.customerName}</div>
+                                <div><strong>Customer Email:</strong><br />{data.customerEmail}</div>
+                                <div><strong>Customer Phone Number:</strong><br />{data.customerPhoneNumber}</div>
                             </div>
                         </div>
-                        )}
+
 
 
                         {/* Device Information Section */}
@@ -319,54 +364,87 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label htmlFor="deviceName" className="block text-sm font-medium text-gray-700">
-                                        Device Name:
-                                    </label>
-                                    <input
-                                        id="deviceName"
-                                        defaultValue={data.deviceName}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="deviceType" className="block text-sm font-medium text-gray-700">
-                                        Description:
-                                    </label>
-                                    <input
-                                        id="deviceType"
-                                        defaultValue={data.deviceType}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700">
-                                        Serial Number:
-                                    </label>
-                                    <input
-                                        id="serialNumber"
-                                        defaultValue={data.serialNumber}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700">
-                                        Warranty Expiration Date:
-                                    </label>
-                                    <input
-                                        id="expirationDate"
-                                        defaultValue={new Date(data.expirationDate).toLocaleDateString()}
-                                        readOnly={readonly}
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
-                                    />
+                            <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
+                                <div><strong>Device Name:</strong><br />{data.deviceName}</div>
+                                <div><strong>Description:</strong><br />{data.deviceType}</div>
+                                <div><strong>Brand:</strong><br />{data.brand}</div>
+                                <div><strong>Model:</strong><br />{data.model}</div>
+                                <div><strong>Serial Number:</strong><br />{data.serialNumber}</div>
+                                <div>
+                                    <strong>Warranty Expiration:</strong><br />
+                                    {new Date(data.expirationDate).toLocaleDateString('en-US')}
                                 </div>
                             </div>
                         </div>
+
+                        {/* Additional Section if warranty becomes repair*/}
+                        {(data.kind === "IN_WARRANTY_REPAIR" && data.status === "CHECKED_IN" ) && (<div className="mb-6">
+                            <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                                <h2 className="font-bold text-gray-800">OTHER INFORMATION</h2>
+                            </div>
+                            <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
+
+                                <div className="space-y-2">
+                                    <label htmlFor="color" className="block text-sm font-medium text-gray-700">
+                                        Device Color:
+                                    </label>
+                                    <input
+                                        id="color"
+                                        value={formData.color}
+                                        onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                                        required
+                                        className=" w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
+                                    ></input>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                                        Device Password:
+                                    </label>
+                                    <input
+                                        id="password"
+                                        value={formData.password}
+                                        onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                                        required
+                                        placeholder="Please put 'NA' if none "
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
+                                    ></input>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                                        Device Type:
+                                    </label>
+                                    <select
+                                        id="type"
+                                        value={formData.type}
+                                        onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent bg-white"
+                                    >
+                                        <option value="">Select device type</option>
+                                        <option value="LAPTOP">Laptop</option>
+                                        <option value="COMPUTER">Computer</option>
+                                        <option value="PRINTER">Printer</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="accessories" className="block text-sm font-medium text-gray-700">
+                                    Acessories Included:
+                                </label>
+                                <input
+                                    id="accessories"
+                                    value={formData.accessories}
+                                    onChange={e => setFormData(prev => ({ ...prev, accessories: e.target.value }))}
+                                    required
+                                    className=" w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
+                                ></input>
+                            </div>
+
+                        </div>)}
+
 
                         {/* Problem Description Section */}
                         <div className="mb-6">
@@ -378,26 +456,27 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                     <label htmlFor="customerIssues" className="block text-sm font-medium text-gray-700">
                                         Customer Reported Issues:
                                     </label>
-                                    <textarea
+                                    <input
                                         id="customerIssues"
                                         defaultValue={data.reportedIssue}
-                                        readOnly
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
-                                    ></textarea>
+                                        disabled
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
+                                    ></input>
                                 </div>
-                                {role !== "customer" && (
+
                                 <div className="space-y-2">
                                     <label htmlFor="technicianObservations" className="block text-sm font-medium text-gray-700">
                                         Technician Observations:
                                     </label>
                                     <textarea
                                         id="technicianObservations"
-                                        defaultValue={data.techObservation}
+                                        value={data.techObservation}
+                                        onChange={e => setFormData(prev => ({ ...prev, techObservation: e.target.value }))}
                                         placeholder="To be filled by technician (Optional)"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent min-h-[100px]"
                                     ></textarea>
                                 </div>
-                                )}
+
                             </div>
                         </div>
 
@@ -424,13 +503,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </label>
                             ))}
                         </div>
-                        {role === "customer" && (
-                        <p className="text-sm italic text-green-500 mb-2">
-                            * Note: Device must be brought to the office for diagnosis and warranty processing.
-                        </p>)}
 
                         {/* Device Condition Section */}
-                        {role !=="customer" && (
+
                         <div className="mb-6 mt-5">
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
@@ -464,7 +539,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                             </p>
                                         )}
                                         {photoError && (
-                                            <p className="text-sm text-red-600">{photoError}</p>
+                                            <p className="text-sm text-red-600">
+                                                {photoError instanceof Error ? photoError.message : photoError}
+                                            </p>
                                         )}
                                         {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
@@ -498,7 +575,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                                         }
                                                                         return {
                                                                             ...prev,
-                                                                            warrantyPhotos: updatedPhotos
+                                                                            warrantyPhotosUrls: updatedPhotos
                                                                         };
                                                                     });
                                                                 }}
@@ -523,7 +600,22 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                                 <X size={18} className="text-gray-500 hover:text-red-500" />
                                                             </button>
                                                         )}
-                                                        <SecureImage key={idx} src={src} idx={idx} openImageViewer={openImageViewer} />
+                                                        { data.status === "CHECKED_IN" ? (
+                                                            <img
+                                                            src={src}
+                                                            alt={`Device condition ${idx + 1}`}
+                                                            style={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                objectFit: "contain",
+                                                                background: "#f3f4f6"
+                                                            }}
+                                                            onClick={() => openImageViewer(idx)}
+                                                        />) : (
+
+                                                        <SecureImage openImageViewer={() => openImageViewer(idx)} src={src} idx={idx} />
+                                                        ) }
+
                                                     </div>
                                                 ))}
                                             </div>
@@ -533,37 +625,36 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                 </div>
                             </div>
                         </div>
-                        )}
-
-                        {/* Terms and Conditions */}
-                        {role === "customer" && (
-                        <div className="mb-6">
-                            <div className="flex items-start gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="terms"
-                                    className="mt-1 h-4 w-4 rounded border-gray-300 text-[#33e407] focus:ring-[#33e407]"
-                                    checked
-                                />
-                                <label htmlFor="terms" className="text-sm text-gray-600">
-                                    I have read and agree to the warranty <span>terms and conditions</span>
-                                </label>
-                            </div>
-                        </div>
-                        )}
 
 
                         {/* Submit Button */}
-                        <div className="flex justify-end mt-4">
-                            <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 mr-3">Close</button>
-                            {role !== "customer" && (
+                        <div className="flex justify-between mt-4">
+                            {/* Left side: Download PDF */}
+                            <div>
+                                {data.status !== "CHECKED_IN" && (<button
+                                    onClick={() => downloadWarrantyPdf(data.warrantyNumber)}
+                                    className="px-6 py-2 bg-[#2bc106] text-white rounded hover:bg-green-700"
+                                >
+                                    Download PDF
+                                </button>)}
+
+                            </div>
+
+                            {/* Right side: Close and Confirm buttons */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onClose}
+                                    className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                                >
+                                    Close
+                                </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-[#33e407] hover:bg-[#2bc106] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
+                                    className="px-6 py-2 bg-[#2bc106] hover:bg-green-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:ring-offset-2"
                                 >
                                     Confirm Changes
                                 </button>
-                            )}
+                            </div>
                         </div>
 
                         {/* Image Viewer Modal */}
@@ -598,17 +689,17 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerPrevPhoto}
-                                            disabled={formData.warrantyPhotos.length < 2}
+                                            disabled={formData.warrantyPhotosUrls.length < 2}
                                         >
                                             <ChevronLeft size={24} />
                                         </button>
                                         <span className="text-gray-700 text-sm">
-                                    {imageViewerIndex + 1} / {formData.warrantyPhotos.length}
+                                    {imageViewerIndex + 1} / {formData.warrantyPhotosUrls.length}
                                 </span>
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerNextPhoto}
-                                            disabled={formData.warrantyPhotos.length < 2}
+                                            disabled={formData.warrantyPhotosUrls.length < 2}
                                         >
                                             <ChevronRight size={24} />
                                         </button>
@@ -618,9 +709,17 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                         )}
 
                     </form>
+                    <Toast
+                        show={showToast}
+                        message={error instanceof Error ? error.message : error}
+                        type="error"
+                        onClose={() => setShowToast(false)}
+                    />
+
                     {showWarrantyReceive && (
                         <WarrantyReceive reason={reason} data={formData} success={success} setSuccess={setSuccess} OnClose={() => setShowWarrantyReceive(false) } />
                     )}
+
                 </div>
             </div>
             </div>

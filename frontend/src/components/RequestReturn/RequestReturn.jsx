@@ -33,6 +33,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                 customerPhoneNumber: userData.phoneNumber || "",
                 customerEmail: userData.email || "",
             }));
+        } else {
+            setIsChecked(true);
         }
     }, [role, isOpen]);
 
@@ -179,6 +181,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             } catch (err) {
                 setError(err.message);
             } finally {
+            setFormData(null)
                 setLoading(false);
             }
     }

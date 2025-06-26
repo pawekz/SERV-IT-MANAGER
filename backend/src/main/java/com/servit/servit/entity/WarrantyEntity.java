@@ -47,6 +47,9 @@ public class WarrantyEntity {
     @Column(name = "kind", nullable = false)
     private String kind;
 
+    @Column(name = "is_device_tampered")
+    private Boolean isDeviceTampered;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
