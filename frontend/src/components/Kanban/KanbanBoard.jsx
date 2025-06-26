@@ -98,39 +98,65 @@ const KanbanBoard = () => {
     const showToast = (message, type = "success") => setToast({ show: true, message, type })
     const closeToast = () => setToast({ ...toast, show: false })
 
-    const handleConfirmChange = async () => {
+    const handleConfirmChange = async (photos = []) => {
         if (!pendingChange) return
         const task = tasks.find((t) => t.id === pendingChange.taskId)
         try {
             setIsUpdating(true)
-            const { data } = await api.patch("/repairTicket/updateRepairStatus", {
-                ticketNumber: task.ticketId, // ticketId stores ticketNumber
-                repairStatus: pendingChange.newStatus,
-            })
 
-            // Ensure UI reflects backend-confirmed status
-            if (data && data.newStatus) {
-                setTasks((prev) =>
-                    prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: data.newStatus } : t))
-                )
-            }
-
-            // If ticket moved to AWAITING_PARTS, create a draft quotation (if not exists)
-            if (data?.newStatus === "AWAITING_PARTS") {
-                try {
-                    await api.post("/quotation/addQuotation", {
-                        repairTicketNumber: task.ticketId,
-                        partIds: [],
-                        laborCost: 0,
-                        totalCost: 0,
-                    })
-                } catch (qErr) {
-                    // Silently ignore if quotation already exists or fails
-                    console.warn("Failed to create quotation draft", qErr)
+            if (pendingChange.newStatus === "READY_FOR_PICKUP") {
+                // Validate photos length in modal already, but double-check
+                if (photos.length === 0) {
+                    alert("Please upload at least one after-repair photo.")
+                    return
                 }
-            }
+                const formData = new FormData()
+                formData.append("ticketNumber", task.ticketId)
+                formData.append("repairStatus", pendingChange.newStatus)
+                photos.forEach((file) => formData.append("afterRepairPhotos", file))
 
-            showToast(data?.message || "Status updated successfully")
+                const { data } = await api.patch("/repairTicket/updateRepairStatusWithPhotos", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                })
+
+                // Ensure UI reflects backend-confirmed status
+                if (data && data.newStatus) {
+                    setTasks((prev) =>
+                        prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: data.newStatus } : t))
+                    )
+                }
+
+                showToast(data?.message || "Status updated successfully")
+            } else {
+                const { data } = await api.patch("/repairTicket/updateRepairStatus", {
+                    ticketNumber: task.ticketId, // ticketId stores ticketNumber
+                    repairStatus: pendingChange.newStatus,
+                })
+
+                // Ensure UI reflects backend-confirmed status
+                if (data && data.newStatus) {
+                    setTasks((prev) =>
+                        prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: data.newStatus } : t))
+                    )
+                }
+
+                // If ticket moved to AWAITING_PARTS, create a draft quotation (if not exists)
+                if (data?.newStatus === "AWAITING_PARTS") {
+                    try {
+                        await api.post("/quotation/addQuotation", {
+                            repairTicketNumber: task.ticketId,
+                            partIds: [],
+                            laborCost: 0,
+                            totalCost: 0,
+                        })
+                    } catch (qErr) {
+                        // Silently ignore if quotation already exists or fails
+                        console.warn("Failed to create quotation draft", qErr)
+                    }
+                }
+
+                showToast(data?.message || "Status updated successfully")
+            }
         } catch (error) {
             console.error("Failed to update repair status", error)
             // Revert UI on failure

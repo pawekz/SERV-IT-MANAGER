@@ -5,6 +5,7 @@ import { useLocation, Link } from 'react-router-dom'
 import api from "../../services/api.jsx"
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import BeforePicturesGallery from '../../components/BeforePictures/BeforePicturesGallery.jsx'
+import AfterPicturesGallery from '../DashboardPage/CustomerDashboardComponents/AfterPicturesGallery.jsx'
 
 const RealTimeStatus = () => {
     const location = useLocation()
@@ -213,6 +214,10 @@ const RealTimeStatus = () => {
 
                 {ticketDetails && ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0 && (
                     <BeforePicturesGallery photos={ticketDetails.repairPhotosUrls} />
+                )}
+
+                {ticketDetails && ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0 && (
+                    <AfterPicturesGallery photos={ticketDetails.afterRepairPhotosUrls} />
                 )}
 
                 {/* Repair Cards */}

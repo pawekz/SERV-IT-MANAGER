@@ -99,4 +99,23 @@ public class QuotationController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get quotations by repair ticket number", e);
         }
     }
+
+    @PatchMapping("/editQuotation/{repairTicketNumber}")
+    public QuotationDTO editQuotation(@PathVariable String repairTicketNumber, @RequestBody QuotationDTO dto) {
+        try {
+            // Find existing quotations for the ticket – assume latest is first after sorting by createdAt desc
+            java.util.List<com.servit.servit.dto.QuotationDTO> list = quotationService.getQuotationByRepairTicketNumber(repairTicketNumber);
+            if (list.isEmpty()) {
+                throw new IllegalArgumentException("No quotation found for ticket " + repairTicketNumber);
+            }
+            // use the first (most recent)
+            Long quotationId = list.get(0).getQuotationId();
+            dto.setQuotationId(quotationId);
+            return quotationService.updateQuotation(dto);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to edit quotation", e);
+        }
+    }
 }
