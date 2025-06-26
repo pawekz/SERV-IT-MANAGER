@@ -1,5 +1,5 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
-import KanbanBoard from "../../components/Kanban/KanbanBoard.jsx"
+import KanbanBoard from "./TechnicianKanban/KanbanBoard.jsx"
 import {User, Search, CheckCircle, X, Clock, Plus, AlertTriangle} from "lucide-react"
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
 import { useEffect, useState } from "react"

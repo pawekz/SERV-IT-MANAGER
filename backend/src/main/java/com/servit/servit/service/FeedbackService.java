@@ -35,6 +35,10 @@ public class FeedbackService {
     }
 
     public FeedbackEntity submitFeedback(FeedbackRequestDTO feedbackRequestDTO) {
+        // Check if feedback already exists for this ticket
+        feedbackRepository.findByRepairTicketId(feedbackRequestDTO.getRepairTicketId())
+                .ifPresent(existing -> { throw new IllegalStateException("Feedback already submitted for this ticket"); });
+
         FeedbackEntity feedback = new FeedbackEntity();
         feedback.setRating(feedbackRequestDTO.getRating());
         feedback.setComments(feedbackRequestDTO.getComments());

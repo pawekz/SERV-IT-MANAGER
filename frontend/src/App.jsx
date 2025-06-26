@@ -202,7 +202,7 @@ function App() {
               <Route path="/profilemanage" element={
                 <ProtectedRoute element={<UserManagement />} allowedRoles={['admin']} />
               } />
-              <Route path="/feedbackform" element={
+              <Route path="/feedbackform/:ticketId" element={
                 <ProtectedRoute element={<Feedbackform />} allowedRoles={['admin', 'technician', 'customer']} />
               } />
               <Route path="/realtimestatus" element={

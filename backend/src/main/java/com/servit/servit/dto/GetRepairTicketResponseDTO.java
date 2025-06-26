@@ -23,6 +23,7 @@ public class GetRepairTicketResponseDTO {
     private String reportedIssue;
     private String repairStatus;
     private LocalDate checkInDate;
+    private Long repairTicketId;
 
     private List<String> repairPhotosUrls;
     private List<String> afterRepairPhotosUrls;

@@ -624,6 +624,7 @@ public class RepairTicketService {
         dto.setAfterRepairPhotosUrls(repairTicket.getAfterRepairPhotos() != null ? repairTicket.getAfterRepairPhotos().stream()
                 .map(AfterRepairPhotoEntity::getPhotoUrl)
                 .collect(Collectors.toList()) : null);
+        dto.setRepairTicketId(repairTicket.getRepairTicketId());
         return dto;
     }
 }

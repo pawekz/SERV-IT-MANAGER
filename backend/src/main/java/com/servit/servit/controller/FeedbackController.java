@@ -34,9 +34,13 @@ public class FeedbackController {
     }
 
     @PostMapping("/submitFeedback")
-    public ResponseEntity<FeedbackEntity> submitFeedback(@RequestBody FeedbackRequestDTO feedbackRequestDTO) {
-        FeedbackEntity feedback = feedbackService.submitFeedback(feedbackRequestDTO);
-        return ResponseEntity.ok(feedback);
+    public ResponseEntity<?> submitFeedback(@RequestBody FeedbackRequestDTO feedbackRequestDTO) {
+        try {
+            FeedbackEntity feedback = feedbackService.submitFeedback(feedbackRequestDTO);
+            return ResponseEntity.ok(feedback);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PatchMapping("/updateFeedback/{id}")

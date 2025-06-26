@@ -170,6 +170,17 @@ const RealTimeStatus = () => {
                     </div>
                 )}
 
+                {ticketNumberParam && currentStatus === "COMPLETED" && (
+                    <div className="flex justify-center mb-8">
+                        <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`}
+                              className="inline-block">
+                            <button className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md shadow">
+                                Give Feedback
+                            </button>
+                        </Link>
+                    </div>
+                )}
+
                 {/* History list for ticket */}
                 {ticketNumberParam && history.length > 0 && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -212,12 +223,15 @@ const RealTimeStatus = () => {
                     </div>
                 )}
 
-                {ticketDetails && ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0 && (
-                    <BeforePicturesGallery photos={ticketDetails.repairPhotosUrls} />
-                )}
-
-                {ticketDetails && ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0 && (
-                    <AfterPicturesGallery photos={ticketDetails.afterRepairPhotosUrls} />
+                {(ticketDetails && ((ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0) || (ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0))) && (
+                    <div className="flex flex-col md:flex-row md:gap-6 mb-8">
+                        {ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0 && (
+                            <BeforePicturesGallery photos={ticketDetails.repairPhotosUrls} />
+                        )}
+                        {ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0 && (
+                            <AfterPicturesGallery photos={ticketDetails.afterRepairPhotosUrls} />
+                        )}
+                    </div>
                 )}
 
                 {/* Repair Cards */}
