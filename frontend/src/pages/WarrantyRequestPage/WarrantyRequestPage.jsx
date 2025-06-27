@@ -137,7 +137,7 @@ const WarrantyRequestPage = () => {
     // Fetch warranties on component mount
     useEffect(() => {
         setLoading(true);
-        setModalOpen(false);
+        onClose();
         try{
             if(role === "customer") {
                 fetchWarrantiesbyemail(userData.email);

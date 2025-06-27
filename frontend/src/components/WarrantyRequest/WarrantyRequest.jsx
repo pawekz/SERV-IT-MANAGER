@@ -82,10 +82,10 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         useEffect(() => {
             const fetchImageWithAuth = async () => {
                 try {
-                    if (src.startsWith("data:")) {
-                        setImageUrl(src);
-                        return;
-                    }
+                    // if (src.startsWith("data:")) {
+                    //     setImageUrl(src);
+                    //     return;
+                    // }
 
                     const token = localStorage.getItem("authToken");
                     if (!token) throw new Error("Not authenticated. Please log in.");
@@ -279,7 +279,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.warrantyPhotosUrls.length) % formData.warrantyPhotosUrls.length);
 
     if(success === true){
-        onClose
+        onClose();
     }
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">

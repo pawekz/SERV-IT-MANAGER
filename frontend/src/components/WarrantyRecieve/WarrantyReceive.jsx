@@ -6,14 +6,12 @@ import RepairPdfPreview from "../RepairPdfPreview/RepairPdfPreview.jsx";
 const WarrantyReceive = ({ reason = {}, data = {}, OnClose, success, setSuccess }) => {
     if (!data) return null;
     const [formData, setFormData] = useState(data);
-    const [reasons, setReasons] = useState(reason);
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [signatureDataURL, setSignatureDataURL] = useState(formData.digitalSignature || "");
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [checkInResponse, setCheckInResponse] = useState(null);
-    const role = localStorage.getItem('userRole')?.toLowerCase();
 
-    console.log(data)
+
 
     return (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
