@@ -9,6 +9,8 @@ import com.servit.servit.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,36 +31,121 @@ public class AuthService {
     }
 
     public AuthResponseDTO authenticate(LoginRequestDTO req) {
-        UserEntity user = userRepo.findByEmail(req.getIdentifier())
-                .or(() -> userRepo.findByUsername(req.getIdentifier()))
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+        logger.info("Customer authentication attempt for identifier: {}", req.getIdentifier());
 
-        if (user.getRole() != UserRoleEnum.CUSTOMER) {
-            logger.warn("Non-customer tried to login via /login: {}", user.getUsername());
-            throw new IllegalArgumentException("Access denied");
+        try {
+            validateLoginRequest(req);
+
+            UserEntity user = findUserByIdentifier(req.getIdentifier());
+
+            validateCustomerAccess(user);
+            validatePassword(req.getPassword(), user.getPassword(), user.getUsername());
+
+            String token = generateUserToken(user);
+
+            logger.info("Customer authentication successful for user: {}", user.getUsername());
+            return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
+
+        } catch (AuthenticationException e) {
+            logger.error("Customer authentication failed for identifier: {} - {}", req.getIdentifier(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during customer authentication for identifier: {}", req.getIdentifier(), e);
+            throw new AuthenticationException("Authentication failed due to system error") {};
         }
-        if (!encoder.matches(req.getPassword(), user.getPassword())) {
-            logger.error("Invalid password for customer: {}", user.getUsername());
-            throw new IllegalArgumentException("Invalid credentials");
-        }
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
-        return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
     }
 
     public AuthResponseDTO authenticateStaff(LoginRequestDTO req) {
-        UserEntity user = userRepo.findByEmail(req.getIdentifier())
-                .or(() -> userRepo.findByUsername(req.getIdentifier()))
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+        logger.info("Staff authentication attempt for identifier: {}", req.getIdentifier());
 
+        try {
+            validateLoginRequest(req);
+
+            UserEntity user = findUserByIdentifier(req.getIdentifier());
+
+            validateStaffAccess(user);
+            validatePassword(req.getPassword(), user.getPassword(), user.getUsername());
+
+            String token = generateUserToken(user);
+
+            logger.info("Staff authentication successful for user: {} with role: {}", user.getUsername(), user.getRole());
+            return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
+
+        } catch (AuthenticationException e) {
+            logger.error("Staff authentication failed for identifier: {} - {}", req.getIdentifier(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during staff authentication for identifier: {}", req.getIdentifier(), e);
+            throw new AuthenticationException("Authentication failed due to system error") {};
+        }
+    }
+
+    private void validateLoginRequest(LoginRequestDTO req) {
+        if (req == null) {
+            throw new BadCredentialsException("Login request cannot be null");
+        }
+        if (req.getIdentifier() == null || req.getIdentifier().trim().isEmpty()) {
+            throw new BadCredentialsException("Username/email is required");
+        }
+        if (req.getPassword() == null || req.getPassword().trim().isEmpty()) {
+            throw new BadCredentialsException("Password is required");
+        }
+    }
+
+    private UserEntity findUserByIdentifier(String identifier) {
+        try {
+            return userRepo.findByEmail(identifier)
+                    .or(() -> userRepo.findByUsername(identifier))
+                    .orElseThrow(() -> {
+                        logger.warn("User not found for identifier: {}", identifier);
+                        return new BadCredentialsException("Invalid credentials");
+                    });
+        } catch (Exception e) {
+            logger.error("Database error while finding user with identifier: {}", identifier, e);
+            throw new AuthenticationException("Authentication failed due to system error") {};
+        }
+    }
+
+    private void validateCustomerAccess(UserEntity user) {
+        if (user.getRole() != UserRoleEnum.CUSTOMER) {
+            logger.warn("Non-customer user {} attempted to login via customer endpoint", user.getUsername());
+            throw new BadCredentialsException("Access denied");
+        }
+    }
+
+    private void validateStaffAccess(UserEntity user) {
         if (user.getRole() == UserRoleEnum.CUSTOMER) {
-            logger.warn("Customer tried to login via staff endpoint: {}", user.getUsername());
-            throw new IllegalArgumentException("Access denied");
+            logger.warn("Customer user {} attempted to login via staff endpoint", user.getUsername());
+            throw new BadCredentialsException("Access denied");
         }
-        if (!encoder.matches(req.getPassword(), user.getPassword())) {
-            logger.error("Invalid password for staff: {}", user.getUsername());
-            throw new IllegalArgumentException("Invalid credentials");
+    }
+
+    private void validatePassword(String rawPassword, String encodedPassword, String username) {
+        try {
+            if (!encoder.matches(rawPassword, encodedPassword)) {
+                logger.warn("Invalid password attempt for user: {}", username);
+                throw new BadCredentialsException("Invalid credentials");
+            }
+        } catch (Exception e) {
+            logger.error("Error during password validation for user: {}", username, e);
+            throw new AuthenticationException("Authentication failed due to system error") {};
         }
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber(), user.getIsVerified());
-        return new AuthResponseDTO(token, user.getRole().name(), user.getIsVerified(), user.getStatus());
+    }
+
+    private String generateUserToken(UserEntity user) {
+        try {
+            return jwtUtil.generateToken(
+                    user.getUsername(),
+                    user.getRole().name(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail(),
+                    user.getPhoneNumber(),
+                    user.getIsVerified()
+            );
+        } catch (Exception e) {
+            logger.error("Error generating JWT token for user: {}", user.getUsername(), e);
+            throw new AuthenticationException("Authentication failed due to system error") {};
+        }
     }
 }
