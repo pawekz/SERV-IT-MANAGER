@@ -1,9 +1,9 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.*;
-import com.servit.servit.dto.AddEmployeeRequestDTO;
-import com.servit.servit.dto.VerifyOnboardingCodeRequestDTO;
-import com.servit.servit.dto.CompleteOnboardingRequestDTO;
+import com.servit.servit.dto.user.AddEmployeeRequestDTO;
+import com.servit.servit.dto.user.VerifyOnboardingCodeRequestDTO;
+import com.servit.servit.dto.user.CompleteOnboardingRequestDTO;
+import com.servit.servit.dto.user.*;
 import com.servit.servit.service.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;

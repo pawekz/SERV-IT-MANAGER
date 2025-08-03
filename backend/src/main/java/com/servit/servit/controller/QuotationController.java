@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.QuotationDTO;
+import com.servit.servit.dto.quotation.QuotationDTO;
 import com.servit.servit.service.QuotationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -104,7 +104,7 @@ public class QuotationController {
     public QuotationDTO editQuotation(@PathVariable String repairTicketNumber, @RequestBody QuotationDTO dto) {
         try {
             // Find existing quotations for the ticket – assume latest is first after sorting by createdAt desc
-            java.util.List<com.servit.servit.dto.QuotationDTO> list = quotationService.getQuotationByRepairTicketNumber(repairTicketNumber);
+            java.util.List<QuotationDTO> list = quotationService.getQuotationByRepairTicketNumber(repairTicketNumber);
             if (list.isEmpty()) {
                 throw new IllegalArgumentException("No quotation found for ticket " + repairTicketNumber);
             }

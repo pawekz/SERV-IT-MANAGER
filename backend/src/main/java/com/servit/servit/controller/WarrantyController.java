@@ -1,9 +1,7 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.*;
-import com.servit.servit.entity.RepairTicketEntity;
+import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.WarrantyEntity;
-import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.service.WarrantyService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;

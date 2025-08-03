@@ -1,6 +1,7 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.notification.NotificationDTO;
+import com.servit.servit.dto.repairticket.*;
 import com.servit.servit.entity.*;
 import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
@@ -33,7 +34,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 
-import com.servit.servit.dto.UpdateRepairStatusWithPhotosRequestDTO;
+import com.servit.servit.dto.repairticket.UpdateRepairStatusWithPhotosRequestDTO;
 import com.servit.servit.entity.AfterRepairPhotoEntity;
 
 @Service

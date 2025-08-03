@@ -1,6 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.user.*;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.RepairTicketRepository;

@@ -1,6 +1,7 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.auth.AuthResponseDTO;
+import com.servit.servit.dto.auth.LoginRequestDTO;
 import com.servit.servit.entity.UserEntity;
 import com.servit.servit.enumeration.UserRoleEnum;
 import com.servit.servit.repository.UserRepository;

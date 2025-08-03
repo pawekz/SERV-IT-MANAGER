@@ -1,6 +1,7 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.auth.AuthResponseDTO;
+import com.servit.servit.dto.auth.LoginRequestDTO;
 import com.servit.servit.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
