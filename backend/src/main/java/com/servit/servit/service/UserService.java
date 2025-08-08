@@ -968,20 +968,10 @@ public class UserService {
             user.setOnboardingCode(onboardingCode);
 
             userRepo.save(user);
-            logger.info("Employee entity saved successfully for email: {}", req.getEmail());
+            logger.info("Employee account saved for email: {}", req.getEmail());
 
-            String subject = "IOCONNECT Employee Onboarding Instructions";
-            String message = "Hello " + formatName(req.getFirstName()) + ",\n\n" +
-                    "Welcome to IOCONNECT! We've created your employee account. To activate it, please complete these steps:\n\n" +
-                    "1. Open the Employee Onboarding page: http://localhost:5173/employee-onboarding (or paste the link in your browser).\n" +
-                    "2. In the form, enter **your email address** ( <b>" + req.getEmail() + "</b> ) in the Email field.\n" +
-                    "3. Enter the **Onboarding Code** below in the Onboarding Code field.\n" +
-                    "4. Click <b>Verify Code</b>. You will then be prompted to set a secure password and activate your account.\n\n" +
-                    "Your Onboarding Code: <b>" + onboardingCode + "</b>\n\n" +
-                    "If you did not expect this email, please ignore it or contact your administrator.";
-
-            emailService.sendGenericNotificationEmail(req.getEmail(), subject, message);
-            logger.info("Employee creation completed successfully for email: {}", req.getEmail());
+            emailService.sendEmployeeOnboardingEmail(req.getEmail(), formatName(req.getFirstName()), onboardingCode);
+            logger.info("Employee creation completed successfully: {}", req.getEmail());
 
         } catch (IllegalArgumentException e) {
             logger.error("Employee creation validation error: {}", e.getMessage());

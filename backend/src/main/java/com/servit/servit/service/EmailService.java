@@ -189,4 +189,46 @@ public class EmailService {
         String attachmentName = String.format("%s-repair-ticket.pdf", WarrantyNumber);
         emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
     }
+
+    public void sendEmployeeOnboardingEmail(String to, String firstName, String onboardingCode) throws MessagingException {
+        String subject = "IOCONNECT Employee Onboarding Instructions";
+        String htmlContent = "<html>" +
+                "<head>" +
+                "<style>" +
+                "  body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }" +
+                "  .email-container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); overflow: hidden; }" +
+                "  .header { background-color: #33e407; color: #ffffff; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }" +
+                "  .content { padding: 20px; color: #333333; background-color: #fcfcfc; }" +
+                "  .content h1 { font-size: 20px; margin-bottom: 10px; }" +
+                "  .content p { font-size: 16px; line-height: 1.5; margin-bottom: 20px; }" +
+                "  .content ol { font-size: 16px; line-height: 1.5; margin-bottom: 20px; }" +
+                "  .code-box { display: inline-block; padding: 10px 20px; font-size: 18px; font-weight: bold; color: #ffffff; background-color: #33e407; border-radius: 4px; margin: 10px 0; }" +
+                "  .footer { text-align: center; padding: 10px; font-size: 12px; color: #888888; background-color: #f4f4f9; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "  <div class='email-container'>" +
+                "    <div class='header' style='text-align: center;'>Employee Onboarding</div>" +
+                "    <div class='content'>" +
+                "      <h1>Hello " + firstName + ",</h1>" +
+                "      <p>Welcome to <span style='color: #33e407;'>IO</span><span style='color: #000000;'>CONNECT</span>! We've created your employee account.</p>" +
+                "      <p>To activate it, please complete these steps:</p>" +
+                "      <ol>" +
+                "        <li>Open the Employee Onboarding page: <strong>http://localhost:5173/employee-onboarding</strong></li>" +
+                "        <li>Enter your email address (<strong>" + to + "</strong>) in the Email field</li>" +
+                "        <li>Enter the Onboarding Code below in the Onboarding Code field</li>" +
+                "        <li>Click <strong>Verify Code</strong> and set your secure password</li>" +
+                "      </ol>" +
+                "      <div style='text-align: center;'>" +
+                "        <p>Your Onboarding Code:</p>" +
+                "        <div class='code-box'>" + onboardingCode + "</div>" +
+                "      </div>" +
+                "      <p style='margin-top: 30px;'>If you did not expect this email, please ignore it or contact your administrator.</p>" +
+                "    </div>" +
+                "    <div class='footer' style='text-align: center;'>© 2025 IOCONNECT. All rights reserved.</div>" +
+                "  </div>" +
+                "</body>" +
+                "</html>";
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
 }
