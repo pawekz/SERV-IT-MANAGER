@@ -4,12 +4,16 @@ import com.servit.servit.dto.user.AddEmployeeRequestDTO;
 import com.servit.servit.dto.user.VerifyOnboardingCodeRequestDTO;
 import com.servit.servit.dto.user.CompleteOnboardingRequestDTO;
 import com.servit.servit.dto.user.*;
+import com.servit.servit.entity.UserEntity;
+import com.servit.servit.repository.UserRepository;
 import com.servit.servit.service.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,6 +23,9 @@ public class UserController {
 
     @Autowired
     private final UserService userSvc;
+
+    @Autowired
+    private UserRepository userRepo;
 
     public UserController(UserService userSvc) {
         this.userSvc = userSvc;
@@ -144,6 +151,50 @@ public class UserController {
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
             }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PostMapping("/updateCurrentUserProfilePicture")
+    public ResponseEntity<?> updateCurrentUserProfilePicture(@RequestParam("file") MultipartFile file) {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            UserEntity user = userRepo.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            userSvc.updateProfilePicture(user.getUserId(), file);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @DeleteMapping("/removeCurrentUserProfilePicture")
+    public ResponseEntity<?> removeCurrentUserProfilePicture() {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            UserEntity user = userRepo.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            userSvc.removeProfilePicture(user.getUserId());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @DeleteMapping("/removeProfilePicture/{id}")
+    public ResponseEntity<?> removeProfilePicture(@PathVariable Integer id) {
+        try {
+            userSvc.removeProfilePicture(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
@@ -299,6 +350,18 @@ public class UserController {
     public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody UpdateUserStatusRequestDTO req) {
         try {
             userSvc.updateStatus(id, req.getStatus());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PostMapping("/updateProfilePicture/{id}")
+    public ResponseEntity<?> updateProfilePicture(@PathVariable Integer id, @RequestParam("file") MultipartFile file) {
+        try {
+            userSvc.updateProfilePicture(id, file);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

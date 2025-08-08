@@ -6,6 +6,7 @@ import com.servit.servit.entity.UserEntity;
 import com.servit.servit.repository.RepairTicketRepository;
 import com.servit.servit.repository.UserRepository;
 import com.servit.servit.enumeration.UserRoleEnum;
+import com.servit.servit.util.FileUtil;
 import jakarta.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +35,9 @@ public class UserService {
 
     @Autowired
     private RepairTicketRepository repairTicketRepository;
+
+    @Autowired
+    private FileUtil fileUtil;
 
     private final PasswordEncoder passwordEncoder;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -59,7 +64,8 @@ public class UserService {
             logger.info("Successfully retrieved current user: {}", user.getEmail());
             return new GetUserResponseDTO(
                     user.getUserId(), user.getFirstName(), user.getLastName(),
-                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()
+                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                    user.getStatus(), user.getProfilePictureUrl()
             );
         } catch (Exception e) {
             logger.error("Error fetching current user: {}", e.getMessage(), e);
@@ -272,6 +278,60 @@ public class UserService {
     }
 
     @Transactional
+    public void updateProfilePicture(Integer userId, MultipartFile file) {
+        try {
+            logger.info("Updating profile picture for user ID: {}", userId);
+
+            UserEntity user = userRepo.findById(userId)
+                    .orElseThrow(() -> {
+                        logger.error("User not found for ID: {}", userId);
+                        return new IllegalArgumentException("User not found");
+                    });
+
+            // Delete old profile picture if it exists
+            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().equals("0")) {
+                fileUtil.deleteProfilePicture(user.getProfilePictureUrl());
+            }
+
+            // Save new profile picture
+            String profilePictureUrl = fileUtil.saveProfilePicture(file, userId);
+            user.setProfilePictureUrl(profilePictureUrl);
+            userRepo.save(user);
+
+            logger.info("Profile picture updated successfully for user ID: {}", userId);
+        } catch (Exception e) {
+            logger.error("Error updating profile picture for user ID: {}", userId, e);
+            throw new RuntimeException("Failed to update profile picture", e);
+        }
+    }
+
+    @Transactional
+    public void removeProfilePicture(Integer userId) {
+        try {
+            logger.info("Removing profile picture for user ID: {}", userId);
+
+            UserEntity user = userRepo.findById(userId)
+                    .orElseThrow(() -> {
+                        logger.error("User not found for ID: {}", userId);
+                        return new IllegalArgumentException("User not found");
+                    });
+
+            // Delete profile picture file
+            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().equals("0")) {
+                fileUtil.deleteProfilePicture(user.getProfilePictureUrl());
+            }
+
+            user.setProfilePictureUrl("0");
+            userRepo.save(user);
+
+            logger.info("Profile picture removed successfully for user ID: {}", userId);
+        } catch (Exception e) {
+            logger.error("Error removing profile picture for user ID: {}", userId, e);
+            throw new RuntimeException("Failed to remove profile picture", e);
+        }
+    }
+
+    @Transactional
     public void changeCurrentUserPhoneNumber(ChangePhoneNumberDTO req) {
         try {
             logger.info("Phone number change request for current user");
@@ -412,7 +472,8 @@ public class UserService {
             List<GetUserResponseDTO> users = userRepo.findAll().stream()
                     .map(user -> new GetUserResponseDTO(
                             user.getUserId(), user.getFirstName(), user.getLastName(),
-                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                            user.getStatus(), user.getProfilePictureUrl()))
                     .toList();
             logger.info("Successfully fetched {} users", users.size());
             return users;
@@ -435,7 +496,8 @@ public class UserService {
 
             GetUserResponseDTO response = new GetUserResponseDTO(
                     user.getUserId(), user.getFirstName(), user.getLastName(),
-                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()
+                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                    user.getStatus(), user.getProfilePictureUrl()
             );
             logger.info("Successfully fetched user with ID: {}", userId);
             return response;
@@ -636,7 +698,8 @@ public class UserService {
                     .filter(user -> user.getRole() == UserRoleEnum.TECHNICIAN)
                     .map(user -> new GetUserResponseDTO(
                             user.getUserId(), user.getFirstName(), user.getLastName(),
-                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                            user.getStatus(), user.getProfilePictureUrl()))
                     .toList();
             logger.info("Successfully fetched {} technicians", technicians.size());
             return technicians;
@@ -664,7 +727,8 @@ public class UserService {
 
             GetUserResponseDTO response = new GetUserResponseDTO(
                     user.getUserId(), user.getFirstName(), user.getLastName(),
-                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus());
+                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                    user.getStatus(), user.getProfilePictureUrl());
             logger.info("Successfully fetched technician by email: {}", email);
             return response;
 
@@ -704,7 +768,8 @@ public class UserService {
                             user.getCreatedAt().isBefore(endOfWeek))
                     .map(user -> new GetUserResponseDTO(
                             user.getUserId(), user.getFirstName(), user.getLastName(),
-                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(), user.getStatus()))
+                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                            user.getStatus(), user.getProfilePictureUrl()))
                     .toList();
 
             logger.info("Successfully fetched {} weekly users", weeklyUsers.size());
@@ -732,7 +797,8 @@ public class UserService {
                     .limit(3)
                     .map(u -> new GetUserResponseDTO(
                             u.getUserId(), u.getFirstName(), u.getLastName(),
-                            u.getEmail(), u.getRole().name(), u.getPhoneNumber(), u.getStatus()))
+                            u.getEmail(), u.getRole().name(), u.getPhoneNumber(),
+                            u.getStatus(), u.getProfilePictureUrl()))
                     .toList();
 
             logger.info("Found {} technicians for query '{}'", result.size(), query);

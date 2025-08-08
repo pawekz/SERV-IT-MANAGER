@@ -151,4 +151,29 @@ public class FileUtil {
 
         return filePath.toString();
     }
+
+    public String saveProfilePicture(MultipartFile file, Integer userId) throws IOException {
+        validatePhoto(file);
+
+        String fileExtension = getFileExtension(file);
+        String fileName = String.format("user-%d-profile%s", userId, fileExtension);
+
+        String basePath = configurationService.getTicketFilesBasePath();
+        Path filePath = Paths.get(basePath, "images", "profile_pictures", fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
+
+        return filePath.toString();
+    }
+
+    public void deleteProfilePicture(String profilePictureUrl) {
+        if (profilePictureUrl != null && !profilePictureUrl.equals("0")) {
+            try {
+                Path filePath = Paths.get(profilePictureUrl);
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                System.err.println("Failed to delete profile picture: " + e.getMessage());
+            }
+        }
+    }
 }
