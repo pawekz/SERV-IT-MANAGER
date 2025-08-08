@@ -1,5 +1,6 @@
 package com.servit.servit.service;
 
+import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.entity.QuotationEntity;
 import com.servit.servit.repository.QuotationRepository;
 import org.slf4j.Logger;
@@ -70,7 +71,7 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
                     if (hrs >= reminderDelay) {
                         // Send reminder notification
                         try {
-                            com.servit.servit.dto.NotificationDTO dto = new com.servit.servit.dto.NotificationDTO();
+                            NotificationDTO dto = new NotificationDTO();
                             dto.setTicketNumber(q.getRepairTicketNumber());
                             dto.setStatus("QUOTATION_REMINDER");
                             dto.setMessage("You have a pending quotation to review.");
@@ -88,7 +89,7 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
                     quotationRepository.save(q);
                     // Notify expiry
                     try {
-                        com.servit.servit.dto.NotificationDTO dto = new com.servit.servit.dto.NotificationDTO();
+                        NotificationDTO dto = new NotificationDTO();
                         dto.setTicketNumber(q.getRepairTicketNumber());
                         dto.setStatus("QUOTATION_EXPIRED");
                         dto.setMessage("Quotation has expired.");

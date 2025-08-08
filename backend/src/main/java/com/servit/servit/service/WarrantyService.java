@@ -1,6 +1,7 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.repairticket.CheckInRepairTicketRequestDTO;
+import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.*;
 import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.repository.PartRepository;

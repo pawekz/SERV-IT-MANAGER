@@ -1,6 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.part.*;
 import com.servit.servit.entity.InventoryTransactionEntity;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.enumeration.PartEnum;

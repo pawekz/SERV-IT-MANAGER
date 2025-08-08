@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.*;
+import com.servit.servit.dto.repairticket.*;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.ConfigurationService;
 import com.servit.servit.service.RepairTicketService;

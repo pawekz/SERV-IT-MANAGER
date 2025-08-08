@@ -47,6 +47,9 @@ public class UserEntity {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
+    private String profilePictureUrl = "0";
+
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified;
 

@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.NotificationDTO;
+import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,7 +1,7 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.PartNumberStockSummaryDTO;
-import com.servit.servit.dto.UpdatePartNumberStockTrackingDTO;
+import com.servit.servit.dto.part.PartNumberStockSummaryDTO;
+import com.servit.servit.dto.part.UpdatePartNumberStockTrackingDTO;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.entity.PartNumberStockTrackingEntity;
 import com.servit.servit.repository.PartNumberStockTrackingRepository;

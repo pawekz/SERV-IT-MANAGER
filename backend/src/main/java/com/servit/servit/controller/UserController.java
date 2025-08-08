@@ -1,15 +1,19 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.*;
-import com.servit.servit.dto.AddEmployeeRequestDTO;
-import com.servit.servit.dto.VerifyOnboardingCodeRequestDTO;
-import com.servit.servit.dto.CompleteOnboardingRequestDTO;
+import com.servit.servit.dto.user.AddEmployeeRequestDTO;
+import com.servit.servit.dto.user.VerifyOnboardingCodeRequestDTO;
+import com.servit.servit.dto.user.CompleteOnboardingRequestDTO;
+import com.servit.servit.dto.user.*;
+import com.servit.servit.entity.UserEntity;
+import com.servit.servit.repository.UserRepository;
 import com.servit.servit.service.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -20,6 +24,9 @@ public class UserController {
     @Autowired
     private final UserService userSvc;
 
+    @Autowired
+    private UserRepository userRepo;
+
     public UserController(UserService userSvc) {
         this.userSvc = userSvc;
     }
@@ -27,19 +34,23 @@ public class UserController {
     // USER SIDE
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegistrationRequestDTO req) throws MessagingException {
+    public ResponseEntity<?> register(@RequestBody RegistrationRequestDTO req) {
         try {
             userSvc.register(req);
-            return ResponseEntity.status(201).build();
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
             if ("Email already in use".equals(message)) {
-                return ResponseEntity.badRequest().body("Email Already Used");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email Already Used");
             } else if ("Username already in use".equals(message)) {
-                return ResponseEntity.badRequest().body("Username Already Used");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username Already Used");
             } else {
-                return ResponseEntity.badRequest().body(message);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
             }
+        } catch (MessagingException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
@@ -49,221 +60,447 @@ public class UserController {
             boolean result = userSvc.onboardAdmin(req);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
     @PostMapping("/verifyOtp")
-    public ResponseEntity<Void> verifyOtp(@RequestBody VerifyOtpRequestDTO req) {
-        userSvc.verifyOtp(req);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> verifyOtp(@RequestBody VerifyOtpRequestDTO req) {
+        try {
+            userSvc.verifyOtp(req);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PostMapping("/resendOtp")
-    public ResponseEntity<Void> resendOtp(@RequestBody ResendOtpRequestDTO req) throws MessagingException {
-        userSvc.resendOtp(req);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> resendOtp(@RequestBody ResendOtpRequestDTO req) {
+        try {
+            userSvc.resendOtp(req);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (MessagingException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/getCurrentUser")
-    public ResponseEntity<GetUserResponseDTO> getCurrentUser() {
-        return ResponseEntity.ok(userSvc.getCurrentUser());
+    public ResponseEntity<?> getCurrentUser() {
+        try {
+            return ResponseEntity.ok(userSvc.getCurrentUser());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/changeCurrentUserPassword")
-    public ResponseEntity<Void> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
-        userSvc.changeCurrentUserPassword(req);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> changeCurrentUserPassword(@RequestBody ChangeCurrentUserPasswordRequestDTO req) {
+        try {
+            userSvc.changeCurrentUserPassword(req);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateCurrentUserFullName")
-    public ResponseEntity<Void> updateCurrentUserFullName(@RequestBody UpdateFullNameRequestDTO req) {
-        userSvc.updateCurrentUserFullName(req);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateCurrentUserFullName(@RequestBody UpdateFullNameRequestDTO req) {
+        try {
+            userSvc.updateCurrentUserFullName(req);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/changeCurrentUserPhoneNumber")
-    public ResponseEntity<Void> changeCurrentUserPhoneNumber(@RequestBody ChangePhoneNumberDTO req) {
-        userSvc.changeCurrentUserPhoneNumber(req);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> changeCurrentUserPhoneNumber(@RequestBody ChangePhoneNumberDTO req) {
+        try {
+            userSvc.changeCurrentUserPhoneNumber(req);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateCurrentUsername")
-    public ResponseEntity<Void> updateCurrentUsername(@RequestBody UpdateUsernameRequestDTO req) {
-        userSvc.updateCurrentUsername(req);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateCurrentUsername(@RequestBody UpdateUsernameRequestDTO req) {
+        try {
+            userSvc.updateCurrentUsername(req);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if ("Username already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PostMapping("/updateCurrentUserProfilePicture")
+    public ResponseEntity<?> updateCurrentUserProfilePicture(@RequestParam("file") MultipartFile file) {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            UserEntity user = userRepo.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            userSvc.updateProfilePicture(user.getUserId(), file);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @DeleteMapping("/removeCurrentUserProfilePicture")
+    public ResponseEntity<?> removeCurrentUserProfilePicture() {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            UserEntity user = userRepo.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            userSvc.removeProfilePicture(user.getUserId());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @DeleteMapping("/removeProfilePicture/{id}")
+    public ResponseEntity<?> removeProfilePicture(@PathVariable Integer id) {
+        try {
+            userSvc.removeProfilePicture(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PostMapping("/forgotPassword")
-    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequestDTO req) throws MessagingException {
-        userSvc.forgotPassword(req);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDTO req) {
+        try {
+            userSvc.forgotPassword(req);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (MessagingException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PostMapping("/resetPassword")
-    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequestDTO req) {
-        userSvc.resetPassword(req);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequestDTO req) {
+        try {
+            userSvc.resetPassword(req);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     // ADMIN SIDE
 
     @GetMapping("/getAllUsers")
-    public ResponseEntity<List<GetUserResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userSvc.getAllUsers());
+    public ResponseEntity<?> getAllUsers() {
+        try {
+            return ResponseEntity.ok(userSvc.getAllUsers());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/changeRole/{id}")
-    public ResponseEntity<Void> changeRole(@PathVariable Integer id,
-                                           @RequestBody ChangeRoleRequestDTO req) {
-        userSvc.changeRole(id, req.getRole());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> changeRole(@PathVariable Integer id, @RequestBody ChangeRoleRequestDTO req) {
+        try {
+            userSvc.changeRole(id, req.getRole());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/getUser/{id}")
-    public ResponseEntity<GetUserResponseDTO> getUser(@PathVariable Integer id) {
-        return ResponseEntity.ok(userSvc.getUser(id));
+    public ResponseEntity<?> getUser(@PathVariable Integer id) {
+        try {
+            return ResponseEntity.ok(userSvc.getUser(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/changePassword/{id}")
-    public ResponseEntity<Void> changePassword(@PathVariable Integer id, @RequestBody ChangePasswordRequestDTO req) {
-        userSvc.changePassword(id, req.getNewPassword());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> changePassword(@PathVariable Integer id, @RequestBody ChangePasswordRequestDTO req) {
+        try {
+            userSvc.changePassword(id, req.getNewPassword());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateEmail/{id}")
-    public ResponseEntity<Void> updateEmail(@PathVariable Integer id, @RequestBody UpdateEmailRequestDTO req) {
-        userSvc.updateEmail(id, req.getNewEmail());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateEmail(@PathVariable Integer id, @RequestBody UpdateEmailRequestDTO req) {
+        try {
+            userSvc.updateEmail(id, req.getNewEmail());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if ("Email already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(message);
+            } else if ("User not found".equals(message)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/changePhoneNumber/{id}")
-    public ResponseEntity<Void> changePhoneNumber(@PathVariable Integer id, @RequestBody ChangePhoneNumberDTO req) {
-        userSvc.changePhoneNumber(id, req.getNewPhoneNumber());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> changePhoneNumber(@PathVariable Integer id, @RequestBody ChangePhoneNumberDTO req) {
+        try {
+            userSvc.changePhoneNumber(id, req.getNewPhoneNumber());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateUsername/{id}")
-    public ResponseEntity<Void> updateUsername(@PathVariable Integer id, @RequestBody UpdateUsernameRequestDTO req) {
-        userSvc.updateUsername(id, req.getNewUsername());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateUsername(@PathVariable Integer id, @RequestBody UpdateUsernameRequestDTO req) {
+        try {
+            userSvc.updateUsername(id, req.getNewUsername());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if ("Username already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(message);
+            } else if ("User not found".equals(message)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @DeleteMapping("/deleteUser/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
-        userSvc.deleteUser(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
+        try {
+            userSvc.deleteUser(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateFullName/{id}")
-    public ResponseEntity<Void> updateFullName(@PathVariable Integer id, @RequestBody UpdateFullNameRequestDTO req) {
-        userSvc.updateFullName(id, req.getNewFirstName(), req.getNewLastName());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateFullName(@PathVariable Integer id, @RequestBody UpdateFullNameRequestDTO req) {
+        try {
+            userSvc.updateFullName(id, req.getNewFirstName(), req.getNewLastName());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @PatchMapping("/updateStatus/{id}")
-    public ResponseEntity<Void> updateStatus(@PathVariable Integer id, @RequestBody UpdateUserStatusRequestDTO req) {
-        userSvc.updateStatus(id, req.getStatus());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody UpdateUserStatusRequestDTO req) {
+        try {
+            userSvc.updateStatus(id, req.getStatus());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PostMapping("/updateProfilePicture/{id}")
+    public ResponseEntity<?> updateProfilePicture(@PathVariable Integer id, @RequestParam("file") MultipartFile file) {
+        try {
+            userSvc.updateProfilePicture(id, file);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/getAllTechnicians")
-    public ResponseEntity<List<GetUserResponseDTO>> getAllTechnicians() {
+    public ResponseEntity<?> getAllTechnicians() {
         try {
             List<GetUserResponseDTO> technicians = userSvc.getAllTechnicians();
             if (technicians.isEmpty()) {
-                return ResponseEntity.status(org.springframework.http.HttpStatus.NO_CONTENT).build();
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             }
             return ResponseEntity.ok(technicians);
         } catch (Exception e) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
     @GetMapping("/getTechnicianByEmail")
-    public ResponseEntity<GetUserResponseDTO> getTechnicianByEmail(@RequestParam String email) {
-        return ResponseEntity.ok(userSvc.getTechnicianByEmail(email));
+    public ResponseEntity<?> getTechnicianByEmail(@RequestParam String email) {
+        try {
+            return ResponseEntity.ok(userSvc.getTechnicianByEmail(email));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/getUserCount")
-    public ResponseEntity<Long> getUserCount() {
-        return ResponseEntity.ok(userSvc.getUserCount());
+    public ResponseEntity<?> getUserCount() {
+        try {
+            return ResponseEntity.ok(userSvc.getUserCount());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/getWeeklyUsers")
-    public ResponseEntity<List<GetUserResponseDTO>> getWeeklyUsers() {
-        return ResponseEntity.ok(userSvc.getWeeklyUsers());
+    public ResponseEntity<?> getWeeklyUsers() {
+        try {
+            return ResponseEntity.ok(userSvc.getWeeklyUsers());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
     @GetMapping("/searchTechnicians")
-    public ResponseEntity<List<GetUserResponseDTO>> searchTechnicians(@RequestParam String query) {
+    public ResponseEntity<?> searchTechnicians(@RequestParam String query) {
         try {
             return ResponseEntity.ok(userSvc.searchTechnicians(query));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
     @PatchMapping("/assignTechnician")
-    public ResponseEntity<Void> assignTechnicianToTicket(@RequestBody AssignTechnicianRequestDTO req) {
+    public ResponseEntity<?> assignTechnicianToTicket(@RequestBody AssignTechnicianRequestDTO req) {
         try {
             userSvc.assignTechnicianToTicket(req.getTicketNumber(), req.getTechnicianEmail());
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
     @GetMapping("/getTopTechniciansByWorkload")
-    public ResponseEntity<List<TechnicianWorkloadDTO>> getTopTechniciansByWorkload() {
+    public ResponseEntity<?> getTopTechniciansByWorkload() {
         try {
             return ResponseEntity.ok(userSvc.getTopTechniciansByWorkload(5));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
     @GetMapping("/getUserCountInit")
-    public ResponseEntity<Long> getUserCountInit() {
-        return ResponseEntity.ok(userSvc.getUserCount());
+    public ResponseEntity<?> getUserCountInit() {
+        try {
+            return ResponseEntity.ok(userSvc.getUserCount());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
     }
 
-    // ADMIN: Create new employee (Technician) account
     @PostMapping("/createEmployee")
     public ResponseEntity<?> createEmployee(@RequestBody AddEmployeeRequestDTO req) {
         try {
             userSvc.createEmployee(req);
-            return ResponseEntity.status(201).build();
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String message = e.getMessage();
+            if ("Email already in use".equals(message) || "Username already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (MessagingException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
-    // EMPLOYEE: Verify onboarding code
     @PostMapping("/verifyOnboardingCode")
     public ResponseEntity<?> verifyOnboardingCode(@RequestBody VerifyOnboardingCodeRequestDTO req) {
         try {
             boolean ok = userSvc.verifyOnboardingCode(req);
             return ResponseEntity.ok(ok);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String message = e.getMessage();
+            if ("User not found".equals(message)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
-    // EMPLOYEE: Complete onboarding with password
     @PostMapping("/completeOnboarding")
     public ResponseEntity<?> completeOnboarding(@RequestBody CompleteOnboardingRequestDTO req) {
         try {
             userSvc.completeEmployeeOnboarding(req);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String message = e.getMessage();
+            if ("User not found".equals(message)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 }

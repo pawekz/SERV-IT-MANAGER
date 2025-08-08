@@ -1,6 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.FeedbackRequestDTO;
+import com.servit.servit.dto.feedback.FeedbackRequestDTO;
 import com.servit.servit.entity.FeedbackEntity;
 import com.servit.servit.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;

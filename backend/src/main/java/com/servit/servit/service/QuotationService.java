@@ -1,6 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.QuotationDTO;
+import com.servit.servit.dto.quotation.QuotationDTO;
 import com.servit.servit.entity.QuotationEntity;
 import com.servit.servit.repository.QuotationRepository;
 import com.servit.servit.repository.PartRepository;
@@ -14,10 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.servit.servit.dto.NotificationDTO;
+import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.repository.WarrantyRepository;
 import com.servit.servit.entity.WarrantyEntity;
-import com.servit.servit.enumeration.WarrantyStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;

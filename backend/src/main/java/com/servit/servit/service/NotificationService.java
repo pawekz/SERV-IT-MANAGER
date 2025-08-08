@@ -1,6 +1,6 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.NotificationDTO;
+import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.entity.NotificationEntity;
 import com.servit.servit.repository.NotificationRepository;
 import org.slf4j.Logger;
