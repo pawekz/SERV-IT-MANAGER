@@ -29,7 +29,11 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest
+          cache-to: type=inline
 
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
@@ -37,67 +41,71 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest
+          cache-to: type=inline
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Log in to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy Backend to Web App
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            az webapp config container set --name servit-backend --resource-group servit \
-              --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest \
-              --container-registry-url https://index.docker.io/v1/ \
-              --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
-              --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
-            az webapp deployment container config --name servit-backend --resource-group servit --enable-cd true
-            az webapp config appsettings set --name servit-backend --resource-group servit --settings \
-              MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
-              MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}" \
-              MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
-              MYSQL_SERVER="${{ secrets.MYSQL_SERVER }}" \
-              WEBSITES_PORT=8080
-            az webapp restart --name servit-backend --resource-group servit
-
-      - name: Deploy Frontend to Web App
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            az webapp config container set --name servit-frontend --resource-group servit \
-              --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest \
-              --container-registry-url https://index.docker.io/v1/ \
-              --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
-              --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
-            az webapp deployment container config --name servit-frontend --resource-group servit --enable-cd true
-            az webapp config appsettings set --name servit-frontend --resource-group servit --settings WEBSITES_PORT=4173
-            az webapp config set --name servit-frontend --resource-group servit --startup-file "npm run preview -- --host 0.0.0.0"
-            az webapp restart --name servit-frontend --resource-group servit
-
-      - name: Get Backend URL
-        id: get-backend-url
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            FQDN=$(az webapp show --name servit-backend --resource-group servit --query defaultHostName -o tsv)
-            echo "backend_url=https://$FQDN" >> $GITHUB_OUTPUT
-
-      - name: Get Frontend URL
-        id: get-frontend-url
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            FQDN=$(az webapp show --name servit-frontend --resource-group servit --query defaultHostName -o tsv)
-            echo "frontend_url=https://$FQDN" >> $GITHUB_OUTPUT
-
-      - name: Output URLs
-        run: |
-          echo "Backend is now accessible at ${{ steps.get-backend-url.outputs.backend_url }}"
-          echo "Frontend is now accessible at ${{ steps.get-frontend-url.outputs.frontend_url }}"
+  # deploy:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Log in to Azure
+  #       uses: azure/login@v2
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #
+  #     - name: Deploy Backend to Web App
+  #       uses: azure/CLI@v2
+  #       with:
+  #         inlineScript: |
+  #           az webapp config container set --name servit-backend --resource-group servit \
+  #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest \
+  #             --container-registry-url https://index.docker.io/v1/ \
+  #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
+  #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
+  #           az webapp deployment container config --name servit-backend --resource-group servit --enable-cd true
+  #           az webapp config appsettings set --name servit-backend --resource-group servit --settings \
+  #             MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
+  #             MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}" \
+  #             MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+  #             MYSQL_SERVER="${{ secrets.MYSQL_SERVER }}" \
+  #             WEBSITES_PORT=8080
+  #           az webapp restart --name servit-backend --resource-group servit
+  #
+  #     - name: Deploy Frontend to Web App
+  #       uses: azure/CLI@v2
+  #       with:
+  #         inlineScript: |
+  #           az webapp config container set --name servit-frontend --resource-group servit \
+  #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest \
+  #             --container-registry-url https://index.docker.io/v1/ \
+  #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
+  #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
+  #           az webapp deployment container config --name servit-frontend --resource-group servit --enable-cd true
+  #           # Note: when using Nginx image, WEBSITES_PORT should be 8080 and no Node startup command required
+  #           az webapp config appsettings set --name servit-frontend --resource-group servit --settings WEBSITES_PORT=8080
+  #           az webapp restart --name servit-frontend --resource-group servit
+  #
+  #     - name: Get Backend URL
+  #       id: get-backend-url
+  #       uses: azure/CLI@v2
+  #       with:
+  #         inlineScript: |
+  #           FQDN=$(az webapp show --name servit-backend --resource-group servit --query defaultHostName -o tsv)
+  #           echo "backend_url=https://$FQDN" >> $GITHUB_OUTPUT
+  #
+  #     - name: Get Frontend URL
+  #       id: get-frontend-url
+  #       uses: azure/CLI@v2
+  #       with:
+  #         inlineScript: |
+  #           FQDN=$(az webapp show --name servit-frontend --resource-group servit --query defaultHostName -o tsv)
+  #           echo "frontend_url=https://$FQDN" >> $GITHUB_OUTPUT
+  #
+  #     - name: Output URLs
+  #       run: |
+  #         echo "Backend is now accessible at ${{ steps.get-backend-url.outputs.backend_url }}"
+  #         echo "Frontend is now accessible at ${{ steps.get-frontend-url.outputs.frontend_url }}"
 

@@ -9,6 +9,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# Create non-root user/group with fixed UID/GID
+RUN addgroup -S app && adduser -S app -G app -u 10001
+
 # Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
@@ -17,6 +20,10 @@ COPY DigiCertGlobalRootCA.crt.pem /app/DigiCertGlobalRootCA.crt.pem
 
 # Set environment variables
 ENV SPRING_PROFILES_ACTIVE=prod
+ENV JAVA_TOOL_OPTIONS="-XX:+ExitOnOutOfMemoryError -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8 -Djava.security.egd=file:/dev/urandom"
+
+RUN chown -R app:app /app
+USER app:app
 
 # Expose port
 EXPOSE 8080
