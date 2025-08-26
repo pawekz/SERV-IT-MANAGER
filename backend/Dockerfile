@@ -18,8 +18,9 @@ COPY --from=build /app/target/*.jar app.jar
 # Copy SSL Certificate (azure)
 COPY DigiCertGlobalRootCA.crt.pem /app/DigiCertGlobalRootCA.crt.pem
 
-# Set environment variables
-ENV SPRING_PROFILES_ACTIVE=prod
+# Set environment variables (if you want to use a specific profile, e.g., prod)
+#ENV SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=azure
 ENV JAVA_TOOL_OPTIONS="-XX:+ExitOnOutOfMemoryError -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8 -Djava.security.egd=file:/dev/urandom"
 
 RUN chown -R app:app /app
