@@ -62,7 +62,7 @@ jobs:
   #         inlineScript: |
   #           az webapp config container set --name servit-backend --resource-group servit \
   #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest \
-  #             --container-registry-url https://index.docker.io/v1/ \
+  #             --container-registry-url https://index.docker.io \
   #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
   #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
   #           az webapp deployment container config --name servit-backend --resource-group servit --enable-cd true
@@ -80,7 +80,7 @@ jobs:
   #         inlineScript: |
   #           az webapp config container set --name servit-frontend --resource-group servit \
   #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest \
-  #             --container-registry-url https://index.docker.io/v1/ \
+  #             --container-registry-url https://index.docker.io \
   #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
   #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
   #           az webapp deployment container config --name servit-frontend --resource-group servit --enable-cd true
@@ -108,4 +108,3 @@ jobs:
   #       run: |
   #         echo "Backend is now accessible at ${{ steps.get-backend-url.outputs.backend_url }}"
   #         echo "Frontend is now accessible at ${{ steps.get-frontend-url.outputs.frontend_url }}"
-
