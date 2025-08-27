@@ -39,7 +39,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         logger.debug("Configuring security filter chain");
-        
+
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(withDefaults())
@@ -164,10 +164,10 @@ public class SecurityConfig {
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .httpBasic(AbstractHttpConfigurer::disable);
-        
+
         // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         logger.debug("Security filter chain configured successfully");
         return http.build();
     }
@@ -177,7 +177,15 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5173"); //default port is 5173 in VITE
+        
+        // Add both local development and production origins
+        config.addAllowedOrigin("http://localhost:5173"); // Local development
+        config.addAllowedOrigin("https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net"); // Production frontend
+        
+        // Allow common frontend ports for development
+        config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://localhost:4173");
+        
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
