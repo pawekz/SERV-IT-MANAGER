@@ -42,69 +42,141 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit:latest
           cache-to: type=inline
 
-  # deploy:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Log in to Azure
-  #       uses: azure/login@v2
-  #       with:
-  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
-  #
-  #     - name: Deploy Backend to Web App
-  #       uses: azure/CLI@v2
-  #       with:
-  #         inlineScript: |
-  #           az webapp config container set --name servit-backend --resource-group servit \
-  #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest \
-  #             --container-registry-url https://index.docker.io \
-  #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
-  #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
-  #           az webapp deployment container config --name servit-backend --resource-group servit --enable-cd true
-  #           az webapp config appsettings set --name servit-backend --resource-group servit --settings \
-  #             MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
-  #             MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}" \
-  #             MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
-  #             MYSQL_SERVER="${{ secrets.MYSQL_SERVER }}" \
-  #             WEBSITES_PORT=8080
-  #           az webapp restart --name servit-backend --resource-group servit
-  #
-  #     - name: Deploy Frontend to Web App
-  #       uses: azure/CLI@v2
-  #       with:
-  #         inlineScript: |
-  #           az webapp config container set --name servit-frontend --resource-group servit \
-  #             --container-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-frontend:latest \
-  #             --container-registry-url https://index.docker.io \
-  #             --container-registry-user ${{ secrets.DOCKERHUB_USERNAME }} \
-  #             --container-registry-password ${{ secrets.DOCKERHUB_TOKEN }}
-  #           az webapp deployment container config --name servit-frontend --resource-group servit --enable-cd true
-  #           # Note: when using Nginx image, WEBSITES_PORT should be 8080 and no Node startup command required
-  #           az webapp config appsettings set --name servit-frontend --resource-group servit --settings WEBSITES_PORT=8080
-  #           az webapp restart --name servit-frontend --resource-group servit
-  #
-  #     - name: Get Backend URL
-  #       id: get-backend-url
-  #       uses: azure/CLI@v2
-  #       with:
-  #         inlineScript: |
-  #           FQDN=$(az webapp show --name servit-backend --resource-group servit --query defaultHostName -o tsv)
-  #           echo "backend_url=https://$FQDN" >> $GITHUB_OUTPUT
-  #
-  #     - name: Get Frontend URL
-  #       id: get-frontend-url
-  #       uses: azure/CLI@v2
-  #       with:
-  #         inlineScript: |
-  #           FQDN=$(az webapp show --name servit-frontend --resource-group servit --query defaultHostName -o tsv)
-  #           echo "frontend_url=https://$FQDN" >> $GITHUB_OUTPUT
-  #
-  #     - name: Output URLs
-  #       run: |
-  #         echo "Backend is now accessible at ${{ steps.get-backend-url.outputs.backend_url }}"
-  #         echo "Frontend is now accessible at ${{ steps.get-frontend-url.outputs.frontend_url }}"
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Backend to Web App
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            echo "Deploying backend container to Azure Web App..."
+            
+            # Configure container settings for backend
+            az webapp config container set \
+              --name servit-backendv2 \
+              --resource-group servit \
+              --docker-custom-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest \
+              --docker-registry-server-url https://index.docker.io/v1/ \
+              --docker-registry-server-user ${{ secrets.DOCKERHUB_USERNAME }} \
+              --docker-registry-server-password ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # Enable continuous deployment
+            az webapp deployment container config \
+              --name servit-backendv2 \
+              --resource-group servit \
+              --enable-cd true
+            
+            # Configure application settings
+            az webapp config appsettings set \
+              --name servit-backendv2 \
+              --resource-group servit \
+              --settings \
+                MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
+                MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}" \
+                MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+                MYSQL_SERVER="${{ secrets.MYSQL_SERVER }}" \
+                WEBSITES_PORT=8080 \
+                DOCKER_ENABLE_CI=true
+            
+            # Restart the web app to apply changes
+            az webapp restart --name servit-backendv2 --resource-group servit
+            
+            # Wait for deployment to complete and verify
+            echo "Waiting for backend deployment to complete..."
+            sleep 30
+            
+            # Check deployment status
+            STATUS=$(az webapp show --name servit-backendv2 --resource-group servit --query "state" -o tsv)
+            echo "Backend deployment status: $STATUS"
+
+      - name: Deploy Frontend to Web App
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            echo "Deploying frontend container to Azure Web App..."
+            
+            # Configure container settings for frontend
+            az webapp config container set \
+              --name servit \
+              --resource-group servit \
+              --docker-custom-image-name ${{ secrets.DOCKERHUB_USERNAME }}/servit:latest \
+              --docker-registry-server-url https://index.docker.io/v1/ \
+              --docker-registry-server-user ${{ secrets.DOCKERHUB_USERNAME }} \
+              --docker-registry-server-password ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # Enable continuous deployment
+            az webapp deployment container config \
+              --name servit \
+              --resource-group servit \
+              --enable-cd true
+            
+            # Configure application settings for frontend (Nginx)
+            az webapp config appsettings set \
+              --name servit \
+              --resource-group servit \
+              --settings \
+                WEBSITES_PORT=8080 \
+                DOCKER_ENABLE_CI=true
+            
+            # Restart the web app to apply changes
+            az webapp restart --name servit --resource-group servit
+            
+            # Wait for deployment to complete and verify
+            echo "Waiting for frontend deployment to complete..."
+            sleep 30
+            
+            # Check deployment status
+            STATUS=$(az webapp show --name servit --resource-group servit --query "state" -o tsv)
+            echo "Frontend deployment status: $STATUS"
+
+      - name: Verify Deployments
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            echo "Verifying deployments..."
+            
+            # Check backend health
+            BACKEND_STATE=$(az webapp show --name servit-backendv2 --resource-group servit --query "state" -o tsv)
+            BACKEND_URL=$(az webapp show --name servit-backendv2 --resource-group servit --query "defaultHostName" -o tsv)
+            echo "Backend State: $BACKEND_STATE"
+            echo "Backend URL: https://$BACKEND_URL"
+            
+            # Check frontend health
+            FRONTEND_STATE=$(az webapp show --name servit --resource-group servit --query "state" -o tsv)
+            FRONTEND_URL=$(az webapp show --name servit --resource-group servit --query "defaultHostName" -o tsv)
+            echo "Frontend State: $FRONTEND_STATE"
+            echo "Frontend URL: https://$FRONTEND_URL"
+            
+            # Verify both apps are running
+            if [ "$BACKEND_STATE" = "Running" ] && [ "$FRONTEND_STATE" = "Running" ]; then
+              echo "✅ Both applications deployed successfully!"
+            else
+              echo "❌ Deployment verification failed"
+              exit 1
+            fi
+
+      - name: Output Deployment URLs
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            BACKEND_URL=$(az webapp show --name servit-backendv2 --resource-group servit --query "defaultHostName" -o tsv)
+            FRONTEND_URL=$(az webapp show --name servit --resource-group servit --query "defaultHostName" -o tsv)
+            
+            echo "🚀 Deployment Complete!"
+            echo "Backend API: https://$BACKEND_URL"
+            echo "Frontend App: https://$FRONTEND_URL"
+            
+            # Set outputs for potential use in other jobs
+            echo "backend_url=https://$BACKEND_URL" >> $GITHUB_OUTPUT
+            echo "frontend_url=https://$FRONTEND_URL" >> $GITHUB_OUTPUT
