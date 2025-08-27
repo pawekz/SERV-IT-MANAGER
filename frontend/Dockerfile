@@ -3,6 +3,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --registry https://registry.npmjs.org/ --maxsockets 3
 COPY . .
+
+# Set production environment variable for build
+ENV VITE_API_BASE_URL=https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net
+
 RUN npm run build
 
 # Production stage: serve static files via Nginx
