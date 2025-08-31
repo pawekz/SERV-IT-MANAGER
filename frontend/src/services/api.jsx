@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// Default to the production backend if VITE_API_BASE_URL is not provided at build/runtime.
+// During local development teammates can create a .env file with VITE_API_BASE_URL=http://localhost:8080
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
