@@ -64,7 +64,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                 setLoading(true);
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
-                const response = await fetch(`http://localhost:8080/repairTicket/generateRepairTicketNumber`, {
+                const response = await fetch(`${window.__API_BASE__}/repairTicket/generateRepairTicketNumber`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',

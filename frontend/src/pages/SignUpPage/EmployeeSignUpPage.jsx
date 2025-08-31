@@ -82,7 +82,7 @@ const EmployeeSignUpPage = () => {
         }
         setCodeLoading(true);
         try {
-            const res = await fetch('http://localhost:8080/user/verifyOnboardingCode', {
+            const res = await fetch(`${window.__API_BASE__}/user/verifyOnboardingCode`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, onboardingCode })
@@ -119,7 +119,7 @@ const EmployeeSignUpPage = () => {
         }
         setPwLoading(true);
         try {
-            const res = await fetch('http://localhost:8080/user/completeOnboarding', {
+            const res = await fetch(`${window.__API_BASE__}/user/completeOnboarding`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, onboardingCode, password })

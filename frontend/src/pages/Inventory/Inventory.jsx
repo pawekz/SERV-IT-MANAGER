@@ -216,7 +216,7 @@ const Inventory = () => {
             const freshToken = getAuthToken();
             if (!freshToken) return;
 
-            const response = await axios.get('http://localhost:8080/part/stock/lowStockPartNumbers', {
+            const response = await axios.get(`${window.__API_BASE__}/part/stock/lowStockPartNumbers`, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -264,7 +264,7 @@ const Inventory = () => {
                 throw new Error("Authentication token not found");
             }
 
-            await axios.post('http://localhost:8080/part/stock/refreshAllTracking', {}, {
+            await axios.post(`${window.__API_BASE__}/part/stock/refreshAllTracking`, {}, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -317,7 +317,7 @@ const Inventory = () => {
                 throw new Error("Authentication token not found");
             }
 
-            await axios.put('http://localhost:8080/part/stock/updateTracking', stockSettings, {
+            await axios.put(`${window.__API_BASE__}/part/stock/updateTracking`, stockSettings, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -376,7 +376,7 @@ const Inventory = () => {
                 throw new Error("Authentication token not found. Please log in again.");
             }
 
-            await axios.delete(`http://localhost:8080/part/deletePart/${partToDelete.id}`, {
+            await axios.delete(`${window.__API_BASE__}/part/deletePart/${partToDelete.id}`, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -420,7 +420,7 @@ const Inventory = () => {
             }
 
             // Fetch all parts
-            const response = await axios.get('http://localhost:8080/part/getAllParts', {
+            const response = await axios.get(`${window.__API_BASE__}/part/getAllParts`, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -680,7 +680,7 @@ const Inventory = () => {
                 addToExisting: validItems[0].addToExisting || false // Include the addToExisting flag
             };
 
-            const response = await axios.post('http://localhost:8080/part/addBulkParts', bulkData, {
+            const response = await axios.post(`${window.__API_BASE__}/part/addBulkParts`, bulkData, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'
@@ -816,7 +816,7 @@ const Inventory = () => {
             };
 
             await axios.patch(
-                `http://localhost:8080/part/updatePart/${editPart.id}`,
+                `${window.__API_BASE__}/part/updatePart/${editPart.id}`,
                 updateData,
                 {
                     headers: {
@@ -877,7 +877,7 @@ const Inventory = () => {
                 addToExisting: newPart.addToExisting || false // Include the addToExisting flag
             };
 
-            await axios.post('http://localhost:8080/part/addPart', partData, {
+            await axios.post(`${window.__API_BASE__}/part/addPart`, partData, {
                 headers: {
                     'Authorization': `Bearer ${freshToken}`,
                     'Content-Type': 'application/json'

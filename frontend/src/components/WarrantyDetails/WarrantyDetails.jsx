@@ -18,7 +18,7 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
                     console.log(token)
 
-                    const response = await fetch(`http://localhost:8080${src}`, {
+                    const response = await fetch(`${window.__API_BASE__}${src}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
@@ -64,7 +64,7 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
             const token = localStorage.getItem("authToken");
             if (!token) throw new Error("Not authenticated. Please log in.");
 
-            const response = await fetch(`http://localhost:8080/warranty/getWarrantyPdf/${warrantyNumber}`, {
+            const response = await fetch(`${window.__API_BASE__}/warranty/getWarrantyPdf/${warrantyNumber}`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -18,7 +18,7 @@ const CheckWarranty = ({ onSuccess }) => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error("Not authenticated. Please log in.");
 
-            const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
+            const response = await fetch(`${window.__API_BASE__}/warranty/generateWarrantyNumber`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ const CheckWarranty = ({ onSuccess }) => {
             if (!token) throw new Error("Not authenticated. Please log in.");
             console.log(token)
 
-            const response = await fetch(`http://localhost:8080/warranty/check/${query}`, {
+            const response = await fetch(`${window.__API_BASE__}/warranty/check/${query}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

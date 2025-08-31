@@ -23,7 +23,7 @@ const StockSettingsModal = ({
     const fetchCurrentStockData = async (partNumber) => {
         setLoadingStockData(true);
         try {
-            const response = await fetch(`http://localhost:8080/part/stock/summary/${partNumber}`, {
+            const response = await fetch(`${window.__API_BASE__}/part/stock/summary/${partNumber}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

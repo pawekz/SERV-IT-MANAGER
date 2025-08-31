@@ -99,7 +99,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
-                const response = await fetch("http://localhost:8080/repairTicket/checkInRepairTicket", {
+                const response = await fetch(`${window.__API_BASE__}/repairTicket/checkInRepairTicket`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: form,
@@ -122,7 +122,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
                     const pdfResponse = await fetch(
-                        `http://localhost:8080/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
+                        `${window.__API_BASE__}/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
                         {
                             method: "PATCH",
                             headers: {
@@ -198,7 +198,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
                 console.log("Form Data:");
                 [...form.entries()].forEach(([key, value]) => console.log(key, value));
-                const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+                const response = await fetch(`${window.__API_BASE__}/warranty/updateWarrantyStatus`, {
                     method: "PATCH",
                     headers: { Authorization: `Bearer ${token}` },
                     body: form,
@@ -221,7 +221,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${warrantyNumber}.pdf`);
                     const pdfResponse = await fetch(
-                        `http://localhost:8080/warranty/uploadWarrantyDocument/${warrantyNumber}`,
+                        `${window.__API_BASE__}/warranty/uploadWarrantyDocument/${warrantyNumber}`,
                         {
                             method: "PATCH",
                             headers: {

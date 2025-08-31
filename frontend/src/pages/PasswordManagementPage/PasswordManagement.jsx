@@ -97,7 +97,7 @@ const PasswordManagement = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/user/changeCurrentUserPassword', {
+            const response = await fetch(`${window.__API_BASE__}/user/changeCurrentUserPassword`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

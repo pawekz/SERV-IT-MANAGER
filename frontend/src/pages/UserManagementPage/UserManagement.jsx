@@ -51,7 +51,7 @@ const UserManagement = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch('http://localhost:8080/user/getAllUsers', {
+            const response = await fetch(`${window.__API_BASE__}/user/getAllUsers`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const UserManagement = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch(`http://localhost:8080/user/updateStatus/${row.userId}`, {
+            const response = await fetch(`${window.__API_BASE__}/user/updateStatus/${row.userId}`, {
                 method: 'PATCH', // Use PATCH or PUT for updates
                 headers: {
                     'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ const UserManagement = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch(`http://localhost:8080/user/updateStatus/${row.userId}`, {
+            const response = await fetch(`${window.__API_BASE__}/user/updateStatus/${row.userId}`, {
                 method: 'PATCH', // Use PATCH or PUT for updates
                 headers: {
                     'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ const UserManagement = () => {
                 selectedUser.firstName !== editFormData.firstName ||
                 selectedUser.lastName !== editFormData.lastName
             ) {
-                const nameResponse = await fetch(`http://localhost:8080/user/updateFullName/${editFormData.userId}`, {
+                const nameResponse = await fetch(`${window.__API_BASE__}/user/updateFullName/${editFormData.userId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ const UserManagement = () => {
 
             // Only update role if changed
             if (selectedUser.role.toUpperCase() !== editFormData.role.toUpperCase()) {
-                const roleResponse = await fetch(`http://localhost:8080/user/changeRole/${editFormData.userId}`, {
+                const roleResponse = await fetch(`${window.__API_BASE__}/user/changeRole/${editFormData.userId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

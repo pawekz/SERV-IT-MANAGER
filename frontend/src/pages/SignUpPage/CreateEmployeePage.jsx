@@ -45,7 +45,7 @@ const CreateEmployeePage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
-      const res = await fetch('http://localhost:8080/user/createEmployee', {
+  const res = await fetch(`${window.__API_BASE__}/user/createEmployee`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

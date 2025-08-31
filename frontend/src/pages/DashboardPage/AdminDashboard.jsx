@@ -162,7 +162,7 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/user/getUserCount', {
+                const response = await fetch(`${window.__API_BASE__}/user/getUserCount`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -196,7 +196,7 @@ const AdminDashboard = () => {
                 }
 
                 // Use the getWeeklyUsers endpoint
-                const response = await fetch('http://localhost:8080/user/getWeeklyUsers', {
+                const response = await fetch(`${window.__API_BASE__}/user/getWeeklyUsers`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -254,7 +254,7 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/repairTicket/getActiveRepairTickets', {
+                const response = await fetch(`${window.__API_BASE__}/repairTicket/getActiveRepairTickets`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -349,7 +349,7 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/repairTicket/getAllRepairTickets', {
+                const response = await fetch(`${window.__API_BASE__}/repairTicket/getAllRepairTickets`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -387,7 +387,7 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/part/getAllParts', {
+                const response = await fetch(`${window.__API_BASE__}/part/getAllParts`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -431,7 +431,7 @@ const AdminDashboard = () => {
                     throw new Error("Authentication token not found");
                 }
 
-                const response = await fetch('http://localhost:8080/feedback/getAllFeedback', {
+                const response = await fetch(`${window.__API_BASE__}/feedback/getAllFeedback`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -479,7 +479,7 @@ const AdminDashboard = () => {
                     throw new Error("Authentication token not found");
                 }
 
-                const response = await fetch('http://localhost:8080/user/getTopTechniciansByWorkload', {
+                const response = await fetch(`${window.__API_BASE__}/user/getTopTechniciansByWorkload`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -518,7 +518,7 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/feedback/getAllRatings', {
+                const response = await fetch(`${window.__API_BASE__}/feedback/getAllRatings`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -621,7 +621,7 @@ const AdminDashboard = () => {
                 }
 
                 // Assuming there's an endpoint for pending approvals
-                const response = await fetch('http://localhost:8080/repairTicket/getPendingApprovals', {
+                const response = await fetch(`${window.__API_BASE__}/repairTicket/getPendingApprovals`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
