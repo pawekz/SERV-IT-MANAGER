@@ -29,7 +29,7 @@ const LandingPage = () => {
                             </div>
                         </div>
                         <div className={styles.heroImage}>
-                            <img src="../../../src/assets/images/mock.png" alt="IOCONNECT" />
+                            <img src="/mock.png" alt="IOCONNECT" />
                         </div>
                     </div>
                 </section>
