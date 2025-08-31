@@ -15,4 +15,4 @@ mode: "agent"
 - Execute the test file and iterate until the test passes
 - Include appropriate assertions to verify the expected behavior
 - Structure tests properly with descriptive test titles and comments
-- 
+- If the user wants to add screenshot in the report, use page.screenshot() method to capture a screenshot and the testInfo.attach() method to include it in the report.
