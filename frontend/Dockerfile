@@ -4,8 +4,12 @@ COPY package*.json ./
 RUN npm ci --registry https://registry.npmjs.org/ --maxsockets 3
 COPY . .
 
-# Set production environment variable for build
-ENV VITE_API_BASE_URL=https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net
+# Set production environment variable for build - use ARG to accept build-time variables
+ARG VITE_API_BASE_URL=https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# Debug: Print the environment variable to verify it's set
+RUN echo "Building with VITE_API_BASE_URL: $VITE_API_BASE_URL"
 
 RUN npm run build
 
