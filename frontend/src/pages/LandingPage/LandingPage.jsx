@@ -40,8 +40,8 @@ const LandingPage = () => {
                     <div className={styles.container}>
                         <div className={styles.sectionHeader}>
                             <div className={styles.aboutImage}>
-                                {/* <img src="/ioconnect-logo.png" alt="About IOCONNECT" /> */}
-                                <img src="../../../src/assets/images/iocon_logo.png" alt="About IOCONNECT" />
+                                 <img src="/ioconnect-logo.png" alt="About IOCONNECT" />
+                                {/*<img src="../../../src/assets/images/iocon_logo.png" alt="About IOCONNECT" />*/}
                             </div>
                             <h2>
                                 About <span>IOCONNECT</span>
