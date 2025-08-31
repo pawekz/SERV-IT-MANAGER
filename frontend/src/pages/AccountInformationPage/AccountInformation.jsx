@@ -163,7 +163,7 @@ const AccountInformation = () => {
 
             // Update full name if changed
             if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
-                const response = await fetch('http://localhost:8080/user/updateCurrentUserFullName', {
+                const response = await fetch(`${window.__API_BASE__}/user/updateCurrentUserFullName`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ const AccountInformation = () => {
 
             // Update phone number if changed
             if (userData.phoneNumber !== editFormData.phoneNumber) {
-                const response = await fetch('http://localhost:8080/user/changeCurrentUserPhoneNumber', {
+                const response = await fetch(`${window.__API_BASE__}/user/changeCurrentUserPhoneNumber`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ const AccountInformation = () => {
 
             // Update username if changed
             if (userData.username !== editFormData.username) {
-                const response = await fetch('http://localhost:8080/user/updateCurrentUsername', {
+                const response = await fetch(`${window.__API_BASE__}/user/updateCurrentUsername`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

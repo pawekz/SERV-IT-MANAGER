@@ -132,7 +132,7 @@ const SignUpPage = () => {
         const requestData = { ...formData, phoneNumber: formattedPhoneNumber };
 
         try {
-            const response = await fetch('http://localhost:8080/user/register', {
+            const response = await fetch(`${window.__API_BASE__}/user/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -223,7 +223,7 @@ const SignUpPage = () => {
                 type: 1
             };
 
-            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -278,7 +278,7 @@ const SignUpPage = () => {
                 type: 1
             };
 
-            const response = await fetch('http://localhost:8080/user/resendOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

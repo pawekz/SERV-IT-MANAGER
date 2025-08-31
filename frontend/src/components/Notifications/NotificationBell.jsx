@@ -44,7 +44,7 @@ export default function NotificationBell() {
     if (!authToken || !userEmail) return;
     try {
       const res = await fetch(
-        `http://localhost:8080/notification/getNotificationsFromUserEmail?email=${encodeURIComponent(
+  `${window.__API_BASE__}/notification/getNotificationsFromUserEmail?email=${encodeURIComponent(
           userEmail
         )}`,
         {
@@ -67,7 +67,7 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!userEmail) return;
 
-    const socketFactory = () => new SockJS("http://localhost:8080/ws");
+  const socketFactory = () => new SockJS(`${window.__API_BASE__}/ws`);
     const client = Stomp.over(socketFactory);
     stompClient.current = client;
 
@@ -120,7 +120,7 @@ export default function NotificationBell() {
   const markAsRead = async (notificationId) => {
     if (!authToken) return;
     await fetch(
-      `http://localhost:8080/notification/markAsReadById?notificationId=${notificationId}`,
+  `${window.__API_BASE__}/notification/markAsReadById?notificationId=${notificationId}`,
       {
         method: "PATCH",
         headers: {
@@ -134,7 +134,7 @@ export default function NotificationBell() {
 
   const deleteNotification = async (notificationId) => {
     if (!authToken) return;
-    await fetch(`http://localhost:8080/notification/deleteNotification/${notificationId}`, {
+  await fetch(`${window.__API_BASE__}/notification/deleteNotification/${notificationId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${authToken}` },
     });
@@ -144,7 +144,7 @@ export default function NotificationBell() {
   const deleteAllNotifications = async () => {
     if (!authToken || !userEmail) return;
     await fetch(
-      `http://localhost:8080/notification/deleteAllNotifications?email=${encodeURIComponent(
+  `${window.__API_BASE__}/notification/deleteAllNotifications?email=${encodeURIComponent(
         userEmail
       )}`,
       {
@@ -158,7 +158,7 @@ export default function NotificationBell() {
   const markAllAsRead = async () => {
     if (!authToken || !userEmail) return;
     await fetch(
-      `http://localhost:8080/notification/markAllAsRead?email=${encodeURIComponent(userEmail)}`,
+  `${window.__API_BASE__}/notification/markAllAsRead?email=${encodeURIComponent(userEmail)}`,
       {
         method: "PATCH",
         headers: {

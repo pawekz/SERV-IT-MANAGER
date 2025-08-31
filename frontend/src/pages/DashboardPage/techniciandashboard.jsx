@@ -128,7 +128,7 @@ const TechnicianDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/user/getUserCount', {
+                const response = await fetch(`${window.__API_BASE__}/user/getUserCount`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -164,7 +164,7 @@ const TechnicianDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/part/getAllParts', {
+                const response = await fetch(`${window.__API_BASE__}/part/getAllParts`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`

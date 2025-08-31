@@ -340,7 +340,7 @@ const LoginPage = () => {
     const requestAccountVerificationOTP = async (emailForOTP) => {
         setOtpLoading(true); // Use the main OTP loading state
         try {
-            const response = await fetch('http://localhost:8080/user/resendOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -388,7 +388,7 @@ const LoginPage = () => {
         }
 
         try {
-            const loginEndpoint = isStaffLogin ? 'http://localhost:8080/auth/login/staff' : 'http://localhost:8080/auth/login';
+            const loginEndpoint = isStaffLogin ? `${window.__API_BASE__}/auth/login/staff` : `${window.__API_BASE__}/auth/login`;
             const response = await fetch(loginEndpoint, {
                 method: 'POST',
                 headers: {
@@ -477,7 +477,7 @@ const LoginPage = () => {
                 otp: otp,
                 type: 1 // Type 1 for account verification
             };
-            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -537,7 +537,7 @@ const LoginPage = () => {
                 throw new Error('No email found for OTP resend. Please login again.');
             }
 
-            const response = await fetch('http://localhost:8080/user/resendOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -576,7 +576,7 @@ const LoginPage = () => {
         setForgotError('');
         setForgotLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/user/forgotPassword', {
+            const response = await fetch(`${window.__API_BASE__}/user/forgotPassword`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: forgotEmail }), // forgotEmail is set by ForgotPasswordModal
@@ -608,7 +608,7 @@ const LoginPage = () => {
         setForgotOTPLoading(true);
         setForgotOTPError('');
         try {
-            const response = await fetch('http://localhost:8080/user/verifyOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: forgotEmail, otp: otpValue, type: 2 }), // Type 2 for password reset OTP verification
@@ -648,7 +648,7 @@ const LoginPage = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8080/user/resendOtp', {
+            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -693,7 +693,7 @@ const LoginPage = () => {
         }
         setNewPasswordLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/user/resetPassword', {
+            const response = await fetch(`${window.__API_BASE__}/user/resetPassword`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: forgotEmail, newPassword: newPassword }),

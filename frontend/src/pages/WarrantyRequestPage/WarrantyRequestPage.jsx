@@ -66,7 +66,7 @@ const WarrantyRequestPage = () => {
             }
             console.log(email);
 
-            const response = await fetch(`http://localhost:8080/warranty/getWarrantyByCustomerEmail?email=${email.toString()}`, {
+            const response = await fetch(`${window.__API_BASE__}/warranty/getWarrantyByCustomerEmail?email=${email.toString()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const WarrantyRequestPage = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch('http://localhost:8080/warranty/getAllWarranties', {
+            const response = await fetch(`${window.__API_BASE__}/warranty/getAllWarranties`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const WarrantyRequestPage = () => {
             form.append("status", pendingStatus.toString());
         }
 
-        const response = await fetch("http://localhost:8080/warranty/updateWarrantyStatus", {
+    const response = await fetch(`${window.__API_BASE__}/warranty/updateWarrantyStatus`, {
             method: "PATCH",
             headers: {Authorization: `Bearer ${token}`},
             body: form,

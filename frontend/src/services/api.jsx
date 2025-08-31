@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Default to the production backend if VITE_API_BASE_URL is not provided at build/runtime.
 // During local development teammates can create a .env file with VITE_API_BASE_URL=http://localhost:8080
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://servit-backendv2-b6arhyfsadg4fbhc.southeastasia-01.azurewebsites.net";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -79,3 +79,11 @@ api.interceptors.response.use(
 );
 
 export default api; 
+
+// Expose a global for quick access from legacy modules that don't import the helper.
+// Useful for incremental migration. Teammates can override via VITE_API_BASE_URL in .env during local dev.
+if (typeof window !== 'undefined') {
+  // You can comment/uncomment the next line to force localhost during dev if needed:
+  // window.__API_BASE__ = 'http://localhost:8080';
+  window.__API_BASE__ = API_BASE_URL;
+}

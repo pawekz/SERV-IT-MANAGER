@@ -45,7 +45,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch('http://localhost:8080/warranty/generateWarrantyNumber', {
+            const response = await fetch(`${window.__API_BASE__}/warranty/generateWarrantyNumber`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
 
-                const device = await fetch(`http://localhost:8080/part/getPartBySerialNumber/${serialNumber}`, {
+                const device = await fetch(`${window.__API_BASE__}/part/getPartBySerialNumber/${serialNumber}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
 
                 console.log("Submitting payload:", payload);
 
-                const response = await fetch(`http://localhost:8080/warranty/checkInWarranty`, {
+                const response = await fetch(`${window.__API_BASE__}/warranty/checkInWarranty`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
