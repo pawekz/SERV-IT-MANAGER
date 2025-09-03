@@ -3,11 +3,17 @@ import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(),
+    splitVendorChunkPlugin(),
+    viteCompression({ algorithm: 'gzip', threshold: 1024, ext: '.gz' }),
+    // Brotli (built at build time; serve via CDN or nginx if brotli_static available)
+    viteCompression({ algorithm: 'brotliCompress', threshold: 1024, ext: '.br' }),
+  ],
   preview: {
     port: 4173,
     host: '0.0.0.0',
     allowedHosts: ['servit-frontend-bfd2b4fjg8ayc2fn.southeastasia-01.azurewebsites.net']
+    
   },
   define: {
     global: 'window',
