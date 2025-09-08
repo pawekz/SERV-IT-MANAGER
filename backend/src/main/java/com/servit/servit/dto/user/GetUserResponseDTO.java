@@ -13,4 +13,5 @@ public class GetUserResponseDTO {
     private String role;
     private String phoneNumber;
     private String status;
+    private String profilePictureUrl;
 }

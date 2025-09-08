@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -38,6 +37,9 @@ public class UserService {
 
     @Autowired
     private FileUtil fileUtil;
+
+    @Autowired
+    private S3Service s3Service;
 
     private final PasswordEncoder passwordEncoder;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -1045,6 +1047,19 @@ public class UserService {
         } catch (Exception e) {
             logger.error("Unexpected error during employee onboarding completion for email: {}", req.getEmail(), e);
             throw new RuntimeException("Failed to complete employee onboarding", e);
+        }
+    }
+
+    public String getProfilePicture(String profilePictureUrl, int expirationMinutes) {
+        if (profilePictureUrl == null || profilePictureUrl.equals("0") || profilePictureUrl.isBlank()) {
+            return null;
+        }
+        if (profilePictureUrl.contains("amazonaws.com/")) {
+            int idx = profilePictureUrl.indexOf(".amazonaws.com/");
+            String s3Key = profilePictureUrl.substring(idx + ".amazonaws.com/".length());
+            return s3Service.generatePresignedUrl(s3Key, expirationMinutes);
+        } else {
+            return profilePictureUrl;
         }
     }
 }
