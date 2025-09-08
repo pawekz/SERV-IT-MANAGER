@@ -1,6 +1,8 @@
 package com.servit.servit.service;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
@@ -13,6 +15,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -87,6 +90,19 @@ public class S3Service {
         } catch (Exception e) {
             logger.error("Error deleting file from S3: {}", fileName, e);
             throw new RuntimeException("Error deleting file from S3", e);
+        }
+    }
+
+    public String generatePresignedUrl(String key, int expirationMinutes) {
+        try {
+            Date expiration = new Date(System.currentTimeMillis() + expirationMinutes * 60 * 1000);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, key)
+                    .withMethod(HttpMethod.GET)
+                    .withExpiration(expiration);
+            return amazonS3.generatePresignedUrl(generatePresignedUrlRequest).toString();
+        } catch (Exception e) {
+            logger.error("Error generating presigned URL for S3 key: {}", key, e);
+            throw new RuntimeException("Error generating presigned URL", e);
         }
     }
 
