@@ -4,6 +4,7 @@ import com.servit.servit.dto.repairticket.*;
 import com.servit.servit.entity.RepairTicketEntity;
 import com.servit.servit.service.ConfigurationService;
 import com.servit.servit.service.RepairTicketService;
+import com.servit.servit.service.S3Service;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,9 @@ public class RepairTicketController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private S3Service s3Service;
 
     public RepairTicketController(RepairTicketService repairTicketService) {
         this.repairTicketService = repairTicketService;
@@ -375,6 +379,23 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    // Returns a pre-signed S3 URL for a given repair photo (by S3 key or full S3 URL)
+    @GetMapping("/getRepairPhotoUrl")
+    public ResponseEntity<String> getRepairPhotoPresignedUrl(@RequestParam("photoUrl") String photoUrl) {
+        try {
+            String s3Key = photoUrl;
+            int idx = photoUrl.indexOf(".amazonaws.com/");
+            if (idx != -1) {
+                s3Key = photoUrl.substring(idx + ".amazonaws.com/".length());
+            }
+            String presignedUrl = s3Service.generatePresignedUrl(s3Key, 10); // 10 minutes expiry
+            return ResponseEntity.ok(presignedUrl);
+        } catch (Exception e) {
+            logger.error("Failed to generate presigned URL for repair photo: {}", photoUrl, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }
