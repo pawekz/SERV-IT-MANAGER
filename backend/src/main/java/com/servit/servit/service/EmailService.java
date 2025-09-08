@@ -246,13 +246,14 @@ public class EmailService {
                 "    <div class='header' style='text-align: center;'>Employee Onboarding</div>" +
                 "    <div class='content'>" +
                 "      <h1>Hello " + firstName + ",</h1>" +
-                "      <p>Welcome to <span style='color: #33e407;'>IO</span><span style='color: #000000;'>CONNECT</span>! We've created your employee account.</p>" +
-                "      <p>To activate it, please complete these steps:</p>" +
+                "      <p>Welcome to <span style='color: #33e407;'>IO</span><span style='color: #000000;'>CONNECT</span>! Your employee account has been created.</p>" +
+                "      <p>To activate your account, please follow these steps:</p>" +
                 "      <ol>" +
-                "        <li>Open the Employee Onboarding page: <strong>http://localhost:5173/employee-onboarding</strong></li>" +
-                "        <li>Enter your email address (<strong>" + to + "</strong>) in the Email field</li>" +
-                "        <li>Enter the Onboarding Code below in the Onboarding Code field</li>" +
-                "        <li>Click <strong>Verify Code</strong> and set your secure password</li>" +
+                "        <li>Go to the Employee Onboarding page:<br><strong>https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net/employee-onboarding</strong></li>" +
+                "        <li>Enter your email address (<strong>" + to + "</strong>) in the Email field.</li>" +
+                "        <li>Enter the Onboarding Code below in the Onboarding Code field.</li>" +
+                "        <li>Click <strong>Verify Code</strong> and set your secure password.</li>" +
+                "        <li>After successful registration, log in using this link:<br><strong>https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net/login/staff</strong></li>" +
                 "      </ol>" +
                 "      <div style='text-align: center;'>" +
                 "        <p>Your Onboarding Code:</p>" +
