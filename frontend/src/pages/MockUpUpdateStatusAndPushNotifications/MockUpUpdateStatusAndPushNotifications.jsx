@@ -4,10 +4,9 @@
 // It demonstrates notification CRUD, pagination, and live updates for a user.
 
 import React, { useEffect, useState, useRef } from "react";
-import SockJS from "sockjs-client";
-import { Stomp } from "@stomp/stompjs";
 import { useNavigate } from "react-router-dom";
 import api, { API_BASE_URL } from '../../config/ApiConfig.jsx';
+import { connectWebSocket, disconnectWebSocket, subscribeToTopic, unsubscribeFromTopic } from '../../config/WebSocketConfig.jsx';
 
 // --- Inline styles for UI sections and elements ---
 const sectionStyle = {
@@ -185,30 +184,27 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     // --- WebSocket connection for real-time notifications ---
     useEffect(() => {
         if (!userEmail) return;
-        // Create SockJS and STOMP client
-        const socketFactory = () => new SockJS(`${API_BASE_URL}/ws`);
-        const client = Stomp.over(socketFactory);
-        stompClient.current = client;
-        // Connect and subscribe to user-specific topic
-        client.connect({}, () => {
-            setConnectionStatus("Connected");
-            client.subscribe(`/topic/notifications/${userEmail}`, () => {
-                // Set "new" indicators and refresh all notification lists
-                setNewNotif(true);
-                setNewNotifUnread(true);
-                setNewNotifPageable(true);
-                setNewNotifUnreadPageable(true);
-                fetchNotifications();
-                fetchUnreadNotifications();
-                fetchNotificationsPageable(page);
-                fetchUnreadNotificationsPageable(unreadPage);
-            });
-        }, () => setConnectionStatus("Disconnected"));
+        let notifSubscription = null;
+        connectWebSocket({
+            onConnect: () => {
+                setConnectionStatus("Connected");
+                notifSubscription = subscribeToTopic(`/topic/notifications/${userEmail}`, () => {
+                    setNewNotif(true);
+                    setNewNotifUnread(true);
+                    setNewNotifPageable(true);
+                    setNewNotifUnreadPageable(true);
+                    fetchNotifications();
+                    fetchUnreadNotifications();
+                    fetchNotificationsPageable(page);
+                    fetchUnreadNotificationsPageable(unreadPage);
+                });
+            },
+            onDisconnect: () => setConnectionStatus("Disconnected")
+        });
         // Cleanup on unmount
         return () => {
-            if (stompClient.current) {
-                stompClient.current.disconnect();
-            }
+            unsubscribeFromTopic(notifSubscription);
+            disconnectWebSocket();
         };
     }, [userEmail, page, unreadPage]);
 

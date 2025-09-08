@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import SockJS from "sockjs-client";
-import { Stomp } from "@stomp/stompjs";
 import { Bell as BellIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import api from '../../config/ApiConfig';
+import { connectWebSocket, disconnectWebSocket, subscribeToTopic, unsubscribeFromTopic } from '../../config/WebSocketConfig';
 
 // Simple bell component that shows real-time notifications for the current user.
 // It replicates (in a compact form) the logic previously found in
@@ -29,7 +28,6 @@ export default function NotificationBell() {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
 
   // refs
-  const stompClient = useRef(null);
   const dropdownRef = useRef(null);
 
   // ---------------------------------------------------------------------------
@@ -57,32 +55,24 @@ export default function NotificationBell() {
   };
 
   // ---------------------------------------------------------------------------
-  // WebSocket (STOMP) – live updates
+  // WebSocket (STOMP) – live updates (now using WebSocketConfig)
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!userEmail) return;
-
-  const socketFactory = () => new SockJS(`${window.__API_BASE__}/ws`);
-    const client = Stomp.over(socketFactory);
-    stompClient.current = client;
-
-    client.connect(
-      {},
-      () => {
+    let notifSubscription = null;
+    connectWebSocket({
+      onConnect: () => {
         setConnectionStatus("Connected");
-        client.subscribe(`/topic/notifications/${userEmail}`, () => {
+        notifSubscription = subscribeToTopic(`/topic/notifications/${userEmail}`, () => {
           setNewNotif(true);
           fetchNotifications();
         });
       },
-      (error) => {
-        console.error("WebSocket connection error", error);
-        setConnectionStatus("Disconnected");
-      }
-    );
-
+      onDisconnect: () => setConnectionStatus("Disconnected")
+    });
     return () => {
-      if (stompClient.current) stompClient.current.disconnect();
+      unsubscribeFromTopic(notifSubscription);
+      disconnectWebSocket();
     };
   }, [userEmail]);
 
