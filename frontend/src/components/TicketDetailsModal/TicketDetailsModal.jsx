@@ -14,29 +14,29 @@ async function fetchTicketFile(type, filename) {
     return URL.createObjectURL(res.data);
 }
 
+async function fetchPresignedPhotoUrl(photoUrl) {
+    if (!photoUrl) return null;
+    const res = await api.get(`/repairTicket/getRepairPhotoUrl`, { params: { photoUrl } });
+    return res.data;
+}
+
 function TicketImage({ path, alt, className }) {
     const [src, setSrc] = useState(null);
     useEffect(() => {
         let url;
-        const { type, filename } = parseTypeAndFilename(path);
-        console.log('[TicketDetailsModal] TicketImage path:', path, 'type:', type, 'filename:', filename);
-        if (type && filename) {
-            fetchTicketFile(type, filename)
-                .then(objUrl => {
-                    url = objUrl;
-                    setSrc(objUrl);
-                    console.log('[TicketDetailsModal] Image loaded:', objUrl);
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => {
+                    url = presignedUrl;
+                    setSrc(presignedUrl);
                 })
                 .catch(err => {
-                    console.error('[TicketDetailsModal] Error loading image:', err);
+                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
                 });
-        } else {
-            console.warn('[TicketDetailsModal] Invalid type or filename for path:', path);
         }
         return () => { if (url) URL.revokeObjectURL(url); };
     }, [path]);
     if (!src) {
-        console.warn('[TicketDetailsModal] Image not rendered for path:', path);
         return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
     }
     return <img src={src} alt={alt} className={className} />;

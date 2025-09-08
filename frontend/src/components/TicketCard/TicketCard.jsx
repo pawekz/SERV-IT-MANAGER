@@ -8,25 +8,24 @@ function parseTypeAndFilename(path) {
     if (!match) return { type: '', filename: '' };
     return { type: `${match[1]}/${match[2]}`, filename: match[3] };
 }
-
-async function fetchTicketFile(type, filename) {
-    if (!type || !filename) return null;
-    const res = await api.get(`/repairTicket/files/${type}/${filename}`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
+// Fetch a pre-signed S3 URL for a repair photo
+async function fetchPresignedPhotoUrl(photoUrl) {
+    if (!photoUrl) return null;
+    const res = await api.get(`/repairTicket/getRepairPhotoUrl`, { params: { photoUrl } });
+    return res.data;
 }
 
 function TicketImage({ path, alt }) {
     const [src, setSrc] = useState(null);
     useEffect(() => {
         let url;
-        const { type, filename } = parseTypeAndFilename(path);
-        if (type && filename) {
-            fetchTicketFile(type, filename)
-                .then(objUrl => {
-                    url = objUrl;
-                    setSrc(objUrl);
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => {
+                    url = presignedUrl;
+                    setSrc(presignedUrl);
                 })
-                .catch(err => {
+                .catch(() => {
                     setSrc(null);
                 });
         }
@@ -57,6 +56,7 @@ const TicketCard = ({ ticket, onClick }) => {
         <div className="max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 mb-4">
             <div className="relative w-full h-48">
                 <TicketImage path={images[current]} alt="Repair" />
+                {/* Removed static S3 image, now only dynamic */}
                 {images.length > 1 && (
                     <>
                         <button
@@ -114,4 +114,4 @@ const TicketCard = ({ ticket, onClick }) => {
     );
 };
 
-export default TicketCard; 
+export default TicketCard;

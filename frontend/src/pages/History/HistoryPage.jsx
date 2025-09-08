@@ -3,14 +3,6 @@ import TicketCard from '../../components/TicketCard/TicketCard';
 import TicketDetailsModal from '../../components/TicketDetailsModal/TicketDetailsModal';
 import Sidebar from '../../components/SideBar/Sidebar';
 import api from '../../config/ApiConfig';
-/*import DeviceCard from '../../components/DeviceCard/DeviceCard';*/
-
-function parseTypeAndFilename(path) {
-    if (!path) return { type: '', filename: '' };
-    const match = path.replace(/\\/g, '/').match(/(images|documents)\/([^\/]+)\/([^\/]+)$/);
-    if (!match) return { type: '', filename: '' };
-    return { type: `${match[1]}/${match[2]}`, filename: match[3] };
-}
 
 function getUserInfoFromToken() {
     const token = localStorage.getItem('authToken');
@@ -36,40 +28,6 @@ function getUserInfoFromToken() {
         console.error('[HistoryPage] Error parsing token or userData:', e);
         return {};
     }
-}
-
-async function fetchTicketFile(type, filename) {
-    if (!type || !filename) return null;
-    const res = await api.get(`/repairTicket/files/${type}/${filename}`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
-}
-
-function TicketImage({ path, alt, className }) {
-    const [src, setSrc] = useState(null);
-    useEffect(() => {
-        let url;
-        const { type, filename } = parseTypeAndFilename(path);
-        console.log('[TicketDetailsModal] TicketImage path:', path, 'type:', type, 'filename:', filename);
-        if (type && filename) {
-            fetchTicketFile(type, filename)
-                .then(objUrl => {
-                    url = objUrl;
-                    setSrc(objUrl);
-                    console.log('[TicketDetailsModal] Image loaded:', objUrl);
-                })
-                .catch(err => {
-                    console.error('[TicketDetailsModal] Error loading image:', err);
-                });
-        } else {
-            console.warn('[TicketDetailsModal] Invalid type or filename for path:', path);
-        }
-        return () => { if (url) URL.revokeObjectURL(url); };
-    }, [path]);
-    if (!src) {
-        console.warn('[TicketDetailsModal] Image not rendered for path:', path);
-        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
-    }
-    return <img src={src} alt={alt} className={className} />;
 }
 
 const HistoryPage = () => {
@@ -264,3 +222,4 @@ const HistoryPage = () => {
 };
 
 export default HistoryPage;
+
