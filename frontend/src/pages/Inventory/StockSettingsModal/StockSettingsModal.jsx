@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import api from '../../../config/ApiConfig';
 
 const StockSettingsModal = ({ 
     isOpen, 
@@ -23,26 +24,14 @@ const StockSettingsModal = ({
     const fetchCurrentStockData = async (partNumber) => {
         setLoadingStockData(true);
         try {
-            const response = await fetch(`${window.__API_BASE__}/part/stock/summary/${partNumber}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                }
-            });
-
-            if (response.ok) {
-                const stockData = await response.json();
-                setCurrentStockData(stockData);
-                // Update the current count in the form
-                onStockSettingsChange(prev => ({
-                    ...prev,
-                    currentCount: stockData.currentAvailableStock
-                }));
-            } else {
-                console.error('Failed to fetch stock data');
-                setCurrentStockData(null);
-            }
+            const response = await api.get(`/part/stock/summary/${partNumber}`);
+            const stockData = response.data;
+            setCurrentStockData(stockData);
+            // Update the current count in the form
+            onStockSettingsChange(prev => ({
+                ...prev,
+                currentCount: stockData.currentAvailableStock
+            }));
         } catch (error) {
             console.error('Error fetching stock data:', error);
             setCurrentStockData(null);
@@ -163,4 +152,4 @@ const StockSettingsModal = ({
     );
 };
 
-export default StockSettingsModal; 
+export default StockSettingsModal;

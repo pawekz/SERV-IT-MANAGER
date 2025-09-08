@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import KanbanColumn from "./KanbanColumn.jsx"
-import api from "../../../services/api.jsx"
+import api from "../../../config/ApiConfig.jsx"
 import StatusChangeConfirmModal from "./StatusChangeConfirmModal.jsx"
 import Toast from "../../../components/Toast/Toast.jsx"
 

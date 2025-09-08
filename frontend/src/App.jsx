@@ -31,7 +31,7 @@ import FAQ from "./pages/FAQ/FAQ.jsx";
 import EmployeeSignUpPage from './pages/SignUpPage/EmployeeSignUpPage';
 import Quotation from './pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx'
 import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
-import api from "./services/api.jsx";
+import api from "./config/ApiConfig.jsx";
 import Spinner from "./components/Spinner/Spinner.jsx";
 import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'

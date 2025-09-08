@@ -172,6 +172,24 @@ public class UserController {
         }
     }
 
+    @GetMapping("/getProfilePicture/{id}")
+    public ResponseEntity<?> getProfilePicture(@PathVariable Integer id) {
+        try {
+            UserEntity user = userRepo.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            String profilePictureUrl = user.getProfilePictureUrl();
+            String presignedUrl = userSvc.getProfilePicture(profilePictureUrl, 5); // 5 min expiry
+            if (presignedUrl == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Profile picture not set");
+            }
+            return ResponseEntity.ok(presignedUrl);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
     @DeleteMapping("/removeCurrentUserProfilePicture")
     public ResponseEntity<?> removeCurrentUserProfilePicture() {
         try {

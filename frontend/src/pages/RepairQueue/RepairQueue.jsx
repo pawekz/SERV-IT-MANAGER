@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {Wrench, Images, Archive, Search, Bell, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
-import { parseJwt } from "../../services/api.jsx";
+import { parseJwt } from "../../config/ApiConfig.jsx";
 
 const RepairQueue = () => {
     const navigate = useNavigate()

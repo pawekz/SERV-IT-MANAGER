@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 import Spinner from "../../components/Spinner/Spinner.jsx";
 import ActiveRepairCard from "../DashboardPage/CustomerDashboardComponents/ActiveRepairCard.jsx";
 import Toast from "../../components/Toast/Toast.jsx";

@@ -1,7 +1,7 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import { useState } from "react";
 import { ThumbsUp, Star, Loader } from "lucide-react";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 import { useParams, useNavigate } from "react-router-dom";
 
 const FeedbackForm = () => {

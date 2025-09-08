@@ -1,16 +1,21 @@
 package com.servit.servit.service;
 
+import com.amazonaws.services.s3.model.S3Object;
 import com.servit.servit.util.EmailUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
+import java.io.IOException;
 
 @Service
 public class EmailService {
 
     @Autowired
     private EmailUtil emailUtil;
+
+    @Autowired
+    private com.servit.servit.util.FileUtil fileUtil;
 
     public void sendOtpEmail(String to, String otp) throws MessagingException {
         String subject = "Account Verification Request (OTP) - IOCONNECT";
@@ -117,7 +122,23 @@ public class EmailService {
                 "</html>";
 
         String attachmentName = String.format("%s-repair-ticket.pdf", ticketNumber);
-        emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
+        if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
+            // Download ang file sa AWS S3 and attach sa email as bytes
+            String s3Key = extractS3KeyFromUrl(pdfPath);
+            try {
+                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+                byte[] fileBytes;
+                try (java.io.InputStream is = s3Object.getObjectContent()) {
+                    fileBytes = is.readAllBytes();
+                }
+                emailUtil.sendEmailWithAttachment(to, subject, htmlContent, fileBytes, attachmentName);
+            } catch (IOException e) {
+                throw new MessagingException("Failed to download PDF from S3 for email attachment", e);
+            }
+        } else {
+            // Local file path fallback
+            emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
+        }
     }
 
     public void sendGenericNotificationEmail(String to, String subject, String message) throws MessagingException {
@@ -186,8 +207,22 @@ public class EmailService {
                 "</body>" +
                 "</html>";
 
-        String attachmentName = String.format("%s-repair-ticket.pdf", WarrantyNumber);
-        emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
+        String attachmentName = String.format("%s-warranty.pdf", WarrantyNumber);
+        if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
+            String s3Key = extractS3KeyFromUrl(pdfPath);
+            try {
+                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+                byte[] fileBytes;
+                try (java.io.InputStream is = s3Object.getObjectContent()) {
+                    fileBytes = is.readAllBytes();
+                }
+                emailUtil.sendEmailWithAttachment(to, subject, htmlContent, fileBytes, attachmentName);
+            } catch (IOException e) {
+                throw new MessagingException("Failed to download PDF from S3 for email attachment", e);
+            }
+        } else {
+            emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
+        }
     }
 
     public void sendEmployeeOnboardingEmail(String to, String firstName, String onboardingCode) throws MessagingException {
@@ -230,5 +265,11 @@ public class EmailService {
                 "</body>" +
                 "</html>";
         emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    private String extractS3KeyFromUrl(String s3Url) {
+        int idx = s3Url.indexOf(".amazonaws.com/");
+        if (idx == -1) return s3Url;
+        return s3Url.substring(idx + ".amazonaws.com/".length());
     }
 }

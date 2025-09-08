@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useLocation, Link } from 'react-router-dom'
-import api from "../../services/api.jsx"
+import api from "../../config/ApiConfig.jsx"
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import BeforePicturesGallery from '../../components/BeforePictures/BeforePicturesGallery.jsx'
 import AfterPicturesGallery from '../DashboardPage/CustomerDashboardComponents/AfterPicturesGallery.jsx'
@@ -11,9 +11,9 @@ const RealTimeStatus = () => {
     const location = useLocation()
     const ticketNumberParam = location.state?.ticketNumber || null
 
-    const [searchTerm, setSearchTerm] = useState("")
-    const [statusFilter, setStatusFilter] = useState("All")
-    const [dateRange, setDateRange] = useState("All Time")
+    const [history, setHistory] = useState([])
+    const [currentStatus, setCurrentStatus] = useState(null)
+    const [ticketDetails, setTicketDetails] = useState(null)
 
     const statusOrder = [
         "RECEIVED",
@@ -23,10 +23,6 @@ const RealTimeStatus = () => {
         "READY_FOR_PICKUP",
         "COMPLETED",
     ]
-
-    const [history, setHistory] = useState([])
-    const [currentStatus, setCurrentStatus] = useState(null)
-    const [ticketDetails, setTicketDetails] = useState(null)
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -54,12 +50,6 @@ const RealTimeStatus = () => {
         };
         fetchDetails();
     }, [ticketNumberParam])
-
-    const resetFilters = () => {
-        setSearchTerm("")
-        setStatusFilter("All")
-        setDateRange("All Time")
-    }
 
     return (
         <div className="flex min-h-screen bg-gray-50">

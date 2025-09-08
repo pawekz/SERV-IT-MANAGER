@@ -4,6 +4,7 @@ import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
 import { useNavigate } from "react-router-dom";
 import LoadingModal from "../LoadingModal/LoadingModal.jsx";
+import api from '../../config/ApiConfig';
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -78,8 +79,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
         setError(null);
         if (kind === "repair") {
             try {
-                const token = localStorage.getItem("authToken");
-                if (!token) throw new Error("Not authenticated. Please log in.");
                 const form = new FormData();
                 Object.entries(formData).forEach(([key, value]) => {
                     if (key !== "repairPhotos" && key !== "digitalSignature" && value != null)
@@ -99,41 +98,17 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
-                const response = await fetch(`${window.__API_BASE__}/repairTicket/checkInRepairTicket`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: form,
-                });
-                if (!response.ok) {
-                    let errorMessage;
-                    try {
-                        const errorData = await response.text();
-                        errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                    } catch (e) {
-                        errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                    }
-                    throw new Error(errorMessage);
-                }
-                const result = await response.json();
+                const response = await api.post('/repairTicket/checkInRepairTicket', form);
+                const result = response.data;
                 setSuccess(result);
 
                 const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
                 if (ticketNumber && pdfBlob) {
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
-                    const pdfResponse = await fetch(
-                        `${window.__API_BASE__}/repairTicket/uploadRepairTicketPdf/${ticketNumber}`,
-                        {
-                            method: "PATCH",
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                            body: pdfForm,
-                        }
-                    );
-                    if (!pdfResponse.ok) {
-                        const errorText = await pdfResponse.text();
-                        const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
+                    const pdfResponse = await api.patch(`/repairTicket/uploadRepairTicketPdf/${ticketNumber}`, pdfForm);
+                    if (pdfResponse.status < 200 || pdfResponse.status >= 300) {
+                        const errorMessage = `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
                         showToast("PDF upload failed: " + errorMessage, "error");
                         return;
                     }
@@ -149,9 +124,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
             }
         } else {
             try {
-                console.log("Form Data:", userData.email);
-                const token = localStorage.getItem("authToken");
-                if (!token) throw new Error("Not authenticated. Please log in.");
                 const form = new FormData();
                 if (formData.warrantyNumber) {
                     form.append("warrantyNumber", formData.warrantyNumber.toString());
@@ -162,31 +134,24 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 if (userData.email) {
                     form.append("technicianEmail", userData.email.toString());
                 }
-
                 if (formData.returnReason) {
                     form.append("returnReason", formData.returnReason.toString());
                 }
-
                 if (formData.color) {
                     form.append("color", formData.color.toString());
                 }
-
                 if (formData.password) {
                     form.append("password", formData.password.toString());
                 }
-
                 if (formData.accessories) {
                     form.append("accessories", formData.accessories.toString());
                 }
-
                 if (formData.type) {
                     form.append("deviceType", formData.type.toString());
                 }
-
                 if (formData.techObservation) {
                     form.append("techObservation", formData.techObservation.toString());
                 }
-
                 if (formData.warrantyPhotosUrls && Array.isArray(formData.warrantyPhotosUrls)) {
                     formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
                         if (base64DataURL) {
@@ -195,44 +160,17 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
-
-                console.log("Form Data:");
-                [...form.entries()].forEach(([key, value]) => console.log(key, value));
-                const response = await fetch(`${window.__API_BASE__}/warranty/updateWarrantyStatus`, {
-                    method: "PATCH",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: form,
-                });
-                if (!response.ok) {
-                    let errorMessage;
-                    try {
-                        const errorData = await response.text();
-                        errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                    } catch (e) {
-                        errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                    }
-                    throw new Error(errorMessage);
-                }
-                const result = await response.json();
+                const response = await api.patch('/warranty/updateWarrantyStatus', form);
+                const result = response.data;
                 setSuccess(result);
 
                 const warrantyNumber = result && result.warrantyNumber ? result.warrantyNumber : formData.warrantyNumber;
                 if (warrantyNumber && pdfBlob) {
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${warrantyNumber}.pdf`);
-                    const pdfResponse = await fetch(
-                        `${window.__API_BASE__}/warranty/uploadWarrantyDocument/${warrantyNumber}`,
-                        {
-                            method: "PATCH",
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                            body: pdfForm,
-                        }
-                    );
-                    if (!pdfResponse.ok) {
-                        const errorText = await pdfResponse.text();
-                        const errorMessage = errorText || `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
+                    const pdfResponse = await api.patch(`/warranty/uploadWarrantyDocument/${warrantyNumber}`, pdfForm);
+                    if (pdfResponse.status < 200 || pdfResponse.status >= 300) {
+                        const errorMessage = `Server returned ${pdfResponse.status}: ${pdfResponse.statusText}`;
                         showToast("PDF upload failed: " + errorMessage, "error");
                         return;
                     }
@@ -409,3 +347,4 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 };
 
 export default RepairPdfPreview;
+

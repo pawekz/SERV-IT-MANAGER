@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Wrench, User, Cuboid as Cube } from "lucide-react";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 
 const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
   const [ticket, setTicket] = useState(null);

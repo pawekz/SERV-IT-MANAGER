@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Folder, Save, AlertCircle, CheckCircle2 } from "lucide-react";
-import api from "../../services/api";
+import api from '../../config/ApiConfig';
 
 const DestinationTab = () => {
     const [currentDir, setCurrentDir] = useState("");

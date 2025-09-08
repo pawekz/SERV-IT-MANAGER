@@ -3,6 +3,7 @@ import {ChevronLeft, ChevronRight, Upload,X, SquareX} from "lucide-react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
+import api from '../../config/ApiConfig';
 
 
 const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
@@ -44,25 +45,11 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const downloadWarrantyPdf = async (warrantyNumber) => {
         try {
-            const token = localStorage.getItem("authToken");
-            if (!token) throw new Error("Not authenticated. Please log in.");
-
-            const response = await fetch(`${window.__API_BASE__}/warranty/getWarrantyPdf/${warrantyNumber}`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch PDF. Status: " + response.status);
-            }
-
-            const blob = await response.blob();
-            const contentDisposition = response.headers.get("Content-Disposition");
+            const response = await api.get(`/warranty/getWarrantyPdf/${warrantyNumber}`, { responseType: 'blob' });
+            const blob = response.data;
+            const contentDisposition = response.headers['content-disposition'];
             const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
-
+            const fileName = fileNameMatch ? fileNameMatch[1] : `Warranty-${warrantyNumber}.pdf`;
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -82,49 +69,21 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         useEffect(() => {
             const fetchImageWithAuth = async () => {
                 try {
-                    // if (src.startsWith("data:")) {
-                    //     setImageUrl(src);
-                    //     return;
-                    // }
-
-                    const token = localStorage.getItem("authToken");
-                    if (!token) throw new Error("Not authenticated. Please log in.");
-
-                    console.log(token)
-
-                    const response = await fetch(`${window.__API_BASE__}${src}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-
-                    if (!response.ok) {
-                        throw new Error("Failed to fetch image");
-                    }
-                    console.log("Fetching image for SecureImage src:", src);
-
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
+                    const response = await api.get(src, { responseType: 'blob' });
+                    const blobUrl = URL.createObjectURL(response.data);
                     setImageUrl(blobUrl);
                 } catch (err) {
-
-                        console.error("Error fetching image:", err);
-                    console.log("Fetching image for SecureImage src:", src);
-                        setPhotoError(err instanceof Error ? err.message : String(err));
-                        setError(err instanceof Error ? err.message : String(err));
-                        setShowToast(true);
-
+                    console.error("Error fetching image:", err);
+                    setPhotoError(err instanceof Error ? err.message : String(err));
+                    setError(err instanceof Error ? err.message : String(err));
+                    setShowToast(true);
                 }
             };
-
             fetchImageWithAuth();
         }, [src]);
-
-
         if (!imageUrl) {
-            return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />; // Skeleton while loading
+            return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />;
         }
-
         return (
             <img
                 src={imageUrl}
@@ -155,40 +114,24 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
     }, [data?.warrantyNumber]);
 
     const UpdateStatus = async () => {
-
-        const token = localStorage.getItem("authToken");
-        if (!token) throw new Error("Not authenticated. Please log in.");
-
-        const form = new FormData();
-        if (formData.warrantyNumber) {
-            form.append("warrantyNumber", formData.warrantyNumber.toString());
-        }
-        if (formData.status) {
-            form.append("status", formData.status.toString());
-        }
-
-    const response = await fetch(`${window.__API_BASE__}/warranty/updateWarrantyStatus`, {
-            method: "PATCH",
-            headers: {Authorization: `Bearer ${token}`},
-            body: form,
-        });
-        if (!response.ok) {
-            let errorMessage;
-            try {
-                const errorData = await response.text();
-                errorMessage = errorData || `Server returned ${response.status}: ${response.statusText}`;
-                setError(errorMessage);
-                setShowToast(true);
-            } catch (e) {
-                errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                setError(errorMessage);
-                setShowToast(true);
+        try {
+            const form = new FormData();
+            if (formData.warrantyNumber) {
+                form.append("warrantyNumber", formData.warrantyNumber.toString());
             }
+            if (formData.status) {
+                form.append("status", formData.status.toString());
+            }
+            const response = await api.patch(`/warranty/updateWarrantyStatus`, form);
+            const result = response.data;
+            setSuccess(result);
+            onSuccess();
+        } catch (error) {
+            let errorMessage = error.response?.data || error.message;
+            setError(errorMessage);
+            setShowToast(true);
             throw new Error(errorMessage);
         }
-        const result = await response.json();
-        setSuccess(result);
-        onSuccess();
 
     }
 

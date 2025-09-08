@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ActiveRepairCard from './ActiveRepairCard.jsx';
-import api from '../../services/api.jsx';
-
+import api from '../../config/ApiConfig';
 const ActiveRepairsCarousel = ({ customerEmail }) => {
   const [tickets, setTickets] = useState([]);
   const [current, setCurrent] = useState(0);

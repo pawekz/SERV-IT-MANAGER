@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
+import api, { parseJwt } from '../../config/ApiConfig';
 
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
@@ -23,15 +24,6 @@ const AccountInformation = () => {
     });
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Function to decode JWT token
-    const parseJwt = (token) => {
-        try {
-            return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) {
-            return null;
-        }
-    };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -158,61 +150,36 @@ const AccountInformation = () => {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            // Track if username was changed
             let usernameChanged = false;
 
             // Update full name if changed
             if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
-                const response = await fetch(`${window.__API_BASE__}/user/updateCurrentUserFullName`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        newFirstName: editFormData.firstName,
-                        newLastName: editFormData.lastName
-                    })
+                const response = await api.patch('/user/updateCurrentUserFullName', {
+                    newFirstName: editFormData.firstName,
+                    newLastName: editFormData.lastName
                 });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update full name");
+                if (response.status < 200 || response.status >= 300) {
+                    throw new Error(response.data || "Failed to update full name");
                 }
             }
 
             // Update phone number if changed
             if (userData.phoneNumber !== editFormData.phoneNumber) {
-                const response = await fetch(`${window.__API_BASE__}/user/changeCurrentUserPhoneNumber`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        newPhoneNumber: editFormData.phoneNumber
-                    })
+                const response = await api.patch('/user/changeCurrentUserPhoneNumber', {
+                    newPhoneNumber: editFormData.phoneNumber
                 });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update phone number");
+                if (response.status < 200 || response.status >= 300) {
+                    throw new Error(response.data || "Failed to update phone number");
                 }
             }
 
             // Update username if changed
             if (userData.username !== editFormData.username) {
-                const response = await fetch(`${window.__API_BASE__}/user/updateCurrentUsername`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        newUsername: editFormData.username
-                    })
+                const response = await api.patch('/user/updateCurrentUsername', {
+                    newUsername: editFormData.username
                 });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || "Failed to update username");
+                if (response.status < 200 || response.status >= 300) {
+                    throw new Error(response.data || "Failed to update username");
                 }
                 usernameChanged = true;
             }
@@ -256,7 +223,7 @@ const AccountInformation = () => {
         } catch (err) {
             setUpdateStatus({
                 success: false,
-                message: err.message || "Failed to update profile. Please try again."
+                message: err.response?.data || err.message || "Failed to update profile. Please try again."
             });
         } finally {
             setIsSubmitting(false);

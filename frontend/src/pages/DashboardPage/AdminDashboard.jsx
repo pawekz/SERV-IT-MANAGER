@@ -5,6 +5,7 @@ import {
     User,
 } from "lucide-react"
 import {useEffect, useState} from "react";
+import api, { parseJwt } from '../../config/ApiConfig.jsx';
 
 const AdminDashboard = () => {
     const [userData, setUserData] = useState({
@@ -80,14 +81,6 @@ const AdminDashboard = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
-    const parseJwt = (token) => {
-        try {
-            return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) {
-            return null;
-        }
-    };
-
     // Function to show the description modal
     const showDescriptionModal = (item) => {
         setModalData(item);
@@ -116,7 +109,9 @@ const AdminDashboard = () => {
                 const token = localStorage.getItem('authToken');
 
                 if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
+                    setError("Not authenticated. Please log in.");
+                    setLoading(false);
+                    return;
                 }
 
                 // Try to parse token to get user info
@@ -138,7 +133,9 @@ const AdminDashboard = () => {
                     // Cache the data in sessionStorage
                     sessionStorage.setItem('userData', JSON.stringify(userData));
                 } else {
-                    throw new Error("Invalid token format");
+                    setError("Invalid token format");
+                    setLoading(false);
+                    return;
                 }
                 setError(null);
             } catch (err) {
@@ -156,33 +153,15 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchUserCount = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/user/getUserCount`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching user count: ${response.status}`);
-                }
-
-                const count = await response.json();
+                const response = await api.get('/user/getUserCount');
                 setStats(prevStats => ({
                     ...prevStats,
-                    users: count
+                    users: response.data
                 }));
             } catch (err) {
                 console.error("Error fetching user count:", err);
             }
         };
-
         fetchUserCount();
     }, []);
 
@@ -190,136 +169,73 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchUsersAddedThisWeek = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error("Authentication token not found");
-                }
-
-                // Use the getWeeklyUsers endpoint
-                const response = await fetch(`${window.__API_BASE__}/user/getWeeklyUsers`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch weekly users: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                // Handle the case where response is an array of objects
+                const response = await api.get('/user/getWeeklyUsers');
+                const data = response.data;
                 const count = Array.isArray(data) ? data.length : data;
-
                 setStats(prevStats => ({
                     ...prevStats,
                     usersAddedThisWeek: count
                 }));
-
-                // Reset error state
                 setStatsErrors(prev => ({...prev, usersAddedThisWeek: false}));
             } catch (err) {
                 console.error("Error fetching users added this week:", err);
                 setStatsErrors(prev => ({...prev, usersAddedThisWeek: true}));
-
-                // Set fallback value
                 setStats(prevStats => ({
                     ...prevStats,
                     usersAddedThisWeek: 0
                 }));
             }
         };
-
         fetchUsersAddedThisWeek();
-
-        // Set up polling to refresh the count periodically
-        const intervalId = setInterval(fetchUsersAddedThisWeek, 60000); // Refresh every minute
-
+        const intervalId = setInterval(fetchUsersAddedThisWeek, 60000);
         return () => clearInterval(intervalId);
     }, []);
 
     // Fetch active repair tickets from backend with change tracking and persistence
     useEffect(() => {
-        // First, load any saved ticket changes from localStorage
         const savedTicketChanges = localStorage.getItem('ticketChanges');
         if (savedTicketChanges) {
             setTicketChanges(JSON.parse(savedTicketChanges));
         }
-
         const fetchActiveRepairTickets = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/repairTicket/getActiveRepairTickets`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching active repair tickets: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const response = await api.get('/repairTicket/getActiveRepairTickets');
+                const data = response.data;
                 const newCount = data.totalElements || 0;
-
-                // Get previous count from localStorage
                 const prevCountData = localStorage.getItem('previousTicketCount');
                 let prevCount = 0;
                 let shouldUpdateChanges = false;
-
                 if (prevCountData) {
                     prevCount = JSON.parse(prevCountData).count;
-
-                    // Calculate change
                     const change = newCount - prevCount;
-
-                    // Only update if there's a NEW change - different from what we're already showing
                     if (change !== 0) {
-                        // Get current displayed change value
                         const currentChange = ticketChanges.value;
-
-                        // Only update if this is a different change than what we're already showing
                         if (change !== currentChange) {
                             setTicketChanges({
                                 value: change,
                                 isIncrease: change > 0,
                                 lastUpdated: new Date().toISOString()
                             });
-
-                            // Save the new ticket changes to localStorage
                             const newTicketChanges = {
                                 value: change,
                                 isIncrease: change > 0,
                                 lastUpdated: new Date().toISOString()
                             };
-
                             localStorage.setItem('ticketChanges', JSON.stringify(newTicketChanges));
                             shouldUpdateChanges = true;
                         }
                     }
                 }
-
-                // Only update the count in localStorage if we found a new change
-                // or if this is the first time we're checking
                 if (shouldUpdateChanges || !prevCountData) {
                     localStorage.setItem('previousTicketCount', JSON.stringify({
                         count: newCount,
                         timestamp: new Date().toISOString()
                     }));
                 }
-
-                // Always update the current open tickets count
                 setStats(prevStats => ({
                     ...prevStats,
                     openTickets: newCount
                 }));
-
             } catch (err) {
                 console.error("Error fetching active repair tickets:", err);
                 setStats(prevStats => ({
@@ -328,12 +244,8 @@ const AdminDashboard = () => {
                 }));
             }
         };
-
         fetchActiveRepairTickets();
-
-        // Set up polling to refresh active tickets count every 2 minutes
         const intervalId = setInterval(fetchActiveRepairTickets, 120000);
-
         return () => clearInterval(intervalId);
     }, []);
 
@@ -342,27 +254,8 @@ const AdminDashboard = () => {
         const fetchRepairTickets = async () => {
             try {
                 setTicketsLoading(true);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/repairTicket/getAllRepairTickets`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching repair tickets: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setRepairTickets(data);
-
+                const response = await api.get('/repairTicket/getAllRepairTickets');
+                setRepairTickets(response.data);
                 setTicketsError(null);
             } catch (err) {
                 console.error("Error fetching repair tickets:", err);
@@ -371,7 +264,6 @@ const AdminDashboard = () => {
                 setTicketsLoading(false);
             }
         };
-
         fetchRepairTickets();
     }, []);
 
@@ -380,34 +272,14 @@ const AdminDashboard = () => {
         const fetchInventoryData = async () => {
             try {
                 setInventoryLoading(true);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/part/getAllParts`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching inventory: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const response = await api.get('/part/getAllParts');
+                const data = response.data;
                 setInventoryData(data);
-
-                // Count low stock items (assuming items with quantity <= 5 are considered low stock)
                 const lowStockCount = data.filter(item => item.currentStock <= 5).length;
                 setStats(prevStats => ({
                     ...prevStats,
                     lowStockItems: lowStockCount
                 }));
-
                 setInventoryError(null);
             } catch (err) {
                 console.error("Error fetching inventory data:", err);
@@ -416,7 +288,6 @@ const AdminDashboard = () => {
                 setInventoryLoading(false);
             }
         };
-
         fetchInventoryData();
     }, []);
 
@@ -425,31 +296,11 @@ const AdminDashboard = () => {
         const fetchFeedbacks = async () => {
             try {
                 setFeedbacksLoading(true);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    throw new Error("Authentication token not found");
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/feedback/getAllFeedback`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching feedback: ${response.status}`);
-                }
-
-                const data = await response.json();
-                // Sort by newest first (assuming there's a createdAt field)
+                const response = await api.get('/feedback/getAllFeedback');
+                const data = response.data;
                 const sortedData = [...data].sort((a, b) => {
-                    // If you have a timestamp field, use that
                     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
                 });
-
-                // Show all feedback instead of limiting to 3
                 setFeedbacks(sortedData);
                 setFeedbacksError(null);
             } catch (err) {
@@ -459,12 +310,8 @@ const AdminDashboard = () => {
                 setFeedbacksLoading(false);
             }
         };
-
         fetchFeedbacks();
-
-        // Set up polling to refresh feedback data every minute
         const intervalId = setInterval(fetchFeedbacks, 60000);
-
         return () => clearInterval(intervalId);
     }, []);
 
@@ -473,25 +320,8 @@ const AdminDashboard = () => {
         const fetchTechnicianWorkload = async () => {
             try {
                 setTechWorkloadLoading(true);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    throw new Error("Authentication token not found");
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/user/getTopTechniciansByWorkload`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching technician workload: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setTechnicianWorkload(data);
+                const response = await api.get('/user/getTopTechniciansByWorkload');
+                setTechnicianWorkload(response.data);
                 setTechWorkloadError(null);
             } catch (err) {
                 console.error("Error fetching technician workload:", err);
@@ -500,10 +330,7 @@ const AdminDashboard = () => {
                 setTechWorkloadLoading(false);
             }
         };
-
         fetchTechnicianWorkload();
-
-        // Refresh data every 5 minutes
         const intervalId = setInterval(fetchTechnicianWorkload, 300000);
         return () => clearInterval(intervalId);
     }, []);
@@ -512,69 +339,27 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchSatisfactionRate = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/feedback/getAllRatings`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching satisfaction ratings: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log("Ratings data from backend:", data);
-
-                // Process the ratings data (map of rating -> count)
+                const response = await api.get('/feedback/getAllRatings');
+                const data = response.data;
                 if (data && Object.keys(data).length > 0) {
-                    // Calculate total number of ratings
                     const totalCount = Object.values(data).reduce((sum, count) => sum + count, 0);
                     setTotalRatings(totalCount);
-
-                    // Find the maximum count to set as 100%
                     const maxCount = Math.max(...Object.values(data));
-
-                    // Calculate distribution percentages
                     const distribution = {};
                     let weightedSum = 0;
-
-                    // Ensure all ratings 1-5 are represented
                     for (let i = 1; i <= 5; i++) {
                         const count = data[i] || 0;
-                        // Calculate percentage relative to the maximum count (for the bar display)
-                        // This makes the highest count show as 100%
-                        const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
-                        distribution[i] = percentage;
-
-                        // For weighted average calculation
+                        distribution[i] = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
                         weightedSum += i * count;
                     }
-
-                    // Calculate average rating and convert to percentage
                     const averageRating = totalCount > 0 ? weightedSum / totalCount : 0;
-                    const satisfactionPercentage = Math.round(averageRating * 20); // Convert 1-5 scale to percentage
-
-                    // Update the ratings distribution
+                    const satisfactionPercentage = Math.round(averageRating * 20);
                     setRatingDistribution(distribution);
-
-                    // Update the overall satisfaction rate
                     setStats(prevStats => ({
                         ...prevStats,
                         satisfactionRate: satisfactionPercentage + "%"
                     }));
-
-                    console.log("Processed rating distribution:", distribution);
-                    console.log("Overall satisfaction rate:", satisfactionPercentage + "%");
                 } else {
-                    console.log("No ratings data found or empty object returned");
-                    // Reset to zeros if no data
                     setRatingDistribution({
                         '5': 0,
                         '4': 0,
@@ -586,7 +371,6 @@ const AdminDashboard = () => {
                 }
             } catch (err) {
                 console.error("Error fetching satisfaction ratings:", err);
-                // Fallback to default values if error occurs
                 setRatingDistribution({
                     '5': 0,
                     '4': 0,
@@ -601,12 +385,8 @@ const AdminDashboard = () => {
                 }));
             }
         };
-
         fetchSatisfactionRate();
-
-        // Set up polling to refresh data periodically
-        const intervalId = setInterval(fetchSatisfactionRate, 300000); // Refresh every 5 minutes
-
+        const intervalId = setInterval(fetchSatisfactionRate, 300000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -614,44 +394,19 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchPendingApprovals = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                // Assuming there's an endpoint for pending approvals
-                const response = await fetch(`${window.__API_BASE__}/repairTicket/getPendingApprovals`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    // If endpoint doesn't exist or returns error, use default value
-                    setStats(prevStats => ({
-                        ...prevStats,
-                        pendingApprovals: 3
-                    }));
-                    return;
-                }
-
-                const count = await response.json();
+                const response = await api.get('/approval/getPendingApprovalsCount');
                 setStats(prevStats => ({
                     ...prevStats,
-                    pendingApprovals: count
+                    pendingApprovals: response.data
                 }));
             } catch (err) {
                 console.error("Error fetching pending approvals:", err);
-                // Fallback to default value if error occurs
                 setStats(prevStats => ({
                     ...prevStats,
-                    pendingApprovals: 3
+                    pendingApprovals: 3 // fallback value
                 }));
             }
         };
-
         fetchPendingApprovals();
     }, []);
 
@@ -944,3 +699,4 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
+

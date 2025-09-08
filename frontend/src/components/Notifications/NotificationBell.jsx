@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import SockJS from "sockjs-client";
-import { Stomp } from "@stomp/stompjs";
 import { Bell as BellIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import api from '../../config/ApiConfig';
+import { connectWebSocket, disconnectWebSocket, subscribeToTopic, unsubscribeFromTopic } from '../../config/WebSocketConfig';
 
 // Simple bell component that shows real-time notifications for the current user.
 // It replicates (in a compact form) the logic previously found in
@@ -28,7 +28,6 @@ export default function NotificationBell() {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
 
   // refs
-  const stompClient = useRef(null);
   const dropdownRef = useRef(null);
 
   // ---------------------------------------------------------------------------
@@ -43,51 +42,37 @@ export default function NotificationBell() {
   const fetchNotifications = async () => {
     if (!authToken || !userEmail) return;
     try {
-      const res = await fetch(
-  `${window.__API_BASE__}/notification/getNotificationsFromUserEmail?email=${encodeURIComponent(
-          userEmail
-        )}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        }
+      const res = await api.get(
+        `/notification/getNotificationsFromUserEmail`,
+        { params: { email: userEmail } }
       );
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data || []);
-        setHasUnread((data || []).some((n) => !n.isRead));
-      }
+      const data = res.data;
+      setNotifications(data || []);
+      setHasUnread((data || []).some((n) => !n.isRead));
     } catch (err) {
       console.warn("Failed to fetch notifications", err);
     }
   };
 
   // ---------------------------------------------------------------------------
-  // WebSocket (STOMP) – live updates
+  // WebSocket (STOMP) – live updates (now using WebSocketConfig)
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!userEmail) return;
-
-  const socketFactory = () => new SockJS(`${window.__API_BASE__}/ws`);
-    const client = Stomp.over(socketFactory);
-    stompClient.current = client;
-
-    client.connect(
-      {},
-      () => {
+    let notifSubscription = null;
+    connectWebSocket({
+      onConnect: () => {
         setConnectionStatus("Connected");
-        client.subscribe(`/topic/notifications/${userEmail}`, () => {
+        notifSubscription = subscribeToTopic(`/topic/notifications/${userEmail}`, () => {
           setNewNotif(true);
           fetchNotifications();
         });
       },
-      (error) => {
-        console.error("WebSocket connection error", error);
-        setConnectionStatus("Disconnected");
-      }
-    );
-
+      onDisconnect: () => setConnectionStatus("Disconnected")
+    });
     return () => {
-      if (stompClient.current) stompClient.current.disconnect();
+      unsubscribeFromTopic(notifSubscription);
+      disconnectWebSocket();
     };
   }, [userEmail]);
 
@@ -119,55 +104,50 @@ export default function NotificationBell() {
   // ---------------------------------------------------------------------------
   const markAsRead = async (notificationId) => {
     if (!authToken) return;
-    await fetch(
-  `${window.__API_BASE__}/notification/markAsReadById?notificationId=${notificationId}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
-    fetchNotifications();
+    try {
+      await api.patch(
+        `/notification/markAsReadById`,
+        {},
+        { params: { notificationId } }
+      );
+      fetchNotifications();
+    } catch (err) {
+      console.warn("Failed to mark as read", err);
+    }
   };
 
   const deleteNotification = async (notificationId) => {
     if (!authToken) return;
-  await fetch(`${window.__API_BASE__}/notification/deleteNotification/${notificationId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${authToken}` },
-    });
-    fetchNotifications();
+    try {
+      await api.delete(`/notification/deleteNotification/${notificationId}`);
+      fetchNotifications();
+    } catch (err) {
+      console.warn("Failed to delete notification", err);
+    }
   };
 
   const deleteAllNotifications = async () => {
     if (!authToken || !userEmail) return;
-    await fetch(
-  `${window.__API_BASE__}/notification/deleteAllNotifications?email=${encodeURIComponent(
-        userEmail
-      )}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${authToken}` },
-      }
-    );
-    fetchNotifications();
+    try {
+      await api.delete(`/notification/deleteAllNotifications`, {
+        params: { email: userEmail }
+      });
+      fetchNotifications();
+    } catch (err) {
+      console.warn("Failed to delete all notifications", err);
+    }
   };
 
   const markAllAsRead = async () => {
     if (!authToken || !userEmail) return;
-    await fetch(
-  `${window.__API_BASE__}/notification/markAllAsRead?email=${encodeURIComponent(userEmail)}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
-    fetchNotifications();
+    try {
+      await api.patch(`/notification/markAllAsRead`, {}, {
+        params: { email: userEmail }
+      });
+      fetchNotifications();
+    } catch (err) {
+      console.warn("Failed to mark all as read", err);
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -290,4 +270,4 @@ export default function NotificationBell() {
       )}
     </div>
   );
-} 
+}

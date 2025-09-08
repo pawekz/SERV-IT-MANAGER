@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import Calendar from 'react-calendar';
 import TimePicker from 'react-time-picker';
 import { Clock, Calendar as CalendarIcon, Save, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import api from "../../services/api";
+
+import api from '../../config/ApiConfig';
+
 import 'react-calendar/dist/Calendar.css';
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';

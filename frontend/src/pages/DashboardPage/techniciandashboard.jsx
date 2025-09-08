@@ -4,7 +4,7 @@ import {User, Search, CheckCircle, X, Clock, Plus, AlertTriangle} from "lucide-r
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
 import { useEffect, useState } from "react"
 import {Link, useNavigate} from "react-router-dom";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 
 const TechnicianDashboard = () => {
     const [userData, setUserData] = useState({

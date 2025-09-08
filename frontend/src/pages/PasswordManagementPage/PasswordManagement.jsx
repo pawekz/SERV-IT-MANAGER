@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../config/ApiConfig.jsx';
 
 const PasswordManagement = () => {
     // State for password visibility
@@ -97,54 +98,28 @@ const PasswordManagement = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${window.__API_BASE__}/user/changeCurrentUserPassword`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    currentPassword: formValues.currentPassword,
-                    newPassword: formValues.newPassword
-                })
+            await api.patch('/user/changeCurrentUserPassword', {
+                currentPassword: formValues.currentPassword,
+                newPassword: formValues.newPassword
             });
-            // Handle response based on status
-            if (response.ok) {
-                // Success case - don't try to parse JSON
-                setSuccess("Password changed successfully!");
-                // Reset form after successful submission
-                setFormValues({
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                });
-                // Remove token and redirect to login page after a short delay
-                localStorage.removeItem('authToken');
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500); // 1.5 seconds delay for user to see success message
-            } else {
-                // Error handling
-                let errorMessage = `Error ${response.status}: ${response.statusText}`;
-
-                try {
-                    // Only try to parse as JSON if content exists and is JSON
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                        const text = await response.text();
-                        if (text && text.trim()) {
-                            const errorData = JSON.parse(text);
-                            errorMessage = errorData.message || errorMessage;
-                        }
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing error response:", parseError);
-                }
-
-                throw new Error(errorMessage);
-            }
+            setSuccess("Password changed successfully!");
+            setFormValues({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+            localStorage.removeItem('authToken');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
         } catch (err) {
-            setError(err.message || "An error occurred while changing your password");
+            let errorMessage = "An error occurred while changing your password";
+            if (err.response && err.response.data) {
+                errorMessage = err.response.data.message || err.response.data.error || errorMessage;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
