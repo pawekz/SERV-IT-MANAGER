@@ -107,6 +107,12 @@ public class WarrantyService {
         }
     }
 
+    private String extractS3KeyFromUrl(String s3Url) {
+        int idx = s3Url.indexOf(".amazonaws.com/");
+        if (idx == -1) return s3Url;
+        return s3Url.substring(idx + ".amazonaws.com/".length());
+    }
+
     private GetAllWarrantyDTO mapToGetAllWarrantyDTO(WarrantyEntity warranty) {
 
         Optional<PartEntity> part = partRepository.findByWarranty(warranty);
@@ -135,9 +141,9 @@ public class WarrantyService {
 
         if (warranty.getWarrantyPhotos() != null) {
             dto.setWarrantyPhotosUrls(
-                    warranty.getWarrantyPhotos().stream()
-                            .map(photo -> "/images/repair_photos/" + Paths.get(photo.getPhotoUrl()).getFileName())
-                            .collect(Collectors.toList())
+                warranty.getWarrantyPhotos().stream()
+                    .map(WarrantyPhotoEntity::getPhotoUrl)
+                    .collect(Collectors.toList())
             );
         } else {
             dto.setWarrantyPhotosUrls(List.of());
@@ -458,10 +464,13 @@ public class WarrantyService {
             throw new EntityNotFoundException("No document uploaded for this warranty: " + warrantyNumber);
         }
 
-        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
-        byte[] fileBytes = java.nio.file.Files.readAllBytes(path);
-        String fileName = path.getFileName().toString();
-
+        String s3Key = extractS3KeyFromUrl(documentPath);
+        com.amazonaws.services.s3.model.S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+        byte[] fileBytes;
+        try (java.io.InputStream is = s3Object.getObjectContent()) {
+            fileBytes = is.readAllBytes();
+        }
+        String fileName = s3Key.substring(s3Key.lastIndexOf("/") + 1);
         return new WarrantyPdfResponseDTO(fileBytes, fileName);
     }
 

@@ -279,56 +279,53 @@ public class UserService {
 
     @Transactional
     public void updateProfilePicture(Integer userId, MultipartFile file) {
-        try {
-            logger.info("Updating profile picture for user ID: {}", userId);
+        logger.info("Updating profile picture for user ID: {}", userId);
+        UserEntity user = userRepo.findById(userId)
+                .orElseThrow(() -> {
+                    logger.error("User not found for ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
 
-            UserEntity user = userRepo.findById(userId)
-                    .orElseThrow(() -> {
-                        logger.error("User not found for ID: {}", userId);
-                        return new IllegalArgumentException("User not found");
-                    });
-
-            // Delete old profile picture if it exists
-            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().equals("0")) {
-                fileUtil.deleteProfilePicture(user.getProfilePictureUrl());
+        String oldProfileUrl = user.getProfilePictureUrl();
+        if (oldProfileUrl != null && !oldProfileUrl.equals("0") && !oldProfileUrl.isBlank()) {
+            try {
+                fileUtil.deleteProfilePicture(oldProfileUrl);
+            } catch (Exception e) {
+                logger.warn("Failed to delete old profile picture for user ID {}: {}", userId, e.getMessage());
             }
-
-            // Save new profile picture
-            String profilePictureUrl = fileUtil.saveProfilePicture(file, userId);
-            user.setProfilePictureUrl(profilePictureUrl);
-            userRepo.save(user);
-
-            logger.info("Profile picture updated successfully for user ID: {}", userId);
-        } catch (Exception e) {
-            logger.error("Error updating profile picture for user ID: {}", userId, e);
-            throw new RuntimeException("Failed to update profile picture", e);
         }
+
+        String profilePictureUrl;
+        try {
+            profilePictureUrl = fileUtil.saveProfilePicture(file, userId);
+        } catch (Exception e) {
+            logger.error("Failed to save new profile picture for user ID {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Failed to save new profile picture", e);
+        }
+        user.setProfilePictureUrl(profilePictureUrl);
+        userRepo.save(user);
+        logger.info("Profile picture updated successfully for user ID: {}", userId);
     }
 
     @Transactional
     public void removeProfilePicture(Integer userId) {
-        try {
-            logger.info("Removing profile picture for user ID: {}", userId);
-
-            UserEntity user = userRepo.findById(userId)
-                    .orElseThrow(() -> {
-                        logger.error("User not found for ID: {}", userId);
-                        return new IllegalArgumentException("User not found");
-                    });
-
-            // Delete profile picture file
-            if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().equals("0")) {
-                fileUtil.deleteProfilePicture(user.getProfilePictureUrl());
+        logger.info("Removing profile picture for user ID: {}", userId);
+        UserEntity user = userRepo.findById(userId)
+                .orElseThrow(() -> {
+                    logger.error("User not found for ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
+        String oldProfileUrl = user.getProfilePictureUrl();
+        if (oldProfileUrl != null && !oldProfileUrl.equals("0") && !oldProfileUrl.isBlank()) {
+            try {
+                fileUtil.deleteProfilePicture(oldProfileUrl);
+            } catch (Exception e) {
+                logger.warn("Failed to delete profile picture for user ID {}: {}", userId, e.getMessage());
             }
-
-            user.setProfilePictureUrl("0");
-            userRepo.save(user);
-
-            logger.info("Profile picture removed successfully for user ID: {}", userId);
-        } catch (Exception e) {
-            logger.error("Error removing profile picture for user ID: {}", userId, e);
-            throw new RuntimeException("Failed to remove profile picture", e);
         }
+        user.setProfilePictureUrl("0");
+        userRepo.save(user);
+        logger.info("Profile picture removed successfully for user ID: {}", userId);
     }
 
     @Transactional

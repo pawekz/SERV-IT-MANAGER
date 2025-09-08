@@ -361,8 +361,12 @@ public class RepairTicketService {
         if (documentPath == null) {
             throw new EntityNotFoundException("No document uploaded for this ticket");
         }
-        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
-        return java.nio.file.Files.readAllBytes(path);
+        // If documentPath is an S3 URL, extract the key
+        String s3Key = extractS3KeyFromUrl(documentPath);
+        com.amazonaws.services.s3.model.S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+        try (java.io.InputStream is = s3Object.getObjectContent()) {
+            return is.readAllBytes();
+        }
     }
 
 
@@ -563,9 +567,13 @@ public class RepairTicketService {
         if (documentPath == null) {
             throw new EntityNotFoundException("No document uploaded for this ticket");
         }
-        java.nio.file.Path path = java.nio.file.Paths.get(documentPath);
-        byte[] fileBytes = java.nio.file.Files.readAllBytes(path);
-        String fileName = path.getFileName().toString();
+        String s3Key = extractS3KeyFromUrl(documentPath);
+        com.amazonaws.services.s3.model.S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+        byte[] fileBytes;
+        try (java.io.InputStream is = s3Object.getObjectContent()) {
+            fileBytes = is.readAllBytes();
+        }
+        String fileName = s3Key.substring(s3Key.lastIndexOf("/") + 1);
         return new RepairTicketPdfResponseDTO(fileBytes, fileName);
     }
 
@@ -627,6 +635,13 @@ public class RepairTicketService {
                 .collect(Collectors.toList()) : null);
         dto.setRepairTicketId(repairTicket.getRepairTicketId());
         return dto;
+    }
+
+    private String extractS3KeyFromUrl(String s3Url) {
+        // Example: https://servit-bucket.s3.ap-southeast-2.amazonaws.com/documents/claim_forms/IORT-000001-repair-ticket-2025-05-28.pdf
+        int idx = s3Url.indexOf(".amazonaws.com/");
+        if (idx == -1) return s3Url; // fallback: assume it's already a key
+        return s3Url.substring(idx + ".amazonaws.com/".length());
     }
 }
 

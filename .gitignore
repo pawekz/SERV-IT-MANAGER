@@ -17,7 +17,7 @@ dist-ssr/
 target/
 !**/src/main/**/target/
 !**/src/test/**/target/
-build/
+build/f
 !**/src/main/**/build/
 !**/src/test/**/build/
 

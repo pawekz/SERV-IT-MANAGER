@@ -1,18 +1,12 @@
 package com.servit.servit.util;
 
 import com.servit.servit.service.ConfigurationService;
+import com.servit.servit.service.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -21,10 +15,12 @@ import java.util.List;
 public class FileUtil {
 
     private final ConfigurationService configurationService;
+    private final S3Service s3Service;
 
     @Autowired
-    public FileUtil(ConfigurationService configurationService) {
+    public FileUtil(ConfigurationService configurationService, S3Service s3Service) {
         this.configurationService = configurationService;
+        this.s3Service = s3Service;
     }
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -37,12 +33,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-rp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "images", "repair_photos", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "images/repair_photos/" + fileName);
     }
 
     public String saveDigitalSignature(MultipartFile file, String ticketNumber) throws IOException {
@@ -54,12 +45,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-sig-%s%s", ticketNumber, date, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "images", "digital_signatures", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "images/digital_signatures/" + fileName);
     }
 
     public String saveRepairTicketPdf(MultipartFile file, String ticketNumber) throws IOException {
@@ -69,12 +55,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-repair-ticket-%s%s", ticketNumber, date, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "documents", "claim_forms", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "documents/claim_forms/" + fileName);
     }
 
     private void validatePhoto(MultipartFile file) {
@@ -114,12 +95,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-warranty-ticket-%s%s", warrantyNumber, date, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "documents", "claim_forms", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "documents/claim_forms/" + fileName);
     }
 
     public String saveWarrantyPhoto(MultipartFile file, String warrantyNumber, int incrementalNumber) throws IOException {
@@ -129,12 +105,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-rp-%s-%02d%s", warrantyNumber, date, incrementalNumber, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "images", "repair_photos", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "images/repair_photos/" + fileName);
     }
 
     public String saveAfterRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
@@ -144,12 +115,7 @@ public class FileUtil {
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-arp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "images", "after_repair_photos", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "images/after_repair_photos/" + fileName);
     }
 
     public String saveProfilePicture(MultipartFile file, Integer userId) throws IOException {
@@ -158,22 +124,22 @@ public class FileUtil {
         String fileExtension = getFileExtension(file);
         String fileName = String.format("user-%d-profile%s", userId, fileExtension);
 
-        String basePath = configurationService.getTicketFilesBasePath();
-        Path filePath = Paths.get(basePath, "images", "profile_pictures", fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-
-        return filePath.toString();
+        return s3Service.uploadFile(file, "images/profile_pictures/" + fileName);
     }
 
     public void deleteProfilePicture(String profilePictureUrl) {
-        if (profilePictureUrl != null && !profilePictureUrl.equals("0")) {
-            try {
-                Path filePath = Paths.get(profilePictureUrl);
-                Files.deleteIfExists(filePath);
-            } catch (IOException e) {
-                System.err.println("Failed to delete profile picture: " + e.getMessage());
-            }
+        if (profilePictureUrl == null || profilePictureUrl.isEmpty()) {
+            return;
         }
+        int idx = profilePictureUrl.indexOf(".amazonaws.com/");
+        if (idx == -1) {
+            return;
+        }
+        String s3Key = profilePictureUrl.substring(idx + ".amazonaws.com/".length());
+        s3Service.deleteFile(s3Key);
+    }
+
+    public com.amazonaws.services.s3.model.S3Object downloadFileFromS3(String s3Key) {
+        return s3Service.downloadFile(s3Key);
     }
 }
