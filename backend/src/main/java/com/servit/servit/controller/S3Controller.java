@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/s3")
+@RequestMapping("/s3")
 public class S3Controller {
 
     private final S3Service s3Service;
