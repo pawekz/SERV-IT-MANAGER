@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../../services/api.jsx';
+import api from '../../../config/ApiConfig.jsx';
 
 function parseTypeAndFilename(path) {
   if (!path) return { type: '', filename: '' };

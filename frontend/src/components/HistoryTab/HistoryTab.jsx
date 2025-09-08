@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { RotateCcw, Trash2, AlertCircle, CheckCircle2, History, Calendar, Clock } from "lucide-react";
-import api from "../../services/api";
+import api from '../../config/ApiConfig';
 
 // Helper to decode JWT and check role
 function getUserRole() {

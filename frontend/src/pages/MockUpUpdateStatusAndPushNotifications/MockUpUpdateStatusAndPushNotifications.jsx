@@ -7,6 +7,7 @@ import React, { useEffect, useState, useRef } from "react";
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
 import { useNavigate } from "react-router-dom";
+import api, { API_BASE_URL } from '../../config/ApiConfig.jsx';
 
 // --- Inline styles for UI sections and elements ---
 const sectionStyle = {
@@ -78,7 +79,6 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     const [newNotifUnreadPageable, setNewNotifUnreadPageable] = useState(false);
 
     // For paginated notification lists
-    const [hasUnreadPageable, setHasUnreadPageable] = useState(false);
     const [page, setPage] = useState(0); // Page for all notifications
     const [unreadPage, setUnreadPage] = useState(0); // Page for unread notifications
 
@@ -96,14 +96,12 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     const fetchNotifications = async () => {
         if (!userEmail || !authToken) return;
         try {
-            const res = await fetch(`${window.__API_BASE__}/notification/getNotificationsFromUserEmail?email=${encodeURIComponent(userEmail)}`, {
-                headers: { Authorization: `Bearer ${authToken}` }
+            const res = await api.get(`/notification/getNotificationsFromUserEmail`, {
+                params: { email: userEmail }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setNotifications(data);
-                setUnread(data.some(n => !n.isRead)); // Set unread indicator
-            }
+            const data = res.data;
+            setNotifications(data);
+            setUnread(data.some(n => !n.isRead)); // Set unread indicator
         } catch {}
     };
 
@@ -111,14 +109,12 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     const fetchUnreadNotifications = async () => {
         if (!userEmail || !authToken) return;
         try {
-            const res = await fetch(`${window.__API_BASE__}/notification/getAllUnreadNotifications?email=${encodeURIComponent(userEmail)}`, {
-                headers: { Authorization: `Bearer ${authToken}` }
+            const res = await api.get(`/notification/getAllUnreadNotifications`, {
+                params: { email: userEmail }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setUnreadNotifications(data);
-                setUnreadUnread(data.length > 0); // Set unread indicator
-            }
+            const data = res.data;
+            setUnreadNotifications(data);
+            setUnreadUnread(data.length > 0); // Set unread indicator
         } catch {}
     };
 
@@ -126,14 +122,12 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     const fetchNotificationsPageable = async (pageNum = 0) => {
         if (!userEmail || !authToken) return;
         try {
-            const res = await fetch(`${window.__API_BASE__}/notification/getNotificationsFromUserEmailPageable?email=${encodeURIComponent(userEmail)}&page=${pageNum}&size=5`, {
-                headers: { Authorization: `Bearer ${authToken}` }
+            const res = await api.get(`/notification/getNotificationsFromUserEmailPageable`, {
+                params: { email: userEmail, page: pageNum, size: 5 }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setNotificationsPageable(data.content || []);
-                setUnreadUnreadPageable((data.content || []).length > 0); // Set unread indicator
-            }
+            const data = res.data;
+            setNotificationsPageable(data.content || []);
+            setUnreadUnreadPageable((data.content || []).length > 0); // Set unread indicator
         } catch {}
     };
 
@@ -141,22 +135,14 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     const fetchUnreadNotificationsPageable = async (pageNum = 0) => {
         if (!userEmail || !authToken) return;
         try {
-            const res = await fetch(`${window.__API_BASE__}/notification/getAllUnreadNotificationsFromUserPageable?email=${encodeURIComponent(userEmail)}&page=${pageNum}&size=5`, {
-                headers: { Authorization: `Bearer ${authToken}` }
+            const res = await api.get(`/notification/getAllUnreadNotificationsFromUserPageable`, {
+                params: { email: userEmail, page: pageNum, size: 5 }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setUnreadNotificationsPageable(data.content || []);
-                setHasUnreadPageable((data.content || []).length > 0);
-                setUnreadUnreadPageable((data.content || []).length > 0);
-            } else {
-                setUnreadNotificationsPageable([]);
-                setHasUnreadPageable(false);
-                setUnreadUnreadPageable(false);
-            }
+            const data = res.data;
+            setUnreadNotificationsPageable(data.content || []);
+            setUnreadUnreadPageable((data.content || []).length > 0);
         } catch (e) {
             setUnreadNotificationsPageable([]);
-            setHasUnreadPageable(false);
             setUnreadUnreadPageable(false);
         }
     };
@@ -165,12 +151,8 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     // fetchFn is a callback to refresh the notification list after marking as read
     const markNotificationAsRead = async (notificationId, fetchFn) => {
         if (!authToken) return;
-    await fetch(`${window.__API_BASE__}/notification/markAsReadById?notificationId=${notificationId}`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${authToken}`
-            }
+        await api.patch(`/notification/markAsReadById`, null, {
+            params: { notificationId }
         });
         await fetchFn(); // Refresh notifications
     };
@@ -178,12 +160,8 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     // --- Mark all notifications as read ---
     const markAllNotificationsAsRead = async (fetchFn) => {
         if (!authToken || !userEmail) return;
-    await fetch(`${window.__API_BASE__}/notification/markAllAsRead?email=${encodeURIComponent(userEmail)}`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${authToken}`
-            }
+        await api.patch(`/notification/markAllAsRead`, null, {
+            params: { email: userEmail }
         });
         await fetchFn(); // Refresh notifications
     };
@@ -191,23 +169,15 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     // --- Delete a single notification ---
     const deleteNotification = async (notificationId, fetchFn) => {
         if (!authToken) return;
-    await fetch(`${window.__API_BASE__}/notification/deleteNotification/${notificationId}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${authToken}`
-            }
-        });
+        await api.delete(`/notification/deleteNotification/${notificationId}`);
         await fetchFn(); // Refresh notifications
     };
 
     // --- Delete all notifications for user ---
     const deleteAllNotifications = async (fetchFn) => {
         if (!authToken || !userEmail) return;
-    await fetch(`${window.__API_BASE__}/notification/deleteAllNotifications?email=${encodeURIComponent(userEmail)}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${authToken}`
-            }
+        await api.delete(`/notification/deleteAllNotifications`, {
+            params: { email: userEmail }
         });
         await fetchFn(); // Refresh notifications
     };
@@ -216,7 +186,7 @@ const MockUpUpdateStatusAndPushNotifications = () => {
     useEffect(() => {
         if (!userEmail) return;
         // Create SockJS and STOMP client
-    const socketFactory = () => new SockJS(`${window.__API_BASE__}/ws`);
+        const socketFactory = () => new SockJS(`${API_BASE_URL}/ws`);
         const client = Stomp.over(socketFactory);
         stompClient.current = client;
         // Connect and subscribe to user-specific topic
@@ -283,14 +253,7 @@ const MockUpUpdateStatusAndPushNotifications = () => {
         setLoading(true);
         setError("");
         try {
-            await fetch(`${window.__API_BASE__}/repairTicket/updateRepairStatus`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${authToken}`
-                },
-                body: JSON.stringify({ ticketNumber, repairStatus })
-            });
+            await api.patch(`/repairTicket/updateRepairStatus`, { ticketNumber, repairStatus });
         } catch {
             setError("Failed to update status");
         }
@@ -607,3 +570,4 @@ const MockUpUpdateStatusAndPushNotifications = () => {
 };
 
 export default MockUpUpdateStatusAndPushNotifications;
+

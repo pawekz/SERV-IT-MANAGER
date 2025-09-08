@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from "react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
+import api from '../../config/ApiConfig';
 
 
 
@@ -13,23 +14,8 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
         useEffect(() => {
             const fetchImageWithAuth = async () => {
                 try {
-                    const token = localStorage.getItem("authToken");
-                    if (!token) throw new Error("Not authenticated. Please log in.");
-
-                    console.log(token)
-
-                    const response = await fetch(`${window.__API_BASE__}${src}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-
-                    if (!response.ok) {
-                        throw new Error("Failed to fetch image");
-                    }
-
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
+                    const response = await api.get(src, { responseType: 'blob' });
+                    const blobUrl = URL.createObjectURL(response.data);
                     setImageUrl(blobUrl);
                 } catch (err) {
                     console.error("Error fetching image:", err);
@@ -61,25 +47,11 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
 
     const downloadWarrantyPdf = async (warrantyNumber) => {
         try {
-            const token = localStorage.getItem("authToken");
-            if (!token) throw new Error("Not authenticated. Please log in.");
-
-            const response = await fetch(`${window.__API_BASE__}/warranty/getWarrantyPdf/${warrantyNumber}`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch PDF. Status: " + response.status);
-            }
-
-            const blob = await response.blob();
-            const contentDisposition = response.headers.get("Content-Disposition");
+            const response = await api.get(`/warranty/getWarrantyPdf/${warrantyNumber}`, { responseType: 'blob' });
+            const blob = response.data;
+            const contentDisposition = response.headers['content-disposition'];
             const fileNameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const fileName = fileNameMatch ? fileNameMatch[1] : "Warranty-"+warrantyNumber+".pdf";
-
+            const fileName = fileNameMatch ? fileNameMatch[1] : `Warranty-${warrantyNumber}.pdf`;
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;

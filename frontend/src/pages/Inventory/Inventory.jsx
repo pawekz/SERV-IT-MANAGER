@@ -3,7 +3,7 @@ import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash,
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import axios from "axios";
+import api, { parseJwt } from '../../config/ApiConfig';
 import InventoryTable from './InventoryTable';
 
 // Import modal components
@@ -131,7 +131,7 @@ const Inventory = () => {
     };
 
     // Enhanced parseJwt to better handle role extraction
-    const parseJwt = (token) => {
+    /*const parseJwt = (token) => {
         try {
             if (!token || typeof token !== 'string') {
                 console.error("Invalid token: token is null, undefined, or not a string");
@@ -156,10 +156,10 @@ const Inventory = () => {
             console.error("Error parsing JWT:", e);
             return null;
         }
-    };
+    };*/
 
     // Enhanced helper function to get user email from token
-    const getUserEmailFromToken = (token) => {
+    /*const getUserEmailFromToken = (token) => {
         try {
             const decodedToken = parseJwt(token);
             const email = decodedToken?.email ||
@@ -172,7 +172,7 @@ const Inventory = () => {
             console.error("Error extracting email from token:", e);
             return "error@example.com";
         }
-    };
+    };*/
 
     // Show notification helper function
     const showNotification = (message, type = 'success') => {
@@ -198,37 +198,13 @@ const Inventory = () => {
         );
     };
 
-    // Get token from various storage locations
-    const getAuthToken = () => {
-        const authToken = localStorage.getItem('authToken');
-        
-        if (!authToken) {
-            console.error("No authentication token found in storage");
-            return null;
-        }
-        
-        return authToken;
-    };
-
     // Fetch backend low stock data for comparison (optional)
     const fetchBackendLowStockData = async () => {
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) return;
-
-            const response = await axios.get(`${window.__API_BASE__}/part/stock/lowStockPartNumbers`, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            const response = await api.get('/part/stock/lowStockPartNumbers');
             // Log backend vs frontend comparison for debugging
             console.log('Backend low stock count:', response.data.length);
             console.log('Frontend low stock count:', lowStockPartNumbers.length);
-            
-            // Don't override frontend calculation - frontend is the source of truth for display
-            
         } catch (err) {
             console.error("Error fetching backend low stock data:", err);
         }
@@ -257,24 +233,10 @@ const Inventory = () => {
             showTechnicianRestrictionMessage();
             return;
         }
-
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
-            await axios.post(`${window.__API_BASE__}/part/stock/refreshAllTracking`, {}, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            await api.post('/part/stock/refreshAllTracking', {});
             showNotification("Stock tracking refreshed successfully");
             await fetchInventory();
-
-            // Optionally show low stock modal after refresh
             if (showLowStockModalAfter) {
                 await checkAndShowLowStock();
             }
@@ -312,23 +274,10 @@ const Inventory = () => {
         e.preventDefault();
         
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
-            await axios.put(`${window.__API_BASE__}/part/stock/updateTracking`, stockSettings, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            await api.put('/part/stock/updateTracking', stockSettings);
             showNotification("Stock settings updated successfully");
             setShowStockSettingsModal(false);
-            // Refresh inventory to recalculate stock status
             await fetchInventory();
-            // Force a complete refresh to ensure stock status is updated
             setTimeout(() => {
                 fetchInventory();
             }, 500);
@@ -371,25 +320,10 @@ const Inventory = () => {
     // Confirm delete part
     const confirmDeletePart = async () => {
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found. Please log in again.");
-            }
-
-            await axios.delete(`${window.__API_BASE__}/part/deletePart/${partToDelete.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            await api.delete(`/part/deletePart/${partToDelete.id}`);
             showNotification("Part deleted successfully");
-
-            // Refresh inventory to get updated data
             await fetchInventory();
-            // Refresh stock tracking after deletion
             await refreshAllStockTracking();
-
         } catch (err) {
             console.error("Error deleting part:", err);
             showNotification("Failed to delete part. " + (err.response?.data?.message || "Please try again."), "error");
@@ -414,18 +348,7 @@ const Inventory = () => {
     const fetchInventory = async () => {
         setLoading(true);
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
-            // Fetch all parts
-            const response = await axios.get(`${window.__API_BASE__}/part/getAllParts`, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await api.get('/part/getAllParts');
 
             // Transform API data and group by part number for display
             const partsMap = new Map();
@@ -543,7 +466,7 @@ const Inventory = () => {
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
-                const storedToken = getAuthToken();
+                const storedToken = localStorage.getItem('authToken');
                 if (!storedToken) {
                     throw new Error("No authentication token found");
                 }
@@ -644,11 +567,6 @@ const Inventory = () => {
         setBulkAddLoading(true);
 
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
             // Filter out empty items
             const validItems = bulkAddItems.filter(item => 
                 item.partNumber.trim() && 
@@ -680,14 +598,8 @@ const Inventory = () => {
                 addToExisting: validItems[0].addToExisting || false // Include the addToExisting flag
             };
 
-            const response = await axios.post(`${window.__API_BASE__}/part/addBulkParts`, bulkData, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            showNotification(validItems[0].addToExisting ? 
+            const response = await api.post('/part/addBulkParts', bulkData);
+            showNotification(validItems[0].addToExisting ?
                 `Successfully added ${response.data.length} parts to existing part number` : 
                 `Successfully added ${response.data.length} parts`);
             
@@ -794,13 +706,6 @@ const Inventory = () => {
         setEditSuccess(false);
 
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
-            const userEmail = getUserEmailFromToken(freshToken);
-
             const updateData = {
                 partNumber: editPart.partNumber || "",
                 name: editPart.name || "",
@@ -810,35 +715,19 @@ const Inventory = () => {
                 isCustomerPurchased: editPart.isCustomerPurchased || false,
                 datePurchasedByCustomer: editPart.datePurchasedByCustomer,
                 warrantyExpiration: editPart.warrantyExpiration,
-                addedBy: userEmail,
+                addedBy: editPart.addedBy || '',
                 brand: editPart.brand || '',
                 model: editPart.model || ''
             };
-
-            await axios.patch(
-                `${window.__API_BASE__}/part/updatePart/${editPart.id}`,
-                updateData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${freshToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
+            await api.patch(`/part/updatePart/${editPart.id}`, updateData);
             setEditSuccess(true);
             showNotification("Part updated successfully");
-
-            // Refresh inventory to get updated data including individual parts
             await fetchInventory();
-            // Refresh stock tracking after update (skip low-stock modal for edits)
             await refreshAllStockTracking(false);
-
             setTimeout(() => {
                 setShowEditModal(false);
                 setEditSuccess(false);
             }, 1500);
-
         } catch (err) {
             console.error("Error updating part:", err);
             setEditError(err.message || err.response?.data?.message || "Failed to update part");
@@ -861,33 +750,17 @@ const Inventory = () => {
         setAddPartSuccess(false);
 
         try {
-            const freshToken = getAuthToken();
-            if (!freshToken) {
-                throw new Error("Authentication token not found");
-            }
-
-            const userEmail = getUserEmailFromToken(freshToken);
-
             const partData = {
                 ...newPart,
                 unitCost: parseFloat(newPart.unitCost),
                 currentStock: parseInt(newPart.currentStock),
                 lowStockThreshold: parseInt(newPart.lowStockThreshold),
-                addedBy: userEmail,
-                addToExisting: newPart.addToExisting || false // Include the addToExisting flag
+                addedBy: newPart.addedBy,
+                addToExisting: newPart.addToExisting || false
             };
-
-            await axios.post(`${window.__API_BASE__}/part/addPart`, partData, {
-                headers: {
-                    'Authorization': `Bearer ${freshToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            await api.post('/part/addPart', partData);
             setAddPartSuccess(true);
             showNotification(newPart.addToExisting ? "Part added to existing part number successfully" : "Part added successfully");
-
-            // Reset form
             setNewPart({
                 partNumber: "",
                 name: "",
@@ -902,11 +775,8 @@ const Inventory = () => {
                 addedBy: "",
                 addToExisting: false
             });
-
-            // Refresh inventory
             await fetchInventory();
             await refreshAllStockTracking();
-
             setTimeout(() => {
                 setShowAddModal(false);
                 setAddPartSuccess(false);
@@ -1324,3 +1194,4 @@ const Inventory = () => {
 };
 
 export default Inventory;
+

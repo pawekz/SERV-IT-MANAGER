@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 import RequestReturn from "../RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../WarrantyRequest/WarrantyRequest.jsx";
 import {Archive, Computer, Headphones, TabletSmartphone} from "lucide-react";
-import axios from "axios";
+import api from '../../config/ApiConfig';
 
 const CheckWarranty = ({ onSuccess }) => {
     const [query, setQuery] = useState('');
@@ -15,20 +15,8 @@ const CheckWarranty = ({ onSuccess }) => {
     const generateWarrantyNumber = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('authToken');
-            if (!token) throw new Error("Not authenticated. Please log in.");
-
-            const response = await fetch(`${window.__API_BASE__}/warranty/generateWarrantyNumber`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error(`Failed to generate warranty number: ${response.status}`);
-
-            return await response.text();
+            const response = await api.get('/warranty/generateWarrantyNumber', { responseType: 'text' });
+            return response.data;
         } catch (err) {
             setError(err.message);
         } finally {
@@ -43,28 +31,11 @@ const CheckWarranty = ({ onSuccess }) => {
         setResult(null);
 
         try {
-            const token = localStorage.getItem('authToken');
-            if (!token) throw new Error("Not authenticated. Please log in.");
-            console.log(token)
-
-            const response = await fetch(`${window.__API_BASE__}/warranty/check/${query}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Warranty check failed.');
-            }
-
-            const warrantyData = await response.json();
+            const response = await api.get(`/warranty/check/${query}`);
+            const warrantyData = response.data;
             console.log('Warranty Data:', warrantyData);
             setResult(warrantyData);
             setModalOpen(true);
-
         } catch (error) {
             console.error('Warranty check failed:', error);
             setResult({ withinWarranty: false, message: "Warranty check failed or serial number not found." });

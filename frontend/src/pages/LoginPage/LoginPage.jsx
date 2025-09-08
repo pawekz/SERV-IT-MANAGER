@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Toast from '../../components/Toast/Toast.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
+import api, { parseJwt } from '../../config/ApiConfig';
 
 // OTP Modal Component
 const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldown = 0 }) => {
@@ -319,56 +320,20 @@ const LoginPage = () => {
         setShowPassword(!showPassword);
     };
 
-    // Extract user info from JWT token
-    const parseJwt = (token) => {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join('')
-            );
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            console.error("Failed to parse JWT:", e);
-            return {};
-        }
-    };
-
     // Request OTP for account verification (after login if not verified)
     const requestAccountVerificationOTP = async (emailForOTP) => {
-        setOtpLoading(true); // Use the main OTP loading state
+        setOtpLoading(true);
         try {
-            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: emailForOTP,
-                    type: 1 // Type 1 for account verification
-                })
+            await api.post('/user/resendOtp', {
+                email: emailForOTP,
+                type: 1
             });
-            const responseText = await response.text();
-            if (!response.ok) {
-                let errorMessage = 'Failed to send verification code.';
-                try {
-                    if(responseText){
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch(e) { if(responseText) errorMessage = responseText; }
-                showToast(errorMessage);
-                setOtpLoading(false);
-                return false;
-            }
             showToast('Verification code sent to your email.');
-            setResendCooldown(60); // Set cooldown timer
+            setResendCooldown(60);
             setOtpLoading(false);
             return true;
         } catch (err) {
-            showToast(err.message || 'Failed to send verification code. Please try again.');
+            showToast(err.response?.data?.message || err.message || 'Failed to send verification code. Please try again.');
             setOtpLoading(false);
             return false;
         }
@@ -378,85 +343,52 @@ const LoginPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        setLoginProcessing(true); // Show full-screen loading
-
+        setLoginProcessing(true);
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
-            setLoginProcessing(false); // Hide loading on validation failure
+            setLoginProcessing(false);
             return;
         }
-
         try {
-            const loginEndpoint = isStaffLogin ? `${window.__API_BASE__}/auth/login/staff` : `${window.__API_BASE__}/auth/login`;
-            const response = await fetch(loginEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier: formData.username,
-                    password: formData.password,
-                }),
+            const loginEndpoint = isStaffLogin ? '/auth/login/staff' : '/auth/login';
+            const response = await api.post(loginEndpoint, {
+                identifier: formData.username,
+                password: formData.password,
             });
-
-            const responseText = await response.text();
-
-            if (!response.ok) {
-                let errorMessage = 'Invalid username or password';
-                try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch (parseError) {
-                    if (responseText && responseText.length < 200) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
-            }
-
-            const data = JSON.parse(responseText);
-
+            const data = response.data;
             if (!data || !data.token) {
                 throw new Error('No response from server or token missing');
             }
-
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
-
             const tokenData = parseJwt(data.token);
             const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
-
             if (!resolvedUserEmail) {
                 console.error("Email could not be resolved from token or login response.");
                 throw new Error("Login failed: User email not found.");
             }
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
-
-            // Only show OTP if the user is explicitly NOT verified (isVerified === false)
             if (data.isVerified === false) {
-                // Only request OTP if user is explicitly marked as not verified
                 const otpRequested = await requestAccountVerificationOTP(resolvedUserEmail);
                 if (otpRequested) {
-                    setLoginProcessing(false); // Hide loading when showing OTP modal
+                    setLoginProcessing(false);
                     setShowOTPModal(true);
                 } else {
                     setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
                     setLoginProcessing(false);
                 }
             }
-
             if(data.status === "Inactive"){
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
                 setError("Your account is inactive. Please contact support.");
             }else {
-                // User is verified or verification status wasn't explicitly returned as false
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError(err.message || 'Login failed. Please try again.');
+            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
             setLoginProcessing(false);
         } finally {
             setLoading(false);
@@ -475,51 +407,21 @@ const LoginPage = () => {
             const requestBody = {
                 email: emailForVerification,
                 otp: otp,
-                type: 1 // Type 1 for account verification
+                type: 1
             };
-            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody),
-            });
-            const responseText = await response.text();
-            if (!response.ok) {
-                let errorMessage = 'OTP verification failed';
-                try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch (e) {
-                    if(responseText) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
+            const response = await api.post('/user/verifyOtp', requestBody);
+            const responseData = response.data;
+            if (responseData.token) {
+                localStorage.setItem('authToken', responseData.token);
             }
-
-            // If backend sends a new token upon verification, update it
-            try {
-                if (responseText) {
-                    const responseData = JSON.parse(responseText);
-                    if (responseData.token) {
-                        localStorage.setItem('authToken', responseData.token);
-                    }
-                }
-            } catch (e) {
-                console.log("OTP verification response was not JSON or did not contain a new token:", responseText);
-            }
-
             setShowOTPModal(false);
             showToast('Account verified successfully. Please login to continue.');
-            // Clear any existing auth data since we want them to login again
             localStorage.removeItem('authToken');
             localStorage.removeItem('userRole');
             localStorage.removeItem('userEmail');
-            // Redirect to login page
             navigate('/login');
         } catch (err) {
-            setOtpError(err.message || 'OTP verification failed');
+            setOtpError(err.response?.data?.message || err.message || 'OTP verification failed');
         } finally {
             setOtpLoading(false);
         }
@@ -527,8 +429,7 @@ const LoginPage = () => {
 
     // Resend OTP for account verification with cooldown
     const handleResendAccountOTP = async () => {
-        if (resendCooldown > 0) return; // Prevent resend if cooldown is active
-
+        if (resendCooldown > 0) return;
         setOtpLoading(true);
         setOtpError('');
         try {
@@ -536,36 +437,14 @@ const LoginPage = () => {
             if (!emailForResend) {
                 throw new Error('No email found for OTP resend. Please login again.');
             }
-
-            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: emailForResend,
-                    type: 1  // Type 1 for account verification
-                })
+            await api.post('/user/resendOtp', {
+                email: emailForResend,
+                type: 1
             });
-
-            const responseText = await response.text();
-            if (!response.ok) {
-                let errorMessage = 'Failed to resend verification code.';
-                try {
-                    if(responseText){
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch(e) {
-                    if(responseText) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
-            }
-
             showToast('A new verification code has been sent to your email.');
-            setResendCooldown(60); // Set 60 seconds cooldown
+            setResendCooldown(60);
         } catch (err) {
-            setOtpError(err.message || 'Failed to resend OTP');
+            setOtpError(err.response?.data?.message || err.message || 'Failed to resend OTP');
         } finally {
             setOtpLoading(false);
         }
@@ -576,29 +455,13 @@ const LoginPage = () => {
         setForgotError('');
         setForgotLoading(true);
         try {
-            const response = await fetch(`${window.__API_BASE__}/user/forgotPassword`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: forgotEmail }), // forgotEmail is set by ForgotPasswordModal
-            });
-            const responseText = await response.text();
-            if (!response.ok) {
-                let msg = 'Failed to send OTP.';
-                try {
-                    if(responseText){
-                        const errorData = JSON.parse(responseText);
-                        msg = errorData.message || errorData.error || msg;
-                    }
-                } catch(e){ if(responseText) msg = responseText; }
-                setForgotError(msg);
-            } else {
-                setShowForgotModal(false);
-                setShowForgotOTPModal(true); // Show OTP modal for forgot password
-                showToast('OTP sent to your email for password reset.');
-                setForgotResendCooldown(60); // Set cooldown for forgot password flow
-            }
+            await api.post('/user/forgotPassword', { email: forgotEmail });
+            setShowForgotModal(false);
+            setShowForgotOTPModal(true);
+            showToast('OTP sent to your email for password reset.');
+            setForgotResendCooldown(60);
         } catch (err) {
-            setForgotError(err.message || 'Failed to send OTP. Please try again.');
+            setForgotError(err.response?.data?.message || err.message || 'Failed to send OTP. Please try again.');
         } finally {
             setForgotLoading(false);
         }
@@ -608,27 +471,11 @@ const LoginPage = () => {
         setForgotOTPLoading(true);
         setForgotOTPError('');
         try {
-            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: forgotEmail, otp: otpValue, type: 2 }), // Type 2 for password reset OTP verification
-            });
-            const responseText = await response.text();
-            if (!response.ok) {
-                let msg = 'Invalid OTP.';
-                try {
-                    if(responseText){
-                        const errorData = JSON.parse(responseText);
-                        msg = errorData.message || errorData.error || msg;
-                    }
-                } catch(e){ if(responseText) msg = responseText; }
-                setForgotOTPError(msg);
-            } else {
-                setShowForgotOTPModal(false);
-                setShowNewPasswordModal(true); // Proceed to set new password
-            }
+            await api.post('/user/verifyOtp', { email: forgotEmail, otp: otpValue, type: 2 });
+            setShowForgotOTPModal(false);
+            setShowNewPasswordModal(true);
         } catch (err) {
-            setForgotOTPError(err.message || 'OTP verification failed. Please try again.');
+            setForgotOTPError(err.response?.data?.message || err.message || 'OTP verification failed. Please try again.');
         } finally {
             setForgotOTPLoading(false);
         }
@@ -636,8 +483,7 @@ const LoginPage = () => {
 
     // Resend forgot password OTP with cooldown
     const handleResendForgotOTP = async () => {
-        if (forgotResendCooldown > 0) return; // Prevent resend if cooldown is active
-
+        if (forgotResendCooldown > 0) return;
         setForgotOTPLoading(true);
         setForgotOTPError('');
         try {
@@ -647,35 +493,14 @@ const LoginPage = () => {
                 setForgotOTPLoading(false);
                 return;
             }
-
-            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: forgotEmail,
-                    type: 2 // Type 2 for password reset OTP resend
-                })
+            await api.post('/user/resendOtp', {
+                email: forgotEmail,
+                type: 2
             });
-
-            const responseText = await response.text();
-            if (!response.ok) {
-                let errorMessage = 'Failed to resend OTP';
-                try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch (e) {
-                    if (responseText) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
-            }
             showToast('A new OTP has been sent to your email.');
-            setForgotResendCooldown(60); // Set 60 seconds cooldown
+            setForgotResendCooldown(60);
         } catch (err) {
-            setForgotOTPError(err.message || 'Failed to resend OTP. Please try again.');
+            setForgotOTPError(err.response?.data?.message || err.message || 'Failed to resend OTP. Please try again.');
         } finally {
             setForgotOTPLoading(false);
         }
@@ -693,30 +518,14 @@ const LoginPage = () => {
         }
         setNewPasswordLoading(true);
         try {
-            const response = await fetch(`${window.__API_BASE__}/user/resetPassword`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: forgotEmail, newPassword: newPassword }),
-            });
-            const responseText = await response.text();
-            if (!response.ok) {
-                let msg = 'Failed to reset password.';
-                try {
-                    if(responseText){
-                        const errorData = JSON.parse(responseText);
-                        msg = errorData.message || errorData.error || msg;
-                    }
-                } catch(e){ if(responseText) msg = responseText; }
-                setNewPasswordError(msg);
-            } else {
-                setShowNewPasswordModal(false);
-                setNewPassword('');
-                setConfirmPassword('');
-                setForgotEmail(''); // Clear forgotEmail after successful password reset
-                showToast('Password has been reset successfully. You may now log in.');
-            }
+            await api.post('/user/resetPassword', { email: forgotEmail, newPassword });
+            setShowNewPasswordModal(false);
+            setNewPassword('');
+            setConfirmPassword('');
+            setForgotEmail('');
+            showToast('Password has been reset successfully. You may now log in.');
         } catch (err) {
-            setNewPasswordError(err.message || 'Failed to reset password. Please try again.');
+            setNewPasswordError(err.response?.data?.message || err.message || 'Failed to reset password. Please try again.');
         } finally {
             setNewPasswordLoading(false);
         }
@@ -901,3 +710,4 @@ const LoginPage = () => {
 };
 //
 export default LoginPage;
+

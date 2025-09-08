@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, ClipboardList, Laptop, Monitor, Printer } from 'lucide-react';
-import api from '../../../services/api.jsx';
+import api from '../../../config/ApiConfig.jsx';
 
 const progressMap = {
   RECEIVED: 10,

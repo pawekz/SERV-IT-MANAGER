@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from '../../services/api';
+import api from '../../config/ApiConfig';
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const role = localStorage.getItem("userRole")?.toLowerCase();

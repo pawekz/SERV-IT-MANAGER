@@ -5,7 +5,7 @@ import RepairTicketCard from "./RepairTicketCard";
 import AvailableInventory from "./AvailableInventory";
 import SelectedPartsCard from "./SelectedPartsCard";
 import ExistingQuotationCard from "./ExistingQuotationCard";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 import { useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import Toast from "../../components/Toast/Toast.jsx";

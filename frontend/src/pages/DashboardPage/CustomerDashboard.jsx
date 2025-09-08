@@ -13,6 +13,7 @@ import ActiveRepairsCarousel from "./CustomerDashboardComponents/ActiveRepairsCa
 import RecentUpdatesCard from "./CustomerDashboardComponents/RecentUpdatesCard.jsx";
 import RequiredActionsCard from "./CustomerDashboardComponents/RequiredActionsCard.jsx";
 import DocumentAccessCard from "./CustomerDashboardComponents/DocumentAccessCard.jsx";
+import api from '../../config/ApiConfig.jsx';
 
 const CustomerDashboard = () => {
     const [userData, setUserData] = useState({
@@ -132,12 +133,7 @@ const CustomerDashboard = () => {
                 }
 
                 // This would be replaced with an actual API call
-                // Example: const response = await fetch('http://localhost:8080/repair/getCustomerStats', {
-                //     method: 'GET',
-                //     headers: {
-                //         'Authorization': `Bearer ${token}`
-                //     }
-                // });
+                // Example: const response = await api.get('repair/getCustomerStats');
 
                 // For now, we'll just use the default stats
                 // setStats(await response.json());
@@ -162,12 +158,7 @@ const CustomerDashboard = () => {
                 }
 
                 // This would be replaced with an actual API call
-                // Example: const response = await fetch('http://localhost:8080/repair/getCustomerRepairs', {
-                //     method: 'GET',
-                //     headers: {
-                //         'Authorization': `Bearer ${token}`
-                //     }
-                // });
+                // Example: const response = await api.get('/repair/getCustomerRepairs', {
 
                 // Mock data for now
                 const mockRepairData = [

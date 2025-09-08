@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/Spinner/Spinner.jsx';
-import { API_BASE_URL } from '../../services/api.jsx';
+import api from '../../config/ApiConfig';
 
 const InitialSetupPage = () => {
   const navigate = useNavigate();
@@ -38,19 +38,11 @@ const InitialSetupPage = () => {
 
     setLoading(true);
     try {
-  const response = await fetch(`${API_BASE_URL}/user/register/onboard`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const text = await response.text();
-      if (!response.ok) {
-        throw new Error(text || 'Onboarding failed.');
-      }
+      await api.patch('/user/register/onboard', formData);
       // Success – redirect to login page
       navigate('/login');
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data || err.message || 'Onboarding failed.');
     } finally {
       setLoading(false);
     }
@@ -183,4 +175,4 @@ const InitialSetupPage = () => {
   );
 };
 
-export default InitialSetupPage; 
+export default InitialSetupPage;

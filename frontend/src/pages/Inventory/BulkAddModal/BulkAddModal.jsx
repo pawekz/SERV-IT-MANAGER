@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { X, Copy, Trash, Plus } from 'lucide-react';
-import api from '../../../services/api';
+import api from '../../../config/ApiConfig';
 
 const BulkAddModal = ({ 
     isOpen, 

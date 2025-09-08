@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from "react";
+import api from '../../config/ApiConfig.jsx';
 
 const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
     const [deviceType, setDeviceType] = useState("");
@@ -44,22 +45,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             if (!token) {
                 throw new Error("Not authenticated. Please log in.");
             }
-
-            const response = await fetch(`${window.__API_BASE__}/warranty/generateWarrantyNumber`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.text();
-
-            console.log("Warranty API Response:", data);
+            const response = await api.get('/warranty/generateWarrantyNumber');
+            const data = response.data;
             return data;
         } catch (err) {
             setError(err.message);
@@ -75,30 +62,17 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             try {
                 setLoading(true);
                 let warrantyNumber = await generateWarrantyNumber();
-                console.log(warrantyNumber)
                 const token = localStorage.getItem('authToken');
                 if (!token) throw new Error("Not authenticated. Please log in.");
-
-                const device = await fetch(`${window.__API_BASE__}/part/getPartBySerialNumber/${serialNumber}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                });
-
-                if (!device.ok) throw new Error(`HTTP error! status: ${device.status}`);
-
-                const deviceData = await device.json();
-                console.log("Device Data:", formData);
-
-                    setFormData(prev => ({
-                        ...prev,
-                        deviceName: deviceData.name,
-                        purchasedDate: deviceData.datePurchasedByCustomer,
-                        serialNumber: deviceData.serialNumber,
-                        warrantyNumber: warrantyNumber,
-                    }));
+                const deviceRes = await api.get(`/part/getPartBySerialNumber/${serialNumber}`);
+                const deviceData = deviceRes.data;
+                setFormData(prev => ({
+                    ...prev,
+                    deviceName: deviceData.name,
+                    purchasedDate: deviceData.datePurchasedByCustomer,
+                    serialNumber: deviceData.serialNumber,
+                    warrantyNumber: warrantyNumber,
+                }));
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -127,63 +101,47 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
 
     const onSubmit = async () => {
         try {
-                setLoading(true);
-                setError(null);
-
-                const token = localStorage.getItem('authToken');
-                if (!token) throw new Error("Not authenticated. Please log in.");
-
-                if (
-                    !formData.customerName ||
-                    !formData.customerEmail ||
-                    !formData.customerPhoneNumber ||
-                    !formData.returnReason
-                ) {
-                    setError("Please fill in all required fields.");
-                    setLoading(false);
-                    return;
-                }
-
-                if (!isChecked) {
-                    setError("Please check the terms and conditions box.");
-                    setLoading(false);
-                    return;
-                }
-
-                const payload = new FormData();
-                    payload.append("customerName", formData.customerName);
-                    payload.append("customerPhoneNumber", formData.customerPhoneNumber);
-                    payload.append("customerEmail", formData.customerEmail);
-                    payload.append("warrantyNumber", formData.warrantyNumber);
-                    payload.append("serialNumber", formData.serialNumber);
-                    payload.append("reportedIssue", formData.reportedIssue);
-                    payload.append("returnReason", formData.returnReason);
-
-                console.log("Submitting payload:", payload);
-
-                const response = await fetch(`${window.__API_BASE__}/warranty/checkInWarranty`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: payload
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                }
-
-                const result = await response.json();
-                console.log("Return request submitted:", result);
-                onSuccess();
-                onClose(); // Close the modal after successful submission
-            } catch (err) {
-                setError(err.message);
-            } finally {
-            setFormData(null)
+            setLoading(true);
+            setError(null);
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error("Not authenticated. Please log in.");
+            if (
+                !formData.customerName ||
+                !formData.customerEmail ||
+                !formData.customerPhoneNumber ||
+                !formData.returnReason
+            ) {
+                setError("Please fill in all required fields.");
                 setLoading(false);
+                return;
             }
+            if (!isChecked) {
+                setError("Please check the terms and conditions box.");
+                setLoading(false);
+                return;
+            }
+            const payload = new FormData();
+            payload.append("customerName", formData.customerName);
+            payload.append("customerPhoneNumber", formData.customerPhoneNumber);
+            payload.append("customerEmail", formData.customerEmail);
+            payload.append("warrantyNumber", formData.warrantyNumber);
+            payload.append("serialNumber", formData.serialNumber);
+            payload.append("reportedIssue", formData.reportedIssue);
+            payload.append("returnReason", formData.returnReason);
+            const response = await api.post('/warranty/checkInWarranty', payload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+            const result = response.data;
+            onSuccess();
+            onClose(); // Close the modal after successful submission
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setFormData(null)
+            setLoading(false);
+        }
     }
 
     if (!isOpen) return null;
@@ -332,18 +290,18 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
 
                 <div className="flex justify-end space-x-4">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Close</button>
-                        <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600"
-                                onClick={() => {
-                                    console.log("Submitting form:", formData);
-                                    onSubmit();
-                                }} // or your submit logic
-                        >
-                            Submit Request
-                        </button>
+                    <button className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600"
+                            onClick={() => {
+                                console.log("Submitting form:", formData);
+                                onSubmit();
+                            }} // or your submit logic
+                    >
+                        Submit Request
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
 
-export default RequestReturn;
+export default RequestReturn

@@ -5,7 +5,7 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
 import DestinationTab from "../../components/DestinationTab/DestinationTab.jsx";
 import HistoryTab from "../../components/HistoryTab/HistoryTab.jsx";
-import api from "../../services/api";
+import api from '../../config/ApiConfig';
 
 const tabTitles = [
     'Schedule',

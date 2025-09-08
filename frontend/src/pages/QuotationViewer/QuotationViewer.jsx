@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 import Spinner from "../../components/Spinner/Spinner.jsx";
 import { Package } from "lucide-react";
 

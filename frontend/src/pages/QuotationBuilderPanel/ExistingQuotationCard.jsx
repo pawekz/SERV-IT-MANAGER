@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Trash, Pencil, Eye } from "lucide-react";
-import api from "../../services/api.jsx";
+import api from '../../config/ApiConfig';
 
 const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
   const [showDetails, setShowDetails] = useState(false);
