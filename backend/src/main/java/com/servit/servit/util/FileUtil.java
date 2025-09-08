@@ -36,18 +36,6 @@ public class FileUtil {
         return s3Service.uploadFile(file, "images/repair_photos/" + fileName);
     }
 
-    public String saveDigitalSignature(MultipartFile file, String ticketNumber) throws IOException {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
-        }
-
-        String fileExtension = getFileExtension(file);
-        String date = LocalDate.now().format(DATE_FORMATTER);
-        String fileName = String.format("%s-sig-%s%s", ticketNumber, date, fileExtension);
-
-        return s3Service.uploadFile(file, "images/digital_signatures/" + fileName);
-    }
-
     public String saveRepairTicketPdf(MultipartFile file, String ticketNumber) throws IOException {
         validateDocument(file);
 
