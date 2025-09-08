@@ -11,7 +11,7 @@ function parseTypeAndFilename(path) {
 // Fetch a pre-signed S3 URL for a repair photo
 async function fetchPresignedPhotoUrl(photoUrl) {
     if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotoUrl`, { params: { photoUrl } });
+    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
     return res.data;
 }
 

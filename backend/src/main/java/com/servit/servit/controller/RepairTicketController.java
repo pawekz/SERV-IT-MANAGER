@@ -382,9 +382,8 @@ public class RepairTicketController {
         }
     }
 
-    // Returns a pre-signed S3 URL for a given repair photo (by S3 key or full S3 URL)
-    @GetMapping("/getRepairPhotoUrl")
-    public ResponseEntity<String> getRepairPhotoPresignedUrl(@RequestParam("photoUrl") String photoUrl) {
+    @GetMapping("/getRepairPhotos")
+    public ResponseEntity<String> getRepairPhotos(@RequestParam("photoUrl") String photoUrl) {
         try {
             String s3Key = photoUrl;
             int idx = photoUrl.indexOf(".amazonaws.com/");

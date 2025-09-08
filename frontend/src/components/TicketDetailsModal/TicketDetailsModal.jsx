@@ -16,7 +16,7 @@ async function fetchTicketFile(type, filename) {
 
 async function fetchPresignedPhotoUrl(photoUrl) {
     if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotoUrl`, { params: { photoUrl } });
+    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
     return res.data;
 }
 
