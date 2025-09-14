@@ -90,3 +90,6 @@ HELP.md
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+#gemini
+.gemini/
