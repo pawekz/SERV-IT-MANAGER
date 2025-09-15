@@ -10,6 +10,14 @@ export default defineConfig({
     allowedHosts: ['servit-frontend-bfd2b4fjg8ayc2fn.southeastasia-01.azurewebsites.net']
   },
   define: {
-    global: 'window',
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['buffer']
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer',
+    }
   }
 });
