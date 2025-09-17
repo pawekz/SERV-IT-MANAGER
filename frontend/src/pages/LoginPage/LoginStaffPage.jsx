@@ -251,6 +251,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const isStaffLogin = location.pathname.includes('/login/staff');
+    const [activeTab, setActiveTab] = useState(isStaffLogin ? 'staff' : 'customer');
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -320,6 +321,19 @@ const LoginPage = () => {
         setShowPassword(!showPassword);
     };
 
+    // Handle tab switching
+    const handleTabSwitch = (tab) => {
+        setActiveTab(tab);
+        setError(''); // Clear any existing errors when switching tabs
+        
+        // Navigate to the appropriate URL based on the selected tab
+        if (tab === 'staff') {
+            navigate('/login/staff');
+        } else {
+            navigate('/login');
+        }
+    };
+
     // Request OTP for account verification (after login if not verified)
     const requestAccountVerificationOTP = async (emailForOTP) => {
         setOtpLoading(true); // Use the main OTP loading state
@@ -359,7 +373,7 @@ const LoginPage = () => {
         }
 
         try {
-            const loginEndpoint = isStaffLogin ? `/auth/login/staff` : `/auth/login`;
+            const loginEndpoint = activeTab === 'staff' ? `/auth/login/staff` : `/auth/login`;
             const response = await api.post(loginEndpoint, {
                 identifier: formData.username,
                 password: formData.password,
@@ -598,6 +612,29 @@ const LoginPage = () => {
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-xl shadow-2xl relative overflow-hidden">
+                {/* Tab Buttons */}
+                <div className="flex">
+                    <button
+                        onClick={() => handleTabSwitch('customer')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeTab === 'customer'
+                                ? 'bg-white text-gray-800 border-b-2 border-[#2563eb]'
+                                : 'bg-gray-100 text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        Customer Login
+                    </button>
+                    <button
+                        onClick={() => handleTabSwitch('staff')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeTab === 'staff'
+                                ? 'bg-white text-gray-800 border-b-2 border-[#2563eb]'
+                                : 'bg-gray-100 text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        Staff Login
+                    </button>
+                </div>
                 <div className="absolute left-0 top-0 w-1.5 h-full bg-[#2563eb]"></div> {/* Accent line */}
                 <div className="p-8 md:p-10">
                     <div className="text-center mb-8">

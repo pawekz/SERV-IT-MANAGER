@@ -251,6 +251,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const isStaffLogin = location.pathname.includes('/login/staff');
+    const [activeTab, setActiveTab] = useState(isStaffLogin ? 'staff' : 'customer');
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -320,6 +321,19 @@ const LoginPage = () => {
         setShowPassword(!showPassword);
     };
 
+    // Handle tab switching
+    const handleTabSwitch = (tab) => {
+        setActiveTab(tab);
+        setError(''); // Clear any existing errors when switching tabs
+        
+        // Navigate to the appropriate URL based on the selected tab
+        if (tab === 'staff') {
+            navigate('/login/staff');
+        } else {
+            navigate('/login');
+        }
+    };
+
     // Request OTP for account verification (after login if not verified)
     const requestAccountVerificationOTP = async (emailForOTP) => {
         setOtpLoading(true);
@@ -351,7 +365,7 @@ const LoginPage = () => {
             return;
         }
         try {
-            const loginEndpoint = isStaffLogin ? '/auth/login/staff' : '/auth/login';
+            const loginEndpoint = activeTab === 'staff' ? '/auth/login/staff' : '/auth/login';
             const response = await api.post(loginEndpoint, {
                 identifier: formData.username,
                 password: formData.password,
@@ -534,7 +548,30 @@ const LoginPage = () => {
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-xl shadow-2xl relative overflow-hidden">
-                <div className="absolute left-0 top-0 w-1.5 h-full bg-[#25D482]"></div> {/* Accent line */}
+                {/* Tab Buttons */}
+                <div className="flex">
+                    <button
+                        onClick={() => handleTabSwitch('customer')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeTab === 'customer'
+                                ? 'bg-white text-gray-800 border-b-2 border-[#25D482]'
+                                : 'bg-gray-100 text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        Customer Login
+                    </button>
+                    <button
+                        onClick={() => handleTabSwitch('staff')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeTab === 'staff'
+                                ? 'bg-white text-gray-800 border-b-2 border-[#2563eb]'
+                                : 'bg-gray-100 text-gray-600 hover:text-gray-800'
+                        }`}
+                    >
+                        Staff Login
+                    </button>
+                </div>
+                <div className={`absolute left-0 top-0 w-1.5 h-full ${activeTab === 'customer' ? 'bg-[#25D482]' : 'bg-[#2563eb]'}`}></div> {/* Dynamic accent line */}
                 <div className="p-8 md:p-10">
                     <div className="text-center mb-8">
                         <div className="text-3xl font-bold text-gray-800">
@@ -562,7 +599,11 @@ const LoginPage = () => {
                                 id="username"
                                 value={formData.username}
                                 onChange={handleLoginChange}
-                                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482]"
+                                className={`w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 ${
+                                    activeTab === 'customer' 
+                                        ? 'focus:border-[#25D482] focus:ring-[#25D482]' 
+                                        : 'focus:border-[#2563eb] focus:ring-[#2563eb]'
+                                }`}
                                 placeholder="Enter your username or email"
                                 required
                             />
@@ -580,14 +621,20 @@ const LoginPage = () => {
                                     id="password"
                                     value={formData.password}
                                     onChange={handleLoginChange}
-                                    className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482]"
+                                    className={`w-full px-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 ${
+                                        activeTab === 'customer' 
+                                            ? 'focus:border-[#25D482] focus:ring-[#25D482]' 
+                                            : 'focus:border-[#2563eb] focus:ring-[#2563eb]'
+                                    }`}
                                     placeholder="Enter your password"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={togglePasswordVisibility}
-                                    className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-500 hover:text-[#25D482]"
+                                    className={`absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-500 ${
+                                        activeTab === 'customer' ? 'hover:text-[#25D482]' : 'hover:text-[#2563eb]'
+                                    }`}
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? "Hide" : "Show"}
@@ -597,7 +644,11 @@ const LoginPage = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-6 px-4 py-3 text-sm font-medium text-white bg-[#25D482] rounded-md hover:bg-[#1fab6b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#25D482] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            className={`w-full mt-6 px-4 py-3 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                                activeTab === 'customer' 
+                                    ? 'bg-[#25D482] hover:bg-[#1fab6b] focus:ring-[#25D482]' 
+                                    : 'bg-[#2563eb] hover:bg-[#1d4ed8] focus:ring-[#2563eb]'
+                            }`}
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">
@@ -615,7 +666,9 @@ const LoginPage = () => {
                                 setShowForgotOTPModal(false);
                                 setShowNewPasswordModal(false);
                             }}
-                            className="block w-full text-center mt-4 text-sm font-medium text-[#25D482] hover:underline bg-transparent border-none p-0"
+                            className={`block w-full text-center mt-4 text-sm font-medium hover:underline bg-transparent border-none p-0 ${
+                                activeTab === 'customer' ? 'text-[#25D482]' : 'text-[#2563eb]'
+                            }`}
                         >
                             Forgot password?
                         </button>
@@ -626,7 +679,7 @@ const LoginPage = () => {
                         <div className="flex-1 h-px bg-gray-200"></div>
                     </div>
                     <div className="text-center mt-4 text-sm text-gray-600">
-                        Don't have an account? <a href="/signup" className="text-[#25D482] font-medium hover:underline">Sign Up</a>
+                        Don't have an account? <a href="/signup" className={`font-medium hover:underline ${activeTab === 'customer' ? 'text-[#25D482]' : 'text-[#2563eb]'}`}>Sign Up</a>
                     </div>
                 </div>
             </div>
