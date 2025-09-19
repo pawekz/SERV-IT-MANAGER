@@ -24,7 +24,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
     const [pdfBlob, setPdfBlob] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
     const navigate = useNavigate();
-    const pdfGeneratedRef = useRef(false);
 
     const showToast = (message, type = "success") => {
         setToast({ show: true, message, type });
@@ -33,25 +32,27 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
     React.useEffect(() => {
         let isMounted = true;
+
         const generatePdf = async () => {
-            if (!pdfGeneratedRef.current) {
-                const blob = await pdf(
-                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
-                ).toBlob();
-                if (isMounted) {
-                    setPdfBlob(blob);
-                    setPdfUrl(URL.createObjectURL(blob));
-                    pdfGeneratedRef.current = true;
-                }
+            if (pdfUrl) {
+                URL.revokeObjectURL(pdfUrl);
+            }
+            const blob = await pdf(
+                <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
+            ).toBlob();
+            if (isMounted) {
+                setPdfBlob(blob);
+                setPdfUrl(URL.createObjectURL(blob));
             }
         };
+
         generatePdf();
+
         return () => {
             isMounted = false;
             if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         };
-        // eslint-disable-next-line
-    }, [signatureDataURL, formData, kind]);
+    }, []);
 
     const handleFinishClick = () => {
         setShowDialog(true);
@@ -99,6 +100,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
+
                 const response = await api.post('/repairTicket/checkInRepairTicket', form);
                 const result = response.data;
                 setSuccess(result);
