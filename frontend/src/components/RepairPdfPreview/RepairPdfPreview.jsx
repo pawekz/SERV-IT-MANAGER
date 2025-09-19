@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
-import { PDFViewer, pdf } from "@react-pdf/renderer";
+import { pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
 import { useNavigate } from "react-router-dom";
 import LoadingModal from "../LoadingModal/LoadingModal.jsx";
 import api from '../../config/ApiConfig';
+import PdfViewer from "../PdfViewer/PdfViewer.jsx";
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -197,15 +198,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </h1>
                 </div>
                 <div className="max-h-[720px] overflow-y-auto p-4">
-                    {pdfUrl && (
-                        <iframe
-                            src={pdfUrl}
-                            width="100%"
-                            height="600px"
-                            title="PDF Preview"
-                            style={{ border: "none" }}
-                        />
-                    )}
+                    <PdfViewer fileUrl={pdfUrl} height="600px" />
                 </div>
                 <div className="flex justify-between mt-6">
                     <button
@@ -347,4 +340,3 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 };
 
 export default RepairPdfPreview;
-
