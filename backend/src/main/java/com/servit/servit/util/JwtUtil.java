@@ -14,14 +14,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Value;
+import java.nio.charset.StandardCharsets;
+
 @Component
 public class JwtUtil {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
     // Generate a secure 512-bit key for HS512 algorithm
-    private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(
-            "oGwzAKPM06mr1bPXUakGSRWPWbo3wuRCZ1MN8dChjJkLPUTwksTfrG8dLg5A1b9W2Mq4QbT2vw5HircGbpQZxykK0vDAgKfCvG5epajyGMY=".getBytes()
-    );
+    private final SecretKey SECRET_KEY;
+
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("Missing JWT secret: set 'jwt.secret' (env var JWT_SECRET)");
+        }
+        this.SECRET_KEY = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     public String extractUsername(String token) {
         try {
