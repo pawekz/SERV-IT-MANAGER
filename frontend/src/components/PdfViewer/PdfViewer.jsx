@@ -9,6 +9,7 @@ const PdfViewer = ({ fileUrl, height = "600px" }) => (
                 width="100%"
                 height={height}
                 style={{ border: "none" }}
+                sandbox="allow-same-origin allow-scripts"
             />
         ) : (
             <div className="flex items-center justify-center h-full text-gray-400">

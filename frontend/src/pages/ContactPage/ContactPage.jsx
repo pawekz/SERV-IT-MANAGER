@@ -204,6 +204,7 @@ const ContactPage = () => {
                                     referrerPolicy="no-referrer-when-downgrade"
                                     title="IOCONNECT Office Location"
                                     className="w-full h-full border-0"
+                                    sandbox="allow-same-origin allow-scripts"
                                 ></iframe>
                             </div>
                             <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-[rgba(51,228,7,0.9)] text-white py-3 px-6 rounded-full flex items-center gap-2 shadow-md z-10 max-w-[90%]">
