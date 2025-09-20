@@ -2,8 +2,11 @@ package com.servit.servit.controller;
 
 import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.WarrantyEntity;
+import com.servit.servit.service.S3Service;
 import com.servit.servit.service.WarrantyService;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,12 +20,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/warranty")
 public class WarrantyController {
+    private static final Logger logger = LoggerFactory.getLogger(RepairTicketController.class);
+
     private final WarrantyService warrantyService;
 
     @Autowired
     public WarrantyController(WarrantyService warrantyService) {
         this.warrantyService = warrantyService;
     }
+
+    @Autowired
+    private S3Service s3Service;
 
     @GetMapping("/getAllWarranties")
     public ResponseEntity<List<GetAllWarrantyDTO>> getAllWarranties() {
@@ -131,6 +139,22 @@ public class WarrantyController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getWarrantyPhotos")
+    public ResponseEntity<String> getWarrantyPhotos(@RequestParam("photoUrl") String photoUrl) {
+        try {
+            String s3Key = photoUrl;
+            int idx = photoUrl.indexOf(".amazonaws.com/");
+            if (idx != -1) {
+                s3Key = photoUrl.substring(idx + ".amazonaws.com/".length());
+            }
+            String presignedUrl = s3Service.generatePresignedUrl(s3Key, 10); // 10 minutes expiry
+            return ResponseEntity.ok(presignedUrl);
+        } catch (Exception e) {
+            logger.error("Failed to generate presigned URL for warranty photos: {}", photoUrl, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

@@ -5,8 +5,15 @@ import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
 
+async function getWarrantyPhotos(photoUrls) {
+    if (!photoUrls || photoUrls.length === 0) return [];
+    const promises = photoUrls.map(photoUrl =>
+        api.get('/warranty/getWarrantyPhotos', { params: { photoUrl } }).then(res => res.data)
+    );
+    return Promise.all(promises);
+}
 
-const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
+const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     if (!data) return null;
     if (!isOpen) return null;
     const [showWarrantyReceive, setShowWarrantyReceive] = useState(false);
@@ -32,6 +39,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         warrantyNumber: data.warrantyNumber,
         returnReason: data.returnReason
     });
+    const [warrantyPhotos, setWarrantyPhotos] = useState([]);
     const STATUS_OPTIONS = [
         "CHECKED_IN",
         "ITEM_RETURNED",
@@ -64,41 +72,6 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
         }
     };
 
-    function SecureImage({ src, idx, openImageViewer }) {
-        const [imageUrl, setImageUrl] = useState(null);
-        useEffect(() => {
-            const fetchImageWithAuth = async () => {
-                try {
-                    const response = await api.get(src, { responseType: 'blob' });
-                    const blobUrl = URL.createObjectURL(response.data);
-                    setImageUrl(blobUrl);
-                } catch (err) {
-                    console.error("Error fetching image:", err);
-                    setPhotoError(err instanceof Error ? err.message : String(err));
-                    setError(err instanceof Error ? err.message : String(err));
-                    setShowToast(true);
-                }
-            };
-            fetchImageWithAuth();
-        }, [src]);
-        if (!imageUrl) {
-            return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />;
-        }
-        return (
-            <img
-                src={imageUrl}
-                alt={`Device condition ${idx + 1}`}
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    background: "#f3f4f6",
-                }}
-                onClick={() => openImageViewer(idx)}
-            />
-        );
-    }
-
     useEffect(() => {
         setSuccess(null);
         console.log(data);
@@ -112,6 +85,16 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
             });
         }
     }, [data?.warrantyNumber]);
+
+    useEffect(() => {
+        if (data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0) {
+            getWarrantyPhotos(data.warrantyPhotosUrls)
+                .then(urls => setWarrantyPhotos(urls))
+                .catch(() => setWarrantyPhotos([]));
+        } else {
+            setWarrantyPhotos([]);
+        }
+    }, [data.warrantyPhotosUrls]);
 
     const UpdateStatus = async () => {
         try {
@@ -486,9 +469,9 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                 {photoError instanceof Error ? photoError.message : photoError}
                                             </p>
                                         )}
-                                        {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
+                                        {warrantyPhotos && warrantyPhotos.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
-                                                {formData.warrantyPhotosUrls.map((src, idx) => (
+                                                {warrantyPhotos.map((src, idx) => (
                                                     <div
                                                         key={idx}
                                                         style={{
@@ -521,6 +504,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                                             warrantyPhotosUrls: updatedPhotos
                                                                         };
                                                                     });
+                                                                    setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
                                                                 }}
                                                                 style={{
                                                                     position: "absolute",
@@ -543,8 +527,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                                 <X size={18} className="text-gray-500 hover:text-red-500" />
                                                             </button>
                                                         )}
-                                                        { data.status === "CHECKED_IN" ? (
-                                                            <img
+                                                        <img
                                                             src={src}
                                                             alt={`Device condition ${idx + 1}`}
                                                             style={{
@@ -554,11 +537,7 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                                                 background: "#f3f4f6"
                                                             }}
                                                             onClick={() => openImageViewer(idx)}
-                                                        />) : (
-
-                                                        <SecureImage openImageViewer={() => openImageViewer(idx)} src={src} idx={idx} />
-                                                        ) }
-
+                                                        />
                                                     </div>
                                                 ))}
                                             </div>
@@ -617,32 +596,35 @@ const WarrantyRequest = ({ isOpen, onClose,data = {}, onSuccess}) => {
                                     >
                                         <X size={28} />
                                     </button>
+                                    <div className="w-full text-center mb-2 font-semibold text-lg text-gray-800">
+                                        {`Device Condition ${imageViewerIndex + 1}`}
+                                    </div>
                                     <img
-                                        src={formData.warrantyPhotosUrls[imageViewerIndex]}
+                                        src={warrantyPhotos[imageViewerIndex]}
                                         alt={`Device condition ${imageViewerIndex + 1}`}
                                         style={{
-                                            maxWidth: 400,
-                                            maxHeight: 400,
+                                            width: "100%",
+                                            height: "100%",
                                             objectFit: "contain",
-                                            borderRadius: 8,
-                                            background: "#f3f4f6"
+                                            background: "#f3f4f6",
                                         }}
+                                        onClick={() => openImageViewer(imageViewerIndex)}
                                     />
                                     <div className="flex items-center justify-between w-full mt-4">
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerPrevPhoto}
-                                            disabled={formData.warrantyPhotosUrls.length < 2}
+                                            disabled={warrantyPhotos.length < 2}
                                         >
                                             <ChevronLeft size={24} />
                                         </button>
                                         <span className="text-gray-700 text-sm">
-                                    {imageViewerIndex + 1} / {formData.warrantyPhotosUrls.length}
-                                </span>
+                    {imageViewerIndex + 1} / {warrantyPhotos.length}
+                </span>
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerNextPhoto}
-                                            disabled={formData.warrantyPhotosUrls.length < 2}
+                                            disabled={warrantyPhotos.length < 2}
                                         >
                                             <ChevronRight size={24} />
                                         </button>
