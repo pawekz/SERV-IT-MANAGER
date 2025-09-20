@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
-import { PDFViewer, pdf } from "@react-pdf/renderer";
+import { pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
 import { useNavigate } from "react-router-dom";
 import LoadingModal from "../LoadingModal/LoadingModal.jsx";
 import api from '../../config/ApiConfig';
+import PdfViewer from "../PdfViewer/PdfViewer.jsx";
 
 function dataURLtoBlob(dataURL) {
     const [header, base64] = dataURL.split(",");
@@ -23,7 +24,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
     const [pdfBlob, setPdfBlob] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
     const navigate = useNavigate();
-    const pdfGeneratedRef = useRef(false);
 
     const showToast = (message, type = "success") => {
         setToast({ show: true, message, type });
@@ -32,25 +32,27 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
     React.useEffect(() => {
         let isMounted = true;
+
         const generatePdf = async () => {
-            if (!pdfGeneratedRef.current) {
-                const blob = await pdf(
-                    <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
-                ).toBlob();
-                if (isMounted) {
-                    setPdfBlob(blob);
-                    setPdfUrl(URL.createObjectURL(blob));
-                    pdfGeneratedRef.current = true;
-                }
+            if (pdfUrl) {
+                URL.revokeObjectURL(pdfUrl);
+            }
+            const blob = await pdf(
+                <PdfDocument signatureDataURL={signatureDataURL} formData={formData} kind={kind} />
+            ).toBlob();
+            if (isMounted) {
+                setPdfBlob(blob);
+                setPdfUrl(URL.createObjectURL(blob));
             }
         };
+
         generatePdf();
+
         return () => {
             isMounted = false;
             if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         };
-        // eslint-disable-next-line
-    }, [signatureDataURL, formData, kind]);
+    }, []);
 
     const handleFinishClick = () => {
         setShowDialog(true);
@@ -98,6 +100,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                         }
                     });
                 }
+
                 const response = await api.post('/repairTicket/checkInRepairTicket', form);
                 const result = response.data;
                 setSuccess(result);
@@ -197,15 +200,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     </h1>
                 </div>
                 <div className="max-h-[720px] overflow-y-auto p-4">
-                    {pdfUrl && (
-                        <iframe
-                            src={pdfUrl}
-                            width="100%"
-                            height="600px"
-                            title="PDF Preview"
-                            style={{ border: "none" }}
-                        />
-                    )}
+                    <PdfViewer fileUrl={pdfUrl} height="600px" />
                 </div>
                 <div className="flex justify-between mt-6">
                     <button
@@ -347,4 +342,3 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 };
 
 export default RepairPdfPreview;
-

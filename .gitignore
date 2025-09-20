@@ -93,3 +93,7 @@ HELP.md
 
 #gemini
 .gemini/
+
+#run
+.run
+.run/*
