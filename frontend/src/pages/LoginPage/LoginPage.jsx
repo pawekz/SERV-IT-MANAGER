@@ -372,16 +372,15 @@ const LoginPage = () => {
             });
             const data = response.data;
             if (!data || !data.token) {
-                throw new Error('No response from server or token missing');
+                setError('Login failed. Please try again.');
+                setLoginProcessing(false);
+                setLoading(false);
+                return;
             }
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
             const tokenData = parseJwt(data.token);
             const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
-            if (!resolvedUserEmail) {
-                console.error("Email could not be resolved from token or login response.");
-                throw new Error("Login failed: User email not found.");
-            }
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
             if (data.isVerified === false) {
@@ -390,19 +389,19 @@ const LoginPage = () => {
                     setLoginProcessing(false);
                     setShowOTPModal(true);
                 } else {
-                    setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
+                    setError('Login successful, but failed to send verification OTP. Please try resending OTP.');
                     setLoginProcessing(false);
                 }
             }
             if(data.status === "Inactive"){
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
-                setError("Your account is inactive. Please contact support.");
+                setError('Your account is inactive. Please contact support.');
             }else {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+            setError(err.response?.data?.message || 'Login failed. Please try again.');
             setLoginProcessing(false);
         } finally {
             setLoading(false);
@@ -416,7 +415,9 @@ const LoginPage = () => {
         try {
             const emailForVerification = userEmail || localStorage.getItem('userEmail');
             if (!emailForVerification) {
-                throw new Error('No email found for OTP verification. Please login again.');
+                setOtpError('No email found for OTP verification. Please login again.');
+                setOtpLoading(false);
+                return;
             }
             const requestBody = {
                 email: emailForVerification,
@@ -435,7 +436,7 @@ const LoginPage = () => {
             localStorage.removeItem('userEmail');
             navigate('/login');
         } catch (err) {
-            setOtpError(err.response?.data?.message || err.message || 'OTP verification failed');
+            setOtpError(err.response?.data?.message || 'OTP verification failed');
         } finally {
             setOtpLoading(false);
         }
@@ -449,7 +450,9 @@ const LoginPage = () => {
         try {
             const emailForResend = userEmail || localStorage.getItem('userEmail');
             if (!emailForResend) {
-                throw new Error('No email found for OTP resend. Please login again.');
+                setOtpError('No email found for OTP resend. Please login again.');
+                setOtpLoading(false);
+                return;
             }
             await api.post('/user/resendOtp', {
                 email: emailForResend,
@@ -458,7 +461,7 @@ const LoginPage = () => {
             showToast('A new verification code has been sent to your email.');
             setResendCooldown(60);
         } catch (err) {
-            setOtpError(err.response?.data?.message || err.message || 'Failed to resend OTP');
+            setOtpError(err.response?.data?.message || 'Failed to resend OTP');
         } finally {
             setOtpLoading(false);
         }

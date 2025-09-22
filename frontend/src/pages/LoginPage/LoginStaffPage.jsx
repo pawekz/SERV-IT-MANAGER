@@ -363,83 +363,46 @@ const LoginPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        setLoginProcessing(true); // Show full-screen loading
-
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
-            setLoginProcessing(false); // Hide loading on validation failure
             return;
         }
-
         try {
-            const loginEndpoint = activeTab === 'staff' ? `/auth/login/staff` : `/auth/login`;
-            const response = await api.post(loginEndpoint, {
+            const response = await api.post('/auth/login/staff', {
                 identifier: formData.username,
                 password: formData.password,
             });
             const data = response.data;
-
             if (!data || !data.token) {
-                setError('No response from server or token missing');
+                setError('Login failed. Please try again.');
                 setLoading(false);
-                setLoginProcessing(false);
                 return;
             }
-
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('userRole', data.role);
-
             const tokenData = parseJwt(data.token);
-            const resolvedUserEmail = data.email || (tokenData && (tokenData.email || tokenData.sub));
-
-            if (!resolvedUserEmail) {
-                console.error("Email could not be resolved from token or login response.");
-                setError("Login failed: User email not found.");
-                setLoading(false);
-                setLoginProcessing(false);
-                return;
-            }
+            const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
-
-            // Only show OTP if the user is explicitly NOT verified (isVerified === false)
             if (data.isVerified === false) {
-                // Only request OTP if user is explicitly marked as not verified
-                const otpRequested = await requestAccountVerificationOTP(resolvedUserEmail);
-                if (otpRequested) {
-                    setLoginProcessing(false); // Hide loading when showing OTP modal
-                    setShowOTPModal(true);
-                } else {
-                    setError("Login successful, but failed to send verification OTP. Please try resending OTP.");
-                    setLoginProcessing(false);
-                }
-                setLoading(false);
-                return;
-            }
-
-            if(data.status === "Inactive"){
+                setShowOTPModal(true);
+            } else if (data.status === "Inactive") {
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
-                setError("Your account is inactive. Please contact support.");
-            }else {
-                // User is verified or verification status wasn't explicitly returned as false
+                setError('Your account is inactive. Please contact support.');
+            } else {
                 navigate('/dashboard');
             }
         } catch (err) {
-            let errorMessage = err.message || 'Login failed. Please try again.';
-            if (err.response && err.response.data) {
-                errorMessage = err.response.data.message || err.response.data.error || errorMessage;
-            }
-            setError(errorMessage);
-            setLoginProcessing(false);
+            setError(err.response?.data?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
     // OTP verification for account (login/registration)
-    const handleVerifyAccountOTP = async (otp) => {
+    const handleVerifyOTP = async (otpValue) => {
         setOtpLoading(true);
         setOtpError('');
         try {
@@ -449,30 +412,19 @@ const LoginPage = () => {
                 setOtpLoading(false);
                 return;
             }
-            const requestBody = {
+            const response = await api.post('/user/verifyOtp', {
                 email: emailForVerification,
-                otp: otp,
-                type: 1 // Type 1 for account verification
-            };
-            const response = await api.post(`/user/verifyOtp`, requestBody);
-            const responseData = response.data;
-            if (responseData && responseData.token) {
-                localStorage.setItem('authToken', responseData.token);
-            }
+                otp: otpValue,
+                type: 1
+            });
             setShowOTPModal(false);
             showToast('Account verified successfully. Please login to continue.');
-            // Clear any existing auth data since we want them to login again
             localStorage.removeItem('authToken');
             localStorage.removeItem('userRole');
             localStorage.removeItem('userEmail');
-            // Redirect to login page
-            navigate('/login');
+            navigate('/login/staff');
         } catch (err) {
-            let errorMessage = err.message || 'OTP verification failed';
-            if (err.response && err.response.data) {
-                errorMessage = err.response.data.message || err.response.data.error || errorMessage;
-            }
-            setOtpError(errorMessage);
+            setOtpError(err.response?.data?.message || 'OTP verification failed');
         } finally {
             setOtpLoading(false);
         }
@@ -739,7 +691,7 @@ const LoginPage = () => {
                     setShowOTPModal(false);
                     setOtpError(''); // Clear error when closing
                 }}
-                onVerify={handleVerifyAccountOTP}
+                onVerify={handleVerifyOTP}
                 onResend={handleResendAccountOTP}
                 loading={otpLoading}
                 error={otpError}
