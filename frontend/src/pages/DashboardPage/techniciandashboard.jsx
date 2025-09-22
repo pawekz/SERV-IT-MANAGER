@@ -118,77 +118,6 @@ const TechnicianDashboard = () => {
         fetchUserData();
     }, []);
 
-    // Add useEffect to fetch user count from the backend
-    useEffect(() => {
-        const fetchUserCount = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/user/getUserCount`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching user count: ${response.status}`);
-                }
-
-                const count = await response.json();
-                setStats(prevStats => ({
-                    ...prevStats,
-                    users: count
-                }));
-            } catch (err) {
-                console.error("Error fetching user count:", err);
-            }
-        };
-
-        fetchUserCount();
-    }, []);
-
-    // Add useEffect to fetch inventory data from the backend
-    useEffect(() => {
-        const fetchInventoryData = async () => {
-            try {
-                setInventoryLoading(true);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    console.error("No auth token found");
-                    return;
-                }
-
-                const response = await fetch(`${window.__API_BASE__}/part/getAllParts`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error fetching inventory: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setInventoryData(data);
-                setInventoryError(null);
-            } catch (err) {
-                console.error("Error fetching inventory data:", err);
-                setInventoryError("Failed to load inventory data");
-            } finally {
-                setInventoryLoading(false);
-            }
-        };
-
-        fetchInventoryData();
-    }, []);
-
     // fetch latest quotations (paginated)
     useEffect(() => {
         const fetchQuotations = async () => {
@@ -328,8 +257,7 @@ const TechnicianDashboard = () => {
                     {/* Kanban Board with Drag and Drop */}
                     <KanbanBoard />
 
-                    {/* Charts and Customer Responses */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+                    <div className="gap-4 md:gap-6">
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle size={18} className="text-red-600" /> Low-Stock Parts</h3>
                             {lowStock.length === 0 ? (
@@ -358,37 +286,6 @@ const TechnicianDashboard = () => {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Responses</h3>
-                            {recentQuotations.length === 0 ? (
-                                <div className="text-sm text-gray-500">No recent responses.</div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {recentQuotations.map(q => {
-                                        const status = (q.status || "").toUpperCase();
-                                        let icon = <Clock className="h-4 w-4 text-amber-600" />;
-                                        let bg = "bg-amber-100";
-                                        let textColor = "text-amber-600";
-                                        if (status === "APPROVED") { icon = <CheckCircle className="h-4 w-4 text-green-600" />; bg = "bg-green-100"; textColor = "text-green-600"; }
-                                        else if (status === "REJECTED") { icon = <X className="h-4 w-4 text-red-600" />; bg = "bg-red-100"; textColor = "text-red-600"; }
-
-                                        const created = q.respondedAt || q.createdAt;
-                                        const timeStr = created ? new Date(created).toLocaleString(undefined, { month: "short", day: "numeric" }) : "";
-
-                                        return (
-                                            <button key={q.quotationId} onClick={() => navigate(`/quotationviewer/${encodeURIComponent(q.repairTicketNumber)}`)} className="flex items-center w-full text-left">
-                                                <div className={`w-8 h-8 ${bg} rounded-full flex items-center justify-center mr-3`}>{icon}</div>
-                                                <div>
-                                                    <div className="font-medium">Quote for {q.repairTicketNumber} {status.charAt(0) + status.slice(1).toLowerCase()}</div>
-                                                    <div className="text-xs text-gray-500">{timeStr}</div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
                                 </div>
                             )}
                         </div>
