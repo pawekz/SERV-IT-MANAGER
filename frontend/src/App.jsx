@@ -175,6 +175,9 @@ function AppContent() {
           <Route path="/warranty" element={
             <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
           } />
+          <Route path="/warrantyrequest" element={
+            <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
+          } />
           <Route path="/devicecard" element={
             <ProtectedRoute element={<DeviceCard />} allowedRoles={['admin', 'technician', 'customer']} />
           } />

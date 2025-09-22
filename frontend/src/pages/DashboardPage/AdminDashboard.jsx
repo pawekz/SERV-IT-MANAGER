@@ -1,5 +1,5 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Bell, Plus,
     User,
@@ -453,6 +453,8 @@ const AdminDashboard = () => {
         setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
     }
 
+    const navigate = useNavigate();
+
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
@@ -531,7 +533,9 @@ const AdminDashboard = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="bg-white p-6 rounded-lg shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 hover:bg-blue-100 transition-transform duration-200"
+                            onClick={() => navigate('/warrantyrequest')}
+                            title="Go to Pending Approvals">
                             <div className="text-gray-600 text-sm mb-2">Pending Approvals</div>
                             <div className="text-2xl font-bold text-gray-800">{stats.pendingApprovals}</div>
                             <div className="text-xs text-gray-500 mt-1">Requires attention</div>
