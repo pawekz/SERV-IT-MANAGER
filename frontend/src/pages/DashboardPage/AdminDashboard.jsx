@@ -6,7 +6,8 @@ import {
 } from "lucide-react"
 import {useEffect, useState} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
 
 const AdminDashboard = () => {
     const [userData, setUserData] = useState({
@@ -502,6 +503,16 @@ const AdminDashboard = () => {
 
     const navigate = useNavigate();
 
+    // Prepare chart data for technicians: sort by ticket count desc, take top 5, shorten names
+    const techChartData = (Array.isArray(technicianWorkload) ? technicianWorkload.slice() : [])
+        .sort((a, b) => (b.ticketCount || 0) - (a.ticketCount || 0))
+        .slice(0, 5)
+        .map(t => {
+            const rawName = (t.firstName || t.username || 'Tech');
+            const name = rawName.length > 10 ? `${rawName.slice(0, 10)}...` : rawName;
+            return { name, tickets: t.ticketCount || 0 };
+        });
+
     return (
         <div className="flex min-h-screen">
             {/* Custom Sidebar Component */}
@@ -613,7 +624,7 @@ const AdminDashboard = () => {
                                         <p>No status distribution data available</p>
                                     </div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={500}>
+                                    <ResponsiveContainer width="100%" height={350}>
                                         <PieChart>
                                             <Pie
                                                 data={statusDistribution}
@@ -629,7 +640,7 @@ const AdminDashboard = () => {
                                                 ))}
                                             </Pie>
                                             <Tooltip
-                                                formatter={(value, name, props) => [`${value} tickets`, name]}
+                                                formatter={(value, name) => [`${value} tickets`, name]}
                                                 contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
                                                 wrapperStyle={{ zIndex: 1000 }}
                                             />
@@ -655,24 +666,20 @@ const AdminDashboard = () => {
                                     <p>No technician workload data available</p>
                                 </div>
                             ) : (
-                                <div className="h-48 flex items-end justify-around pt-5">
-                                    {technicianWorkload.slice(0, 5).map((tech, index) => {
-                                        // Find the maximum workload to calculate relative height
-                                        const maxWorkload = Math.max(...technicianWorkload.map(t => t.ticketCount));
-                                        // Calculate height percentage (minimum 10% for visibility)
-                                        const heightPercentage = Math.max(10, (tech.ticketCount / maxWorkload) * 100);
-
-                                        return (
-                                            <div key={index} className="flex flex-col items-center">
-                                                <div
-                                                    className="w-12 bg-blue-500 rounded-t-sm"
-                                                    style={{ height: `${heightPercentage}%` }}
-                                                ></div>
-                                                <div className="mt-2 text-xs">{tech.firstName || "Tech"}</div>
-                                                <div className="text-xs text-gray-500">{tech.ticketCount}</div>
-                                            </div>
-                                        );
-                                    })}
+                                // Use Recharts BarChart for a proper chart
+                                <div style={{ width: '100%', height: 350 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={techChartData}
+                                            margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                            <YAxis allowDecimals={false} />
+                                            <Tooltip formatter={(value) => [`${value}`, 'Tickets']} />
+                                            <Bar dataKey="tickets" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 </div>
                             )}
                         </div>
