@@ -624,7 +624,7 @@ const AdminDashboard = () => {
                                         <p>No status distribution data available</p>
                                     </div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={350}>
+                                    <ResponsiveContainer width="100%" height={400}>
                                         <PieChart>
                                             <Pie
                                                 data={statusDistribution}
@@ -667,7 +667,7 @@ const AdminDashboard = () => {
                                 </div>
                             ) : (
                                 // Use Recharts BarChart for a proper chart
-                                <div style={{ width: '100%', height: 350 }}>
+                                <div style={{ width: '100%', height: 400 }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart
                                             data={techChartData}
