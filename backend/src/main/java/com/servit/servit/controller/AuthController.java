@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -19,27 +21,31 @@ public class AuthController {
 
     //login for CUSTOMER
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO req) {
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO req) {
         try {
             AuthResponseDTO response = authService.authenticate(req);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "Internal server error"));
         }
     }
 
     //login for staff (ADMINISTRATOR and TECHNICIAN)
     @PostMapping("/login/staff")
-    public ResponseEntity<AuthResponseDTO> staffLogin(@RequestBody LoginRequestDTO req) {
+    public ResponseEntity<?> staffLogin(@RequestBody LoginRequestDTO req) {
         try {
             AuthResponseDTO response = authService.authenticateStaff(req);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "Internal server error"));
         }
     }
 }
