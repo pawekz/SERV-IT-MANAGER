@@ -390,21 +390,31 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
-    // Fetch pending approvals
+    // State for pending approvals
+    const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(true);
+    const [pendingApprovalsError, setPendingApprovalsError] = useState(null);
+
     useEffect(() => {
         const fetchPendingApprovals = async () => {
+            setPendingApprovalsLoading(true);
+            setPendingApprovalsError(null);
             try {
-                const response = await api.get('/approval/getPendingApprovalsCount');
-                setStats(prevStats => ({
-                    ...prevStats,
-                    pendingApprovals: response.data
-                }));
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${window.__API_BASE__}/warranty/getPendingApprovals`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                });
+                if (!response.ok) throw new Error('Failed to fetch pending approvals');
+                const data = await response.json();
+                setStats(prev => ({ ...prev, pendingApprovals: data.pendingApprovals }));
             } catch (err) {
-                console.error("Error fetching pending approvals:", err);
-                setStats(prevStats => ({
-                    ...prevStats,
-                    pendingApprovals: 3 // fallback value
-                }));
+                setPendingApprovalsError(err.message);
+                setStats(prev => ({ ...prev, pendingApprovals: 0 }));
+            } finally {
+                setPendingApprovalsLoading(false);
             }
         };
         fetchPendingApprovals();
