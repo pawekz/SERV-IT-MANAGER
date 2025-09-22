@@ -6,6 +6,7 @@ import {
 } from "lucide-react"
 import {useEffect, useState} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
     const [userData, setUserData] = useState({
@@ -420,6 +421,42 @@ const AdminDashboard = () => {
         fetchPendingApprovals();
     }, []);
 
+    // State for repair ticket status distribution
+    const [statusDistribution, setStatusDistribution] = useState([]);
+    const [statusLoading, setStatusLoading] = useState(true);
+    const [statusError, setStatusError] = useState(null);
+
+    useEffect(() => {
+        const fetchStatusDistribution = async () => {
+            setStatusLoading(true);
+            try {
+                const response = await api.get('/repairTicket/getStatusDistribution');
+                if (response.data && response.data.statusCounts) {
+                    setStatusDistribution(response.data.statusCounts);
+                } else {
+                    setStatusDistribution([]);
+                }
+                setStatusError(null);
+            } catch (err) {
+                setStatusError('Failed to load status distribution');
+                setStatusDistribution([]);
+            } finally {
+                setStatusLoading(false);
+            }
+        };
+        fetchStatusDistribution();
+    }, []);
+
+    // Pie chart colors for statuses
+    const STATUS_COLORS = {
+        RECEIVED: '#8884d8',
+        DIAGNOSING: '#82ca9d',
+        AWAITING_PARTS: '#ffc658',
+        REPAIRING: '#ff8042',
+        READY_FOR_PICKUP: '#0088fe',
+        COMPLETED: '#00c49f',
+    };
+
     // Chart data
     const chartData = {
         months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -559,51 +596,49 @@ const AdminDashboard = () => {
 
                     {/* Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Pie Chart Card */}
+                        {/* Pie Chart Card - Now with dynamic data */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Repair Status Distribution</h3>
                             <div className="flex flex-col items-center">
-                                <div className="relative w-44 h-44 mb-5">
-                                    <div
-                                        className="w-full h-full rounded-full"
-                                        style={{
-                                            background: `conic-gradient(
-                        #2196f3 0% 25%,
-                        #ffb300 25% 65%,
-                        #9c27b0 65% 80%,
-                        #4caf50 80% 90%,
-                        #f44336 90% 100%
-                      )`,
-                                        }}
-                                    >
-                                        <div className="absolute w-24 h-24 bg-white rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                                {statusLoading ? (
+                                    <div className="h-48 flex items-center justify-center">
+                                        <p>Loading status distribution...</p>
                                     </div>
-                                </div>
-                                <div className="flex flex-wrap justify-center gap-3">
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">New (25%)</span>
+                                ) : statusError ? (
+                                    <div className="h-48 flex items-center justify-center text-red-500">
+                                        <p>{statusError}</p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-amber-400 rounded-sm mr-2"></div>
-                                        <span className="text-sm">In Progress (40%)</span>
+                                ) : statusDistribution.length === 0 ? (
+                                    <div className="h-48 flex items-center justify-center text-gray-500">
+                                        <p>No status distribution data available</p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-purple-600 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Awaiting Parts (15%)</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-green-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Ready (10%)</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-red-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Delayed (10%)</span>
-                                    </div>
-                                </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={500}>
+                                        <PieChart>
+                                            <Pie
+                                                data={statusDistribution}
+                                                dataKey="count"
+                                                nameKey="status"
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={100}
+                                                label={({ status, percentage }) => `${status}: ${percentage.toFixed(1)}%`}
+                                            >
+                                                {statusDistribution.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                formatter={(value, name, props) => [`${value} tickets`, name]}
+                                                contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
+                                                wrapperStyle={{ zIndex: 1000 }}
+                                            />
+                                            <><Legend/></>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
-
                         {/* Bar Chart Card - Now using dynamic data */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
@@ -713,4 +748,3 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
-
