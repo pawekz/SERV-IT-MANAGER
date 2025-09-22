@@ -1,6 +1,6 @@
 package com.servit.servit.controller;
 
-import com.servit.servit.dto.PendingApprovalsCountDTO;
+import com.servit.servit.dto.warranty.PendingApprovalsCountDTO;
 import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.WarrantyEntity;
 import com.servit.servit.service.S3Service;

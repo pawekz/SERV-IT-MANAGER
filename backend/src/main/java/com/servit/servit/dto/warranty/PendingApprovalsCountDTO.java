@@ -1,4 +1,4 @@
-package com.servit.servit.dto;
+package com.servit.servit.dto.warranty;
 
 public class PendingApprovalsCountDTO {
     private long pendingApprovals;
