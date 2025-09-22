@@ -397,4 +397,15 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @GetMapping("/getStatusDistribution")
+    public ResponseEntity<RepairTicketStatusDistributionDTO> getStatusDistribution() {
+        try {
+            RepairTicketStatusDistributionDTO dto = repairTicketService.getStatusDistribution();
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            logger.error("Failed to get repair ticket status distribution", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
