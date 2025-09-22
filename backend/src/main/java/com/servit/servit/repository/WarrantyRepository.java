@@ -32,4 +32,7 @@ public interface WarrantyRepository extends JpaRepository<WarrantyEntity, Long> 
     Page<WarrantyEntity> searchWarrantiesByEmail(
             @Param("email") String email, @Param("searchTerm") String searchTerm, Pageable pageable);
 
+    @Query("SELECT COUNT(w) FROM WarrantyEntity w WHERE w.status IN :statuses")
+    long countByStatusIn(@Param("statuses") List<com.servit.servit.enumeration.WarrantyStatus> statuses);
+
 }

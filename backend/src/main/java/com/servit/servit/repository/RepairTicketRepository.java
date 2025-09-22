@@ -48,4 +48,7 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
     Page<RepairTicketEntity> findByRepairStatus(RepairStatusEnum repairStatus, Pageable pageable);
 
     Page<RepairTicketEntity> findByRepairStatusAndTechnicianEmail_Email(RepairStatusEnum repairStatus, String email, Pageable pageable);
+
+    @Query("SELECT r.repairStatus, COUNT(r) FROM RepairTicketEntity r GROUP BY r.repairStatus")
+    List<Object[]> countTicketsByStatus();
 }

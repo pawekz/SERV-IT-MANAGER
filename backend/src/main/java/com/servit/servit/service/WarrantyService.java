@@ -1,5 +1,6 @@
 package com.servit.servit.service;
 
+import com.servit.servit.dto.warranty.PendingApprovalsCountDTO;
 import com.servit.servit.dto.repairticket.CheckInRepairTicketRequestDTO;
 import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.*;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -474,4 +474,18 @@ public class WarrantyService {
         return new WarrantyPdfResponseDTO(fileBytes, fileName);
     }
 
+    /**
+     * Returns the count of warranty tickets with pending approval statuses.
+     * @return PendingApprovalsCountDTO containing the count
+     */
+    public PendingApprovalsCountDTO getPendingApprovalsCount() {
+        List<WarrantyStatus> pendingStatuses = List.of(
+            WarrantyStatus.CHECKED_IN,
+            WarrantyStatus.ITEM_RETURNED,
+            WarrantyStatus.WAITING_FOR_WARRANTY_REPLACEMENT,
+            WarrantyStatus.WARRANTY_REPLACEMENT_ARRIVED
+        );
+        long count = warrantyRepository.countByStatusIn(pendingStatuses);
+        return new PendingApprovalsCountDTO(count);
+    }
 };

@@ -6,6 +6,8 @@ import {
 } from "lucide-react"
 import {useEffect, useState} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
 
 const AdminDashboard = () => {
     const [userData, setUserData] = useState({
@@ -390,25 +392,71 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
-    // Fetch pending approvals
+    // State for pending approvals
+    const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(true);
+    const [pendingApprovalsError, setPendingApprovalsError] = useState(null);
+
     useEffect(() => {
         const fetchPendingApprovals = async () => {
+            setPendingApprovalsLoading(true);
+            setPendingApprovalsError(null);
             try {
-                const response = await api.get('/approval/getPendingApprovalsCount');
-                setStats(prevStats => ({
-                    ...prevStats,
-                    pendingApprovals: response.data
-                }));
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${window.__API_BASE__}/warranty/getPendingApprovals`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                });
+                if (!response.ok) throw new Error('Failed to fetch pending approvals');
+                const data = await response.json();
+                setStats(prev => ({ ...prev, pendingApprovals: data.pendingApprovals }));
             } catch (err) {
-                console.error("Error fetching pending approvals:", err);
-                setStats(prevStats => ({
-                    ...prevStats,
-                    pendingApprovals: 3 // fallback value
-                }));
+                setPendingApprovalsError(err.message);
+                setStats(prev => ({ ...prev, pendingApprovals: 0 }));
+            } finally {
+                setPendingApprovalsLoading(false);
             }
         };
         fetchPendingApprovals();
     }, []);
+
+    // State for repair ticket status distribution
+    const [statusDistribution, setStatusDistribution] = useState([]);
+    const [statusLoading, setStatusLoading] = useState(true);
+    const [statusError, setStatusError] = useState(null);
+
+    useEffect(() => {
+        const fetchStatusDistribution = async () => {
+            setStatusLoading(true);
+            try {
+                const response = await api.get('/repairTicket/getStatusDistribution');
+                if (response.data && response.data.statusCounts) {
+                    setStatusDistribution(response.data.statusCounts);
+                } else {
+                    setStatusDistribution([]);
+                }
+                setStatusError(null);
+            } catch (err) {
+                setStatusError('Failed to load status distribution');
+                setStatusDistribution([]);
+            } finally {
+                setStatusLoading(false);
+            }
+        };
+        fetchStatusDistribution();
+    }, []);
+
+    // Pie chart colors for statuses
+    const STATUS_COLORS = {
+        RECEIVED: '#8884d8',
+        DIAGNOSING: '#82ca9d',
+        AWAITING_PARTS: '#ffc658',
+        REPAIRING: '#ff8042',
+        READY_FOR_PICKUP: '#0088fe',
+        COMPLETED: '#00c49f',
+    };
 
     // Chart data
     const chartData = {
@@ -454,6 +502,16 @@ const AdminDashboard = () => {
     }
 
     const navigate = useNavigate();
+
+    // Prepare chart data for technicians: sort by ticket count desc, take top 5, shorten names
+    const techChartData = (Array.isArray(technicianWorkload) ? technicianWorkload.slice() : [])
+        .sort((a, b) => (b.ticketCount || 0) - (a.ticketCount || 0))
+        .slice(0, 5)
+        .map(t => {
+            const rawName = (t.firstName || t.username || 'Tech');
+            const name = rawName.length > 10 ? `${rawName.slice(0, 10)}...` : rawName;
+            return { name, tickets: t.ticketCount || 0 };
+        });
 
     return (
         <div className="flex min-h-screen">
@@ -549,51 +607,49 @@ const AdminDashboard = () => {
 
                     {/* Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Pie Chart Card */}
+                        {/* Pie Chart Card - Now with dynamic data */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Repair Status Distribution</h3>
                             <div className="flex flex-col items-center">
-                                <div className="relative w-44 h-44 mb-5">
-                                    <div
-                                        className="w-full h-full rounded-full"
-                                        style={{
-                                            background: `conic-gradient(
-                        #2196f3 0% 25%,
-                        #ffb300 25% 65%,
-                        #9c27b0 65% 80%,
-                        #4caf50 80% 90%,
-                        #f44336 90% 100%
-                      )`,
-                                        }}
-                                    >
-                                        <div className="absolute w-24 h-24 bg-white rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                                {statusLoading ? (
+                                    <div className="h-48 flex items-center justify-center">
+                                        <p>Loading status distribution...</p>
                                     </div>
-                                </div>
-                                <div className="flex flex-wrap justify-center gap-3">
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">New (25%)</span>
+                                ) : statusError ? (
+                                    <div className="h-48 flex items-center justify-center text-red-500">
+                                        <p>{statusError}</p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-amber-400 rounded-sm mr-2"></div>
-                                        <span className="text-sm">In Progress (40%)</span>
+                                ) : statusDistribution.length === 0 ? (
+                                    <div className="h-48 flex items-center justify-center text-gray-500">
+                                        <p>No status distribution data available</p>
                                     </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-purple-600 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Awaiting Parts (15%)</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-green-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Ready (10%)</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-red-500 rounded-sm mr-2"></div>
-                                        <span className="text-sm">Delayed (10%)</span>
-                                    </div>
-                                </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={400}>
+                                        <PieChart>
+                                            <Pie
+                                                data={statusDistribution}
+                                                dataKey="count"
+                                                nameKey="status"
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={100}
+                                                label={({ status, percentage }) => `${status}: ${percentage.toFixed(1)}%`}
+                                            >
+                                                {statusDistribution.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                formatter={(value, name) => [`${value} tickets`, name]}
+                                                contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
+                                                wrapperStyle={{ zIndex: 1000 }}
+                                            />
+                                            <><Legend/></>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
-
                         {/* Bar Chart Card - Now using dynamic data */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Technician Workload</h3>
@@ -610,24 +666,20 @@ const AdminDashboard = () => {
                                     <p>No technician workload data available</p>
                                 </div>
                             ) : (
-                                <div className="h-48 flex items-end justify-around pt-5">
-                                    {technicianWorkload.slice(0, 5).map((tech, index) => {
-                                        // Find the maximum workload to calculate relative height
-                                        const maxWorkload = Math.max(...technicianWorkload.map(t => t.ticketCount));
-                                        // Calculate height percentage (minimum 10% for visibility)
-                                        const heightPercentage = Math.max(10, (tech.ticketCount / maxWorkload) * 100);
-
-                                        return (
-                                            <div key={index} className="flex flex-col items-center">
-                                                <div
-                                                    className="w-12 bg-blue-500 rounded-t-sm"
-                                                    style={{ height: `${heightPercentage}%` }}
-                                                ></div>
-                                                <div className="mt-2 text-xs">{tech.firstName || "Tech"}</div>
-                                                <div className="text-xs text-gray-500">{tech.ticketCount}</div>
-                                            </div>
-                                        );
-                                    })}
+                                // Use Recharts BarChart for a proper chart
+                                <div style={{ width: '100%', height: 400 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={techChartData}
+                                            margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                            <YAxis allowDecimals={false} />
+                                            <Tooltip formatter={(value) => [`${value}`, 'Tickets']} />
+                                            <Bar dataKey="tickets" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 </div>
                             )}
                         </div>
@@ -703,4 +755,3 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
-

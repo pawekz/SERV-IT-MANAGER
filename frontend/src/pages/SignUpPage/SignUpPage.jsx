@@ -161,7 +161,7 @@ const SignUpPage = () => {
             setResendCooldown(0);
             setShowOTPModal(true);
         } catch (err) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError(err.response?.data?.message || 'Signup failed. Please try again.');
         } finally {
             setLoading(false);
             setSignupProcessing(false); // Stop the loading screen
@@ -206,60 +206,20 @@ const SignUpPage = () => {
 
     // Verify OTP
     const handleVerifyOTP = async () => {
-        const otp = otpDigits.join("");
-
-        if (otp.length !== 6) {
-            setOtpError('Please enter a valid 6-digit OTP');
-            return;
-        }
-
         setOtpLoading(true);
         setOtpError('');
-
+        const otp = otpDigits.join("");
+        if (otp.length !== 6) {
+            setOtpError('Please enter the 6-digit OTP.');
+            setOtpLoading(false);
+            return;
+        }
         try {
-            const payload = {
-                email: formData.email,
-                otp: otp,
-                type: 1
-            };
-
-            const response = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const responseText = await response.text();
-
-            if (!response.ok) {
-                let errorMessage = `Verification failed (${response.status})`;
-                try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch (e) {
-                    if (responseText) errorMessage = responseText;
-                }
-                setOtpError(errorMessage);
-                if (response.status === 401 && !errorMessage.includes('Invalid or expired')) {
-                    setOtpError('Invalid or expired OTP code. Please try again or request a new one.');
-                }
-                return;
-            }
-
+            await api.post('/user/verifyOtp', { email: formData.email, otp, type: 1 });
             setShowOTPModal(false);
             setShowSuccessModal(true);
-
-            setTimeout(() => {
-                setShowSuccessModal(false);
-                navigate('/login');
-            }, 5000);
-
         } catch (err) {
-            setOtpError(err.message || 'OTP verification failed. Please try again.');
+            setOtpError(err.response?.data?.message || 'OTP verification failed.');
         } finally {
             setOtpLoading(false);
         }
@@ -653,3 +613,4 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
+

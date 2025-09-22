@@ -93,42 +93,26 @@ public class AuthService {
     }
 
     private UserEntity findUserByIdentifier(String identifier) {
-        try {
-            return userRepo.findByEmail(identifier)
-                    .or(() -> userRepo.findByUsername(identifier))
-                    .orElseThrow(() -> {
-                        logger.warn("User not found for identifier: {}", identifier);
-                        return new BadCredentialsException("Invalid credentials");
-                    });
-        } catch (Exception e) {
-            logger.error("Database error while finding user with identifier: {}", identifier, e);
-            throw new AuthenticationException("Authentication failed due to system error") {};
-        }
+        return userRepo.findByEmail(identifier)
+                .or(() -> userRepo.findByUsername(identifier))
+                .orElseThrow(() -> new BadCredentialsException("Incorrect username or password"));
     }
 
     private void validateCustomerAccess(UserEntity user) {
         if (user.getRole() != UserRoleEnum.CUSTOMER) {
-            logger.warn("Non-customer user {} attempted to login via customer endpoint", user.getUsername());
-            throw new BadCredentialsException("Access denied");
+            throw new BadCredentialsException("Access denied: not a customer account");
         }
     }
 
     private void validateStaffAccess(UserEntity user) {
         if (user.getRole() == UserRoleEnum.CUSTOMER) {
-            logger.warn("Customer user {} attempted to login via staff endpoint", user.getUsername());
-            throw new BadCredentialsException("Access denied");
+            throw new BadCredentialsException("Access denied: not a staff account");
         }
     }
 
     private void validatePassword(String rawPassword, String encodedPassword, String username) {
-        try {
-            if (!encoder.matches(rawPassword, encodedPassword)) {
-                logger.warn("Invalid password attempt for user: {}", username);
-                throw new BadCredentialsException("Invalid credentials");
-            }
-        } catch (Exception e) {
-            logger.error("Error during password validation for user: {}", username, e);
-            throw new AuthenticationException("Authentication failed due to system error") {};
+        if (!encoder.matches(rawPassword, encodedPassword)) {
+            throw new BadCredentialsException("Incorrect password");
         }
     }
 

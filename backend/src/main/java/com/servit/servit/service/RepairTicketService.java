@@ -643,5 +643,24 @@ public class RepairTicketService {
         if (idx == -1) return s3Url; // fallback: assume it's already a key
         return s3Url.substring(idx + ".amazonaws.com/".length());
     }
+
+    public RepairTicketStatusDistributionDTO getStatusDistribution() {
+        List<Object[]> results = repairTicketRepository.countTicketsByStatus();
+        int totalTickets = 0;
+        Map<RepairStatusEnum, Integer> statusCountMap = new java.util.EnumMap<>(RepairStatusEnum.class);
+        for (Object[] row : results) {
+            RepairStatusEnum status = (RepairStatusEnum) row[0];
+            int count = ((Number) row[1]).intValue();
+            statusCountMap.put(status, count);
+            totalTickets += count;
+        }
+        List<RepairTicketStatusDistributionDTO.StatusCountDTO> statusCounts = new java.util.ArrayList<>();
+        for (RepairStatusEnum status : RepairStatusEnum.values()) {
+            int count = statusCountMap.getOrDefault(status, 0);
+            double percentage = totalTickets > 0 ? (count * 100.0) / totalTickets : 0.0;
+            statusCounts.add(new RepairTicketStatusDistributionDTO.StatusCountDTO(status.name(), count, percentage));
+        }
+        return new RepairTicketStatusDistributionDTO(statusCounts, totalTickets);
+    }
 }
 

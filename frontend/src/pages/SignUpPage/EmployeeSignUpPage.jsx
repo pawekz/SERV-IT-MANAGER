@@ -76,26 +76,12 @@ const EmployeeSignUpPage = () => {
     const handleVerifyCode = async (e) => {
         e.preventDefault();
         setCodeError('');
-        if (!email || !onboardingCode) {
-            setCodeError('Email and code are required');
-            return;
-        }
         setCodeLoading(true);
         try {
-            const res = await fetch(`${window.__API_BASE__}/user/verifyOnboardingCode`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, onboardingCode })
-            });
-            const txt = await res.text();
-            if (!res.ok) {
-                throw new Error(txt || 'Invalid code');
-            }
-            // Success – proceed to password step
+            await api.post('/user/verifyOnboardingCode', { email, code: onboardingCode });
             setStep(2);
-            showToast('Code verified! Please set your password.');
         } catch (err) {
-            setCodeError(err.message);
+            setCodeError(err.response?.data?.message || 'Code verification failed.');
         } finally {
             setCodeLoading(false);
         }
@@ -272,4 +258,4 @@ const EmployeeSignUpPage = () => {
     );
 };
 
-export default EmployeeSignUpPage; 
+export default EmployeeSignUpPage;
