@@ -1,5 +1,6 @@
 package com.servit.servit.controller;
 
+import com.servit.servit.dto.PendingApprovalsCountDTO;
 import com.servit.servit.dto.warranty.*;
 import com.servit.servit.entity.WarrantyEntity;
 import com.servit.servit.service.S3Service;
@@ -155,6 +156,23 @@ public class WarrantyController {
         } catch (Exception e) {
             logger.error("Failed to generate presigned URL for warranty photos: {}", photoUrl, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    /**
+     * GET /warranty/getPendingApprovals
+     * Returns the number of warranty tickets pending approval.
+     * Pending statuses: CHECKED_IN, ITEM_RETURNED, WAITING_FOR_WARRANTY_REPLACEMENT, WARRANTY_REPLACEMENT_ARRIVED
+     * Excludes: WARRANTY_REPLACEMENT_COMPLETED, DENIED
+     * @return JSON object: { "pendingApprovals": <count> }
+     */
+    @GetMapping("/getPendingApprovals")
+    public ResponseEntity<PendingApprovalsCountDTO> getPendingApprovals() {
+        try {
+            PendingApprovalsCountDTO dto = warrantyService.getPendingApprovalsCount();
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new PendingApprovalsCountDTO(0));
         }
     }
 }
