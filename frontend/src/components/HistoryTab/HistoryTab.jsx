@@ -59,6 +59,13 @@ const HistoryTab = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalConfig, setModalConfig] = useState({}); // { type, backupId, fileName, onConfirm }
 
+    // Search and filter state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterDateFrom, setFilterDateFrom] = useState("");
+    const [filterDateTo, setFilterDateTo] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
+
     const userRole = getUserRole();
     const isAdmin = userRole === 'ADMIN';
 
@@ -150,6 +157,25 @@ const HistoryTab = () => {
         fetchBackupList();
     };
 
+    // Filter and search logic
+    const filteredBackups = backupList.filter(({ fileName, backupDate }) => {
+        // Search by file name
+        const matchesSearch = fileName.toLowerCase().includes(searchQuery.toLowerCase());
+        // Filter by date range
+        let matchesDate = true;
+        if (filterDateFrom) {
+            matchesDate = matchesDate && new Date(backupDate) >= new Date(filterDateFrom);
+        }
+        if (filterDateTo) {
+            matchesDate = matchesDate && new Date(backupDate) <= new Date(filterDateTo);
+        }
+        return matchesSearch && matchesDate;
+    });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredBackups.length / pageSize);
+    const paginatedBackups = filteredBackups.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     if (listLoading && backupList.length === 0) {
         return <div className="text-center py-8"><p>Loading backup history...</p></div>;
     }
@@ -224,16 +250,48 @@ const HistoryTab = () => {
             {!listError && backupList.length > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200">
                     <div className="px-6 py-4 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-gray-800">Available Backups ({backupList.length})</h4>
-                            <div className="text-sm text-gray-500">
-                                {listLoading && <span className="italic">Updating...</span>}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-800">Available Backups ({filteredBackups.length})</h4>
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                                <input
+                                    type="text"
+                                    placeholder="Search by file name..."
+                                    value={searchQuery}
+                                    onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                />
+                                <input
+                                    type="date"
+                                    value={filterDateFrom}
+                                    onChange={e => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Filter from date"
+                                />
+                                <input
+                                    type="date"
+                                    value={filterDateTo}
+                                    onChange={e => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Filter to date"
+                                />
+                                <select
+                                    value={pageSize}
+                                    onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Page size"
+                                >
+                                    {[5, 10, 20, 50].map(size => (
+                                        <option key={size} value={size}>{size} / page</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>
 
                     <div className="divide-y divide-gray-200">
-                        {backupList.map(({ fileName, id, backupDate, size, presignedUrl }) => (
+                        {paginatedBackups.map(({ fileName, id, backupDate, size, presignedUrl }) => (
                             <div key={id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                     <div className="flex-1 min-w-0">
@@ -284,6 +342,22 @@ const HistoryTab = () => {
                             </div>
                         ))}
                     </div>
+                    {/* Pagination controls */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center py-4 gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50"
+                            >Prev</button>
+                            <span className="px-2">Page {currentPage} of {totalPages}</span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50"
+                            >Next</button>
+                        </div>
+                    )}
                 </div>
             )}
 
