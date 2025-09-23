@@ -5,6 +5,7 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
 import HistoryTab from "../../components/HistoryTab/HistoryTab.jsx";
 import api from '../../config/ApiConfig';
+import Toast from "../../components/Toast/Toast";
 
 const tabTitles = [
     'Schedule',
@@ -35,7 +36,10 @@ const BackUpPage = () => {
 
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState(null);
-    const [actionSuccessMessage, setActionSuccessMessage] = useState(null);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState("success");
+    const [toastS3Key, setToastS3Key] = useState(null);
 
     const navigate = useNavigate();
     const [tokenExpiredModal, setTokenExpiredModal] = useState(false);
@@ -46,16 +50,30 @@ const BackUpPage = () => {
     // Function to clear messages after a delay
     const clearMessages = () => {
         setActionError(null);
-        setActionSuccessMessage(null);
+        setShowToast(false);
+        setToastMessage("");
+        setToastS3Key(null);
     };
 
     const handleManualBackup = async () => {
         setActionLoading(true);
         setActionError(null);
-        setActionSuccessMessage(null);
+        setShowToast(false);
+        setToastMessage("");
+        setToastS3Key(null);
         try {
             const response = await api.post("/api/backup/now");
-            setActionSuccessMessage(response.data || "Backup created successfully.");
+            const data = response.data || "Backup created successfully.";
+            if (typeof data === "object" && data.message) {
+                setToastMessage(data.message);
+            } else {
+                setToastMessage(typeof data === "string" ? data : "Backup created successfully.");
+            }
+            if (typeof data === "object" && data.s3Key) {
+                setToastS3Key(data.s3Key);
+            }
+            setToastType("success");
+            setShowToast(true);
         } catch (err) {
             setActionError(err.response?.data || err.message);
         } finally {
@@ -116,19 +134,20 @@ const BackUpPage = () => {
                         <button onClick={() => setActionError(null)} className="ml-auto text-red-700 underline">Dismiss</button>
                     </div>
                 )}
-                {actionSuccessMessage && (
-                    <div className="mb-4 p-4 rounded-md bg-green-100 text-green-700 flex items-center">
-                        <CheckCircle2 size={20} className="mr-2 shrink-0" />
-                        <div>
-                            <span>{typeof actionSuccessMessage === 'string' ? actionSuccessMessage : actionSuccessMessage.message}</span>
-                            {typeof actionSuccessMessage === 'object' && actionSuccessMessage.s3Key && (
-                                <div className="mt-2 text-xs text-gray-700">
-                                    <strong>S3 Key:</strong> {actionSuccessMessage.s3Key}
-                                </div>
-                            )}
-                        </div>
-                        <button onClick={() => setActionSuccessMessage(null)} className="ml-auto text-green-700 underline">Dismiss</button>
-                    </div>
+                {showToast && (
+                    <Toast
+                        show={showToast}
+                        message={toastMessage}
+                        type={toastType}
+                        onClose={() => setShowToast(false)}
+                        duration={3500}
+                    >
+                        {toastS3Key && (
+                            <div className="mt-2 text-xs text-gray-700">
+                                <strong>S3 Key:</strong> {toastS3Key}
+                            </div>
+                        )}
+                    </Toast>
                 )}
 
                 {initialLoading ? (
