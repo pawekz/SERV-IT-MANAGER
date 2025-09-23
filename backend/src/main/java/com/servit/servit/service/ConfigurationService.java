@@ -5,6 +5,7 @@ import com.servit.servit.repository.SystemConfigurationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +32,20 @@ public class ConfigurationService {
 
     private final SystemConfigurationRepository systemConfigurationRepository;
 
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
+
+    @Value("${aws.s3.backup-prefix:backups/}")
+    private String backupPrefix;
+
     @Autowired
     public ConfigurationService(SystemConfigurationRepository systemConfigurationRepository) {
         this.systemConfigurationRepository = systemConfigurationRepository;
+    }
+
+    // Returns the S3 key for a given backup file (.sql only, always under backup/)
+    public String getS3BackupKey(String backupFileName) {
+        return "backup/" + backupFileName;
     }
 
     @Transactional(readOnly = true)
