@@ -3,13 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { HardDriveDownload, RotateCcw, Download, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
-import DestinationTab from "../../components/DestinationTab/DestinationTab.jsx";
 import HistoryTab from "../../components/HistoryTab/HistoryTab.jsx";
 import api from '../../config/ApiConfig';
 
 const tabTitles = [
     'Schedule',
-    'Destination & Storage',
     'Back Up History'
 ];
 
@@ -121,7 +119,14 @@ const BackUpPage = () => {
                 {actionSuccessMessage && (
                     <div className="mb-4 p-4 rounded-md bg-green-100 text-green-700 flex items-center">
                         <CheckCircle2 size={20} className="mr-2 shrink-0" />
-                        <span>{actionSuccessMessage}</span>
+                        <div>
+                            <span>{typeof actionSuccessMessage === 'string' ? actionSuccessMessage : actionSuccessMessage.message}</span>
+                            {typeof actionSuccessMessage === 'object' && actionSuccessMessage.s3Key && (
+                                <div className="mt-2 text-xs text-gray-700">
+                                    <strong>S3 Key:</strong> {actionSuccessMessage.s3Key}
+                                </div>
+                            )}
+                        </div>
                         <button onClick={() => setActionSuccessMessage(null)} className="ml-auto text-green-700 underline">Dismiss</button>
                     </div>
                 )}
@@ -153,7 +158,6 @@ const BackUpPage = () => {
 
                         <div className="p-6">
                             {activeTab === 'Schedule' && <ScheduleTab />}
-                            {activeTab === 'Destination & Storage' && <DestinationTab />}
                             {activeTab === 'Back Up History' && <HistoryTab />}
                         </div>
                     </div>

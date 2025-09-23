@@ -85,8 +85,15 @@ const HistoryTab = () => {
         setListLoading(true);
         setListError(null);
         try {
-            const response = await api.get("/api/backup/list");
-            setBackupList(response.data);
+            const response = await api.get("/api/backup/s3-list");
+            setBackupList(response.data.map(item => ({
+                fileName: item.fileName,
+                id: item.s3Key, // Use s3Key as unique id
+                backupDate: item.lastModified ? new Date(item.lastModified).toISOString() : null,
+                size: item.size,
+                presignedUrl: item.url,
+                s3Key: item.s3Key
+            })));
         } catch (err) {
             setListError(err.response?.data || err.message);
             setBackupList([]);
@@ -95,20 +102,17 @@ const HistoryTab = () => {
         }
     }, []);
 
-    // Function to clear messages after a delay
     const clearMessages = () => {
         setActionError(null);
         setActionSuccessMessage(null);
     };
 
-    // Helper to open modal for delete or restore
     const openConfirmModal = ({ type, backupId, fileName, onConfirm }) => {
         setModalConfig({ type, backupId, fileName, onConfirm });
         setModalOpen(true);
     };
     const closeModal = () => setModalOpen(false);
 
-    // Modified handlers to use modal
     const handleRestore = (backupId) => {
         openConfirmModal({
             type: 'restore',
@@ -125,43 +129,14 @@ const HistoryTab = () => {
         });
     };
 
-    // Actual API calls after modal confirm
-    const confirmRestore = async (backupId) => {
-        setActionLoading(true);
-        setActionError(null);
-        setActionSuccessMessage(null);
-        closeModal();
-        try {
-            const response = await api.post("/api/backup/restore", { backupId });
-            if (response.data && response.data.requireSignout) {
-                setActionSuccessMessage(response.data.message || "Restore successful. Signing out...");
-                setTimeout(() => {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/login';
-                }, 5000);
-            } else {
-                setActionSuccessMessage(response.data.message || "Restore successful.");
-            }
-        } catch (err) {
-            if (err.response && err.response.data && err.response.data.requireSignout) {
-                setActionError(err.response.data.message || "Restore failed. Signing out...");
-            } else {
-                setActionError(err.response?.data?.message || err.message);
-            }
-        } finally {
-            setActionLoading(false);
-            setTimeout(clearMessages, 7000);
-        }
-    };
-
     const confirmDelete = async (backupId, fileName) => {
         setActionLoading(true);
         setActionError(null);
         setActionSuccessMessage(null);
         closeModal();
         try {
-            await api.post('/api/backup/delete', { backupId });
-            setActionSuccessMessage('Backup deleted successfully.');
+            await api.post('/api/backup/s3-delete', { s3Key: backupId });
+            setActionSuccessMessage('S3 backup deleted successfully.');
             fetchBackupList();
         } catch (err) {
             setActionError(err.response?.data || err.message);
@@ -181,7 +156,6 @@ const HistoryTab = () => {
 
     return (
         <div className="space-y-6">
-            {/* Confirm Modal for Delete/Restore */}
             <ConfirmModal
                 open={modalOpen}
                 title={modalConfig.type === 'delete' ? 'Delete Backup' : 'Restore Backup'}
@@ -259,18 +233,32 @@ const HistoryTab = () => {
                     </div>
 
                     <div className="divide-y divide-gray-200">
-                        {backupList.map(({ fileName, id, backupDate }) => (
+                        {backupList.map(({ fileName, id, backupDate, size, presignedUrl }) => (
                             <div key={id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                     <div className="flex-1 min-w-0">
                                         <h5 className="font-medium text-gray-900 truncate">{fileName}</h5>
-                                        <div className="flex items-center mt-1 text-sm text-gray-500">
-                                            <Calendar size={14} className="mr-1" />
-                                            <span>{formatToLocal(backupDate)}</span>
+                                        <div className="flex items-center mt-1 text-sm text-gray-500 space-x-4">
+                                            <span className="flex items-center">
+                                                <Calendar size={14} className="mr-1" />
+                                                <span>{formatToLocal(backupDate)}</span>
+                                            </span>
+                                            <span className="flex items-center">
+                                                <Clock size={14} className="mr-1" />
+                                                <span>{size ? `${(size / (1024 * 1024)).toFixed(2)} MB` : 'N/A'}</span>
+                                            </span>
                                         </div>
                                     </div>
-
                                     <div className="flex items-center space-x-2 shrink-0">
+                                        <a
+                                            href={presignedUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center px-3 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                                            title="Download backup file"
+                                        >
+                                            Download
+                                        </a>
                                         <button
                                             onClick={() => handleRestore(id)}
                                             disabled={actionLoading}
@@ -280,7 +268,6 @@ const HistoryTab = () => {
                                             <RotateCcw size={16} className="mr-1" />
                                             Restore
                                         </button>
-                                        
                                         {isAdmin && (
                                             <button
                                                 onClick={() => handleDelete(id, fileName)}
@@ -314,4 +301,4 @@ const HistoryTab = () => {
     );
 };
 
-export default HistoryTab; 
+export default HistoryTab;
