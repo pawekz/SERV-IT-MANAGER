@@ -335,7 +335,7 @@ public class BackupService {
         try {
             s3Client.deleteObject(bucketName, s3Key);
         } catch (Exception e) {
-            throw new BackupOperationFailedException("Failed to delete S3 backup: " + s3Key, e);
+            throw new BackupOperationFailedException("Failed to delete backup: " + s3Key, e);
         }
     }
 }

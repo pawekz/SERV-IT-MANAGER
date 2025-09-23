@@ -145,7 +145,7 @@ const HistoryTab = () => {
         closeModal();
         try {
             await api.post('/api/backup/s3-delete', { s3Key: backupId });
-            setToastMessage('S3 backup deleted successfully.');
+            setToastMessage('Backup deleted successfully.');
             setShowToast(true);
             fetchBackupList();
         } catch (err) {

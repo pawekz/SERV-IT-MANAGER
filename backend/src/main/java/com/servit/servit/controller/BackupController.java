@@ -41,7 +41,7 @@ public class BackupController {
             // Optionally delete local file after upload
             try { java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get(localBackupPath)); } catch (Exception ex) { logger.warn("Could not delete local backup file: {}", localBackupPath); }
             Map<String, Object> result = new HashMap<>();
-            result.put("message", "Backup successful and uploaded to S3");
+            result.put("message", "Backup successfully created");
             result.put("s3Key", s3Key);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -153,7 +153,7 @@ public class BackupController {
         }
         try {
             backupService.deleteS3Backup(s3Key);
-            return ResponseEntity.ok("S3 backup deleted: " + s3Key);
+            return ResponseEntity.ok("Backup successfully deleted: " + s3Key);
         } catch (Exception e) {
             logger.error("Failed to delete S3 backup {}", s3Key, e);
             return ResponseEntity.status(500).body("Failed to delete S3 backup: " + e.getMessage());

@@ -42,8 +42,7 @@ public class ConfigurationService {
     public ConfigurationService(SystemConfigurationRepository systemConfigurationRepository) {
         this.systemConfigurationRepository = systemConfigurationRepository;
     }
-
-    // Returns the S3 key for a given backup file (.sql only, always under backup/)
+    
     public String getS3BackupKey(String backupFileName) {
         return "backup/" + backupFileName;
     }
