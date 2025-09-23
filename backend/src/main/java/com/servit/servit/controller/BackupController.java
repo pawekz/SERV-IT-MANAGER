@@ -9,9 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/backup")
@@ -34,19 +34,20 @@ public class BackupController {
     public ResponseEntity<?> initiateManualBackup() {
         try {
             logger.info("POST /api/backup/now received - initiating manual backup");
-            String backupPath = backupService.initiateManualBackup();
-            return ResponseEntity.ok("Backup successful: " + backupPath);
+            String localBackupPath = backupService.initiateManualBackup();
+            String backupFileName = java.nio.file.Paths.get(localBackupPath).getFileName().toString();
+            String s3Key = configurationService.getS3BackupKey(backupFileName);
+            backupService.uploadBackupToS3(localBackupPath, backupFileName); // Upload to S3 under backup/
+            // Optionally delete local file after upload
+            try { java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get(localBackupPath)); } catch (Exception ex) { logger.warn("Could not delete local backup file: {}", localBackupPath); }
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "Backup successfully created");
+            result.put("s3Key", s3Key);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             logger.error("Backup failed", e);
             return ResponseEntity.status(500).body("Backup failed: " + e.getMessage());
         }
-    }
-
-    @GetMapping("/list")
-    public ResponseEntity<List<Map<String, Object>>> listBackups() {
-        logger.info("GET /api/backup/list received - listing backups");
-        List<Map<String, Object>> backups = backupService.listAvailableBackups();
-        return ResponseEntity.ok(backups);
     }
 
     @PostMapping("/restore")
@@ -84,22 +85,6 @@ public class BackupController {
         }
         configurationService.setBackupPath(newPath);
         return ResponseEntity.ok(Map.of("path", newPath));
-    }
-
-    // Delete a specific backup file
-    @PostMapping("/delete")
-    public ResponseEntity<?> deleteBackup(@RequestBody Map<String, String> payload) {
-        String backupIdentifier = payload.get("backupId");
-        if (backupIdentifier == null || backupIdentifier.isBlank()) {
-            return ResponseEntity.badRequest().body("backupId is required");
-        }
-        try {
-            backupService.deleteBackup(backupIdentifier);
-            return ResponseEntity.ok("Backup deleted: " + backupIdentifier);
-        } catch (Exception e) {
-            logger.error("Failed to delete backup {}", backupIdentifier, e);
-            return ResponseEntity.status(500).body("Failed to delete backup: " + e.getMessage());
-        }
     }
 
     // Get current backup schedule
@@ -150,6 +135,28 @@ public class BackupController {
         } catch (Exception e) {
             logger.error("Failed to disable backup schedule", e);
             return ResponseEntity.status(500).body("Failed to disable backup schedule: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/s3-list")
+    public ResponseEntity<List<Map<String, Object>>> listS3Backups() {
+        logger.info("GET /api/backup/s3-list received - listing S3 backups");
+        List<Map<String, Object>> backups = backupService.listS3BackupsWithPresignedUrls();
+        return ResponseEntity.ok(backups);
+    }
+
+    @PostMapping("/s3-delete")
+    public ResponseEntity<?> deleteS3Backup(@RequestBody Map<String, String> payload) {
+        String s3Key = payload.get("s3Key");
+        if (s3Key == null || s3Key.isBlank()) {
+            return ResponseEntity.badRequest().body("s3Key is required");
+        }
+        try {
+            backupService.deleteS3Backup(s3Key);
+            return ResponseEntity.ok("Backup successfully deleted: " + s3Key);
+        } catch (Exception e) {
+            logger.error("Failed to delete S3 backup {}", s3Key, e);
+            return ResponseEntity.status(500).body("Failed to delete S3 backup: " + e.getMessage());
         }
     }
 }

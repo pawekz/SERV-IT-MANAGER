@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RotateCcw, Trash2, AlertCircle, CheckCircle2, History, Calendar, Clock } from "lucide-react";
 import api from '../../config/ApiConfig';
+import Toast from "../Toast/Toast";
 
 // Helper to decode JWT and check role
 function getUserRole() {
@@ -53,11 +54,19 @@ const HistoryTab = () => {
     const [listError, setListError] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState(null);
-    const [actionSuccessMessage, setActionSuccessMessage] = useState(null);
-    
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
     const [modalConfig, setModalConfig] = useState({}); // { type, backupId, fileName, onConfirm }
+
+    // Search and filter state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterDateFrom, setFilterDateFrom] = useState("");
+    const [filterDateTo, setFilterDateTo] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
 
     const userRole = getUserRole();
     const isAdmin = userRole === 'ADMIN';
@@ -85,8 +94,15 @@ const HistoryTab = () => {
         setListLoading(true);
         setListError(null);
         try {
-            const response = await api.get("/api/backup/list");
-            setBackupList(response.data);
+            const response = await api.get("/api/backup/s3-list");
+            setBackupList(response.data.map(item => ({
+                fileName: item.fileName,
+                id: item.s3Key, // Use s3Key as unique id
+                backupDate: item.lastModified ? new Date(item.lastModified).toISOString() : null,
+                size: item.size,
+                presignedUrl: item.url,
+                s3Key: item.s3Key
+            })));
         } catch (err) {
             setListError(err.response?.data || err.message);
             setBackupList([]);
@@ -95,20 +111,18 @@ const HistoryTab = () => {
         }
     }, []);
 
-    // Function to clear messages after a delay
     const clearMessages = () => {
         setActionError(null);
-        setActionSuccessMessage(null);
+        setShowToast(false);
+        setToastMessage("");
     };
 
-    // Helper to open modal for delete or restore
     const openConfirmModal = ({ type, backupId, fileName, onConfirm }) => {
         setModalConfig({ type, backupId, fileName, onConfirm });
         setModalOpen(true);
     };
     const closeModal = () => setModalOpen(false);
 
-    // Modified handlers to use modal
     const handleRestore = (backupId) => {
         openConfirmModal({
             type: 'restore',
@@ -125,43 +139,14 @@ const HistoryTab = () => {
         });
     };
 
-    // Actual API calls after modal confirm
-    const confirmRestore = async (backupId) => {
-        setActionLoading(true);
-        setActionError(null);
-        setActionSuccessMessage(null);
-        closeModal();
-        try {
-            const response = await api.post("/api/backup/restore", { backupId });
-            if (response.data && response.data.requireSignout) {
-                setActionSuccessMessage(response.data.message || "Restore successful. Signing out...");
-                setTimeout(() => {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/login';
-                }, 5000);
-            } else {
-                setActionSuccessMessage(response.data.message || "Restore successful.");
-            }
-        } catch (err) {
-            if (err.response && err.response.data && err.response.data.requireSignout) {
-                setActionError(err.response.data.message || "Restore failed. Signing out...");
-            } else {
-                setActionError(err.response?.data?.message || err.message);
-            }
-        } finally {
-            setActionLoading(false);
-            setTimeout(clearMessages, 7000);
-        }
-    };
-
     const confirmDelete = async (backupId, fileName) => {
         setActionLoading(true);
         setActionError(null);
-        setActionSuccessMessage(null);
         closeModal();
         try {
-            await api.post('/api/backup/delete', { backupId });
-            setActionSuccessMessage('Backup deleted successfully.');
+            await api.post('/api/backup/s3-delete', { s3Key: backupId });
+            setToastMessage('Backup deleted successfully.');
+            setShowToast(true);
             fetchBackupList();
         } catch (err) {
             setActionError(err.response?.data || err.message);
@@ -175,13 +160,54 @@ const HistoryTab = () => {
         fetchBackupList();
     };
 
+    const handleDownload = (fileName) => {
+        setToastMessage(`Download started for ${fileName}`);
+        setShowToast(true);
+    };
+
+    const confirmRestore = async (backupId) => {
+        setActionLoading(true);
+        setActionError(null);
+        closeModal();
+        try {
+            // Simulate restore API call (replace with actual API if available)
+            await api.post('/api/backup/restore', { s3Key: backupId });
+            setToastMessage(`System restored from backup.`);
+            setShowToast(true);
+            fetchBackupList();
+        } catch (err) {
+            setActionError(err.response?.data || err.message);
+        } finally {
+            setActionLoading(false);
+            setTimeout(clearMessages, 5000);
+        }
+    };
+
+    // Filter and search logic
+    const filteredBackups = backupList.filter(({ fileName, backupDate }) => {
+        // Search by file name
+        const matchesSearch = fileName.toLowerCase().includes(searchQuery.toLowerCase());
+        // Filter by date range
+        let matchesDate = true;
+        if (filterDateFrom) {
+            matchesDate = matchesDate && new Date(backupDate) >= new Date(filterDateFrom);
+        }
+        if (filterDateTo) {
+            matchesDate = matchesDate && new Date(backupDate) <= new Date(filterDateTo);
+        }
+        return matchesSearch && matchesDate;
+    });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredBackups.length / pageSize);
+    const paginatedBackups = filteredBackups.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     if (listLoading && backupList.length === 0) {
         return <div className="text-center py-8"><p>Loading backup history...</p></div>;
     }
 
     return (
         <div className="space-y-6">
-            {/* Confirm Modal for Delete/Restore */}
             <ConfirmModal
                 open={modalOpen}
                 title={modalConfig.type === 'delete' ? 'Delete Backup' : 'Restore Backup'}
@@ -193,6 +219,16 @@ const HistoryTab = () => {
                 confirmText={modalConfig.type === 'delete' ? 'Delete' : 'Restore'}
                 loading={actionLoading}
             />
+
+            {showToast && (
+                <Toast
+                    show={showToast}
+                    message={toastMessage}
+                    type="success"
+                    onClose={() => setShowToast(false)}
+                    duration={3000}
+                />
+            )}
 
             <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -214,13 +250,6 @@ const HistoryTab = () => {
                     <AlertCircle size={20} className="mr-2 shrink-0" />
                     <span>{actionError}</span>
                     <button onClick={() => setActionError(null)} className="ml-auto text-red-700 underline">Dismiss</button>
-                </div>
-            )}
-            {actionSuccessMessage && (
-                <div className="p-4 rounded-md bg-green-100 text-green-700 flex items-center">
-                    <CheckCircle2 size={20} className="mr-2 shrink-0" />
-                    <span>{actionSuccessMessage}</span>
-                    <button onClick={() => setActionSuccessMessage(null)} className="ml-auto text-green-700 underline">Dismiss</button>
                 </div>
             )}
 
@@ -250,27 +279,74 @@ const HistoryTab = () => {
             {!listError && backupList.length > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200">
                     <div className="px-6 py-4 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-gray-800">Available Backups ({backupList.length})</h4>
-                            <div className="text-sm text-gray-500">
-                                {listLoading && <span className="italic">Updating...</span>}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-800">Available Backups ({filteredBackups.length})</h4>
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                                <input
+                                    type="text"
+                                    placeholder="Search by file name..."
+                                    value={searchQuery}
+                                    onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                />
+                                <input
+                                    type="date"
+                                    value={filterDateFrom}
+                                    onChange={e => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Filter from date"
+                                />
+                                <input
+                                    type="date"
+                                    value={filterDateTo}
+                                    onChange={e => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Filter to date"
+                                />
+                                <select
+                                    value={pageSize}
+                                    onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                                    className="border rounded px-2 py-1 text-sm"
+                                    title="Page size"
+                                >
+                                    {[5, 10, 20, 50].map(size => (
+                                        <option key={size} value={size}>{size} / page</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>
 
                     <div className="divide-y divide-gray-200">
-                        {backupList.map(({ fileName, id, backupDate }) => (
+                        {paginatedBackups.map(({ fileName, id, backupDate, size, presignedUrl }) => (
                             <div key={id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                     <div className="flex-1 min-w-0">
                                         <h5 className="font-medium text-gray-900 truncate">{fileName}</h5>
-                                        <div className="flex items-center mt-1 text-sm text-gray-500">
-                                            <Calendar size={14} className="mr-1" />
-                                            <span>{formatToLocal(backupDate)}</span>
+                                        <div className="flex items-center mt-1 text-sm text-gray-500 space-x-4">
+                                            <span className="flex items-center">
+                                                <Calendar size={14} className="mr-1" />
+                                                <span>{formatToLocal(backupDate)}</span>
+                                            </span>
+                                            <span className="flex items-center">
+                                                <Clock size={14} className="mr-1" />
+                                                <span>{size ? `${(size / (1024 * 1024)).toFixed(2)} MB` : 'N/A'}</span>
+                                            </span>
                                         </div>
                                     </div>
-
                                     <div className="flex items-center space-x-2 shrink-0">
+                                        <a
+                                            href={presignedUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center px-3 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                                            title="Download backup file"
+                                            onClick={() => handleDownload(fileName)}
+                                        >
+                                            Download
+                                        </a>
                                         <button
                                             onClick={() => handleRestore(id)}
                                             disabled={actionLoading}
@@ -280,7 +356,6 @@ const HistoryTab = () => {
                                             <RotateCcw size={16} className="mr-1" />
                                             Restore
                                         </button>
-                                        
                                         {isAdmin && (
                                             <button
                                                 onClick={() => handleDelete(id, fileName)}
@@ -297,6 +372,22 @@ const HistoryTab = () => {
                             </div>
                         ))}
                     </div>
+                    {/* Pagination controls */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center py-4 gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50"
+                            >Prev</button>
+                            <span className="px-2">Page {currentPage} of {totalPages}</span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50"
+                            >Next</button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -314,4 +405,4 @@ const HistoryTab = () => {
     );
 };
 
-export default HistoryTab; 
+export default HistoryTab;

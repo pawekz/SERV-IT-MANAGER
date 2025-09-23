@@ -49,23 +49,27 @@ public class ScheduledBackupService implements SchedulingConfigurer {
                     this::performScheduledBackup,
                     new CronTrigger(cronExpression)
                 );
-                logger.info("Scheduled backup task configured with CRON: {}", cronExpression);
             } catch (Exception e) {
                 logger.error("Failed to schedule backup task with CRON: {}", cronExpression, e);
             }
-        } else {
-            logger.info("Backup scheduling is disabled");
         }
     }
 
-    private void performScheduledBackup() {
-        try {
-            logger.info("Starting scheduled backup at {}", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            String backupPath = backupService.initiateManualBackup();
-            logger.info("Scheduled backup completed successfully: {}", backupPath);
-        } catch (Exception e) {
-            logger.error("Scheduled backup failed", e);
-        }
+    // Schedules backup and uploads to S3
+    public void performScheduledBackup() {
+        String backupFileName = generateBackupFileName();
+        String localFilePath = backupService.initiateManualBackup(); // Only .sql file is created
+        String s3Key = configurationService.getS3BackupKey(backupFileName); // Always backup/<filename>.sql
+        backupService.uploadBackupToS3(localFilePath, backupFileName); // Uploads .sql file to S3 under backup/
+        logger.info("Backup .sql uploaded to S3: {}", s3Key);
+    }
+
+    // Generates a backup file name in the format SERVIT-yyyyMMdd-HHmmss.sql
+    private String generateBackupFileName() {
+        LocalDateTime now = LocalDateTime.now();
+        String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+        return "SERVIT-" + date + "-" + time + ".sql";
     }
 
     public void updateSchedule() {
@@ -79,4 +83,4 @@ public class ScheduledBackupService implements SchedulingConfigurer {
     public String getCurrentSchedule() {
         return configurationService.getBackupScheduleCron();
     }
-} 
+}
