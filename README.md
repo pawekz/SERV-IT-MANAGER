@@ -172,7 +172,6 @@ All ticket-related files (images, signatures, PDFs) are now stored in a configur
 ### How to Configure
 
 1. **Via Admin UI:**
-   - Go to the "Destination" tab in the admin panel.
    - Set the desired server-side path for ticket files in the "Ticket Files Directory Configuration" section.
    - The backend will use this directory for all new uploads and file serving.
 
