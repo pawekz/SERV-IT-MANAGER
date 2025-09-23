@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RotateCcw, Trash2, AlertCircle, CheckCircle2, History, Calendar, Clock } from "lucide-react";
 import api from '../../config/ApiConfig';
+import Toast from "../Toast/Toast";
 
 // Helper to decode JWT and check role
 function getUserRole() {
@@ -53,8 +54,9 @@ const HistoryTab = () => {
     const [listError, setListError] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState(null);
-    const [actionSuccessMessage, setActionSuccessMessage] = useState(null);
-    
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
     const [modalConfig, setModalConfig] = useState({}); // { type, backupId, fileName, onConfirm }
@@ -111,7 +113,8 @@ const HistoryTab = () => {
 
     const clearMessages = () => {
         setActionError(null);
-        setActionSuccessMessage(null);
+        setShowToast(false);
+        setToastMessage("");
     };
 
     const openConfirmModal = ({ type, backupId, fileName, onConfirm }) => {
@@ -139,11 +142,11 @@ const HistoryTab = () => {
     const confirmDelete = async (backupId, fileName) => {
         setActionLoading(true);
         setActionError(null);
-        setActionSuccessMessage(null);
         closeModal();
         try {
             await api.post('/api/backup/s3-delete', { s3Key: backupId });
-            setActionSuccessMessage('S3 backup deleted successfully.');
+            setToastMessage('S3 backup deleted successfully.');
+            setShowToast(true);
             fetchBackupList();
         } catch (err) {
             setActionError(err.response?.data || err.message);
@@ -155,6 +158,29 @@ const HistoryTab = () => {
 
     const handleRefresh = () => {
         fetchBackupList();
+    };
+
+    const handleDownload = (fileName) => {
+        setToastMessage(`Download started for ${fileName}`);
+        setShowToast(true);
+    };
+
+    const confirmRestore = async (backupId) => {
+        setActionLoading(true);
+        setActionError(null);
+        closeModal();
+        try {
+            // Simulate restore API call (replace with actual API if available)
+            await api.post('/api/backup/restore', { s3Key: backupId });
+            setToastMessage(`System restored from backup.`);
+            setShowToast(true);
+            fetchBackupList();
+        } catch (err) {
+            setActionError(err.response?.data || err.message);
+        } finally {
+            setActionLoading(false);
+            setTimeout(clearMessages, 5000);
+        }
     };
 
     // Filter and search logic
@@ -194,6 +220,16 @@ const HistoryTab = () => {
                 loading={actionLoading}
             />
 
+            {showToast && (
+                <Toast
+                    show={showToast}
+                    message={toastMessage}
+                    type="success"
+                    onClose={() => setShowToast(false)}
+                    duration={3000}
+                />
+            )}
+
             <div className="flex items-center justify-between">
                 <div className="flex items-center">
                     <History size={20} className="mr-2 text-blue-600" />
@@ -214,13 +250,6 @@ const HistoryTab = () => {
                     <AlertCircle size={20} className="mr-2 shrink-0" />
                     <span>{actionError}</span>
                     <button onClick={() => setActionError(null)} className="ml-auto text-red-700 underline">Dismiss</button>
-                </div>
-            )}
-            {actionSuccessMessage && (
-                <div className="p-4 rounded-md bg-green-100 text-green-700 flex items-center">
-                    <CheckCircle2 size={20} className="mr-2 shrink-0" />
-                    <span>{actionSuccessMessage}</span>
-                    <button onClick={() => setActionSuccessMessage(null)} className="ml-auto text-green-700 underline">Dismiss</button>
                 </div>
             )}
 
@@ -314,6 +343,7 @@ const HistoryTab = () => {
                                             rel="noopener noreferrer"
                                             className="flex items-center px-3 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                                             title="Download backup file"
+                                            onClick={() => handleDownload(fileName)}
                                         >
                                             Download
                                         </a>
