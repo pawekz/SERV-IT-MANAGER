@@ -26,7 +26,9 @@ const ScheduleTab = () => {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     useEffect(() => {
-        fetchCurrentSchedule();
+        (async () => {
+            await fetchCurrentSchedule();
+        })();
     }, []);
 
     const fetchCurrentSchedule = async () => {
@@ -320,8 +322,8 @@ const ScheduleTab = () => {
                             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                            Format: "second minute hour day month day-of-week". 
-                            <a href="https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions" 
+                            Format: "second minute hour day month day-of-week".
+                            <a href="https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions"
                                target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
                                 Learn more about CRON expressions
                             </a>
