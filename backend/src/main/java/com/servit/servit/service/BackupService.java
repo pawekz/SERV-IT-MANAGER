@@ -147,7 +147,16 @@ public class BackupService {
         String currentTime = now.format(DateTimeFormatter.ofPattern("HHmmss"));
         String backupFileName = "SERVIT-" + currentDate + "-" + currentTime + ".sql";
         String basePath = configurationService.getBackupPath();
-        Path backupFilePath = Paths.get(basePath, backupFileName);
+        Path backupDir = Paths.get(basePath);
+        Path backupFilePath = backupDir.resolve(backupFileName); // Declare here for wider scope
+        try {
+            if (!Files.exists(backupDir)) {
+                Files.createDirectories(backupDir);
+            }
+        } catch (IOException e) {
+            logger.error("Failed to create backup directory: {}", backupDir, e);
+            throw new BackupOperationFailedException("Failed to create backup directory: " + backupDir, e);
+        }
 
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://" + dbUrl.host + ":" + dbUrl.port + "/" + dbUrl.databaseName,
@@ -175,10 +184,11 @@ public class BackupService {
                 }
             }
             printWriter.println("SET FOREIGN_KEY_CHECKS=1;");
-            return backupFilePath.toString();
         } catch (IOException | SQLException e) {
+            logger.error("Backup process failed.", e);
             throw new BackupOperationFailedException("Backup process failed.", e);
         }
+        return backupFilePath.toString(); // Now accessible here
     }
 
     private void backupTableDataOnly(Connection connection, String tableName, PrintWriter printWriter) throws SQLException {
