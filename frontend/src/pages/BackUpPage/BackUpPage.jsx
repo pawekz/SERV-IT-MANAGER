@@ -95,7 +95,7 @@ const BackUpPage = () => {
     }, [navigate]);
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
             {/* Token Expired Modal */}
             {tokenExpiredModal && (
                 <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
@@ -105,8 +105,10 @@ const BackUpPage = () => {
                     </div>
                 </div>
             )}
-            <Sidebar activePage="backup" />
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'backup'}/>
+            </div>
+            <div className="flex-1 p-8 bg-gray-50">
                 <div className="flex flex-wrap justify-between items-center mb-6">
                     <div className="mb-4 sm:mb-0">
                         <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Recovery</h1>

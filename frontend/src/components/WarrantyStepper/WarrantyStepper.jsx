@@ -5,7 +5,7 @@ const steps = [
     { key: "ITEM_RETURNED", icon: "box", label: "Item Returned" },
     { key: "WAITING_FOR_WARRANTY_REPLACEMENT", icon: "clock", label: "Awaiting Replacement" },
     { key: "WARRANTY_REPLACEMENT_ARRIVED", icon: "truck", label: "Replacement Arrived" },
-    { key: "WARRANTY_REPLACEMENT_COMPLETED", icon: "check", label: "Completed" },
+    { key: ["WARRANTY_REPLACEMENT_COMPLETED", "DENIED"], icon: "check", label: "Completed" },
 ];
 
 const icons = {
@@ -55,7 +55,8 @@ const icons = {
 };
 
 const WarrantyStepper = ({step}) => {
-    const currentIndex = steps.findIndex((s) => s.key === step);
+    const currentIndex = steps.findIndex((s) =>
+        Array.isArray(s.key) ? s.key.includes(step) : s.key === step);
 
     return (
 

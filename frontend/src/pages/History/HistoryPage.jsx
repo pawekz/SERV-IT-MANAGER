@@ -125,11 +125,13 @@ const HistoryPage = () => {
         : tickets;
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
-            <Sidebar activePage="history" />
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'history'}/>
+            </div>
 
             {/* Main Content */}
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+            <div className="flex-1 p-8 bg-gray-50">
                 {/* TEMP: Button to show DeviceCard for layout preview
         <div className="mb-4">
           <button

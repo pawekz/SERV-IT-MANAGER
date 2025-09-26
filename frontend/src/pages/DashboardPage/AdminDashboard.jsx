@@ -514,18 +514,18 @@ const AdminDashboard = () => {
         });
 
     return (
-        <div className="flex min-h-screen">
+        <>
+
+
+
+        <div className="flex min-h-screen flex-col md:flex-row">
             {/* Custom Sidebar Component */}
-            <Sidebar  activePage={'dashboard'}/>
-
-
-            {/*to seperate the sidebar and the main content*/}
-            <div className="w-60  bg-gray-50 shadow-md">
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'dashboard'} />
             </div>
 
-
             {/* Main Content Area */}
-            <div className="flex-1 bg-gray-50">
+            <div className="flex-1 bg-gray-50 ">
                 {/* Header with Search and User Menu */}
                 <div className="bg-white px-8 py-4 flex justify-between items-center border-b border-gray-200">
                     <div>
@@ -751,6 +751,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
         </div>
+        </>
     )
 }
 

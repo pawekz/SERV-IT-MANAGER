@@ -313,12 +313,14 @@ const UserManagement = () => {
 
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
 
-            <Sidebar activePage={"usermanagement"}/>
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'usermanagement'}/>
+            </div>
 
             {/* Main Content */}
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+            <div className="flex-1 p-8 bg-gray-50">
                 <div className="mb-8">
                     <h1 className="text-3xl font-semibold text-gray-800 mb-2">User Management</h1>
                     <p className="text-gray-600 text-base max-w-3xl">

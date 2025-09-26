@@ -188,10 +188,10 @@ const TechnicianDashboard = () => {
     };
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen flex-col md:flex-row">
             {/* Custom Sidebar Component */}
 
-            <div className="w-60 bg-gray-50 shadow-md">
+            <div className="w-full md:w-[250px] bg-gray-50 shadow-md">
                 <Sidebar  activePage={'dashboard'}/>
             </div>
 
