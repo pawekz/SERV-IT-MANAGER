@@ -836,13 +836,15 @@ const Inventory = () => {
     );
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
             {/* Sidebar */}
-            <Sidebar activePage={"inventory"}/>
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'inventory'}/>
+            </div>
 
 
             {/* Main Content */}
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+            <div className="flex-1 p-8 bg-gray-50">
                 <div className="px-10 py-8">
                     {/* Header with enhanced controls */}
                     <div className="mb-6 flex justify-between items-center">

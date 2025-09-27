@@ -11,18 +11,19 @@ import {
     FolderClock,
     Inbox,
     FileClock,
+    Menu,X
 } from 'lucide-react';
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [isOpen, setIsOpen] = useState(false);
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
     };
+    const toggleSidebar = () => setIsOpen(prev => !prev);
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -40,6 +41,7 @@ const Sidebar = ({ activePage }) => {
 
     const customerLinks = (
         <>
+
             <h2 className="text-xs font-semibold text-gray-500 px-6 mb-2">MAIN</h2>
             <li className="mb-1">
                 <Link to="/dashboard" className={linkClass('dashboard')}>
@@ -165,8 +167,29 @@ const Sidebar = ({ activePage }) => {
     );
 
     return (
-        <div className="fixed w-[250px] bg-white border-r border-gray-200 flex flex-col h-screen z-10">
-            <div className="p-6 border-b border-gray-200">
+        <>
+            {/* Mobile top bar */}
+            <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200">
+                {/* Left side: menu button */}
+                <button onClick={toggleSidebar} className="mr-3">
+                    {isOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+
+                {/* Center: logo */}
+                <h1 className="text-xl font-bold text-gray-800 flex-1 text-center">
+                    IO<span className="text-[#33e407]">CONNECT</span>
+                </h1>
+            </div>
+
+
+            {/* Sidebar */}
+            <div
+                className={`fixed top-0 left-0 w-[250px] h-screen bg-white border-r border-gray-200 flex flex-col z-20 
+                transform transition-transform duration-300
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                md:translate-x-0`}
+            >
+            <div className="p-5 pb-4 border-b border-gray-200">
                 <h1 className="text-2xl font-bold text-gray-800">
                     IO<span className="text-[#33e407]">CONNECT</span>
                 </h1>
@@ -220,6 +243,7 @@ const Sidebar = ({ activePage }) => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 

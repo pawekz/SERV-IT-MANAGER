@@ -194,9 +194,12 @@ const RepairQueue = () => {
     };
 
     return (
-        <div className="flex-1 overflow-auto">
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'repair'}/>
+            </div>
 
-            <Sidebar activePage={'repair'}/>
+        <div className="flex-1 overflow-auto">
 
             <header className="bg-white shadow-sm p-4">
                 <div className="flex justify-between items-center">
@@ -219,13 +222,9 @@ const RepairQueue = () => {
 
 
             {/*Main Content */}
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
 
 
-
-            {/*<Sidebar activePage="repair" />*/}
-
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
+            <div className="flex-1 p-8 bg-gray-50">
                 <div className="flex justify-between">
                     <div className="mb-4">
                         <h1 className="text-3xl font-semibold text-gray-800 mb-2">Repair Queue Dashboard</h1>
@@ -420,6 +419,7 @@ const RepairQueue = () => {
         </div>
 
         </div>
+
     );
 };
 

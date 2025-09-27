@@ -246,19 +246,22 @@ const WarrantyRequestPage = () => {
     };
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
 
-            <Sidebar activePage="warranty" />
+            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+                <Sidebar activePage={'warranty'}/>
+            </div>
 
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-                    <div className="mb-4">
-                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Warranty Return Request (RMA)</h1>
+
+            <div className="flex-1  ">
+                    <div className=" px-10 py-10 ">
+                        <h1 className="text-3xl font-semibold text-gray-800 mb-1">Warranty Return Request (RMA)</h1>
                         <p className="text-gray-600 text-base max-w-3xl">
                             Check warranty left and warranty return request status for your devices.
                         </p>
                     </div>
                 <div className="flex justify-between">
-                    <div className="w-full">
+                    <div className="w-full p-10">
                         {loading ? (
                             <div className="text-center py-8">
                                 <p>Loading warranty requests...</p>
@@ -297,7 +300,7 @@ const WarrantyRequestPage = () => {
 
                                                 <input
                                                     type="text"
-                                                    className="text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                                    className="text-sm px-3 py-1 border w-full max-w-md border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
                                                     placeholder={`Search by ${filterByLabel}`}
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -322,7 +325,7 @@ const WarrantyRequestPage = () => {
                                                             <div className="mr-4 flex items-start">{getProductIcon(request.deviceName)}</div>
                                                             <div>
                                                                 <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                                    {request.serialNumber}
+                                                                    {request.warrantyNumber}
                                                                 </h2>
                                                                 <p className="text-sm text-gray-600">
                                                                     <strong>Device Name:</strong> {request.deviceName}
@@ -386,7 +389,7 @@ const WarrantyRequestPage = () => {
                                         </div>
                                     </div>
 
-                                        <div className="lg:w-[30%] w-full bg-white rounded-lg shadow-md p-6 h-fit">
+                                        <div className="lg:w-[30%] w-full bg-white rounded-lg shadow-md p-6 h-fit ">
                                             <CheckWarranty
                                                 onSuccess={() => {
                                                 if (role === "customer") {
@@ -424,14 +427,14 @@ const WarrantyRequestPage = () => {
                                                 />
                                             </div>
                                         </div>
-                                    {warranty.filter(w => w.status === "WARRANTY_REPLACEMENT_COMPLETED").length === 0 ? (
+                                    {warranty.filter(w => w.status === "DENIED" ).length === 0 ? (
                                         <p className="text-center text-gray-400">
                                             No resolved warranties found. <br /> Use the checker to verify serial number and start a warranty request.
                                         </p>
                                     ) : (
                                         <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-3">
                                             {warranty
-                                                .filter((warranty) => warranty.status === "WARRANTY_REPLACEMENT_COMPLETED" )
+                                                .filter((warranty) => warranty.status === "WARRANTY_REPLACEMENT_COMPLETED" || warranty.status === "DENIED")
                                                 .map((request,index) => (
                                                     <div
                                                         key={index}
