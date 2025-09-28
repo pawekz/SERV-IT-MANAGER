@@ -291,10 +291,9 @@ const RepairQueue = () => {
 
                                                         {/*<Images className="text-[#10B981] size-60" />*/}
 
-
-
-                                                        <p className="text-[12px]">Ticket Number</p>
+                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
                                                     </div>
+                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
                                                     <div className="my-2 h-px bg-[#25D482]">
                                                     </div>
 
@@ -361,9 +360,10 @@ const RepairQueue = () => {
                                                 >
                                                     <div className="mr-4 flex object-center">
                                                         <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
-                                                        <p className="text-[12px]">Ticket Number</p>
+                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
 
                                                     </div>
+                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
                                                     <div className="my-2 h-px bg-[#25D482]"></div>
 
                                                     <div>
