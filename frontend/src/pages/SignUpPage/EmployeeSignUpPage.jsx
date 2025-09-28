@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
+import api from '../../config/ApiConfig.jsx';
 
 // Employee Onboarding Page – accessed via emailed link.
 const EmployeeSignUpPage = () => {
@@ -78,10 +79,10 @@ const EmployeeSignUpPage = () => {
         setCodeError('');
         setCodeLoading(true);
         try {
-            await api.post('/user/verifyOnboardingCode', { email, code: onboardingCode });
+            await api.post('/user/verifyOnboardingCode', { email, onboardingCode });
             setStep(2);
         } catch (err) {
-            setCodeError(err.response?.data?.message || 'Code verification failed.');
+            setCodeError(err.response?.data || err.message || 'Code verification failed.');
         } finally {
             setCodeLoading(false);
         }
@@ -105,19 +106,11 @@ const EmployeeSignUpPage = () => {
         }
         setPwLoading(true);
         try {
-            const res = await fetch(`${window.__API_BASE__}/user/completeOnboarding`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, onboardingCode, password })
-            });
-            const txt = await res.text();
-            if (!res.ok) {
-                throw new Error(txt || 'Failed to complete onboarding');
-            }
+            await api.post('/user/completeOnboarding', { email, onboardingCode, password });
             showToast('Account activated! Redirecting to login...', 'success');
             setTimeout(() => navigate('/login/staff'), 3000);
         } catch (err) {
-            setPwError(err.message);
+            setPwError(err.response?.data || err.message || 'Failed to complete onboarding');
         } finally {
             setPwLoading(false);
         }
