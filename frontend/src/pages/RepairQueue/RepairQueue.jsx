@@ -259,9 +259,9 @@ const RepairQueue = () => {
                                     </div>
                                     {role !== "customer" && (
                                         <Link to="/newrepair">
-                                            <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
-                                                <Plus className="w-5 h-5 mr-1" />
-                                                Add Ticket
+                                            <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                                <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                <span className="text-sm sm:text-base">Add Ticket</span>
                                             </button>
                                         </Link>
                                     )}
