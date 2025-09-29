@@ -238,96 +238,56 @@ const AccountInformation = () => {
 
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
 
-                    <div className="px-10 py-8">
-                        {loading ? (
-                            <div className="text-center py-8">
-                                <p>Loading account information...</p>
-                            </div>
-                        ) : error ? (
-                            <div className="text-center py-8 text-red-500">
-                                <p>{error}</p>
-                                <button
-                                    onClick={() => window.location.reload()}
-                                    className="mt-4 text-blue-500 underline"
-                                >
-                                    Try Again
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                <section className="mb-10">
-                                    <h2 className="text-xl font-semibold text-gray-800 mb-6">Account Information</h2>
+                <div className="px-10 py-8">
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <p>Loading account information...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-8 text-red-500">
+                            <p>{error}</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-4 text-blue-500 underline"
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <section className="mb-10">
+                                <h2 className="text-xl font-semibold text-gray-800 mb-6">Account Information</h2>
 
-                                    <div className="flex items-center gap-6 md:flex-row flex-col md:text-left text-center">
-                                        <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-4xl text-gray-400"
-                                            style={{ border: "2px solid rgba(51, 228, 7, 0.2)" }}>
-                                            <span>{getInitials()}</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                                {`${userData.firstName} ${userData.lastName}`}
-                                            </h3>
-                                            <p className="text-gray-600 mb-4">{userData.email}</p>
-                                            {/*<button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">*/}
-                                            {/*    Change Profile Picture*/}
-                                            {/*</button>*/}
-                                        </div>
+                                <div className="flex items-center gap-6 md:flex-row flex-col md:text-left text-center">
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-4xl text-gray-400"
+                                         style={{ border: "2px solid rgba(51, 228, 7, 0.2)" }}>
+                                        <span>{getInitials()}</span>
                                     </div>
-                                </section>
-
-                                <section className="mb-10">
-                                    <h2 className="text-xl font-semibold text-gray-800 mb-6">Personal Information</h2>
-
-                                    <div className="flex flex-col md:flex-row gap-6 mb-6">
-                                        <div className="flex-1 mb-6 md:mb-0">
-                                            <label htmlFor="firstName" className="block text-sm font-medium text-gray-600 mb-2">
-                                                First Name
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="firstName"
-                                                name="firstName"
-                                                value={userData.firstName}
-                                                readOnly
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
-                                                style={{
-                                                    "&:focus": {
-                                                        borderColor: "#33e407",
-                                                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label htmlFor="lastName" className="block text-sm font-medium text-gray-600 mb-2">
-                                                Last Name
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="lastName"
-                                                name="lastName"
-                                                value={userData.lastName}
-                                                readOnly
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
-                                                style={{
-                                                    "&:focus": {
-                                                        borderColor: "#33e407",
-                                                        boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
-                                                    }
-                                                }}
-                                            />
-                                        </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                                            {`${userData.firstName} ${userData.lastName}`}
+                                        </h3>
+                                        <p className="text-gray-600 mb-4">{userData.email}</p>
+                                        {/*<button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">*/}
+                                        {/*    Change Profile Picture*/}
+                                        {/*</button>*/}
                                     </div>
+                                </div>
+                            </section>
 
-                                    <div className="mb-6">
-                                        <label htmlFor="username" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Username
+                            <section className="mb-10">
+                                <h2 className="text-xl font-semibold text-gray-800 mb-6">Personal Information</h2>
+
+                                <div className="flex flex-col md:flex-row gap-6 mb-6">
+                                    <div className="flex-1 mb-6 md:mb-0">
+                                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-600 mb-2">
+                                            First Name
                                         </label>
                                         <input
                                             type="text"
-                                            id="username"
-                                            name="username"
-                                            value={userData.username}
+                                            id="firstName"
+                                            name="firstName"
+                                            value={userData.firstName}
                                             readOnly
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
                                             style={{
@@ -338,16 +298,15 @@ const AccountInformation = () => {
                                             }}
                                         />
                                     </div>
-
-                                    <div className="mb-6">
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-2">
-                                            Email Address
+                                    <div className="flex-1">
+                                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-600 mb-2">
+                                            Last Name
                                         </label>
                                         <input
-                                            type="email"
-                                            id="email"
-                                            name="email"
-                                            value={userData.email}
+                                            type="text"
+                                            id="lastName"
+                                            name="lastName"
+                                            value={userData.lastName}
                                             readOnly
                                             className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
                                             style={{
@@ -358,51 +317,92 @@ const AccountInformation = () => {
                                             }}
                                         />
                                     </div>
-
-                                    {/*Phone number change this later john to phone and replace the email for phone*/}
-                                    <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
-                                        <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
-                                            <img
-                                                src="https://flagcdn.com/16x12/ph.png"
-                                                alt="Philippine flag"
-                                                className="mr-2 w-5 h-auto"
-                                            />
-                                            <span className="text-sm text-gray-600">+63</span>
-                                        </div>
-                                        <input
-                                            maxLength={13}
-                                            type="tel"
-                                            id="phoneNumber"
-                                            value={userData.phoneNumber}
-                                            className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
-                                            placeholder="905 123 4567"
-                                            required
-                                        />
-                                    </div>
-                                </section>
-
-                                <div className="flex md:flex-row flex-col-reverse justify-end gap-4 mb-6">
-                                    <button
-                                        onClick={handlePasswordRedirect}
-                                        className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#17A2B8] hover:bg-[#138496]">
-                                        Change Password
-                                    </button>
-
-                                    <button
-                                        onClick={handleEditClick}
-                                        className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#33e407] hover:bg-[#2bc706]">
-                                        Edit Profile
-                                    </button>
                                 </div>
-                            </>
-                        )}
 
-                        <div className="text-center mt-4">
-                            <Link to="#" className="font-medium hover:underline" style={{ color: "#33e407", "&:hover": { color: "#2bc706" } }}>
-                                ← Back to Dashboard
-                            </Link>
-                        </div>
+                                <div className="mb-6">
+                                    <label htmlFor="username" className="block text-sm font-medium text-gray-600 mb-2">
+                                        Username
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="username"
+                                        name="username"
+                                        value={userData.username}
+                                        readOnly
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
+                                        style={{
+                                            "&:focus": {
+                                                borderColor: "#33e407",
+                                                boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
+                                            }
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="mb-6">
+                                    <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-2">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        value={userData.email}
+                                        readOnly
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-800 font-normal focus:outline-none"
+                                        style={{
+                                            "&:focus": {
+                                                borderColor: "#33e407",
+                                                boxShadow: "0 0 0 2px rgba(51, 228, 7, 0.1)"
+                                            }
+                                        }}
+                                    />
+                                </div>
+
+                                {/*Phone number change this later john to phone and replace the email for phone*/}
+                                <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                    <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                        <img
+                                            src="https://flagcdn.com/16x12/ph.png"
+                                            alt="Philippine flag"
+                                            className="mr-2 w-5 h-auto"
+                                        />
+                                        <span className="text-sm text-gray-600">+63</span>
+                                    </div>
+                                    <input
+                                        maxLength={13}
+                                        type="tel"
+                                        id="phoneNumber"
+                                        value={userData.phoneNumber}
+                                        className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                        placeholder="905 123 4567"
+                                        required
+                                    />
+                                </div>
+                            </section>
+
+                            <div className="flex md:flex-row flex-col-reverse justify-end gap-4 mb-6">
+                                <button
+                                    onClick={handlePasswordRedirect}
+                                    className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#17A2B8] hover:bg-[#138496]">
+                                    Change Password
+                                </button>
+
+                                <button
+                                    onClick={handleEditClick}
+                                    className="py-3 px-6 rounded-md font-medium transition-all w-full md:w-auto text-white bg-[#33e407] hover:bg-[#2bc706]">
+                                    Edit Profile
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="text-center mt-4">
+                        <Link to="#" className="font-medium hover:underline" style={{ color: "#33e407", "&:hover": { color: "#2bc706" } }}>
+                            ← Back to Dashboard
+                        </Link>
                     </div>
+                </div>
             </div>
 
 
@@ -484,28 +484,28 @@ const AccountInformation = () => {
                                 <label htmlFor="edit-phonenumber" className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone Number
                                 </label>
-                            <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
-                                <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
-                                    <img
-                                        src="https://flagcdn.com/16x12/ph.png"
-                                        alt="Philippine flag"
-                                        className="mr-2 w-5 h-auto"
+                                <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#33e407] focus-within:ring-1 focus-within:ring-[#33e407] transition-colors overflow-hidden">
+                                    <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
+                                        <img
+                                            src="https://flagcdn.com/16x12/ph.png"
+                                            alt="Philippine flag"
+                                            className="mr-2 w-5 h-auto"
+                                        />
+                                        <span className="text-sm text-gray-600">+63</span>
+                                    </div>
+                                    <input
+                                        maxLength={10}
+                                        type="text"
+                                        id="phoneNumber"
+                                        name="phoneNumber"
+                                        value={editFormData.phoneNumber}
+                                        onChange={handleInputChange}
+                                        className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
+                                        placeholder="9051234567"
+                                        required
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                     />
-                                    <span className="text-sm text-gray-600">+63</span>
-                                </div>
-                                <input
-                                    maxLength={10}
-                                    type="text"
-                                    id="phoneNumber"
-                                    name="phoneNumber"
-                                    value={editFormData.phoneNumber}
-                                    onChange={handleInputChange}
-                                    className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
-                                    placeholder="9051234567"
-                                    required
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                />
                                 </div>
                             </div>
                             <div>

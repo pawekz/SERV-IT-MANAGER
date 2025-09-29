@@ -286,9 +286,9 @@ const WarrantyRequestPage = () => {
                                             <h1 className="text-xl font-semibold text-gray-800">Pending Warranty</h1>
 
                                             {/* Filter and Search */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                                                 <select
-                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg"
+                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg w-full md:w-auto"
                                                     value={filterBy}
                                                     onChange={(e) => setFilterBy(e.target.value)}
                                                 >
@@ -300,7 +300,7 @@ const WarrantyRequestPage = () => {
 
                                                 <input
                                                     type="text"
-                                                    className="text-sm px-3 py-1 border w-full max-w-md border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                                    className="text-sm px-3 py-1 w-full md:w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
                                                     placeholder={`Search by ${filterByLabel}`}
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -406,9 +406,9 @@ const WarrantyRequestPage = () => {
                                 <section className="bg-white rounded-lg shadow-md p-6 flex-col jus">
                                         <div className="flex justify-between items-end mb-6">
                                     <h1 className="text-xl font-semibold text-gray-800 mb-6">Resolved Warranty</h1>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                                                 <select
-                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg"
+                                                    className="text-sm text-gray-700 px-2 py-1 rounded-lg w-full md:w-auto"
                                                     value={filterBy}
                                                     onChange={(e) => setFilterBy(e.target.value)}
                                                 >
@@ -420,7 +420,7 @@ const WarrantyRequestPage = () => {
 
                                                 <input
                                                     type="text"
-                                                    className="text-sm px-3 py-1 w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
+                                                    className="text-sm px-3 py-1 w-full md:w-64 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent"
                                                     placeholder={`Search by ${filterByLabel}`}
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}

@@ -330,23 +330,24 @@ const UserManagement = () => {
                 </div>
 
                 <div>
-
-                    <div className="flex justify-between mb-4">
-                        <div className="relative flex-1 max-w-md">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                            <input
-                                type="text"
-                                placeholder="Search by email..."
-                                value={searchTerm}
-                                onChange={handleSearch}
-                                className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
-                            />
-                        </div>
-                        <div className="flex gap-3 items-center">
+                    {/* Responsive filter/search controls */}
+                    <div className="flex flex-col gap-3 md:flex-row md:justify-between mb-4">
+                        {/* Search + Status + Role (inline on desktop, stacked on mobile) */}
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:flex-1">
+                            <div className="relative w-full md:max-w-md md:w-auto">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by email..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                />
+                            </div>
                             <select
                                 value={selectedStatus}
                                 onChange={handleStatusChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[120px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] w-full md:w-auto"
                             >
                                 <option>All Status</option>
                                 <option>Active</option>
@@ -356,28 +357,31 @@ const UserManagement = () => {
                             <select
                                 value={selectedRole}
                                 onChange={handleRoleChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[150px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[120px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] w-full md:w-auto"
                             >
                                 <option>All Roles</option>
                                 <option>Admin</option>
                                 <option>Customer</option>
                                 <option>Technician</option>
                             </select>
-                            {/* Create Employee button (visible to Admins as this page is admin-only) */}
+                        </div>
+                        {/* Create Employee (inline on desktop, stacked below on mobile) */}
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center">
                             <Link
                                 to="/employee-signup"
-                                className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap"
+                                className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap w-full md:w-auto"
                             >
                                 Create Employee
                             </Link>
                         </div>
                     </div>
 
+                    {/* Responsive table container */}
                     <div
-                        className="bg-white rounded-lg shadow-sm overflow-hidden mb-6"
+                        className="bg-white rounded-lg shadow-sm overflow-x-auto mb-6"
                         style={{ minHeight: tableMinHeight }}
                     >
-                        <table className="w-full border-collapse">
+                        <table className="w-full border-collapse min-w-[600px]">
                             <thead>
                                 <tr>
                                     <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
@@ -551,4 +555,3 @@ const UserManagement = () => {
 }
 
 export default UserManagement
-

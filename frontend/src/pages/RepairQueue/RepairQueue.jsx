@@ -259,9 +259,9 @@ const RepairQueue = () => {
                                     </div>
                                     {role !== "customer" && (
                                         <Link to="/newrepair">
-                                            <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
-                                                <Plus className="w-5 h-5 mr-1" />
-                                                Add Ticket
+                                            <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                                <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                <span className="text-sm sm:text-base">Add Ticket</span>
                                             </button>
                                         </Link>
                                     )}
@@ -291,10 +291,9 @@ const RepairQueue = () => {
 
                                                         {/*<Images className="text-[#10B981] size-60" />*/}
 
-
-
-                                                        <p className="text-[12px]">Ticket Number</p>
+                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
                                                     </div>
+                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
                                                     <div className="my-2 h-px bg-[#25D482]">
                                                     </div>
 
@@ -361,9 +360,10 @@ const RepairQueue = () => {
                                                 >
                                                     <div className="mr-4 flex object-center">
                                                         <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
-                                                        <p className="text-[12px]">Ticket Number</p>
+                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
 
                                                     </div>
+                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
                                                     <div className="my-2 h-px bg-[#25D482]"></div>
 
                                                     <div>
