@@ -975,7 +975,10 @@ const Inventory = () => {
                             <h2 className="text-lg font-semibold text-gray-800 flex items-center">
                                 <Package size={20} className="mr-2" />
                                 Available Inventory
-                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                <span className=" bg-blue-100 text-blue-800 text-xs rounded-full
+                                    sm:ml-2 sm:px-1 sm:py-0.5
+                                    ml-1 px-2 py-
+                                    ">
                                     {inventoryItems.length} items
                                 </span>
                             </h2>
