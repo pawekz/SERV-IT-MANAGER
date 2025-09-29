@@ -983,58 +983,56 @@ const Inventory = () => {
 
                         {/* Search and Filters */}
                         <div className="p-5 border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center flex-1">
-                                    <div className="relative flex-1">
-                                        <input
-                                            type="text"
-                                            placeholder="Search by name, SKU, part number, or serial number..."
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                        />
-                                        <div className="absolute left-3 top-2.5 text-gray-400">
-                                            <Search size={18} />
-                                        </div>
-                                    </div>
-                                    <div className="ml-4">
-                                        <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 flex items-center hover:bg-gray-50">
-                                            <span className="mr-1">Filters</span>
-                                            <ChevronDown size={16} />
-                                        </button>
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                {/* Search input always on top for mobile */}
+                                <div className="relative w-full">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name, SKU, part number, or serial number..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    <div className="absolute left-3 top-2.5 text-gray-400">
+                                        <Search size={18} />
                                     </div>
                                 </div>
-                                <div className="ml-4 flex space-x-3 items-center">
-                                    <div className="relative group">
-                                        <button
-                                            onClick={() => {
-                                                if (expandedGroups.size === 0) {
-                                                    // Expand all
-                                                    setExpandedGroups(new Set(paginatedItems.map(item => item.partNumber)));
-                                                } else {
-                                                    // Collapse all
-                                                    setExpandedGroups(new Set());
-                                                }
-                                            }}
-                                            className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md text-sm hover:bg-indigo-200 hover:text-indigo-800 flex items-center transition-all duration-200 shadow-sm hover:shadow-md"
-                                            title={expandedGroups.size === 0 ? "Expand all groups to see individual parts" : "Collapse all groups"}
-                                        >
-                                            <ChevronDown 
-                                                size={14} 
-                                                className={`mr-1 transition-transform duration-200 ${
-                                                    expandedGroups.size > 0 ? 'rotate-180' : ''
-                                                }`}
-                                            />
-                                            {expandedGroups.size === 0 ? 'Expand All' : 'Collapse All'}
-                                        </button>
-                                        {/* Enhanced Tooltip */}
-                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                            {expandedGroups.size === 0 ? 'Show all individual parts with serial numbers' : 'Hide individual parts'}
-                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                {/* Filters and actions below search on mobile, inline on desktop */}
+                                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 flex items-center hover:bg-gray-50 w-full sm:w-auto">
+                                        <span className="mr-1">Filters</span>
+                                        <ChevronDown size={16} />
+                                    </button>
+                                    <div className="flex flex-row gap-2 w-full sm:w-auto">
+                                        <div className="relative group w-full sm:w-auto">
+                                            <button
+                                                onClick={() => {
+                                                    if (expandedGroups.size === 0) {
+                                                        // Expand all
+                                                        setExpandedGroups(new Set(paginatedItems.map(item => item.partNumber)));
+                                                    } else {
+                                                        // Collapse all
+                                                        setExpandedGroups(new Set());
+                                                    }
+                                                }}
+                                                className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md text-sm hover:bg-indigo-200 hover:text-indigo-800 flex items-center transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto"
+                                                title={expandedGroups.size === 0 ? "Expand all groups to see individual parts" : "Collapse all groups"}
+                                            >
+                                                <ChevronDown
+                                                    size={14}
+                                                    className={`mr-1 transition-transform duration-200 ${
+                                                        expandedGroups.size > 0 ? 'rotate-180' : ''
+                                                    }`}
+                                                />
+                                                {expandedGroups.size === 0 ? 'Expand All' : 'Collapse All'}
+                                            </button>
+                                            {/* Enhanced Tooltip */}
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                                {expandedGroups.size === 0 ? 'Show all individual parts with serial numbers' : 'Hide individual parts'}
+                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <div className="flex items-center px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
+                                        <div className="flex items-center px-2 py-1 bg-gray-100 rounded text-xs text-gray-600 w-full sm:w-auto">
                                             <Eye size={12} className="mr-1" />
                                             {expandedGroups.size} of {paginatedItems.length} expanded
                                         </div>
