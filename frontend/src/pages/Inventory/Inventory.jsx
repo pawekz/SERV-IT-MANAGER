@@ -847,7 +847,7 @@ const Inventory = () => {
             <div className="flex-1 p-8 bg-gray-50">
                 <div className="px-10 py-8">
                     {/* Header with enhanced controls */}
-                    <div className="mb-6 flex justify-between items-center">
+                    <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
                             <p className="text-sm text-gray-600 mt-1">
@@ -857,15 +857,16 @@ const Inventory = () => {
                             </p>
                         </div>
                         {isAdmin() && (
-                            <div className="flex space-x-2">
-                                <div className="relative group">
+                            <div className="mt-4 md:mt-0 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 w-full md:w-auto">
+                                <div className="relative group w-full md:w-auto">
                                     <button
                                         onClick={refreshAllStockTracking}
-                                        className="px-3 py-2 bg-blue-600 text-white rounded-md flex items-center hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                                        className="w-full md:w-auto max-w-xs px-3 py-2 bg-blue-600 text-white rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
                                         title="Refresh Stock & Show Low Stock Alert"
                                     >
                                         <RefreshCw size={16} className="mr-1" />
-                                        Refresh & Check Stock
+                                        <span className="hidden xs:inline">Refresh & Check Stock</span>
+                                        <span className="inline xs:hidden">Refresh</span>
                                     </button>
                                     {/* Enhanced Tooltip */}
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
@@ -875,19 +876,21 @@ const Inventory = () => {
                                 </div>
                                 <button
                                     onClick={() => setShowBulkAddModal(true)}
-                                    className="px-3 py-2 bg-green-600 text-white rounded-md flex items-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
+                                    className="w-full md:w-auto max-w-xs px-3 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
                                     title="Add multiple parts with different serial numbers"
                                 >
                                     <Package size={16} className="mr-1" />
-                                    Bulk Add
+                                    <span className="hidden xs:inline">Bulk Add</span>
+                                    <span className="inline xs:hidden">Bulk</span>
                                 </button>
                                 <button
                                     onClick={() => setShowAddModal(true)}
-                                    className="px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
+                                    className="w-full md:w-auto max-w-xs px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center justify-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
                                     title="Add a single new part to inventory"
                                 >
                                     <Plus size={16} className="mr-1" />
-                                    Add New Part
+                                    <span className="hidden xs:inline">Add New Part</span>
+                                    <span className="inline xs:hidden">Add</span>
                                 </button>
                             </div>
                         )}
