@@ -89,8 +89,19 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     useEffect(() => {
         if (data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0) {
             getWarrantyPhotos(data.warrantyPhotosUrls)
-                .then(urls => setWarrantyPhotos(urls))
-                .catch(() => setWarrantyPhotos([]));
+                .then(urls => {
+                    setWarrantyPhotos(urls);
+                    // If formData doesn't yet have photos, sync them in for unified display logic
+                    setFormData(prev => {
+                        if (!prev.warrantyPhotosUrls || prev.warrantyPhotosUrls.length === 0) {
+                            return { ...prev, warrantyPhotosUrls: urls };
+                        }
+                        return prev;
+                    });
+                })
+                .catch(() => {
+                    setWarrantyPhotos([]);
+                });
         } else {
             setWarrantyPhotos([]);
         }
@@ -190,8 +201,14 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         setImageViewerOpen(true);
     };
     const closeImageViewer = () => setImageViewerOpen(false);
-    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.warrantyPhotosUrls.length);
-    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.warrantyPhotosUrls.length) % formData.warrantyPhotosUrls.length);
+
+    // Unified photo source preference: formData.warrantyPhotosUrls first, else warrantyPhotos fallback
+    const displayedPhotos = (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0)
+        ? formData.warrantyPhotosUrls
+        : warrantyPhotos;
+
+    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
+    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
 
     if(success === true){
         onClose();
@@ -458,9 +475,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                 {photoError instanceof Error ? photoError.message : photoError}
                                             </p>
                                         )}
-                                        {warrantyPhotos && warrantyPhotos.length > 0 && (
+                                        {displayedPhotos && displayedPhotos.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
-                                                {warrantyPhotos.map((src, idx) => (
+                                                {displayedPhotos.map((src, idx) => (
                                                     <div
                                                         key={idx}
                                                         style={{
@@ -482,18 +499,19 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                                 type="button"
                                                                 onClick={e => {
                                                                     e.stopPropagation();
-                                                                    setFormData(prev => {
-                                                                        const updatedPhotos = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
-                                                                        if (updatedPhotos.length === 0) {
-                                                                            setPhotoFiles([]);
-                                                                            setPhotoError("Please upload at least one photo of the device condition.");
-                                                                        }
-                                                                        return {
-                                                                            ...prev,
-                                                                            warrantyPhotosUrls: updatedPhotos
-                                                                        };
-                                                                    });
-                                                                    setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                                    // Remove from the primary source (formData) if present; otherwise remove from fallback warrantyPhotos
+                                                                    if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+                                                                        setFormData(prev => {
+                                                                            const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
+                                                                            if (updated.length === 0) {
+                                                                                setPhotoFiles([]);
+                                                                                setPhotoError("Please upload at least one photo of the device condition.");
+                                                                            }
+                                                                            return { ...prev, warrantyPhotosUrls: updated };
+                                                                        });
+                                                                    } else {
+                                                                        setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                                    }
                                                                 }}
                                                                 style={{
                                                                     position: "absolute",
@@ -589,7 +607,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         {`Device Condition ${imageViewerIndex + 1}`}
                                     </div>
                                     <img
-                                        src={warrantyPhotos[imageViewerIndex]}
+                                        src={displayedPhotos[imageViewerIndex]}
                                         alt={`Device condition ${imageViewerIndex + 1}`}
                                         style={{
                                             width: "100%",
@@ -603,17 +621,17 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerPrevPhoto}
-                                            disabled={warrantyPhotos.length < 2}
+                                            disabled={displayedPhotos.length < 2}
                                         >
                                             <ChevronLeft size={24} />
                                         </button>
                                         <span className="text-gray-700 text-sm">
-                    {imageViewerIndex + 1} / {warrantyPhotos.length}
+                    {imageViewerIndex + 1} / {displayedPhotos.length}
                 </span>
                                         <button
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerNextPhoto}
-                                            disabled={warrantyPhotos.length < 2}
+                                            disabled={displayedPhotos.length < 2}
                                         >
                                             <ChevronRight size={24} />
                                         </button>
