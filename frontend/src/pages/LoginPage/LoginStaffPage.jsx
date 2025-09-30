@@ -473,11 +473,17 @@ const LoginPage = () => {
             showToast('OTP sent to your email for password reset.');
             setForgotResendCooldown(60); // Set cooldown for forgot password flow
         } catch (err) {
-            let msg = err.message || 'Failed to send OTP.';
-            if (err.response && err.response.data) {
-                msg = err.response.data.message || err.response.data.error || msg;
+            let msg;
+            if (err.response) {
+                if (err.response.status === 404) {
+                    msg = 'Email not found. Please check and try again.';
+                } else if (err.response.data) {
+                    msg = err.response.data.message || err.response.data.error;
+                }
             }
+            if (!msg) msg = err.message || 'Failed to send OTP.';
             setForgotError(msg);
+            showToast(msg, 'error');
         } finally {
             setForgotLoading(false);
         }
@@ -510,7 +516,7 @@ const LoginPage = () => {
         try {
             if (!forgotEmail) {
                 setForgotOTPError('Email is required to resend OTP.');
-                showToast('Email is required to resend OTP.');
+                showToast('Email is required to resend OTP.', 'error');
                 setForgotOTPLoading(false);
                 return;
             }
@@ -522,11 +528,17 @@ const LoginPage = () => {
             showToast('A new OTP has been sent to your email.');
             setForgotResendCooldown(60); // Set 60 seconds cooldown
         } catch (err) {
-            let errorMessage = err.message || 'Failed to resend OTP. Please try again.';
-            if (err.response && err.response.data) {
-                errorMessage = err.response.data.message || err.response.data.error || errorMessage;
+            let errorMessage;
+            if (err.response) {
+                if (err.response.status === 404) {
+                    errorMessage = 'Email not found. Please check and try again.';
+                } else if (err.response.data) {
+                    errorMessage = err.response.data.message || err.response.data.error;
+                }
             }
+            if (!errorMessage) errorMessage = err.message || 'Failed to resend OTP. Please try again.';
             setForgotOTPError(errorMessage);
+            showToast(errorMessage, 'error');
         } finally {
             setForgotOTPLoading(false);
         }
@@ -551,11 +563,17 @@ const LoginPage = () => {
             setForgotEmail(''); // Clear forgotEmail after successful password reset
             showToast('Password has been reset successfully. You may now log in.');
         } catch (err) {
-            let msg = err.message || 'Failed to reset password. Please try again.';
-            if (err.response && err.response.data) {
-                msg = err.response.data.message || err.response.data.error || msg;
+            let msg;
+            if (err.response) {
+                if (err.response.status === 404) {
+                    msg = 'Email not found or reset link expired.';
+                } else if (err.response.data) {
+                    msg = err.response.data.message || err.response.data.error;
+                }
             }
+            if (!msg) msg = err.message || 'Failed to reset password. Please try again.';
             setNewPasswordError(msg);
+            showToast(msg, 'error');
         } finally {
             setNewPasswordLoading(false);
         }
