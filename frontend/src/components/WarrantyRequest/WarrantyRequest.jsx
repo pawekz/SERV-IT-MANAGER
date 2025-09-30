@@ -126,29 +126,35 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
 
 
     const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                setPhotoError("You can upload a maximum of 3 photos.");
-                return;
-            }
-            setPhotoError("");
-            setPhotoFiles(files);
-
-            Promise.all(files.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })).then(base64Arr => {
-                setFormData((prev) => ({
-                    ...prev,
-                    warrantyPhotosUrls: base64Arr
-                }));
-            });
+        const selected = e.target.files ? Array.from(e.target.files) : [];
+        if (selected.length === 0) return;
+        const maxPhotos = 3;
+        const currentCount = formData.warrantyPhotosUrls ? formData.warrantyPhotosUrls.length : 0;
+        const remainingSlots = maxPhotos - currentCount;
+        if (remainingSlots <= 0) {
+            setPhotoError(`Maximum of ${maxPhotos} photos reached.`);
+            e.target.value = '';
+            return;
         }
+        const filesToAdd = selected.slice(0, remainingSlots);
+        const ignored = selected.length - filesToAdd.length;
+        setPhotoError(ignored > 0
+            ? `Only ${remainingSlots} more photo${remainingSlots === 1 ? '' : 's'} allowed (maximum ${maxPhotos}).`
+            : ''
+        );
+        Promise.all(filesToAdd.map(file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        }))).then(base64Arr => {
+            setFormData(prev => ({
+                ...prev,
+                warrantyPhotosUrls: [...(prev.warrantyPhotosUrls || []), ...base64Arr]
+            }));
+            setPhotoFiles(prev => ([...(prev || []), ...filesToAdd]));
+        }).catch(() => setPhotoError('Failed to read one or more files.'))
+          .finally(() => { e.target.value = ''; });
     };
 
     const handleSubmit = (e) => {
@@ -499,13 +505,14 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                                 type="button"
                                                                 onClick={e => {
                                                                     e.stopPropagation();
-                                                                    // Remove from the primary source (formData) if present; otherwise remove from fallback warrantyPhotos
                                                                     if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
                                                                         setFormData(prev => {
                                                                             const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
+                                                                            setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
                                                                             if (updated.length === 0) {
-                                                                                setPhotoFiles([]);
                                                                                 setPhotoError("Please upload at least one photo of the device condition.");
+                                                                            } else {
+                                                                                setPhotoError('');
                                                                             }
                                                                             return { ...prev, warrantyPhotosUrls: updated };
                                                                         });
@@ -594,10 +601,11 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                             >
                                 <div
                                     className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
-                                    style={{ minWidth: 350, minHeight: 350, maxWidth: 500, maxHeight: 500 }}
+                                    style={{ maxWidth: '90vw', width: 520, maxHeight: '90vh' }}
                                     onClick={e => e.stopPropagation()}
                                 >
                                     <button
+                                        type="button"
                                         className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
                                         onClick={closeImageViewer}
                                     >
@@ -606,19 +614,17 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     <div className="w-full text-center mb-2 font-semibold text-lg text-gray-800">
                                         {`Device Condition ${imageViewerIndex + 1}`}
                                     </div>
-                                    <img
-                                        src={displayedPhotos[imageViewerIndex]}
-                                        alt={`Device condition ${imageViewerIndex + 1}`}
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                            objectFit: "contain",
-                                            background: "#f3f4f6",
-                                        }}
-                                        onClick={() => openImageViewer(imageViewerIndex)}
-                                    />
+                                    <div className="flex items-center justify-center bg-gray-100 border border-gray-200 rounded-md"
+                                         style={{ width: 460, height: 400, overflow: 'hidden' }}>
+                                        <img
+                                            src={displayedPhotos[imageViewerIndex]}
+                                            alt={`Device condition ${imageViewerIndex + 1}`}
+                                            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain' }}
+                                        />
+                                    </div>
                                     <div className="flex items-center justify-between w-full mt-4">
                                         <button
+                                            type="button"
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerPrevPhoto}
                                             disabled={displayedPhotos.length < 2}
@@ -629,6 +635,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                     {imageViewerIndex + 1} / {displayedPhotos.length}
                 </span>
                                         <button
+                                            type="button"
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerNextPhoto}
                                             disabled={displayedPhotos.length < 2}
