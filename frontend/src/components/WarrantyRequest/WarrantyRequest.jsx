@@ -601,7 +601,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                             >
                                 <div
                                     className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
-                                    style={{ maxWidth: '90vw', width: 520, maxHeight: '90vh' }}
+                                    style={{ minWidth: 350, minHeight: 350, maxWidth: 500, maxHeight: 500 }}
                                     onClick={e => e.stopPropagation()}
                                 >
                                     <button
@@ -611,17 +611,17 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     >
                                         <X size={28} />
                                     </button>
-                                    <div className="w-full text-center mb-2 font-semibold text-lg text-gray-800">
-                                        {`Device Condition ${imageViewerIndex + 1}`}
-                                    </div>
-                                    <div className="flex items-center justify-center bg-gray-100 border border-gray-200 rounded-md"
-                                         style={{ width: 460, height: 400, overflow: 'hidden' }}>
-                                        <img
-                                            src={displayedPhotos[imageViewerIndex]}
-                                            alt={`Device condition ${imageViewerIndex + 1}`}
-                                            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain' }}
-                                        />
-                                    </div>
+                                    <img
+                                        src={displayedPhotos[imageViewerIndex]}
+                                        alt={`Device condition ${imageViewerIndex + 1}`}
+                                        style={{
+                                            maxWidth: 400,
+                                            maxHeight: 400,
+                                            objectFit: "contain",
+                                            borderRadius: 8,
+                                            background: "#f3f4f6"
+                                        }}
+                                    />
                                     <div className="flex items-center justify-between w-full mt-4">
                                         <button
                                             type="button"
@@ -632,8 +632,8 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                             <ChevronLeft size={24} />
                                         </button>
                                         <span className="text-gray-700 text-sm">
-                    {imageViewerIndex + 1} / {displayedPhotos.length}
-                </span>
+                                            {imageViewerIndex + 1} / {displayedPhotos.length}
+                                        </span>
                                         <button
                                             type="button"
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
