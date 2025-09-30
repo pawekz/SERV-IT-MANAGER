@@ -3,6 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 
+// Utility to title-case multi-word names (e.g., "juan dela cruz" -> "Juan Dela Cruz")
+const toTitleCase = (str) => str
+    .split(' ') // split on spaces
+    .filter(Boolean) // remove empty segments
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
         userId: null,
@@ -58,8 +65,8 @@ const AccountInformation = () => {
                 const data = response.data;
                 const merged = {
                     userId: data.userId,
-                    firstName: data.firstName || '',
-                    lastName: data.lastName || '',
+                    firstName: toTitleCase(data.firstName || ''),
+                    lastName: toTitleCase(data.lastName || ''),
                     username: data.email || data.username || data.firstName || '', // fallback
                     email: data.email || '',
                     phoneNumber: data.phoneNumber || '',
@@ -83,8 +90,8 @@ const AccountInformation = () => {
                     if (decoded) {
                         const fallback = {
                             userId: decoded.userId || null,
-                            firstName: decoded.firstName || '',
-                            lastName: decoded.lastName || '',
+                            firstName: toTitleCase(decoded.firstName || ''),
+                            lastName: toTitleCase(decoded.lastName || ''),
                             username: decoded.username || decoded.sub || '',
                             email: decoded.email || decoded.sub || '',
                             phoneNumber: decoded.phoneNumber || '',
@@ -150,8 +157,15 @@ const AccountInformation = () => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'firstName' || name === 'lastName') {
-            const lettersOnly = value.replace(/[^a-zA-Z]/g, '');
-            setEditFormData(prev => ({ ...prev, [name]: lettersOnly }));
+            let sanitized = value.replace(/[^a-zA-Z\s]/g, '');
+            sanitized = sanitized.replace(/\s{2,}/g, ' '); // collapse multiple spaces
+            sanitized = sanitized.replace(/^\s+/, ''); // trim leading
+            sanitized = sanitized.replace(/\s+$/, ''); // trim trailing
+            sanitized = toTitleCase(sanitized); // ensure each part is capitalized
+            setEditFormData(prev => ({ ...prev, [name]: sanitized }));
+        } else if (name === 'phoneNumber') {
+            const digitsOnly = value.replace(/[^0-9]/g, '');
+            setEditFormData(prev => ({ ...prev, [name]: digitsOnly }));
         } else {
             setEditFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -469,8 +483,8 @@ const AccountInformation = () => {
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    pattern="[A-Za-z]+"
-                                    title="Please enter only letters (no numbers or special characters)"
+                                    pattern="[A-Za-z ]+"
+                                    title="Please enter only letters and spaces"
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>
@@ -487,8 +501,8 @@ const AccountInformation = () => {
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    pattern="[A-Za-z]+"
-                                    title="Please enter only letters (no numbers or special characters)"
+                                    pattern="[A-Za-z ]+"
+                                    title="Please enter only letters and spaces"
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>
