@@ -35,14 +35,11 @@ const HistoryPage = () => {
     const [search, setSearch] = useState('');
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
     const [totalPages, setTotalPages] = useState(0);
     const [pageSize, setPageSize] = useState(10); // configurable page size
     const [statusFilter, setStatusFilter] = useState('ALL');
-    // NEW: view mode toggle (table or cards)
     const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
 
     // derive unique statuses for filter dropdown (from loaded tickets) using status || repairStatus
@@ -61,10 +58,8 @@ const HistoryPage = () => {
                 const res = await api.get('/repairTicket/getRepairTicketsByCustomerEmail', { params: { email } });
                 const newTickets = res.data || [];
                 setTickets(newTickets);
-                // client-side pagination setup
                 setTotalPages(Math.max(1, Math.ceil(newTickets.length / pageSize)));
                 setCurrentPage(0);
-                setHasMore(false);
             } else {
                 const searchTerm = search.trim() || '';
                 const res = await api.get('/repairTicket/searchRepairTickets', {
@@ -79,13 +74,11 @@ const HistoryPage = () => {
                 setTickets(newTickets);
                 setCurrentPage(page);
                 setTotalPages(totalPagesCount);
-                setHasMore(page < totalPagesCount - 1);
             }
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Unknown error');
         } finally {
             setLoading(false);
-            setLoadingMore(false);
         }
     };
 
@@ -216,34 +209,6 @@ const HistoryPage = () => {
         );
     };
 
-    // Helper component for small thumbnail (first repair photo)
-    const Thumbnail = ({ photoUrl, alt }) => {
-        const [src, setSrc] = useState(null);
-        useEffect(() => {
-            let active = true;
-            async function load() {
-                if (!photoUrl) return;
-                try {
-                    const res = await api.get('/repairTicket/getRepairPhotos', { params: { photoUrl } });
-                    if (active) setSrc(res.data);
-                } catch (e) {
-                    if (active) setSrc(null);
-                }
-            }
-            load();
-            return () => { active = false; };
-        }, [photoUrl]);
-        return (
-            <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center text-xs text-gray-400">
-                {src ? (
-                    <img src={src} alt={alt} className="w-full h-full object-cover" />
-                ) : (
-                    <span>—</span>
-                )}
-            </div>
-        );
-    };
-
     // NEW: render table view
     const renderTable = () => {
         return (
@@ -253,7 +218,6 @@ const HistoryPage = () => {
                         <thead className="bg-gray-100/70 text-xs uppercase tracking-wide text-gray-600">
                             <tr>
                                 <th className="px-4 py-3 text-left font-semibold">Ticket #</th>
-                                <th className="px-4 py-3 text-left font-semibold">Photo</th>
                                 <th className="px-4 py-3 text-left font-semibold">Customer</th>
                                 <th className="px-4 py-3 text-left font-semibold">Device</th>
                                 <th className="px-4 py-3 text-left font-semibold">Status</th>
@@ -264,7 +228,6 @@ const HistoryPage = () => {
                         <tbody className="divide-y divide-gray-100">
                             {displayedTickets.map(ticket => {
                                 const statusVal = ticket.status || ticket.repairStatus || 'N/A';
-                                const firstPhoto = ticket.repairPhotosUrls && ticket.repairPhotosUrls.length > 0 ? ticket.repairPhotosUrls[0] : null;
                                 return (
                                     <tr key={ticket.ticketNumber}
                                         className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"
@@ -274,7 +237,6 @@ const HistoryPage = () => {
                                         aria-label={`View details for ticket ${ticket.ticketNumber}`}
                                     >
                                         <td className="px-4 py-3 font-medium text-gray-900">{ticket.ticketNumber}</td>
-                                        <td className="px-4 py-3"><Thumbnail photoUrl={firstPhoto} alt={`Ticket ${ticket.ticketNumber}`} /></td>
                                         <td className="px-4 py-3 whitespace-nowrap">{ticket.customerName || '—'}</td>
                                         <td className="px-4 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                         <td className="px-4 py-3">
