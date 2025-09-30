@@ -1,6 +1,6 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import KanbanBoard from "./TechnicianKanban/KanbanBoard.jsx"
-import {User, Search, CheckCircle, X, Clock, Plus, AlertTriangle} from "lucide-react"
+import {User, ClipboardPlus, PackageCheck, X, Clock, Plus, AlertTriangle} from "lucide-react"
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
 import { useEffect, useState } from "react"
 import {Link, useNavigate} from "react-router-dom";
@@ -221,7 +221,7 @@ const TechnicianDashboard = () => {
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">My Tasks Today</h1>
 
                             <Link to="/newrepair">
-                                <button className="flex items-center bg-[#25D482] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
+                                <button className="flex it  ems-center bg-[#2563eb] text-white px-4 py-2 rounded-lg hover:bg-[#1fab6b] transition">
                                     <Plus className="w-5 h-5 mr-1" />
                                     Add Ticket
                                 </button>
@@ -232,25 +232,61 @@ const TechnicianDashboard = () => {
 
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 ">
+                            <ClipboardPlus size={72} color="#0c5f34" />
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">New Tickets</div>
                             <div className="text-2xl font-bold text-gray-800">3</div>
                             <div className="text-xs text-gray-500 mt-1">Assigned today</div>
+                            </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 ">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24"
+                                 fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round"
+                                 className="lucide lucide-clipboard-clock-icon lucide-clipboard-clock">
+                                <path d="M16 14v2.2l1.6 1"/>
+                                <path d="M16 4h2a2 2 0 0 1 2 2v.832"/>
+                                <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2"/>
+                                <circle cx="16" cy="16" r="6"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1"/>
+                            </svg>
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">In Progress</div>
                             <div className="text-2xl font-bold text-gray-800">5</div>
                             <div className="text-xs text-gray-500 mt-1">Currently working</div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        </div>
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 ">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
+                                <path d="m7.5 4.27 9 5.15"/>
+                                <polyline points="3.29 7 12 12 20.71 7"/>
+                                <line x1="12" y1="22" x2="12" y2="12"/>
+                                <circle cx="18.5" cy="15.5" r="2.5" stroke-width="1.5"/>
+                                <path d="M18.5 14v1.5l-1.2.6" stroke-width="1.5"/>
+                            </svg>
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">Awaiting Parts</div>
                             <div className="text-2xl font-bold text-gray-800">2</div>
                             <div className="text-xs text-gray-500 mt-1">Parts ordered</div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        </div>
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 ">
+                            <PackageCheck size={72} color="#0c5f34" />
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">Ready for Pickup</div>
                             <div className="text-2xl font-bold text-gray-800">4</div>
                             <div className="text-xs text-gray-500 mt-1">Completed repairs</div>
+                            </div>
                         </div>
                     </div>
 

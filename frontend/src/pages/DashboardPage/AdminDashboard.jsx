@@ -2,7 +2,7 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Bell, Plus,
-    User,
+    User, Users, ClockAlert, TrendingDown
 } from "lucide-react"
 import {useEffect, useState} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
@@ -551,7 +551,7 @@ const AdminDashboard = () => {
                         <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
 
                         <Link to="/newrepair">
-                            <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                            <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
                                 <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
                                 <span className="text-sm sm:text-base">Add Ticket</span>
                             </button>
@@ -560,7 +560,11 @@ const AdminDashboard = () => {
 
                     {/* Statistics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 text-[#2563eb]">
+                                <Users size={72} />
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">Total Users</div>
                             <div className="text-2xl font-bold text-gray-800">{stats.users}</div>
                             <div className="text-xs text-gray-500 mt-1">
@@ -572,8 +576,22 @@ const AdminDashboard = () => {
                                     </>
                                 )}
                             </div>
+                            </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                            <div className="mr-4 pt-2 text-[#2563eb]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24"
+                                 fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round"
+                                 className="lucide lucide-clipboard-clock-icon lucide-clipboard-clock">
+                                <path d="M16 14v2.2l1.6 1"/>
+                                <path d="M16 4h2a2 2 0 0 1 2 2v.832"/>
+                                <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2"/>
+                                <circle cx="16" cy="16" r="6"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1"/>
+                            </svg>
+                            </div>
+                            <div>
                             <div className="text-gray-600 text-sm mb-2">Open Tickets</div>
                             <div className="text-2xl font-bold text-gray-800">{stats.openTickets}</div>
                             <div className="text-xs text-gray-500 mt-1">
@@ -590,18 +608,30 @@ const AdminDashboard = () => {
                                     "No recent changes"
                                 )}
                             </div>
+                            </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 hover:bg-blue-100 transition-transform duration-200"
+                        <div
+                            className="flex bg-white p-6 rounded-lg shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 hover:bg-blue-100 transition-transform duration-200"
                             onClick={() => navigate('/warrantyrequest')}
                             title="Go to Pending Approvals">
-                            <div className="text-gray-600 text-sm mb-2">Pending Approvals</div>
-                            <div className="text-2xl font-bold text-gray-800">{stats.pendingApprovals}</div>
-                            <div className="text-xs text-gray-500 mt-1">Requires attention</div>
+                            <div className="mr-4 pt-2 ">
+                                <ClockAlert size={72} color="#e4a144" />
+                            </div>
+                            <div>
+                        <div className="text-gray-600 text-sm mb-2">Pending Approvals</div>
+                        <div className="text-2xl font-bold text-gray-800">{stats.pendingApprovals}</div>
+                        <div className="text-xs text-gray-500 mt-1">Requires attention</div>
+                            </div>
+                    </div>
+                    <div className="flex bg-white p-6 rounded-lg shadow-sm">
+                        <div className="mr-4 pt-2 text-[#2563eb]">
+                        <TrendingDown size={72} color="#e4a144" />
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <div className="text-gray-600 text-sm mb-2">Low Stock Items</div>
+                        <div>
+                        <div className="text-gray-600 text-sm mb-2">Low Stock Items</div>
                             <div className="text-2xl font-bold text-gray-800">{stats.lowStockItems}</div>
                             <div className="text-xs text-gray-500 mt-1">Needs reordering</div>
+                        </div>
                         </div>
                     </div>
 
