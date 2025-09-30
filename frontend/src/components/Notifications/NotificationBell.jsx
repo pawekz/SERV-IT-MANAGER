@@ -199,11 +199,11 @@ export default function NotificationBell() {
       {dropdownOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
           <div className="px-4 py-3 border-b flex justify-between items-center">
-            <span className="font-semibold">Notifications</span>
+            <span className="font-semibold no-underline" style={{ textDecoration: 'none' }}>Notifications</span>
             {notifications.length > 0 && (
               <button
                 onClick={deleteAllNotifications}
-                className="text-xs text-red-600 hover:underline"
+                className="text-xs text-red-600 no-underline hover:no-underline"
               >
                 Clear All
               </button>
@@ -233,7 +233,7 @@ export default function NotificationBell() {
                       e.stopPropagation();
                       markAsRead(notif.notificationId);
                     }}
-                    className="text-xs text-green-600 hover:underline"
+                    className="text-xs text-green-600 no-underline hover:no-underline"
                   >
                     Mark as read
                   </button>
@@ -243,7 +243,7 @@ export default function NotificationBell() {
                     e.stopPropagation();
                     deleteNotification(notif.notificationId);
                   }}
-                  className="text-xs text-red-600 hover:underline"
+                  className="text-xs text-red-600 no-underline hover:no-underline"
                 >
                   Delete
                 </button>
@@ -255,7 +255,7 @@ export default function NotificationBell() {
             <div className="px-4 py-2 text-center text-xs bg-gray-50">
               <button
                 onClick={markAllAsRead}
-                className="text-green-600 hover:underline"
+                className="text-green-600 no-underline hover:no-underline"
               >
                 Mark all as read
               </button>
