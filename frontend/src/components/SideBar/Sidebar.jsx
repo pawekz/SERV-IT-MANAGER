@@ -13,12 +13,35 @@ import {
     FileClock,
     Menu,X
 } from 'lucide-react';
+import api from '../../config/ApiConfig.jsx';
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const [profileUrl, setProfileUrl] = useState(null);
+
+    // Fetch presigned URL if profile picture exists
+    useEffect(() => {
+        let intervalId;
+        const fetchProfile = async () => {
+            try {
+                if (userData && userData.userId && userData.profilePictureUrl && userData.profilePictureUrl !== '0') {
+                    const resp = await api.get(`/user/getProfilePicture/${userData.userId}`);
+                    setProfileUrl(resp.data);
+                } else {
+                    setProfileUrl(null);
+                }
+            } catch (e) {
+                setProfileUrl(null); // fallback to initials
+            }
+        };
+        fetchProfile();
+        // refresh every 4 minutes (presigned expires in 5)
+        intervalId = setInterval(fetchProfile, 240000);
+        return () => clearInterval(intervalId);
+    }, [userData?.userId, userData?.profilePictureUrl]);
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
@@ -210,9 +233,18 @@ const Sidebar = ({ activePage }) => {
                 className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
                 onClick={toggleLogoutMenu}
             >
-                <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
-                    <span>{(userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '')}</span>
-                </div>
+                {profileUrl ? (
+                    <img
+                        src={profileUrl}
+                        alt="Profile"
+                        onError={() => setProfileUrl(null)}
+                        className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
+                    />
+                ) : (
+                    <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
+                        <span>{(userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '')}</span>
+                    </div>
+                )}
                 <div>
                     <h3 className="text-sm font-semibold text-gray-800 m-0">
                         {userData.firstName} {userData.lastName}
