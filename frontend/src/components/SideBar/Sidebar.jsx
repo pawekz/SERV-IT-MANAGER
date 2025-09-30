@@ -15,6 +15,15 @@ import {
 } from 'lucide-react';
 import api from '../../config/ApiConfig.jsx';
 
+const formatName = (raw) => {
+    if (!raw || typeof raw !== 'string') return '';
+    return raw.trim().split(/\s+/).map(word =>
+        word.split('-').map(hy =>
+            hy.split("'").map(seg => seg ? seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase() : seg).join("'")
+        ).join('-')
+    ).join(' ');
+};
+
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [isOpen, setIsOpen] = useState(false);
@@ -193,6 +202,10 @@ const Sidebar = ({ activePage }) => {
         </>
     );
 
+    const formattedFirst = formatName(userData.firstName || '');
+    const formattedLast = formatName(userData.lastName || '');
+    const fullName = `${formattedFirst}${formattedLast ? ' ' + formattedLast : ''}`;
+
     return (
         <>
             {/* Mobile top bar */}
@@ -242,15 +255,15 @@ const Sidebar = ({ activePage }) => {
                     />
                 ) : (
                     <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
-                        <span>{(userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '')}</span>
+                        <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
                     </div>
                 )}
                 <div>
                     <h3 className="text-sm font-semibold text-gray-800 m-0">
-                        {userData.firstName} {userData.lastName}
+                        {fullName}
                     </h3>
                     <p className="text-xs text-gray-500 m-0">
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {role?.charAt(0).toUpperCase() + role?.slice(1)}
                     </p>
                 </div>
 
