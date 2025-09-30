@@ -35,8 +35,12 @@ const Sidebar = ({ activePage }) => {
     const linkClass = (page) =>
         `flex items-center px-6 py-3 transition-all duration-200 ${
             activePage === page
-                ? 'bg-[rgba(51,228,7,0.1)] text-[#33e407] font-semibold'
-                : 'text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
+                ? role === "customer"
+                    ? "bg-[rgba(51,228,7,0.1)] text-[#33e407] font-semibold"
+                    : "bg-[rgba(37,99,235,0.1)] text-[#2563eb] font-semibold"
+                : role === "customer"
+                    ? "text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                    : "text-gray-600 hover:bg-[rgba(37,99,235,0.05)] hover:text-[#2563eb]"
         }`;
 
     const customerLinks = (
