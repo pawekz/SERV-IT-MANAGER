@@ -38,6 +38,9 @@ function TicketImage({ path, alt }) {
 }
 
 const TicketCard = ({ ticket, onClick }) => {
+    // derive unified status (backend uses repairStatus)
+    const displayStatus = ticket.status || ticket.repairStatus || 'N/A';
+
     const images = ticket.repairPhotosUrls && ticket.repairPhotosUrls.length > 0
         ? ticket.repairPhotosUrls
         : [null];
@@ -95,7 +98,7 @@ const TicketCard = ({ ticket, onClick }) => {
                     </h5>
                 </a>
                 <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
-                    <span className="block"><strong>Status:</strong> {ticket.status}</span>
+                    <span className="block"><strong>Status:</strong> {displayStatus}</span>
                     <span className="block"><strong>Customer:</strong> {ticket.customerName}</span>
                     <span className="block"><strong>Date:</strong> {ticket.checkInDate}</span>
                     <span className="block"><strong>Device:</strong> {ticket.deviceBrand} {ticket.deviceModel}</span>
