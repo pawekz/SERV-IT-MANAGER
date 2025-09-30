@@ -94,29 +94,47 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     };
 
     const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                setPhotoError("You can upload a maximum of 3 photos.");
-                return;
-            }
-            setPhotoError("");
-            setPhotoFiles(files);
+        const inputFiles = e.target.files ? Array.from(e.target.files) : [];
+        if (inputFiles.length === 0) return;
 
-            Promise.all(files.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })).then(base64Arr => {
-                setFormData((prev) => ({
-                    ...prev,
-                    repairPhotos: base64Arr
-                }));
-            });
+        const currentCount = formData.repairPhotos ? formData.repairPhotos.length : 0;
+        const maxPhotos = 3;
+        const remainingSlots = maxPhotos - currentCount;
+
+        if (remainingSlots <= 0) {
+            setPhotoError(`Maximum of ${maxPhotos} photos reached.`);
+            // Reset the input so selecting same files again triggers onChange
+            e.target.value = '';
+            return;
         }
+
+        // Take only the number of files that fit in remaining slots
+        const filesToAdd = inputFiles.slice(0, remainingSlots);
+        const ignoredCount = inputFiles.length - filesToAdd.length;
+
+        setPhotoError(ignoredCount > 0
+            ? `Only ${remainingSlots} more photo${remainingSlots === 1 ? '' : 's'} allowed (maximum ${maxPhotos}).`
+            : ''
+        );
+
+        // Read new files as base64 and append
+        Promise.all(filesToAdd.map(file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        }))).then(base64Arr => {
+            setFormData(prev => ({
+                ...prev,
+                repairPhotos: [...(prev.repairPhotos || []), ...base64Arr]
+            }));
+            setPhotoFiles(prev => ([...prev, ...filesToAdd]));
+        }).catch(() => {
+            setPhotoError('Failed to read one or more files.');
+        }).finally(() => {
+            // Clear input so user can re-select same files if needed
+            e.target.value = '';
+        });
     };
 
     const handleSubmit = (e) => {
@@ -543,9 +561,12 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                                     e.stopPropagation();
                                                                     setFormData(prev => {
                                                                         const updatedPhotos = prev.repairPhotos.filter((_, i) => i !== idx);
+                                                                        const newPhotoFiles = photoFiles.filter((_, i) => i !== idx);
+                                                                        setPhotoFiles(newPhotoFiles);
                                                                         if (updatedPhotos.length === 0) {
-                                                                            setPhotoFiles([]);
                                                                             setPhotoError("Please upload at least one photo of the device condition.");
+                                                                        } else {
+                                                                            setPhotoError("");
                                                                         }
                                                                         return {
                                                                             ...prev,
