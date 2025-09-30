@@ -1,15 +1,19 @@
-import React, {useEffect, useState} from "react";
+import React, { useState } from "react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import SignatureCapturePad from "../../pages/SignatureCapturePad/SignatureCapturePad.jsx";
 import RepairPdfPreview from "../RepairPdfPreview/RepairPdfPreview.jsx";
 
-const WarrantyReceive = ({ reason = {}, data = {}, OnClose, success, setSuccess }) => {
+const WarrantyReceive = ({ data = {}, OnClose, success, setSuccess }) => {
     if (!data) return null;
-    const [formData, setFormData] = useState(data);
+    const normalizedData = {
+        ...data,
+        accessories: data?.accessories && data.accessories.trim() !== '' ? data.accessories : 'N/A'
+    };
+    const [formData, setFormData] = useState(normalizedData);
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [signatureDataURL, setSignatureDataURL] = useState(formData.digitalSignature || "");
     const [termsAccepted, setTermsAccepted] = useState(false);
-    const [checkInResponse, setCheckInResponse] = useState(null);
+    const [checkInResponse] = useState(null); // removed setter to avoid warning
 
 
 

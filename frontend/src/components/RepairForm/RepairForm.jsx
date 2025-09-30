@@ -1,17 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from '../../config/ApiConfig';
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
-    const role = localStorage.getItem("userRole")?.toLowerCase();
+    const navigate = useNavigate();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const [loading, setLoading] = useState(true);
     const [photoError, setPhotoError] = useState("");
-    const [error, setError] = useState(null);
-
-    const location = useLocation();
-    const navigate = useNavigate();
+    const [fetchError, setFetchError] = useState(null);
 
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
@@ -61,9 +58,11 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         }
         const fetchRepairTicketNumber = async () => {
             try {
-                setLoading(true);
                 const token = localStorage.getItem('authToken');
-                if (!token) throw new Error("Not authenticated. Please log in.");
+                if (!token) {
+                    console.error("Not authenticated. Please log in.");
+                    return;
+                }
                 const response = await fetch(`${window.__API_BASE__}/repairTicket/generateRepairTicketNumber`, {
                     method: 'GET',
                     headers: {
@@ -71,14 +70,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                         'Authorization': `Bearer ${token}`
                     },
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    console.error(`HTTP error! status: ${response.status}`);
+                    return;
+                }
                 const data = await response.text();
-                setFormData(prev => ({
-                    ...prev,
-                    ticketNumber: data
-                }));
+                setFormData(prev => ({ ...prev, ticketNumber: data }));
             } catch (err) {
-                setError(err.message);
+                console.error('Ticket generation failed:', err.message);
             } finally {
                 setLoading(false);
             }
@@ -129,20 +128,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         if (!hasPhotos) {
             setPhotoError("Please upload at least one photo of the device condition.");
             return;
-        } else {
-            setPhotoError("");
         }
 
         const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
+        const accessoriesValue = formData.accessories && formData.accessories.trim() !== '' ? formData.accessories : 'N/A';
         const submitData = {
             ...formData,
             customerPhoneNumber: formattedPhoneNumber,
-            warrantyClass: warrantyClass
+            warrantyClass: warrantyClass,
+            accessories: accessoriesValue
         };
-
-        if (onNext) {
-            onNext(submitData);
-        }
+        if (onNext) onNext(submitData);
     };
 
     const handlePhoneInput = (e) => {

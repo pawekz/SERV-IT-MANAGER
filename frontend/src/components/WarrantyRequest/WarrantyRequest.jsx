@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight, Upload,X, SquareX} from "lucide-react";
+import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
@@ -19,9 +19,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const [showWarrantyReceive, setShowWarrantyReceive] = useState(false);
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [showToast, setShowToast] = useState(false);
-    const [readonly, setReadonly] = useState(false);
     const [success, setSuccess] = useState(false);
     const [photoFiles, setPhotoFiles] = useState(null);
+    // removed readonly (was never updated) and its usages
     const [photoError, setPhotoError] = useState("");
     const [error, setError] = useState("");
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
@@ -49,7 +49,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         "DENIED"
     ];
 
-    const currentStatusIndex = STATUS_OPTIONS.indexOf(data.status);
+    // removed unused currentStatusIndex
 
     const downloadWarrantyPdf = async (warrantyNumber) => {
         try {
@@ -99,23 +99,18 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const UpdateStatus = async () => {
         try {
             const form = new FormData();
-            if (formData.warrantyNumber) {
-                form.append("warrantyNumber", formData.warrantyNumber.toString());
-            }
-            if (formData.status) {
-                form.append("status", formData.status.toString());
-            }
+            if (formData.warrantyNumber) form.append("warrantyNumber", formData.warrantyNumber.toString());
+            if (formData.status) form.append("status", formData.status.toString());
             const response = await api.patch(`/warranty/updateWarrantyStatus`, form);
             const result = response.data;
             setSuccess(result);
             onSuccess();
         } catch (error) {
-            let errorMessage = error.response?.data || error.message;
+            const errorMessage = error.response?.data || error.message;
             setError(errorMessage);
             setShowToast(true);
-            throw new Error(errorMessage);
+            console.error("Status update failed:", errorMessage);
         }
-
     }
 
 
@@ -147,32 +142,26 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const statusChanged =( formData.status !== data.status);
-
+        // Normalize accessories to 'N/A' if blank/whitespace
+        const sanitizedAccessories = !formData.accessories || formData.accessories.trim() === '' ? 'N/A' : formData.accessories;
+        if (sanitizedAccessories !== formData.accessories) {
+            setFormData(prev => ({ ...prev, accessories: sanitizedAccessories }));
+        }
+        const statusChanged = (formData.status !== data.status);
         if (!statusChanged){
             setError("Please Update the status above.");
             setShowToast(true);
             return;
         }
-
-        console.log("Form Data Submitted:", formData);
-
         if(formData.status === "ITEM_RETURNED") {
-            const hasPhotos =
-                (photoFiles && photoFiles.length > 0) ||
-                (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
-
+            const hasPhotos = (photoFiles && photoFiles.length > 0) || (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
             if (!hasPhotos ) {
                 setError("Please upload at least one photo of the device condition.");
                 setShowToast(true);
                 return;
-            } else {
-                setError("");
-                setPhotoError("");
             }
-
-            console.log("Form Data:", formData);
-
+            setError("");
+            setPhotoError("");
             setShowWarrantyReceive(true);
         } else {
             UpdateStatus();
@@ -238,7 +227,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         <select
                                             onChange={handleStatusChange}
                                             value={formData.status}
-                                            disabled={readonly}
+                                            disabled={false}
                                             className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
                                         >
                                             {STATUS_OPTIONS.filter((status) => {
@@ -364,9 +353,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     id="accessories"
                                     value={formData.accessories}
                                     onChange={e => setFormData(prev => ({ ...prev, accessories: e.target.value }))}
-                                    required
+                                    // accessories optional: default to 'N/A' on submit if left blank
                                     className=" w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
-                                ></input>
+                                />
                             </div>
 
                         </div>)}
@@ -419,7 +408,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         name="returnReason"
                                         defaultValue={label}
                                         checked={reason.returnReason === label}
-                                        disabled = {readonly}
+                                        disabled={false}
                                         onChange={() => setReason({ ...data, returnReason: label })}
                                         className="accent-green-600 cursor-default"
                                     />
