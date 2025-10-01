@@ -95,7 +95,14 @@ public class RepairTicketService {
                 logger.warn("A repair ticket with this ticket number already exists: {}", req.getTicketNumber());
                 throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
             }
-            if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null) {
+            // derive a full name from first/last if provided
+            if ((req.getCustomerName() == null || req.getCustomerName().isBlank()) &&
+                (req.getCustomerFirstName() != null || req.getCustomerLastName() != null)) {
+                String combined = ((req.getCustomerFirstName() == null ? "" : req.getCustomerFirstName().trim()) + " " +
+                        (req.getCustomerLastName() == null ? "" : req.getCustomerLastName().trim())).trim();
+                req.setCustomerName(combined.isBlank() ? null : combined);
+            }
+            if (req.getCustomerName() == null || req.getCustomerName().trim().isEmpty() || req.getDeviceSerialNumber() == null) {
                 logger.warn("Required fields are missing in the repair ticket form for ticket: {}", req.getTicketNumber());
                 throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
             }
@@ -111,7 +118,32 @@ public class RepairTicketService {
                     });
 
             RepairTicketEntity repairTicket = new RepairTicketEntity();
-            repairTicket.setCustomerName(req.getCustomerName());
+            // set split names if provided
+            if (req.getCustomerFirstName() != null) {
+                repairTicket.setCustomerFirstName(req.getCustomerFirstName().trim());
+            }
+            if (req.getCustomerLastName() != null) {
+                repairTicket.setCustomerLastName(req.getCustomerLastName().trim());
+            }
+            // ensure legacy full name populated
+            if (req.getCustomerName() != null) {
+                repairTicket.setCustomerName(req.getCustomerName().trim());
+            } else {
+                String legacy = ((repairTicket.getCustomerFirstName() == null ? "" : repairTicket.getCustomerFirstName()) + " " +
+                        (repairTicket.getCustomerLastName() == null ? "" : repairTicket.getCustomerLastName())).trim();
+                repairTicket.setCustomerName(legacy);
+            }
+            // fallback: if split names missing but legacy provided, attempt to split
+            if (repairTicket.getCustomerFirstName() == null && repairTicket.getCustomerLastName() == null && repairTicket.getCustomerName() != null) {
+                String full = repairTicket.getCustomerName().trim();
+                int idx = full.lastIndexOf(' ');
+                if (idx > 0) {
+                    repairTicket.setCustomerFirstName(full.substring(0, idx));
+                    repairTicket.setCustomerLastName(full.substring(idx + 1));
+                } else {
+                    repairTicket.setCustomerFirstName(full);
+                }
+            }
             repairTicket.setCustomerEmail(req.getCustomerEmail());
 
             String rawPhone = req.getCustomerPhoneNumber().replaceAll("^\\+?63", "");
@@ -611,6 +643,8 @@ public class RepairTicketService {
         GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
         dto.setTicketNumber(repairTicket.getTicketNumber());
         dto.setCustomerName(repairTicket.getCustomerName());
+        dto.setCustomerFirstName(repairTicket.getCustomerFirstName());
+        dto.setCustomerLastName(repairTicket.getCustomerLastName());
         dto.setCustomerEmail(repairTicket.getCustomerEmail());
         dto.setCustomerPhoneNumber(repairTicket.getCustomerPhoneNumber());
         dto.setDeviceType(repairTicket.getDeviceType() != null ? repairTicket.getDeviceType().name() : null);
@@ -625,7 +659,6 @@ public class RepairTicketService {
         dto.setObservations(repairTicket.getObservations());
         dto.setReportedIssue(repairTicket.getReportedIssue());
         dto.setRepairStatus(repairTicket.getRepairStatus().name());
-        /*dto.setStatus(repairTicket.getStatus());*/
         dto.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
         dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
                 .map(RepairPhotoEntity::getPhotoUrl)
@@ -663,4 +696,3 @@ public class RepairTicketService {
         return new RepairTicketStatusDistributionDTO(statusCounts, totalTickets);
     }
 }
-
