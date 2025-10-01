@@ -468,7 +468,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                placeholder="Search technician by name or email..."
+                                                placeholder="Search technician by email..."
                                                 value={techQuery}
                                                 onChange={e => setTechQuery(e.target.value)}
                                                 disabled={success}
