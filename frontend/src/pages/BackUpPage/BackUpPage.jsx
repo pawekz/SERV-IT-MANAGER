@@ -111,7 +111,7 @@ const BackUpPage = () => {
             <div className="flex-1 p-8 bg-gray-50">
                 <div className="flex flex-wrap justify-between items-center mb-6">
                     <div className="mb-4 sm:mb-0">
-                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Recovery</h1>
+                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Restore</h1>
                         <p className="text-gray-600 text-base max-w-3xl">
                             Manually create database backups, schedule automatic backups, and restore from existing backup points.
                         </p>

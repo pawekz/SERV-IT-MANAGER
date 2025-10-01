@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../config/ApiConfig';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
-function parseTypeAndFilename(path) {
-    if (!path) return { type: '', filename: '' };
-    const match = path.replace(/\\/g, '/').match(/(images|documents)\/([^\/]+)\/([^\/]+)$/);
-    if (!match) return { type: '', filename: '' };
-    return { type: `${match[1]}/${match[2]}`, filename: match[3] };
-}
-
-async function fetchTicketFile(type, filename) {
-    if (!type || !filename) return null;
-    const res = await api.get(`/repairTicket/files/${type}/${filename}`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
-}
-
-async function fetchPresignedPhotoUrl(photoUrl) {
-    if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
-}
+// statusStyles helper placed before usage
+const statusStyles = (statusRaw) => {
+    const s = (statusRaw || '').toUpperCase();
+    const base = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border';
+    const map = {
+        COMPLETED: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
+        COMPLETE: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
+        IN_PROGRESS: `${base} bg-amber-50 text-amber-700 border-amber-200`,
+        PROCESSING: `${base} bg-amber-50 text-amber-700 border-amber-200`,
+        PENDING: `${base} bg-gray-50 text-gray-600 border-gray-200`,
+        AWAITING_PARTS: `${base} bg-gray-50 text-gray-600 border-gray-200`,
+        CANCELLED: `${base} bg-red-50 text-red-600 border-red-200`,
+        CANCELED: `${base} bg-red-50 text-red-600 border-red-200`,
+        FAILED: `${base} bg-red-50 text-red-600 border-red-200`,
+    };
+    return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
+};
 
 function TicketImage({ path, alt, className }) {
     const [src, setSrc] = useState(null);
@@ -42,24 +42,13 @@ function TicketImage({ path, alt, className }) {
     return <img src={src} alt={alt} className={className} />;
 }
 
-function TicketDocumentLink({ path, children }) {
-    const [href, setHref] = useState(null);
-    useEffect(() => {
-        let url;
-        const { type, filename } = parseTypeAndFilename(path);
-        if (type && filename) {
-            fetchTicketFile(type, filename).then(objUrl => {
-                url = objUrl;
-                setHref(objUrl);
-            });
-        }
-        return () => { if (url) URL.revokeObjectURL(url); };
-    }, [path]);
-    if (!href) return <span>Loading...</span>;
-    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+async function fetchPresignedPhotoUrl(photoUrl) {
+    if (!photoUrl) return null;
+    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
+    return res.data;
 }
 
-const TicketDetailsModal = ({ ticket, onClose }) => {
+function TicketDetailsModal({ ticket, onClose }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
@@ -67,20 +56,15 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
     if (!ticket) return null;
 
     const images = ticket.repairPhotosUrls || [];
+    const statusVal = ticket.status || ticket.repairStatus || 'N/A';
+    const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : '');
+    const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
+    const full = [first,last].filter(Boolean).join(' ') || ticket.customerName;
 
-    const openImageModal = idx => {
-        setCurrentImageIdx(idx);
-        setImageModalOpen(true);
-    };
+    const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
-    const goLeft = e => {
-        e.stopPropagation();
-        setCurrentImageIdx(prev => (prev === 0 ? images.length - 1 : prev - 1));
-    };
-    const goRight = e => {
-        e.stopPropagation();
-        setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
-    };
+    const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? images.length - 1 : prev - 1)); };
+    const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1)); };
 
     // Download PDF handler
     const handleDownloadPdf = async () => {
@@ -97,136 +81,152 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
             setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         } catch (err) {
             window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Failed to download PDF.', severity: 'error' } }));
-        } finally {
-            setDownloading(false);
-        }
+        } finally { setDownloading(false); }
     };
 
     return (
         <>
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-                <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
-                    <button
-                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                        onClick={onClose}
-                    >
-                        &times;
-                    </button>
-                    <h2 className="text-2xl font-bold mb-4">Ticket #{ticket.ticketNumber} Details</h2>
-                    <div className="mb-4">
-                        <strong>Status:</strong> {ticket.status || ticket.repairStatus}<br />
-                        {(() => { const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : ''); const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : ''); const full = [first,last].filter(Boolean).join(' ') || ticket.customerName; return (<>
-                            <strong>First Name:</strong> {first || '—'}<br />
-                            <strong>Last Name:</strong> {last || '—'}<br />
-                            <strong>Full Name (Legacy):</strong> {full || '—'}<br />
-                        </>); })()}
-                        <strong>Date:</strong> {ticket.checkInDate}<br />
-                        <strong>Device:</strong> {ticket.deviceBrand} {ticket.deviceModel}<br />
-                    </div>
-                    <div className="mb-4">
-                        <strong>Repair Photos:</strong>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {images.length > 0 ? images.map((url, idx) => (
-                                <div key={idx} className="cursor-pointer" onClick={() => openImageModal(idx)}>
-                                    <TicketImage
-                                        path={url}
-                                        alt={`Repair Photo ${idx + 1}`}
-                                        className="w-24 h-24 object-cover rounded border"
-                                    />
-                                </div>
-                            )) : (
-                                <span className="text-gray-400">No photos</span>
-                            )}
+            <div className="fixed inset-0 z-40 flex items-start justify-center px-4 py-10 sm:py-16 overflow-y-auto backdrop-blur-sm bg-black/40" role="dialog" aria-modal="true">
+                <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-[fadeIn_.25s_ease]">
+                    {/* Header */}
+                    <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <h2 className="text-xl font-semibold tracking-tight text-gray-900">Ticket #{ticket.ticketNumber}</h2>
+                                <span className={statusStyles(statusVal)}>{statusVal}</span>
+                            </div>
+                            <p className="text-xs text-gray-500">Detailed repair ticket overview</p>
                         </div>
-                    </div>
-                    <div className="mb-4">
-                        <strong>Documents:</strong>
-                        {/* Download PDF button */}
-                        <div className="my-2">
-                            <button
-                                onClick={handleDownloadPdf}
-                                className="inline-flex items-center px-3 py-2 bg-[#3B82F6] text-white rounded hover:bg-[#2563EB] transition-colors font-semibold text-sm disabled:opacity-60"
-                                style={{ textDecoration: 'none' }}
-                                disabled={downloading}
-                            >
-                                {/* PDF SVG Icon */}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="#fff" viewBox="0 0 24 24" width="20" height="20" className="mr-2">
-                                    <rect width="24" height="24" rx="4" fill="#D32D2F"/>
-                                    <path d="M7 17h2v-2H7v2zm0-4h2v-6H7v6zm4 4h2v-4h-2v4zm0-6h2V7h-2v4zm4 6h2v-8h-2v8zm0-10v2h2V7h-2z" fill="#fff"/>
-                                </svg>
-                                {downloading ? 'Downloading...' : 'Download Repair Ticket'}
-                            </button>
-                        </div>
-                        <ul className="list-disc ml-6 mt-2">
-                            {(ticket.documentUrls || []).map((url, idx) => (
-                                <li key={idx}>
-                                    <TicketDocumentLink path={url}>
-                                        {url.split(/[\\/]/).pop()}
-                                    </TicketDocumentLink>
-                                </li>
-                            ))}
-                            {/*{(!ticket.documentUrls || ticket.documentUrls.length === 0) && (
-                <li className="text-gray-400">No documents</li>
-              )}*/}
-                        </ul>
-                    </div>
-                    <div className="flex justify-end">
                         <button
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
                             onClick={onClose}
+                            aria-label="Close details"
                         >
-                            Close
+                            <X size={18} />
                         </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-6 pb-6 pt-2 grid lg:grid-cols-3 gap-8">
+                        {/* Left: Primary info */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
+                                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400"/> Ticket Information</h3>
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-[13px]">
+                                    <div>
+                                        <dt className="text-gray-500">Customer</dt>
+                                        <dd className="font-medium text-gray-800">{full || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-gray-500">First Name</dt>
+                                        <dd className="font-medium text-gray-800">{first || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-gray-500">Last Name</dt>
+                                        <dd className="font-medium text-gray-800">{last || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12}/> Check-In Date</dt>
+                                        <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12}/> Device</dt>
+                                        <dd className="font-medium text-gray-800">{ticket.deviceBrand} {ticket.deviceModel}</dd>
+                                    </div>
+                                </dl>
+                            </section>
+
+                            <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400"/> Repair Photos</h3>
+                                    {images.length > 0 && (
+                                        <span className="text-[11px] text-gray-500">{images.length} photo{images.length>1?'s':''}</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    {images.length > 0 ? images.map((url, idx) => (
+                                        <button key={idx} type="button" onClick={() => openImageModal(idx)} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40">
+                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx+1}`} />
+                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"/>
+                                        </button>
+                                    )) : (
+                                        <span className="text-xs text-gray-400">No photos</span>
+                                    )}
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* Right: Summary / Quick actions */}
+                        <aside className="space-y-6">
+                            <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm">
+                                <h4 className="text-sm font-semibold text-gray-800 mb-3">Summary</h4>
+                                <ul className="text-[13px] space-y-2 text-gray-600">
+                                    <li className="flex justify-between"><span>Ticket #</span><span className="font-medium text-gray-900">{ticket.ticketNumber}</span></li>
+                                    <li className="flex justify-between"><span>Status</span><span className="font-medium text-gray-900">{statusVal}</span></li>
+                                    <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length}</span></li>
+                                </ul>
+                            </div>
+                            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                                <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={handleDownloadPdf}
+                                        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:opacity-60"
+                                        disabled={downloading}
+                                    >
+                                        <Download size={14}/> {downloading ? 'Downloading...' : 'Download PDF'}
+                                    </button>
+                                    <button
+                                        onClick={onClose}
+                                        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                    >Close</button>
+                                </div>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </div>
-            {/* Image Modal - increased z-index to be above the ticket details modal */}
+
+            {/* Image Modal Overlay */}
             {imageModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={closeImageModal}>
-                    <div className="relative max-w-[90vw] max-h-[90vh] bg-black rounded-lg shadow-lg" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={closeImageModal} role="dialog" aria-modal="true">
+                    <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
                         <button
-                            className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300 z-10"
+                            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
                             onClick={closeImageModal}
+                            aria-label="Close image viewer"
                         >
-                            &times;
+                            <X size={20} />
                         </button>
                         <div className="relative flex items-center justify-center">
                             <TicketImage
                                 path={images[currentImageIdx]}
                                 alt={`Repair Photo ${currentImageIdx + 1}`}
-                                className="max-w-[90vw] max-h-[85vh] object-contain"
+                                className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
                             />
                             {images.length > 1 && (
                                 <>
                                     <button
                                         onClick={goLeft}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
-                                        style={{ outline: 'none' }}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm"
                                         aria-label="Previous image"
                                     >
-                                        <span style={{ fontSize: 24 }}>&#8592;</span>
+                                        <ChevronLeft size={24} />
                                     </button>
                                     <button
                                         onClick={goRight}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-all"
-                                        style={{ outline: 'none' }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm"
                                         aria-label="Next image"
                                     >
-                                        <span style={{ fontSize: 24 }}>&#8594;</span>
+                                        <ChevronRight size={24} />
                                     </button>
-                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                                         {images.map((_, idx) => (
                                             <span
                                                 key={idx}
-                                                className={`inline-block w-3 h-3 rounded-full cursor-pointer transition-all ${
-                                                    idx === currentImageIdx
-                                                        ? 'bg-white scale-125'
-                                                        : 'bg-gray-400 hover:bg-gray-300'
-                                                }`}
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    setCurrentImageIdx(idx);
-                                                }}
+                                                className={`inline-block w-2.5 h-2.5 rounded-full cursor-pointer transition-all ${idx === currentImageIdx ? 'bg-white scale-125' : 'bg-gray-400/70 hover:bg-gray-300/80'}`}
+                                                onClick={e => { e.stopPropagation(); setCurrentImageIdx(idx); }}
+                                                aria-label={`Go to image ${idx + 1}`}
                                             />
                                         ))}
                                     </div>
@@ -238,6 +238,28 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
             )}
         </>
     );
+};
+
+// Lightweight thumbnail component using existing fetch
+const TicketImageThumb = ({ path, alt }) => {
+    const [src, setSrc] = useState(null);
+    const [loading, setLoading] = useState(!!path);
+    useEffect(() => {
+        let urlRef;
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => { urlRef = presignedUrl; setSrc(presignedUrl); })
+                .catch(() => setSrc(null))
+                .finally(() => setLoading(false));
+        } else {
+            setLoading(false);
+        }
+        return () => { if (urlRef) URL.revokeObjectURL(urlRef); };
+    }, [path]);
+
+    if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
+    if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
+    return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
 
 export default TicketDetailsModal;
