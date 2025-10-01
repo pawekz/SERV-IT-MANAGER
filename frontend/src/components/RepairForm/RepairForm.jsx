@@ -6,6 +6,9 @@ import api from '../../config/ApiConfig';
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const navigate = useNavigate();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const userRole = (localStorage.getItem('userRole') || '').toUpperCase();
+    // Technician assignment error state
+    const [technicianError, setTechnicianError] = useState("");
     const [photoError, setPhotoError] = useState("");
 
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
@@ -33,16 +36,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         accessories: "",
         reportedIssue: "",
         observations: "",
-        technicianEmail: userData.email || "",
-        technicianName: (userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""),
+        technicianEmail: initialFormData.technicianEmail ? initialFormData.technicianEmail : (userRole === 'ADMIN' ? '' : (userData.email || '')),
+        technicianName: initialFormData.technicianName ? initialFormData.technicianName : (userRole === 'ADMIN' ? '' : ((userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""))),
         repairPhotos: [],
         isDeviceTampered: false,
         ...initialFormData
     });
 
-    const userRole = (localStorage.getItem('userRole') || '').toUpperCase();
-
-    // Technician search state (admin only)
+    // Technician search states (re-added)
     const [techQuery, setTechQuery] = useState('');
     const [techResults, setTechResults] = useState([]);
     const [techLoading, setTechLoading] = useState(false);
@@ -50,6 +51,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     const [showTechDropdown, setShowTechDropdown] = useState(false);
     const techSearchTimeout = useRef(null);
     const techContainerRef = useRef(null);
+
+    // If admin and no initial technician provided, ensure cleared (avoid auto self-assignment)
+    useEffect(() => {
+        if (userRole === 'ADMIN' && !initialFormData.technicianEmail) {
+            setFormData(prev => ({ ...prev, technicianEmail: '', technicianName: '' }));
+        }
+    }, [userRole, initialFormData.technicianEmail]);
 
     useEffect(() => {
         setFormData(prev => ({
@@ -147,6 +155,13 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setTechnicianError('');
+        // Admin must assign a technician
+        if (userRole === 'ADMIN' && !formData.technicianEmail) {
+            setTechnicianError('Please assign a technician before proceeding.');
+            return;
+        }
+        // Photo validation
         const hasPhotos =
             (photoFiles && photoFiles.length > 0) ||
             (formData.repairPhotos && formData.repairPhotos.length > 0);
@@ -295,7 +310,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                 setTechLoading(true);
                 setTechError(null);
                 const resp = await api.get('/user/searchTechnicians', { params: { query: techQuery.trim() } });
-                setTechResults(Array.isArray(resp.data) ? resp.data.slice(0, 3) : []);
+                let results = Array.isArray(resp.data) ? resp.data.slice(0, 3) : [];
+                // Filter out the admin user (can't assign themselves)
+                results = results.filter(t => t.email !== userData.email);
+                setTechResults(results);
                 setShowTechDropdown(true);
             } catch (e) {
                 setTechError('Search failed');
@@ -319,6 +337,11 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     }, []);
 
     const handleSelectTechnician = (tech) => {
+        if (tech.email === userData.email) {
+            // Safety guard (should not appear due to filter)
+            setTechError('You cannot assign yourself.');
+            return;
+        }
         setFormData(prev => ({
             ...prev,
             technicianEmail: tech.email,
@@ -326,6 +349,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         }));
         setTechQuery(`${tech.firstName} ${tech.lastName}`.trim());
         setShowTechDropdown(false);
+        setTechnicianError('');
     };
 
     const clearSelectedTechnician = () => {
@@ -334,6 +358,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         setTechResults([]);
         setShowTechDropdown(false);
     };
+
 
     return (
         <>
@@ -427,54 +452,57 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                             {userRole === 'ADMIN' && !success && (
                                 <div className="mb-6" ref={techContainerRef}>
                                     <div className="bg-gray-100 p-2 mb-3 border-l-4 border-[#25D482]">
-                                        <h2 className="font-bold text-gray-800 text-sm">ASSIGNED TECHNICIAN</h2>
+                                        <h2 className="font-bold text-gray-800 text-sm">TECHNICIAN ASSIGNMENT</h2>
                                     </div>
-                                    {formData.technicianEmail ? (
+                                    {formData.technicianEmail && (
                                         <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2 mb-2">
                                             <div>
-                                                <p className="text-sm font-medium text-green-700">
-                                                    {formData.technicianName || 'Selected Technician'}
-                                                </p>
+                                                <p className="text-sm font-medium text-green-700">{formData.technicianName}</p>
                                                 <p className="text-xs text-green-600">{formData.technicianEmail}</p>
                                             </div>
                                             <button
                                                 type="button"
                                                 onClick={clearSelectedTechnician}
                                                 className="text-xs text-red-500 hover:text-red-600"
-                                            >Remove</button>
+                                            >Change</button>
                                         </div>
-                                    ) : null}
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Search technician by name or email..."
-                                            value={techQuery}
-                                            onChange={e => setTechQuery(e.target.value)}
-                                            disabled={success}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
-                                        />
-                                        {showTechDropdown && (
-                                            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto text-sm">
-                                                {techLoading && <div className="px-3 py-2 text-gray-500">Searching...</div>}
-                                                {techError && !techLoading && <div className="px-3 py-2 text-red-500">{techError}</div>}
-                                                {!techLoading && !techError && techResults.length === 0 && techQuery.trim() !== '' && (
-                                                    <div className="px-3 py-2 text-gray-500">No technicians found</div>
-                                                )}
-                                                {techResults.map(t => (
-                                                    <button
-                                                        type="button"
-                                                        key={t.userId || t.email}
-                                                        onClick={() => handleSelectTechnician(t)}
-                                                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
-                                                    >
-                                                        <span className="font-medium text-gray-800">{t.firstName} {t.lastName}</span>
-                                                        <span className="text-xs text-gray-500">{t.email}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <p className="mt-1 text-xs text-gray-500">Assigning a technician will also trigger assignment after ticket check-in.</p>
-                                    </div>
+                                    )}
+                                    {!formData.technicianEmail && (
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Search technician by name or email..."
+                                                value={techQuery}
+                                                onChange={e => setTechQuery(e.target.value)}
+                                                disabled={success}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
+                                            />
+                                            {showTechDropdown && (
+                                                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto text-sm">
+                                                    {techLoading && <div className="px-3 py-2 text-gray-500">Searching...</div>}
+                                                    {techError && !techLoading && <div className="px-3 py-2 text-red-500">{techError}</div>}
+                                                    {!techLoading && !techError && techResults.length === 0 && techQuery.trim() !== '' && (
+                                                        <div className="px-3 py-2 text-gray-500">No technicians found</div>
+                                                    )}
+                                                    {techResults.map(t => (
+                                                        <button
+                                                            type="button"
+                                                            key={t.userId || t.email}
+                                                            onClick={() => handleSelectTechnician(t)}
+                                                            className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
+                                                        >
+                                                            <span className="font-medium text-gray-800">{t.firstName} {t.lastName}</span>
+                                                            <span className="text-xs text-gray-500">{t.email}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="mt-1 text-xs text-gray-500">Technician is required before proceeding.</p>
+                                        </div>
+                                    )}
+                                    {technicianError && (
+                                        <p className="mt-2 text-sm text-red-600">{technicianError}</p>
+                                    )}
                                 </div>
                             )}
                             <div className="mb-6">
