@@ -6,9 +6,7 @@ import api from '../../config/ApiConfig';
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
     const navigate = useNavigate();
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const [loading, setLoading] = useState(true);
     const [photoError, setPhotoError] = useState("");
-    const [fetchError, setFetchError] = useState(null);
 
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
@@ -42,6 +40,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         ...initialFormData
     });
 
+    const userRole = (localStorage.getItem('userRole') || '').toUpperCase();
+
+    // Technician search state (admin only)
+    const [techQuery, setTechQuery] = useState('');
+    const [techResults, setTechResults] = useState([]);
+    const [techLoading, setTechLoading] = useState(false);
+    const [techError, setTechError] = useState(null);
+    const [showTechDropdown, setShowTechDropdown] = useState(false);
+    const techSearchTimeout = useRef(null);
+    const techContainerRef = useRef(null);
+
     useEffect(() => {
         setFormData(prev => ({
             ...prev,
@@ -55,7 +64,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                 ...prev,
                 ticketNumber: initialFormData.ticketNumber
             }));
-            setLoading(false);
             return;
         }
         const fetchRepairTicketNumber = async () => {
@@ -80,8 +88,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                 setFormData(prev => ({ ...prev, ticketNumber: data }));
             } catch (err) {
                 console.error('Ticket generation failed:', err.message);
-            } finally {
-                setLoading(false);
             }
         };
         fetchRepairTicketNumber();
@@ -274,6 +280,61 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         closeTamperModal();
     };
 
+    // Technician search effect (admin only)
+    useEffect(() => {
+        if (userRole !== 'ADMIN') return; // only admins use technician search
+        if (!techQuery || techQuery.trim() === '') {
+            setTechResults([]);
+            setShowTechDropdown(false);
+            setTechError(null);
+            return;
+        }
+        if (techSearchTimeout.current) clearTimeout(techSearchTimeout.current);
+        techSearchTimeout.current = setTimeout(async () => {
+            try {
+                setTechLoading(true);
+                setTechError(null);
+                const resp = await api.get('/user/searchTechnicians', { params: { query: techQuery.trim() } });
+                setTechResults(Array.isArray(resp.data) ? resp.data.slice(0, 3) : []);
+                setShowTechDropdown(true);
+            } catch (e) {
+                setTechError('Search failed');
+                setTechResults([]);
+                setShowTechDropdown(true);
+            } finally {
+                setTechLoading(false);
+            }
+        }, 300);
+        return () => techSearchTimeout.current && clearTimeout(techSearchTimeout.current);
+    }, [techQuery, userRole]);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (techContainerRef.current && !techContainerRef.current.contains(e.target)) {
+                setShowTechDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelectTechnician = (tech) => {
+        setFormData(prev => ({
+            ...prev,
+            technicianEmail: tech.email,
+            technicianName: `${tech.firstName} ${tech.lastName}`.trim()
+        }));
+        setTechQuery(`${tech.firstName} ${tech.lastName}`.trim());
+        setShowTechDropdown(false);
+    };
+
+    const clearSelectedTechnician = () => {
+        setFormData(prev => ({ ...prev, technicianEmail: '', technicianName: '' }));
+        setTechQuery('');
+        setTechResults([]);
+        setShowTechDropdown(false);
+    };
+
     return (
         <>
             <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -295,6 +356,7 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     />
                                 </div>
                             </div>
+
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
@@ -362,6 +424,59 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     </div>
                                 </div>
                             </div>
+                            {userRole === 'ADMIN' && !success && (
+                                <div className="mb-6" ref={techContainerRef}>
+                                    <div className="bg-gray-100 p-2 mb-3 border-l-4 border-[#25D482]">
+                                        <h2 className="font-bold text-gray-800 text-sm">ASSIGNED TECHNICIAN</h2>
+                                    </div>
+                                    {formData.technicianEmail ? (
+                                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2 mb-2">
+                                            <div>
+                                                <p className="text-sm font-medium text-green-700">
+                                                    {formData.technicianName || 'Selected Technician'}
+                                                </p>
+                                                <p className="text-xs text-green-600">{formData.technicianEmail}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={clearSelectedTechnician}
+                                                className="text-xs text-red-500 hover:text-red-600"
+                                            >Remove</button>
+                                        </div>
+                                    ) : null}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Search technician by name or email..."
+                                            value={techQuery}
+                                            onChange={e => setTechQuery(e.target.value)}
+                                            disabled={success}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
+                                        />
+                                        {showTechDropdown && (
+                                            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto text-sm">
+                                                {techLoading && <div className="px-3 py-2 text-gray-500">Searching...</div>}
+                                                {techError && !techLoading && <div className="px-3 py-2 text-red-500">{techError}</div>}
+                                                {!techLoading && !techError && techResults.length === 0 && techQuery.trim() !== '' && (
+                                                    <div className="px-3 py-2 text-gray-500">No technicians found</div>
+                                                )}
+                                                {techResults.map(t => (
+                                                    <button
+                                                        type="button"
+                                                        key={t.userId || t.email}
+                                                        onClick={() => handleSelectTechnician(t)}
+                                                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
+                                                    >
+                                                        <span className="font-medium text-gray-800">{t.firstName} {t.lastName}</span>
+                                                        <span className="text-xs text-gray-500">{t.email}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <p className="mt-1 text-xs text-gray-500">Assigning a technician will also trigger assignment after ticket check-in.</p>
+                                    </div>
+                                </div>
+                            )}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
