@@ -23,8 +23,11 @@ public class RepairTicketEntity {
     @Column(name = "ticket_number", nullable = false)
     private String ticketNumber;
 
-    @Column(name = "customer_name", nullable = false)
-    private String customerName;
+    @Column(name = "customer_first_name")
+    private String customerFirstName; // new split field
+
+    @Column(name = "customer_last_name")
+    private String customerLastName; // new split field
 
     @Column(name = "customer_email", nullable = false)
     private String customerEmail;

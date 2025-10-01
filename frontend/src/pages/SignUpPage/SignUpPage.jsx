@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
+import api from '../../config/ApiConfig.jsx';
 
 const SignUpPage = () => {
     const navigate = useNavigate();
@@ -24,7 +25,7 @@ const SignUpPage = () => {
     // Toast notification state
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const showToast = (message, type = 'success') => setToast({ show: true, message, type });
-    const closeToast = () => setToast({ ...toast, show: false });
+    const closeToast = () => setToast(prev => ({ ...prev, show: false }));
 
     // OTP modal state
     const [showOTPModal, setShowOTPModal] = useState(false);
@@ -40,16 +41,15 @@ const SignUpPage = () => {
     // Password regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
 
-    // Toast effect - auto-hide after 3 seconds
+    // Toast auto-hide effect
     useEffect(() => {
-        let timer;
-        if (showToast) {
-            timer = setTimeout(() => {
-                setShowToast(false);
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
             }, 3000);
+            return () => clearTimeout(timer);
         }
-        return () => clearTimeout(timer);
-    }, [showToast]);
+    }, [toast.show]);
 
     // Cooldown timer effect
     useEffect(() => {
@@ -218,8 +218,14 @@ const SignUpPage = () => {
             await api.post('/user/verifyOtp', { email: formData.email, otp, type: 1 });
             setShowOTPModal(false);
             setShowSuccessModal(true);
+            showToast('Email verified successfully. Redirecting to login...', 'success');
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/login');
+            }, 2500);
         } catch (err) {
-            setOtpError(err.response?.data?.message || 'OTP verification failed.');
+            const backendMsg = err.response?.data?.message || err.response?.data;
+            setOtpError(typeof backendMsg === 'string' ? backendMsg : 'OTP verification failed.');
         } finally {
             setOtpLoading(false);
         }
@@ -258,16 +264,15 @@ const SignUpPage = () => {
                 } catch (e) {
                     if (responseText) errorMessage = responseText;
                 }
-                setOtpError(errorMessage);
                 if (response.status === 401 && !errorMessage.includes('Invalid request')) {
-                    setOtpError('Invalid request. Please try registering again.');
+                    errorMessage = 'Invalid request. Please try registering again.';
                 }
+                setOtpError(errorMessage);
                 return;
             }
 
             setOtpDigits(["", "", "", "", "", ""]);
-            setToastMessage('OTP has been resent to your email.');
-            setShowToast(true);
+            showToast('OTP has been resent to your email.', 'success');
             setResendCooldown(60); // Set cooldown timer to 60 seconds
 
             if (inputsRef.current[0]) {
@@ -287,6 +292,13 @@ const SignUpPage = () => {
             // Optionally reset OTP fields when modal is closed externally, if desired
             // setOtpDigits(["", "", "", "", "", ""]);
             // setOtpError('');
+        }
+    }, [showOTPModal]);
+
+    // Focus on first OTP input when modal opens
+    useEffect(() => {
+        if (showOTPModal && inputsRef.current[0]) {
+            inputsRef.current[0].focus();
         }
     }, [showOTPModal]);
 

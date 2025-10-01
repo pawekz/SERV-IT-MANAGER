@@ -45,6 +45,9 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
   const deviceDisplay = [ticket.deviceBrand, ticket.deviceModel].filter(Boolean).join(" ") || ticket.deviceType;
   const createdOn = ticket.checkInDate ? new Date(ticket.checkInDate).toLocaleDateString() : "-";
 
+  const first = ticket.customerFirstName || '';
+  const last = ticket.customerLastName || '';
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       <div className="p-5">
@@ -126,15 +129,14 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
             <h3 className="font-medium text-gray-700">Customer Information</h3>
           </div>
           <div className="grid grid-cols-2 gap-y-3 text-sm">
-            <div className="text-gray-500">Name:</div>
-            <div className="font-medium">{ticket.customerName}</div>
-
+            <div className="text-gray-500">First Name:</div>
+            <div className="font-medium">{first || '—'}</div>
+            <div className="text-gray-500">Last Name:</div>
+            <div className="font-medium">{last || '—'}</div>
             <div className="text-gray-500">Email:</div>
             <div className="font-medium">{ticket.customerEmail}</div>
-
             <div className="text-gray-500">Phone:</div>
             <div className="font-medium">{ticket.customerPhoneNumber}</div>
-
             <div className="text-gray-500">Created On:</div>
             <div className="font-medium">{createdOn}</div>
           </div>
@@ -144,4 +146,4 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
   );
 };
 
-export default RepairTicketCard; 
+export default RepairTicketCard;

@@ -13,12 +13,44 @@ import {
     FileClock,
     Menu,X
 } from 'lucide-react';
+import api from '../../config/ApiConfig.jsx';
+
+const formatName = (raw) => {
+    if (!raw || typeof raw !== 'string') return '';
+    return raw.trim().split(/\s+/).map(word =>
+        word.split('-').map(hy =>
+            hy.split("'").map(seg => seg ? seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase() : seg).join("'")
+        ).join('-')
+    ).join(' ');
+};
 
 const Sidebar = ({ activePage }) => {
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const [profileUrl, setProfileUrl] = useState(null);
+
+    // Fetch presigned URL if profile picture exists
+    useEffect(() => {
+        let intervalId;
+        const fetchProfile = async () => {
+            try {
+                if (userData && userData.userId && userData.profilePictureUrl && userData.profilePictureUrl !== '0') {
+                    const resp = await api.get(`/user/getProfilePicture/${userData.userId}`);
+                    setProfileUrl(resp.data);
+                } else {
+                    setProfileUrl(null);
+                }
+            } catch (e) {
+                setProfileUrl(null); // fallback to initials
+            }
+        };
+        fetchProfile();
+        // refresh every 4 minutes (presigned expires in 5)
+        intervalId = setInterval(fetchProfile, 240000);
+        return () => clearInterval(intervalId);
+    }, [userData?.userId, userData?.profilePictureUrl]);
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
@@ -170,6 +202,10 @@ const Sidebar = ({ activePage }) => {
         </>
     );
 
+    const formattedFirst = formatName(userData.firstName || '');
+    const formattedLast = formatName(userData.lastName || '');
+    const fullName = `${formattedFirst}${formattedLast ? ' ' + formattedLast : ''}`;
+
     return (
         <>
             {/* Mobile top bar */}
@@ -210,15 +246,24 @@ const Sidebar = ({ activePage }) => {
                 className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
                 onClick={toggleLogoutMenu}
             >
-                <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-md flex items-center justify-center font-semibold mr-3">
-                    <span>{(userData.firstName?.charAt(0) || '') + (userData.lastName?.charAt(0) || '')}</span>
-                </div>
+                {profileUrl ? (
+                    <img
+                        src={profileUrl}
+                        alt="Profile"
+                        onError={() => setProfileUrl(null)}
+                        className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
+                    />
+                ) : (
+                    <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
+                        <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
+                    </div>
+                )}
                 <div>
                     <h3 className="text-sm font-semibold text-gray-800 m-0">
-                        {userData.firstName} {userData.lastName}
+                        {fullName}
                     </h3>
                     <p className="text-xs text-gray-500 m-0">
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {role?.charAt(0).toUpperCase() + role?.slice(1)}
                     </p>
                 </div>
 

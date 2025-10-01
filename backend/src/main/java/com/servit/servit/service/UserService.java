@@ -125,13 +125,32 @@ public class UserService {
 
     private String formatName(String name) {
         try {
-            if (name == null || name.isEmpty()) {
-                return name;
+            if (name == null) return null;
+            String trimmed = name.trim();
+            if (trimmed.isEmpty()) return trimmed;
+
+            trimmed = trimmed.replaceAll("\\s+", " ");
+
+            String lower = trimmed.toLowerCase();
+            StringBuilder sb = new StringBuilder(lower.length());
+            boolean capitalizeNext = true;
+            for (int i = 0; i < lower.length(); i++) {
+                char c = lower.charAt(i);
+                if (capitalizeNext && Character.isLetter(c)) {
+                    sb.append(Character.toUpperCase(c));
+                    capitalizeNext = false;
+                } else {
+                    sb.append(c);
+                }
+
+                if (c == ' ' || c == '-' || c == '\'' || c == '’') {
+                    capitalizeNext = true;
+                }
             }
-            return name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+            return sb.toString();
         } catch (Exception e) {
             logger.warn("Error formatting name '{}': {}", name, e.getMessage());
-            return name; // Return original if formatting fails
+            return name;
         }
     }
 

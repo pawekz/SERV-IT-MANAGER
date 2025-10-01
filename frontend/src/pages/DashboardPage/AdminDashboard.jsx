@@ -83,6 +83,9 @@ const AdminDashboard = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
+    // Profile picture state
+    const [profileUrl, setProfileUrl] = useState(null);
+
     // Function to show the description modal
     const showDescriptionModal = (item) => {
         setModalData(item);
@@ -91,6 +94,13 @@ const AdminDashboard = () => {
     // Function to close the modal
     const closeModal = () => {
         setModalData(null);
+    };
+
+    // Get initials from user data
+    const getInitials = () => {
+        if (userData.firstName && userData.lastName) return userData.firstName[0].toUpperCase() + userData.lastName[0].toUpperCase();
+        if (userData.firstName) return userData.firstName[0].toUpperCase();
+        return 'U';
     };
 
     useEffect(() => {
@@ -513,6 +523,31 @@ const AdminDashboard = () => {
             return { name, tickets: t.ticketCount || 0 };
         });
 
+    useEffect(() => {
+        const fetchCurrentUserWithPicture = async () => {
+            try {
+                const resp = await api.get('/user/getCurrentUser');
+                const merged = { ...userData, ...resp.data, password: '********' };
+                setUserData(prev => ({ ...prev, ...merged }));
+                sessionStorage.setItem('userData', JSON.stringify(merged));
+                if (merged.profilePictureUrl && merged.profilePictureUrl !== '0') {
+                    try {
+                        const urlResp = await api.get(`/user/getProfilePicture/${merged.userId}`);
+                        setProfileUrl(urlResp.data);
+                    } catch { setProfileUrl(null); }
+                } else {
+                    setProfileUrl(null);
+                }
+            } catch (e) {
+                setProfileUrl(null);
+            }
+        };
+        fetchCurrentUserWithPicture();
+        const interval = setInterval(fetchCurrentUserWithPicture, 240000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <>
 
@@ -538,8 +573,12 @@ const AdminDashboard = () => {
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
                             <Bell className="h-5 w-5 text-gray-600" />
                         </div>
-                        <Link to="/accountinformation" className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                            <User className="h-5 w-5 text-gray-600" />
+                        <Link to="/accountinformation" className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 bg-gray-100 overflow-hidden">
+                            {profileUrl ? (
+                                <img src={profileUrl} alt="Profile" onError={() => setProfileUrl(null)} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-sm font-semibold text-gray-600">{getInitials()}</span>
+                            )}
                         </Link>
                     </div>
                 </div>

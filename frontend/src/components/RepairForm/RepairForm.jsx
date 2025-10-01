@@ -1,17 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Upload, X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { X, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from '../../config/ApiConfig';
 
 const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = false }) => {
-    const role = localStorage.getItem("userRole")?.toLowerCase();
-    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const [loading, setLoading] = useState(true);
-    const [photoError, setPhotoError] = useState("");
-    const [error, setError] = useState(null);
-
-    const location = useLocation();
     const navigate = useNavigate();
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const userRole = (localStorage.getItem('userRole') || '').toUpperCase();
+    // Technician assignment error state
+    const [technicianError, setTechnicianError] = useState("");
+    const [photoError, setPhotoError] = useState("");
 
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
@@ -24,7 +22,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
     const [formData, setFormData] = useState({
         ticketNumber: "",
-        customerName: "",
+        customerFirstName: "",
+        customerLastName: "",
         customerEmail: "",
         customerPhoneNumber: "",
         deviceType: "",
@@ -36,12 +35,28 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         accessories: "",
         reportedIssue: "",
         observations: "",
-        technicianEmail: userData.email || "",
-        technicianName: (userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""),
+        technicianEmail: initialFormData.technicianEmail ? initialFormData.technicianEmail : (userRole === 'ADMIN' ? '' : (userData.email || '')),
+        technicianName: initialFormData.technicianName ? initialFormData.technicianName : (userRole === 'ADMIN' ? '' : ((userData.firstName ? userData.firstName + " " : "") + (userData.lastName || ""))),
         repairPhotos: [],
         isDeviceTampered: false,
         ...initialFormData
     });
+
+    // Technician search states (re-added)
+    const [techQuery, setTechQuery] = useState('');
+    const [techResults, setTechResults] = useState([]);
+    const [techLoading, setTechLoading] = useState(false);
+    const [techError, setTechError] = useState(null);
+    const [showTechDropdown, setShowTechDropdown] = useState(false);
+    const techSearchTimeout = useRef(null);
+    const techContainerRef = useRef(null);
+
+    // If admin and no initial technician provided, ensure cleared (avoid auto self-assignment)
+    useEffect(() => {
+        if (userRole === 'ADMIN' && !initialFormData.technicianEmail) {
+            setFormData(prev => ({ ...prev, technicianEmail: '', technicianName: '' }));
+        }
+    }, [userRole, initialFormData.technicianEmail]);
 
     useEffect(() => {
         setFormData(prev => ({
@@ -56,14 +71,15 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                 ...prev,
                 ticketNumber: initialFormData.ticketNumber
             }));
-            setLoading(false);
             return;
         }
         const fetchRepairTicketNumber = async () => {
             try {
-                setLoading(true);
                 const token = localStorage.getItem('authToken');
-                if (!token) throw new Error("Not authenticated. Please log in.");
+                if (!token) {
+                    console.error("Not authenticated. Please log in.");
+                    return;
+                }
                 const response = await fetch(`${window.__API_BASE__}/repairTicket/generateRepairTicketNumber`, {
                     method: 'GET',
                     headers: {
@@ -71,16 +87,14 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                         'Authorization': `Bearer ${token}`
                     },
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    console.error(`HTTP error! status: ${response.status}`);
+                    return;
+                }
                 const data = await response.text();
-                setFormData(prev => ({
-                    ...prev,
-                    ticketNumber: data
-                }));
+                setFormData(prev => ({ ...prev, ticketNumber: data }));
             } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+                console.error('Ticket generation failed:', err.message);
             }
         };
         fetchRepairTicketNumber();
@@ -95,33 +109,58 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
     };
 
     const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                setPhotoError("You can upload a maximum of 3 photos.");
-                return;
-            }
-            setPhotoError("");
-            setPhotoFiles(files);
+        const inputFiles = e.target.files ? Array.from(e.target.files) : [];
+        if (inputFiles.length === 0) return;
 
-            Promise.all(files.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })).then(base64Arr => {
-                setFormData((prev) => ({
-                    ...prev,
-                    repairPhotos: base64Arr
-                }));
-            });
+        const currentCount = formData.repairPhotos ? formData.repairPhotos.length : 0;
+        const maxPhotos = 3;
+        const remainingSlots = maxPhotos - currentCount;
+
+        if (remainingSlots <= 0) {
+            setPhotoError(`Maximum of ${maxPhotos} photos reached.`);
+            // Reset the input so selecting same files again triggers onChange
+            e.target.value = '';
+            return;
         }
+
+        // Take only the number of files that fit in remaining slots
+        const filesToAdd = inputFiles.slice(0, remainingSlots);
+        const ignoredCount = inputFiles.length - filesToAdd.length;
+
+        setPhotoError(ignoredCount > 0
+            ? `Only ${remainingSlots} more photo${remainingSlots === 1 ? '' : 's'} allowed (maximum ${maxPhotos}).`
+            : ''
+        );
+
+        // Read new files as base64 and append
+        Promise.all(filesToAdd.map(file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        }))).then(base64Arr => {
+            setFormData(prev => ({
+                ...prev,
+                repairPhotos: [...(prev.repairPhotos || []), ...base64Arr]
+            }));
+            setPhotoFiles(prev => ([...prev, ...filesToAdd]));
+        }).catch(() => {
+            setPhotoError('Failed to read one or more files.');
+        }).finally(() => {
+            // Clear input so user can re-select same files if needed
+            e.target.value = '';
+        });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setTechnicianError('');
+        // Admin must assign a technician
+        if (userRole === 'ADMIN' && !formData.technicianEmail) {
+            setTechnicianError('Please assign a technician before proceeding.');
+            return;
+        }
+        // Photo validation
         const hasPhotos =
             (photoFiles && photoFiles.length > 0) ||
             (formData.repairPhotos && formData.repairPhotos.length > 0);
@@ -129,20 +168,17 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         if (!hasPhotos) {
             setPhotoError("Please upload at least one photo of the device condition.");
             return;
-        } else {
-            setPhotoError("");
         }
 
         const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
+        const accessoriesValue = formData.accessories && formData.accessories.trim() !== '' ? formData.accessories : 'N/A';
         const submitData = {
             ...formData,
             customerPhoneNumber: formattedPhoneNumber,
-            warrantyClass: warrantyClass
+            warrantyClass: warrantyClass,
+            accessories: accessoriesValue
         };
-
-        if (onNext) {
-            onNext(submitData);
-        }
+        if (onNext) onNext(submitData);
     };
 
     const handlePhoneInput = (e) => {
@@ -256,6 +292,71 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
         closeTamperModal();
     };
 
+    // Technician search effect (admin only)
+    useEffect(() => {
+        if (userRole !== 'ADMIN') return; // only admins use technician search
+        if (!techQuery || techQuery.trim() === '') {
+            setTechResults([]);
+            setShowTechDropdown(false);
+            setTechError(null);
+            return;
+        }
+        if (techSearchTimeout.current) clearTimeout(techSearchTimeout.current);
+        techSearchTimeout.current = setTimeout(async () => {
+            try {
+                setTechLoading(true);
+                setTechError(null);
+                const resp = await api.get('/user/searchTechnicians', { params: { query: techQuery.trim() } });
+                let results = Array.isArray(resp.data) ? resp.data.slice(0, 3) : [];
+                // Filter out the admin user (can't assign themselves)
+                results = results.filter(t => t.email !== userData.email);
+                setTechResults(results);
+                setShowTechDropdown(true);
+            } catch (e) {
+                setTechError('Search failed');
+                setTechResults([]);
+                setShowTechDropdown(true);
+            } finally {
+                setTechLoading(false);
+            }
+        }, 300);
+        return () => techSearchTimeout.current && clearTimeout(techSearchTimeout.current);
+    }, [techQuery, userRole]);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (techContainerRef.current && !techContainerRef.current.contains(e.target)) {
+                setShowTechDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelectTechnician = (tech) => {
+        if (tech.email === userData.email) {
+            // Safety guard (should not appear due to filter)
+            setTechError('You cannot assign yourself.');
+            return;
+        }
+        setFormData(prev => ({
+            ...prev,
+            technicianEmail: tech.email,
+            technicianName: `${tech.firstName} ${tech.lastName}`.trim()
+        }));
+        setTechQuery(`${tech.firstName} ${tech.lastName}`.trim());
+        setShowTechDropdown(false);
+        setTechnicianError('');
+    };
+
+    const clearSelectedTechnician = () => {
+        setFormData(prev => ({ ...prev, technicianEmail: '', technicianName: '' }));
+        setTechQuery('');
+        setTechResults([]);
+        setShowTechDropdown(false);
+    };
+
+
     return (
         <>
             <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -277,18 +378,31 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     />
                                 </div>
                             </div>
+
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label htmlFor="customerName" className="block text-sm font-medium text-gray-700">Full Name:</label>
+                                        <label htmlFor="customerFirstName" className="block text-sm font-medium text-gray-700">First Name:</label>
                                         <input
-                                            id="customerName"
-                                            value={formData.customerName}
+                                            id="customerFirstName"
+                                            value={formData.customerFirstName}
                                             onChange={handleChange}
-                                            placeholder="Enter full name"
+                                            placeholder="Enter first name"
+                                            required
+                                            disabled={success}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label htmlFor="customerLastName" className="block text-sm font-medium text-gray-700">Last Name:</label>
+                                        <input
+                                            id="customerLastName"
+                                            value={formData.customerLastName}
+                                            onChange={handleChange}
+                                            placeholder="Enter last name"
                                             required
                                             disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
@@ -332,6 +446,62 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                     </div>
                                 </div>
                             </div>
+                            {userRole === 'ADMIN' && !success && (
+                                <div className="mb-6" ref={techContainerRef}>
+                                    <div className="bg-gray-100 p-2 mb-3 border-l-4 border-[#25D482]">
+                                        <h2 className="font-bold text-gray-800 text-sm">TECHNICIAN ASSIGNMENT</h2>
+                                    </div>
+                                    {formData.technicianEmail && (
+                                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2 mb-2">
+                                            <div>
+                                                <p className="text-sm font-medium text-green-700">{formData.technicianName}</p>
+                                                <p className="text-xs text-green-600">{formData.technicianEmail}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={clearSelectedTechnician}
+                                                className="text-xs text-red-500 hover:text-red-600"
+                                            >Change</button>
+                                        </div>
+                                    )}
+                                    {!formData.technicianEmail && (
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Search technician by email..."
+                                                value={techQuery}
+                                                onChange={e => setTechQuery(e.target.value)}
+                                                disabled={success}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
+                                            />
+                                            {showTechDropdown && (
+                                                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto text-sm">
+                                                    {techLoading && <div className="px-3 py-2 text-gray-500">Searching...</div>}
+                                                    {techError && !techLoading && <div className="px-3 py-2 text-red-500">{techError}</div>}
+                                                    {!techLoading && !techError && techResults.length === 0 && techQuery.trim() !== '' && (
+                                                        <div className="px-3 py-2 text-gray-500">No technicians found</div>
+                                                    )}
+                                                    {techResults.map(t => (
+                                                        <button
+                                                            type="button"
+                                                            key={t.userId || t.email}
+                                                            onClick={() => handleSelectTechnician(t)}
+                                                            className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
+                                                        >
+                                                            <span className="font-medium text-gray-800">{t.firstName} {t.lastName}</span>
+                                                            <span className="text-xs text-gray-500">{t.email}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="mt-1 text-xs text-gray-500">Technician is required before proceeding.</p>
+                                        </div>
+                                    )}
+                                    {technicianError && (
+                                        <p className="mt-2 text-sm text-red-600">{technicianError}</p>
+                                    )}
+                                </div>
+                            )}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#25D482]">
                                     <h2 className="font-bold text-gray-800">DEVICE INFORMATION</h2>
@@ -547,9 +717,12 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                                                     e.stopPropagation();
                                                                     setFormData(prev => {
                                                                         const updatedPhotos = prev.repairPhotos.filter((_, i) => i !== idx);
+                                                                        const newPhotoFiles = photoFiles.filter((_, i) => i !== idx);
+                                                                        setPhotoFiles(newPhotoFiles);
                                                                         if (updatedPhotos.length === 0) {
-                                                                            setPhotoFiles([]);
                                                                             setPhotoError("Please upload at least one photo of the device condition.");
+                                                                        } else {
+                                                                            setPhotoError("");
                                                                         }
                                                                         return {
                                                                             ...prev,

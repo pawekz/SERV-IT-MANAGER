@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { HardDriveDownload, RotateCcw, Download, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { HardDriveDownload, AlertCircle, } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
 import HistoryTab from "../../components/HistoryTab/HistoryTab.jsx";
@@ -111,7 +111,7 @@ const BackUpPage = () => {
             <div className="flex-1 p-8 bg-gray-50">
                 <div className="flex flex-wrap justify-between items-center mb-6">
                     <div className="mb-4 sm:mb-0">
-                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Recovery</h1>
+                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Back Up and Restore</h1>
                         <p className="text-gray-600 text-base max-w-3xl">
                             Manually create database backups, schedule automatic backups, and restore from existing backup points.
                         </p>

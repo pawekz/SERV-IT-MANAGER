@@ -1,17 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 
+// Utility to title-case multi-word names (e.g., "juan dela cruz" -> "Juan Dela Cruz")
+const toTitleCase = (str) => str
+    .split(' ') // split on spaces
+    .filter(Boolean) // remove empty segments
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+
 const AccountInformation = () => {
     const [userData, setUserData] = useState({
+        userId: null,
         firstName: '',
         lastName: '',
         username: '',
         email: '',
         phoneNumber:'',
-        password: '********' // Placeholder for security
+        password: '********',
+        profilePictureUrl: null
     });
+    const [displayProfileUrl, setDisplayProfileUrl] = useState(null); // presigned or direct url actually shown
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -24,52 +34,74 @@ const AccountInformation = () => {
     });
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploadingPic, setIsUploadingPic] = useState(false);
+    const [uploadError, setUploadError] = useState(null);
+    const fileInputRef = useRef(null);
 
+    // Fetch current user (always prefer backend so we have profile picture)
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 setLoading(true);
+                const token = localStorage.getItem('authToken');
+                if (!token) throw new Error("Not authenticated. Please log in.");
 
-                // Check if we have cached user data in sessionStorage first
+                // Attempt to use sessionStorage first (must include profilePictureUrl & userId)
                 const cachedUserData = sessionStorage.getItem('userData');
                 if (cachedUserData) {
-                    const parsedData = JSON.parse(cachedUserData);
-                    setUserData(parsedData);
-                    setLoading(false);
-                    return;
+                    try {
+                        const parsed = JSON.parse(cachedUserData);
+                        if (parsed && parsed.userId) {
+                            setUserData(parsed);
+                            if (parsed.profilePictureUrl && parsed.profilePictureUrl !== '0') {
+                                await fetchPresignedUrl(parsed.userId, parsed.profilePictureUrl);
+                            }
+                        }
+                    } catch (_) { /* ignore parse error */ }
                 }
 
-                // Get token from localStorage if no cached data
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    throw new Error("Not authenticated. Please log in.");
-                }
-
-                // Try to parse token to get user info
-                const decodedToken = parseJwt(token);
-
-                if (decodedToken) {
-                    const userData = {
-                        firstName: decodedToken.firstName || '',
-                        lastName: decodedToken.lastName || '',
-                        username: decodedToken.username || decodedToken.sub || '',
-                        email: decodedToken.email || decodedToken.sub || '',
-                        phoneNumber: decodedToken.phoneNumber || '',
-                        password: '********' // Mask password for security
-                    };
-
-                    setUserData(userData);
-
-                    // Cache the user data in sessionStorage for persistence across refreshes
-                    sessionStorage.setItem('userData', JSON.stringify(userData));
+                // Always refresh from backend so picture changes propagate
+                const response = await api.get('/user/getCurrentUser');
+                const data = response.data;
+                const merged = {
+                    userId: data.userId,
+                    firstName: toTitleCase(data.firstName || ''),
+                    lastName: toTitleCase(data.lastName || ''),
+                    username: data.email || data.username || data.firstName || '', // fallback
+                    email: data.email || '',
+                    phoneNumber: data.phoneNumber || '',
+                    password: '********',
+                    profilePictureUrl: data.profilePictureUrl || null
+                };
+                setUserData(merged);
+                sessionStorage.setItem('userData', JSON.stringify(merged));
+                if (merged.profilePictureUrl && merged.profilePictureUrl !== '0') {
+                    await fetchPresignedUrl(merged.userId, merged.profilePictureUrl);
                 } else {
-                    // If token can't be decoded, could attempt API call to get user data
-                    throw new Error("Could not retrieve user information");
+                    setDisplayProfileUrl(null);
                 }
                 setError(null);
             } catch (err) {
                 console.error("Error fetching user data:", err);
+                // Fallback: try decode JWT if API fails
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const decoded = parseJwt(token);
+                    if (decoded) {
+                        const fallback = {
+                            userId: decoded.userId || null,
+                            firstName: toTitleCase(decoded.firstName || ''),
+                            lastName: toTitleCase(decoded.lastName || ''),
+                            username: decoded.username || decoded.sub || '',
+                            email: decoded.email || decoded.sub || '',
+                            phoneNumber: decoded.phoneNumber || '',
+                            password: '********',
+                            profilePictureUrl: null
+                        };
+                        setUserData(fallback);
+                        sessionStorage.setItem('userData', JSON.stringify(fallback));
+                    }
+                } catch (_) {}
                 setError("Failed to load account information. Please try again later.");
             } finally {
                 setLoading(false);
@@ -79,8 +111,18 @@ const AccountInformation = () => {
         fetchUserData();
     }, []);
 
+    const fetchPresignedUrl = async (userId, rawUrl) => {
+        try {
+            // If already a normal URL without amazonaws domain or if we want refreshed pre-signed
+            const resp = await api.get(`/user/getProfilePicture/${userId}`);
+            setDisplayProfileUrl(resp.data);
+        } catch (e) {
+            console.warn('Could not fetch presigned URL, using stored url if possible');
+            if (rawUrl && rawUrl !== '0') setDisplayProfileUrl(rawUrl);
+        }
+    };
+
     useEffect(() => {
-        // Initialize edit form data with current user data
         if (userData) {
             setEditFormData({
                 firstName: userData.firstName,
@@ -91,26 +133,19 @@ const AccountInformation = () => {
         }
     }, [userData]);
 
-    // Generate initials for avatar
     const getInitials = () => {
         if (userData.firstName && userData.lastName) {
             return `${userData.firstName.charAt(0).toUpperCase()}${userData.lastName.charAt(0).toUpperCase()}`;
         }
-        return "U";  // Default if no name available
+        if (userData.firstName) return userData.firstName.charAt(0).toUpperCase();
+        return "U";
     };
 
-    const handlePasswordRedirect = () => {
-        navigate('/passwordmanagement');
-    };
+    const handlePasswordRedirect = () => navigate('/passwordmanagement');
 
-    const handleEditClick = () => {
-        setIsEditing(true);
-        setUpdateStatus({ success: false, message: '' });
-    };
-
+    const handleEditClick = () => { setIsEditing(true); setUpdateStatus({ success: false, message: '' }); };
     const handleCloseEdit = () => {
         setIsEditing(false);
-        // Reset form data to current user data
         setEditFormData({
             firstName: userData.firstName,
             lastName: userData.lastName,
@@ -121,21 +156,18 @@ const AccountInformation = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-
-        // For firstName and lastName, only allow letters
         if (name === 'firstName' || name === 'lastName') {
-            // Replace any non-letter characters with empty string
-            const lettersOnly = value.replace(/[^a-zA-Z]/g, '');
-
-            setEditFormData(prevData => ({
-                ...prevData,
-                [name]: lettersOnly
-            }));
+            let sanitized = value.replace(/[^a-zA-Z\s]/g, '');
+            sanitized = sanitized.replace(/\s{2,}/g, ' '); // collapse multiple spaces
+            sanitized = sanitized.replace(/^\s+/, ''); // trim leading
+            sanitized = sanitized.replace(/\s+$/, ''); // trim trailing
+            sanitized = toTitleCase(sanitized); // ensure each part is capitalized
+            setEditFormData(prev => ({ ...prev, [name]: sanitized }));
+        } else if (name === 'phoneNumber') {
+            const digitsOnly = value.replace(/[^0-9]/g, '');
+            setEditFormData(prev => ({ ...prev, [name]: digitsOnly }));
         } else {
-            setEditFormData(prevData => ({
-                ...prevData,
-                [name]: value
-            }));
+            setEditFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
@@ -143,134 +175,144 @@ const AccountInformation = () => {
         e.preventDefault();
         setIsSubmitting(true);
         setUpdateStatus({ success: false, message: '' });
-
         try {
             const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error("Not authenticated. Please log in.");
-            }
-
+            if (!token) throw new Error("Not authenticated. Please log in.");
             let usernameChanged = false;
-
-            // Update full name if changed
             if (userData.firstName !== editFormData.firstName || userData.lastName !== editFormData.lastName) {
                 const response = await api.patch('/user/updateCurrentUserFullName', {
                     newFirstName: editFormData.firstName,
                     newLastName: editFormData.lastName
                 });
-                if (response.status < 200 || response.status >= 300) {
-                    throw new Error(response.data || "Failed to update full name");
-                }
+                if (response.status < 200 || response.status >= 300) throw new Error(response.data || "Failed to update full name");
             }
-
-            // Update phone number if changed
             if (userData.phoneNumber !== editFormData.phoneNumber) {
-                const response = await api.patch('/user/changeCurrentUserPhoneNumber', {
-                    newPhoneNumber: editFormData.phoneNumber
-                });
-                if (response.status < 200 || response.status >= 300) {
-                    throw new Error(response.data || "Failed to update phone number");
-                }
+                const response = await api.patch('/user/changeCurrentUserPhoneNumber', { newPhoneNumber: editFormData.phoneNumber });
+                if (response.status < 200 || response.status >= 300) throw new Error(response.data || "Failed to update phone number");
             }
-
-            // Update username if changed
             if (userData.username !== editFormData.username) {
-                const response = await api.patch('/user/updateCurrentUsername', {
-                    newUsername: editFormData.username
-                });
-                if (response.status < 200 || response.status >= 300) {
-                    throw new Error(response.data || "Failed to update username");
-                }
+                const response = await api.patch('/user/updateCurrentUsername', { newUsername: editFormData.username });
+                if (response.status < 200 || response.status >= 300) throw new Error(response.data || "Failed to update username");
                 usernameChanged = true;
             }
-
-            // Update local state and sessionStorage
-            setUserData({
-                ...userData,
-                firstName: editFormData.firstName,
-                lastName: editFormData.lastName,
-                username: editFormData.username,
-                phoneNumber: editFormData.phoneNumber
-            });
-            sessionStorage.setItem('userData', JSON.stringify({
-                firstName: editFormData.firstName,
-                lastName: editFormData.lastName,
-                username: editFormData.username,
-                email: editFormData.email || userData.email,
-                phoneNumber: editFormData.phoneNumber,
-                password: '********'
-            }));
-
-            setUpdateStatus({
-                success: true,
-                message: usernameChanged
-                    ? "Username updated. Please log in again."
-                    : "Profile updated successfully!"
-            });
-
-            // If username changed, force logout and redirect to login after short delay
+            const updated = { ...userData, firstName: editFormData.firstName, lastName: editFormData.lastName, username: editFormData.username, phoneNumber: editFormData.phoneNumber };
+            setUserData(updated);
+            sessionStorage.setItem('userData', JSON.stringify(updated));
+            setUpdateStatus({ success: true, message: usernameChanged ? "Username updated. Please log in again." : "Profile updated successfully!" });
             if (usernameChanged) {
-                setTimeout(() => {
-                    localStorage.removeItem('authToken');
-                    sessionStorage.removeItem('userData');
-                    navigate('/login');
-                }, 2000);
+                setTimeout(() => { localStorage.removeItem('authToken'); sessionStorage.removeItem('userData'); navigate('/login'); }, 2000);
             } else {
-                setTimeout(() => {
-                    setIsEditing(false);
-                }, 2000);
+                setTimeout(() => setIsEditing(false), 1500);
             }
         } catch (err) {
-            setUpdateStatus({
-                success: false,
-                message: err.response?.data || err.message || "Failed to update profile. Please try again."
-            });
+            setUpdateStatus({ success: false, message: err.response?.data || err.message || "Failed to update profile. Please try again." });
+        } finally { setIsSubmitting(false); }
+    };
+
+    const triggerFileInput = () => { if (fileInputRef.current) fileInputRef.current.click(); };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsUploadingPic(true);
+        setUploadError(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            await api.post('/user/updateCurrentUserProfilePicture', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            // Refresh current user & presigned url
+            const refreshed = await api.get('/user/getCurrentUser');
+            const newData = { ...userData, ...refreshed.data, password: '********' };
+            setUserData(newData);
+            sessionStorage.setItem('userData', JSON.stringify(newData));
+            if (newData.profilePictureUrl && newData.profilePictureUrl !== '0') {
+                await fetchPresignedUrl(newData.userId, newData.profilePictureUrl);
+            } else {
+                setDisplayProfileUrl(null);
+            }
+        } catch (err) {
+            console.error('Upload failed', err);
+            setUploadError(err.response?.data || err.message || 'Failed to upload image');
         } finally {
-            setIsSubmitting(false);
+            setIsUploadingPic(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    };
+
+    const handleRemovePicture = async () => {
+        if (!userData.userId) return;
+        setIsUploadingPic(true); setUploadError(null);
+        try {
+            await api.delete('/user/removeCurrentUserProfilePicture');
+            const refreshed = await api.get('/user/getCurrentUser');
+            const newData = { ...userData, ...refreshed.data, profilePictureUrl: null };
+            setUserData(newData);
+            sessionStorage.setItem('userData', JSON.stringify(newData));
+            setDisplayProfileUrl(null);
+        } catch (err) {
+            setUploadError(err.response?.data || err.message || 'Failed to remove picture');
+        } finally { setIsUploadingPic(false); }
     };
 
     return (
         <div className="flex min-h-screen font-['Poppins',sans-serif]">
-
-            {/*<Sidebar activePage="settings" />*/}
             <Sidebar/>
-
             <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-
                 <div className="px-10 py-8">
                     {loading ? (
-                        <div className="text-center py-8">
-                            <p>Loading account information...</p>
-                        </div>
+                        <div className="text-center py-8"><p>Loading account information...</p></div>
                     ) : error ? (
                         <div className="text-center py-8 text-red-500">
                             <p>{error}</p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="mt-4 text-blue-500 underline"
-                            >
-                                Try Again
-                            </button>
+                            <button onClick={() => window.location.reload()} className="mt-4 text-blue-500 underline">Try Again</button>
                         </div>
                     ) : (
                         <>
                             <section className="mb-10">
                                 <h2 className="text-xl font-semibold text-gray-800 mb-6">Account Information</h2>
-
                                 <div className="flex items-center gap-6 md:flex-row flex-col md:text-left text-center">
-                                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-4xl text-gray-400"
-                                         style={{ border: "2px solid rgba(51, 228, 7, 0.2)" }}>
-                                        <span>{getInitials()}</span>
+                                    <div className="relative">
+                                        {displayProfileUrl ? (
+                                            <img
+                                                src={displayProfileUrl}
+                                                alt="Profile"
+                                                onError={() => setDisplayProfileUrl(null)}
+                                                className="w-24 h-24 rounded-full object-cover border-2"
+                                                style={{ borderColor: "rgba(51, 228, 7, 0.2)" }}
+                                            />
+                                        ) : (
+                                            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-4xl text-gray-400" style={{ border: "2px solid rgba(51, 228, 7, 0.2)" }}>
+                                                <span>{getInitials()}</span>
+                                            </div>
+                                        )}
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/jpg"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                            {`${userData.firstName} ${userData.lastName}`}
-                                        </h3>
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">{`${userData.firstName} ${userData.lastName}`}</h3>
                                         <p className="text-gray-600 mb-4">{userData.email}</p>
-                                        {/*<button className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400">*/}
-                                        {/*    Change Profile Picture*/}
-                                        {/*</button>*/}
+                                        <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                            <button
+                                                type="button"
+                                                onClick={triggerFileInput}
+                                                disabled={isUploadingPic}
+                                                className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm transition-all hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50"
+                                            >{isUploadingPic ? 'Uploading...' : (displayProfileUrl ? 'Change Profile Picture' : 'Upload Profile Picture')}</button>
+                                            {displayProfileUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemovePicture}
+                                                    disabled={isUploadingPic}
+                                                    className="border border-red-300 text-red-600 px-4 py-2 rounded text-sm transition-all hover:bg-red-50 disabled:opacity-50"
+                                                >Remove</button>
+                                            )}
+                                        </div>
+                                        {uploadError && <p className="text-sm text-red-500 mt-2">{uploadError}</p>}
                                     </div>
                                 </div>
                             </section>
@@ -441,8 +483,8 @@ const AccountInformation = () => {
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    pattern="[A-Za-z]+"
-                                    title="Please enter only letters (no numbers or special characters)"
+                                    pattern="[A-Za-z ]+"
+                                    title="Please enter only letters and spaces"
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>
@@ -459,8 +501,8 @@ const AccountInformation = () => {
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    pattern="[A-Za-z]+"
-                                    title="Please enter only letters (no numbers or special characters)"
+                                    pattern="[A-Za-z ]+"
+                                    title="Please enter only letters and spaces"
                                 />
                                 {/*<p className="mt-1 text-xs text-gray-500">*Only letters allowed</p>*/}
                             </div>

@@ -89,14 +89,15 @@ public class RepairTicketService {
 
     public RepairTicketEntity checkInRepairTicket(CheckInRepairTicketRequestDTO req) {
         logger.info("Attempting to check in repair ticket: {}", req.getTicketNumber());
-
         try {
             if (repairTicketRepository.findByTicketNumber(req.getTicketNumber()).isPresent()) {
                 logger.warn("A repair ticket with this ticket number already exists: {}", req.getTicketNumber());
                 throw new IllegalArgumentException("A repair ticket with this ticket number already exists.");
             }
-            if (req.getCustomerName() == null || req.getDeviceSerialNumber() == null) {
-                logger.warn("Required fields are missing in the repair ticket form for ticket: {}", req.getTicketNumber());
+            // Validate required fields (first name & serial number at minimum)
+            if (req.getCustomerFirstName() == null || req.getCustomerFirstName().isBlank() ||
+                req.getDeviceSerialNumber() == null || req.getDeviceSerialNumber().isBlank()) {
+                logger.warn("Required fields missing (first name / serial) for ticket: {}", req.getTicketNumber());
                 throw new IllegalArgumentException("Required fields are missing in the repair ticket form");
             }
             if (req.getRepairPhotos() != null && req.getRepairPhotos().size() > 3) {
@@ -105,81 +106,59 @@ public class RepairTicketService {
             }
 
             UserEntity technician = userRepository.findByEmail(req.getTechnicianEmail())
-                    .orElseThrow(() -> {
-                        logger.warn("Technician not found: {}", req.getTechnicianEmail());
-                        return new IllegalArgumentException("Technician not found");
-                    });
+                    .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
 
             RepairTicketEntity repairTicket = new RepairTicketEntity();
-            repairTicket.setCustomerName(req.getCustomerName());
+            repairTicket.setCustomerFirstName(req.getCustomerFirstName().trim());
+            if (req.getCustomerLastName() != null) {
+                repairTicket.setCustomerLastName(req.getCustomerLastName().trim());
+            }
             repairTicket.setCustomerEmail(req.getCustomerEmail());
-
             String rawPhone = req.getCustomerPhoneNumber().replaceAll("^\\+?63", "");
             repairTicket.setCustomerPhoneNumber("+63" + rawPhone);
-
             repairTicket.setDeviceSerialNumber(req.getDeviceSerialNumber());
             repairTicket.setDeviceModel(req.getDeviceModel());
             repairTicket.setDeviceBrand(req.getDeviceBrand());
             repairTicket.setDeviceColor(req.getDeviceColor());
-            repairTicket.setDevicePassword(
-                    req.getDevicePassword() == null || req.getDevicePassword().isEmpty() ? "N/A" : req.getDevicePassword()
-            );
-            repairTicket.setIsDeviceTampered(req.getIsDeviceTampered() != null && req.getIsDeviceTampered());
+            repairTicket.setDevicePassword((req.getDevicePassword()==null || req.getDevicePassword().isEmpty())?"N/A":req.getDevicePassword());
+            repairTicket.setIsDeviceTampered(req.getIsDeviceTampered()!=null && req.getIsDeviceTampered());
             repairTicket.setDeviceType(RepairTicketDeviceType.valueOf(req.getDeviceType().toUpperCase()));
             repairTicket.setReportedIssue(req.getReportedIssue());
             repairTicket.setTechnicianEmail(technician);
             repairTicket.setTechnicianName(technician.getFirstName() + " " + technician.getLastName());
-            repairTicket.setAccessories(
-                    req.getAccessories() == null || req.getAccessories().isEmpty() ? "N/A" : req.getAccessories()
-            );
-            repairTicket.setObservations(
-                    req.getObservations() == null || req.getObservations().isEmpty() ? "N/A" : req.getObservations()
-            );
+            repairTicket.setAccessories((req.getAccessories()==null || req.getAccessories().isEmpty())?"N/A":req.getAccessories());
+            repairTicket.setObservations((req.getObservations()==null || req.getObservations().isEmpty())?"N/A":req.getObservations());
             repairTicket.setStatus("CHECKED_IN");
             repairTicket.setRepairStatus(RepairStatusEnum.RECEIVED);
             repairTicket.setCheckInDate(LocalDateTime.now());
             repairTicket.setTicketNumber(req.getTicketNumber());
 
             AtomicInteger counter = new AtomicInteger(1);
-            try {
-                repairTicket.setRepairPhotos(req.getRepairPhotos().stream()
-                        .map(photo -> {
-                            try {
-                                String photoPath = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
-                                RepairPhotoEntity repairPhoto = new RepairPhotoEntity();
-                                repairPhoto.setPhotoUrl(photoPath);
-                                repairPhoto.setRepairTicket(repairTicket);
-                                logger.info("Saved repair photo for ticket: {} at {}", repairTicket.getTicketNumber(), photoPath);
-                                return repairPhoto;
-                            } catch (IOException e) {
-                                logger.error("Failed to save repair photo for ticket: {}", repairTicket.getTicketNumber(), e);
-                                throw new RuntimeException("Failed to save repair photo. Please retry.", e);
-                            }
-                        })
-                        .collect(Collectors.toList()));
-            } catch (Exception e) {
-                logger.error("Error processing repair photos for ticket: {}", repairTicket.getTicketNumber(), e);
-                throw e;
+            if (req.getRepairPhotos() != null) {
+                repairTicket.setRepairPhotos(req.getRepairPhotos().stream().map(photo -> {
+                    try {
+                        String path = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
+                        RepairPhotoEntity rp = new RepairPhotoEntity();
+                        rp.setPhotoUrl(path);
+                        rp.setRepairTicket(repairTicket);
+                        return rp;
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to save repair photo", e);
+                    }
+                }).collect(Collectors.toList()));
             }
 
-            logger.info("Successfully created repair ticket: {}", repairTicket.getTicketNumber());
-
-            RepairTicketEntity savedTicket = repairTicketRepository.save(repairTicket);
-
-            // Add initial status history entry for RECEIVED
+            RepairTicketEntity saved = repairTicketRepository.save(repairTicket);
             try {
                 RepairStatusHistoryEntity initHistory = new RepairStatusHistoryEntity();
-                initHistory.setRepairTicket(savedTicket);
+                initHistory.setRepairTicket(saved);
                 initHistory.setRepairStatusEnum(RepairStatusEnum.RECEIVED);
                 repairStatusHistoryRepository.save(initHistory);
-            } catch (Exception e) {
-                logger.error("Failed to save initial status history for ticket: {}", repairTicket.getTicketNumber(), e);
-                // continue without blocking the ticket creation
+            } catch (Exception ex) {
+                logger.error("Failed to persist initial history for ticket {}", repairTicket.getTicketNumber(), ex);
             }
-
-            return savedTicket;
+            return saved;
         } catch (IllegalArgumentException e) {
-            logger.error("Validation error during check-in for ticket: {}", req.getTicketNumber(), e);
             throw e;
         } catch (Exception e) {
             logger.error("Unexpected error during check-in for ticket: {}", req.getTicketNumber(), e);
@@ -249,10 +228,11 @@ public class RepairTicketService {
             }
 
             try {
+                String fullName = ((repairTicket.getCustomerFirstName()==null?"":repairTicket.getCustomerFirstName()) + " " + (repairTicket.getCustomerLastName()==null?"":repairTicket.getCustomerLastName())).trim();
                 emailService.sendRepairTicketPdfEmail(
                         repairTicket.getCustomerEmail(),
                         repairTicket.getTicketNumber(),
-                        repairTicket.getCustomerName(),
+                        fullName.isEmpty()?"Customer":fullName,
                         pdfPath
                 );
             } catch (Exception emailEx) {
@@ -610,7 +590,8 @@ public class RepairTicketService {
     private GetRepairTicketResponseDTO mapToGetRepairTicketResponseDTO(RepairTicketEntity repairTicket) {
         GetRepairTicketResponseDTO dto = new GetRepairTicketResponseDTO();
         dto.setTicketNumber(repairTicket.getTicketNumber());
-        dto.setCustomerName(repairTicket.getCustomerName());
+        dto.setCustomerFirstName(repairTicket.getCustomerFirstName());
+        dto.setCustomerLastName(repairTicket.getCustomerLastName());
         dto.setCustomerEmail(repairTicket.getCustomerEmail());
         dto.setCustomerPhoneNumber(repairTicket.getCustomerPhoneNumber());
         dto.setDeviceType(repairTicket.getDeviceType() != null ? repairTicket.getDeviceType().name() : null);
@@ -625,7 +606,6 @@ public class RepairTicketService {
         dto.setObservations(repairTicket.getObservations());
         dto.setReportedIssue(repairTicket.getReportedIssue());
         dto.setRepairStatus(repairTicket.getRepairStatus().name());
-        /*dto.setStatus(repairTicket.getStatus());*/
         dto.setCheckInDate(LocalDate.from(repairTicket.getCheckInDate()));
         dto.setRepairPhotosUrls(repairTicket.getRepairPhotos().stream()
                 .map(RepairPhotoEntity::getPhotoUrl)
@@ -663,4 +643,3 @@ public class RepairTicketService {
         return new RepairTicketStatusDistributionDTO(statusCounts, totalTickets);
     }
 }
-

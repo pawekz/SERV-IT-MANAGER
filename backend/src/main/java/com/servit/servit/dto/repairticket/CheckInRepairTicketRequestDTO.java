@@ -7,7 +7,8 @@ import java.util.List;
 @Data
 public class CheckInRepairTicketRequestDTO {
     private String ticketNumber;
-    private String customerName;
+    private String customerFirstName; // new
+    private String customerLastName;  // new
     private String customerEmail;
     private String customerPhoneNumber;
     private String deviceType;

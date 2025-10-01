@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight, Upload,X, SquareX} from "lucide-react";
+import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
@@ -19,9 +19,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const [showWarrantyReceive, setShowWarrantyReceive] = useState(false);
     const role = localStorage.getItem('userRole')?.toLowerCase();
     const [showToast, setShowToast] = useState(false);
-    const [readonly, setReadonly] = useState(false);
     const [success, setSuccess] = useState(false);
     const [photoFiles, setPhotoFiles] = useState(null);
+    // removed readonly (was never updated) and its usages
     const [photoError, setPhotoError] = useState("");
     const [error, setError] = useState("");
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
@@ -49,7 +49,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         "DENIED"
     ];
 
-    const currentStatusIndex = STATUS_OPTIONS.indexOf(data.status);
+    // removed unused currentStatusIndex
 
     const downloadWarrantyPdf = async (warrantyNumber) => {
         try {
@@ -89,8 +89,19 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     useEffect(() => {
         if (data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0) {
             getWarrantyPhotos(data.warrantyPhotosUrls)
-                .then(urls => setWarrantyPhotos(urls))
-                .catch(() => setWarrantyPhotos([]));
+                .then(urls => {
+                    setWarrantyPhotos(urls);
+                    // If formData doesn't yet have photos, sync them in for unified display logic
+                    setFormData(prev => {
+                        if (!prev.warrantyPhotosUrls || prev.warrantyPhotosUrls.length === 0) {
+                            return { ...prev, warrantyPhotosUrls: urls };
+                        }
+                        return prev;
+                    });
+                })
+                .catch(() => {
+                    setWarrantyPhotos([]);
+                });
         } else {
             setWarrantyPhotos([]);
         }
@@ -99,80 +110,75 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const UpdateStatus = async () => {
         try {
             const form = new FormData();
-            if (formData.warrantyNumber) {
-                form.append("warrantyNumber", formData.warrantyNumber.toString());
-            }
-            if (formData.status) {
-                form.append("status", formData.status.toString());
-            }
+            if (formData.warrantyNumber) form.append("warrantyNumber", formData.warrantyNumber.toString());
+            if (formData.status) form.append("status", formData.status.toString());
             const response = await api.patch(`/warranty/updateWarrantyStatus`, form);
             const result = response.data;
             setSuccess(result);
             onSuccess();
         } catch (error) {
-            let errorMessage = error.response?.data || error.message;
+            const errorMessage = error.response?.data || error.message;
             setError(errorMessage);
             setShowToast(true);
-            throw new Error(errorMessage);
+            console.error("Status update failed:", errorMessage);
         }
-
     }
 
 
     const handlePhotoUpload = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                setPhotoError("You can upload a maximum of 3 photos.");
-                return;
-            }
-            setPhotoError("");
-            setPhotoFiles(files);
-
-            Promise.all(files.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            })).then(base64Arr => {
-                setFormData((prev) => ({
-                    ...prev,
-                    warrantyPhotosUrls: base64Arr
-                }));
-            });
+        const selected = e.target.files ? Array.from(e.target.files) : [];
+        if (selected.length === 0) return;
+        const maxPhotos = 3;
+        const currentCount = formData.warrantyPhotosUrls ? formData.warrantyPhotosUrls.length : 0;
+        const remainingSlots = maxPhotos - currentCount;
+        if (remainingSlots <= 0) {
+            setPhotoError(`Maximum of ${maxPhotos} photos reached.`);
+            e.target.value = '';
+            return;
         }
+        const filesToAdd = selected.slice(0, remainingSlots);
+        const ignored = selected.length - filesToAdd.length;
+        setPhotoError(ignored > 0
+            ? `Only ${remainingSlots} more photo${remainingSlots === 1 ? '' : 's'} allowed (maximum ${maxPhotos}).`
+            : ''
+        );
+        Promise.all(filesToAdd.map(file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        }))).then(base64Arr => {
+            setFormData(prev => ({
+                ...prev,
+                warrantyPhotosUrls: [...(prev.warrantyPhotosUrls || []), ...base64Arr]
+            }));
+            setPhotoFiles(prev => ([...(prev || []), ...filesToAdd]));
+        }).catch(() => setPhotoError('Failed to read one or more files.'))
+          .finally(() => { e.target.value = ''; });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const statusChanged =( formData.status !== data.status);
-
+        // Normalize accessories to 'N/A' if blank/whitespace
+        const sanitizedAccessories = !formData.accessories || formData.accessories.trim() === '' ? 'N/A' : formData.accessories;
+        if (sanitizedAccessories !== formData.accessories) {
+            setFormData(prev => ({ ...prev, accessories: sanitizedAccessories }));
+        }
+        const statusChanged = (formData.status !== data.status);
         if (!statusChanged){
             setError("Please Update the status above.");
             setShowToast(true);
             return;
         }
-
-        console.log("Form Data Submitted:", formData);
-
         if(formData.status === "ITEM_RETURNED") {
-            const hasPhotos =
-                (photoFiles && photoFiles.length > 0) ||
-                (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
-
+            const hasPhotos = (photoFiles && photoFiles.length > 0) || (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0);
             if (!hasPhotos ) {
                 setError("Please upload at least one photo of the device condition.");
                 setShowToast(true);
                 return;
-            } else {
-                setError("");
-                setPhotoError("");
             }
-
-            console.log("Form Data:", formData);
-
+            setError("");
+            setPhotoError("");
             setShowWarrantyReceive(true);
         } else {
             UpdateStatus();
@@ -201,8 +207,14 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         setImageViewerOpen(true);
     };
     const closeImageViewer = () => setImageViewerOpen(false);
-    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % formData.warrantyPhotosUrls.length);
-    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + formData.warrantyPhotosUrls.length) % formData.warrantyPhotosUrls.length);
+
+    // Unified photo source preference: formData.warrantyPhotosUrls first, else warrantyPhotos fallback
+    const displayedPhotos = (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0)
+        ? formData.warrantyPhotosUrls
+        : warrantyPhotos;
+
+    const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
+    const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
 
     if(success === true){
         onClose();
@@ -238,7 +250,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         <select
                                             onChange={handleStatusChange}
                                             value={formData.status}
-                                            disabled={readonly}
+                                            disabled={false}
                                             className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
                                         >
                                             {STATUS_OPTIONS.filter((status) => {
@@ -364,9 +376,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     id="accessories"
                                     value={formData.accessories}
                                     onChange={e => setFormData(prev => ({ ...prev, accessories: e.target.value }))}
-                                    required
+                                    // accessories optional: default to 'N/A' on submit if left blank
                                     className=" w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#33e407] focus:border-transparent "
-                                ></input>
+                                />
                             </div>
 
                         </div>)}
@@ -419,7 +431,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         name="returnReason"
                                         defaultValue={label}
                                         checked={reason.returnReason === label}
-                                        disabled = {readonly}
+                                        disabled={false}
                                         onChange={() => setReason({ ...data, returnReason: label })}
                                         className="accent-green-600 cursor-default"
                                     />
@@ -469,9 +481,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                 {photoError instanceof Error ? photoError.message : photoError}
                                             </p>
                                         )}
-                                        {warrantyPhotos && warrantyPhotos.length > 0 && (
+                                        {displayedPhotos && displayedPhotos.length > 0 && (
                                             <div className="flex gap-4 mt-2 justify-center">
-                                                {warrantyPhotos.map((src, idx) => (
+                                                {displayedPhotos.map((src, idx) => (
                                                     <div
                                                         key={idx}
                                                         style={{
@@ -493,18 +505,20 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                                 type="button"
                                                                 onClick={e => {
                                                                     e.stopPropagation();
-                                                                    setFormData(prev => {
-                                                                        const updatedPhotos = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
-                                                                        if (updatedPhotos.length === 0) {
-                                                                            setPhotoFiles([]);
-                                                                            setPhotoError("Please upload at least one photo of the device condition.");
-                                                                        }
-                                                                        return {
-                                                                            ...prev,
-                                                                            warrantyPhotosUrls: updatedPhotos
-                                                                        };
-                                                                    });
-                                                                    setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                                    if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+                                                                        setFormData(prev => {
+                                                                            const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
+                                                                            setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
+                                                                            if (updated.length === 0) {
+                                                                                setPhotoError("Please upload at least one photo of the device condition.");
+                                                                            } else {
+                                                                                setPhotoError('');
+                                                                            }
+                                                                            return { ...prev, warrantyPhotosUrls: updated };
+                                                                        });
+                                                                    } else {
+                                                                        setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                                    }
                                                                 }}
                                                                 style={{
                                                                     position: "absolute",
@@ -591,40 +605,40 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     onClick={e => e.stopPropagation()}
                                 >
                                     <button
+                                        type="button"
                                         className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
                                         onClick={closeImageViewer}
                                     >
                                         <X size={28} />
                                     </button>
-                                    <div className="w-full text-center mb-2 font-semibold text-lg text-gray-800">
-                                        {`Device Condition ${imageViewerIndex + 1}`}
-                                    </div>
                                     <img
-                                        src={warrantyPhotos[imageViewerIndex]}
+                                        src={displayedPhotos[imageViewerIndex]}
                                         alt={`Device condition ${imageViewerIndex + 1}`}
                                         style={{
-                                            width: "100%",
-                                            height: "100%",
+                                            maxWidth: 400,
+                                            maxHeight: 400,
                                             objectFit: "contain",
-                                            background: "#f3f4f6",
+                                            borderRadius: 8,
+                                            background: "#f3f4f6"
                                         }}
-                                        onClick={() => openImageViewer(imageViewerIndex)}
                                     />
                                     <div className="flex items-center justify-between w-full mt-4">
                                         <button
+                                            type="button"
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerPrevPhoto}
-                                            disabled={warrantyPhotos.length < 2}
+                                            disabled={displayedPhotos.length < 2}
                                         >
                                             <ChevronLeft size={24} />
                                         </button>
                                         <span className="text-gray-700 text-sm">
-                    {imageViewerIndex + 1} / {warrantyPhotos.length}
-                </span>
+                                            {imageViewerIndex + 1} / {displayedPhotos.length}
+                                        </span>
                                         <button
+                                            type="button"
                                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
                                             onClick={imageViewerNextPhoto}
-                                            disabled={warrantyPhotos.length < 2}
+                                            disabled={displayedPhotos.length < 2}
                                         >
                                             <ChevronRight size={24} />
                                         </button>

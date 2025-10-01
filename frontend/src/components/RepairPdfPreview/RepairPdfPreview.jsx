@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import PdfDocument from "../PdfDocument/PdfDocument.jsx";
 import Toast from "../../components/Toast/Toast.jsx";
@@ -18,12 +18,13 @@ function dataURLtoBlob(dataURL) {
 const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess, kind }) => {
     const [loading, setLoading] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(null); // keep and display
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
     const [showDialog, setShowDialog] = useState(false);
     const [pdfBlob, setPdfBlob] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
     const navigate = useNavigate();
+    const userRole = (localStorage.getItem('userRole') || '').toUpperCase();
 
     const showToast = (message, type = "success") => {
         setToast({ show: true, message, type });
@@ -90,7 +91,10 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     const signatureBlob = dataURLtoBlob(signatureDataURL);
                     form.append("digitalSignature", signatureBlob, "signature.png");
                 } else {
-                    throw new Error("Digital signature is required");
+                    setError("Digital signature is required");
+                    showToast("Digital signature is required", "error");
+                    setLoading(false);
+                    return;
                 }
                 if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
                     formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
@@ -106,6 +110,20 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 setSuccess(result);
 
                 const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
+
+                // If admin selected a technician, explicitly assign (redundant-safe) after check-in
+                if (userRole === 'ADMIN' && formData.technicianEmail && ticketNumber) {
+                    try {
+                        await api.patch('/user/assignTechnician', {
+                            ticketNumber: ticketNumber,
+                            technicianEmail: formData.technicianEmail
+                        });
+                    } catch (assignErr) {
+                        // Non-blocking: show toast but continue flow
+                        showToast(`Technician assignment failed: ${assignErr?.response?.data || assignErr.message}`, 'error');
+                    }
+                }
+
                 if (ticketNumber && pdfBlob) {
                     const pdfForm = new FormData();
                     pdfForm.append("file", pdfBlob, `${ticketNumber}.pdf`);
@@ -193,6 +211,9 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
     return (
         <div className="w-full flex justify-center py-8">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl w-full">
+                {error && (
+                    <div className="mb-4 p-3 text-sm rounded bg-red-100 text-red-700 border border-red-200">{error}</div>
+                )}
                 <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold">
                         <span className="text-gray-800">IO</span>

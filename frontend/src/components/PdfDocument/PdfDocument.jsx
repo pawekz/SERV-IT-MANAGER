@@ -214,7 +214,9 @@ const styles = StyleSheet.create({
 });
 
 const PdfDocument = ({ signatureDataURL, formData, kind }) => {
-    console.log('Rendering PDF Document with kind:', formData);
+    const composedName = ((formData.customerFirstName || "") + " " + (formData.customerLastName || "")).trim();
+    const displayName = composedName || formData.customerName || 'N/A';
+
     return(
         <Document>
             {/* Page 1: Personal & Device Info */}
@@ -247,7 +249,7 @@ const PdfDocument = ({ signatureDataURL, formData, kind }) => {
                     <View style={styles.row}>
                         <View style={styles.col}>
                             <Text style={styles.label}>Full Name</Text>
-                            <Text style={styles.value}>{formData.customerName || 'N/A'}</Text>
+                            <Text style={styles.value}>{displayName}</Text>
                         </View>
                         <View style={styles.col}>
                             <Text style={styles.label}>Email</Text>

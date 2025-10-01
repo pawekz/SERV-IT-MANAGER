@@ -1,8 +1,8 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import KanbanBoard from "./TechnicianKanban/KanbanBoard.jsx"
-import {User, ClipboardPlus, PackageCheck, X, Clock, Plus, AlertTriangle} from "lucide-react"
+import {User, ClipboardPlus, PackageCheck, X, Clock, Plus, AlertTriangle} from "lucide-react";
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
 import api from '../../config/ApiConfig';
 
@@ -43,6 +43,9 @@ const TechnicianDashboard = () => {
     // New state for low stock
     const [lowStock, setLowStock] = useState([]);
 
+    // New state for profile picture URL
+    const [profileUrl, setProfileUrl] = useState(null);
+
     const navigate = useNavigate();
 
     const parseJwt = (token) => {
@@ -61,6 +64,13 @@ const TechnicianDashboard = () => {
     // Function to close the modal
     const closeModal = () => {
         setModalData(null);
+    };
+
+    // Get user initials for profile picture fallback
+    const getInitials = () => {
+        if (userData.firstName && userData.lastName) return userData.firstName[0].toUpperCase() + userData.lastName[0].toUpperCase();
+        if (userData.firstName) return userData.firstName[0].toUpperCase();
+        return 'U';
     };
 
     useEffect(() => {
@@ -144,6 +154,36 @@ const TechnicianDashboard = () => {
         fetchLowStock();
     }, []);
 
+    // Fetch profile picture URL
+    useEffect(() => {
+        const fetchWithPicture = async () => {
+            try {
+                const currentStored = sessionStorage.getItem('userData');
+                let parsed = currentStored ? JSON.parse(currentStored) : null;
+                if (!parsed || !parsed.userId) {
+                    const resp = await api.get('/user/getCurrentUser');
+                    parsed = { ...userData, ...resp.data, password: '********' };
+                    sessionStorage.setItem('userData', JSON.stringify(parsed));
+                    setUserData(prev => ({ ...prev, ...parsed }));
+                }
+                if (parsed.profilePictureUrl && parsed.profilePictureUrl !== '0') {
+                    try {
+                        const presigned = await api.get(`/user/getProfilePicture/${parsed.userId}`);
+                        setProfileUrl(presigned.data);
+                    } catch { setProfileUrl(null); }
+                } else {
+                    setProfileUrl(null);
+                }
+            } catch (e) {
+                setProfileUrl(null);
+            }
+        };
+        fetchWithPicture();
+        const interval = setInterval(fetchWithPicture, 240000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Chart data
     const chartData = {
         months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -206,9 +246,13 @@ const TechnicianDashboard = () => {
                     </div>
                     <div className="flex items-center space-x-3 flex-shrink-0">
                         <NotificationBell />
-                        <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                            <User className="h-5 w-5 text-gray-600" />
-                        </div>
+                        <Link to="/accountinformation" className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 bg-gray-100 overflow-hidden">
+                            {profileUrl ? (
+                                <img src={profileUrl} alt="Profile" onError={() => setProfileUrl(null)} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-sm font-semibold text-gray-600">{getInitials()}</span>
+                            )}
+                        </Link>
                     </div>
                 </div>
 
@@ -333,3 +377,4 @@ const TechnicianDashboard = () => {
 }
 
 export default TechnicianDashboard
+

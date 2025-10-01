@@ -306,7 +306,16 @@ public class WarrantyService {
 
                 // Map basic customer and issue details
                 ticket.setTicketNumber(warranty.getWarrantyNumber());
-                ticket.setCustomerName(warranty.getCustomerName());
+                // Split full customer name into first / last if possible
+                String fullName = warranty.getCustomerName();
+                if (fullName != null && !fullName.isBlank()) {
+                    String trimmed = fullName.trim();
+                    String[] parts = trimmed.split("\\s+", 2); // split into at most 2 parts
+                    ticket.setCustomerFirstName(parts[0]);
+                    if (parts.length > 1) {
+                        ticket.setCustomerLastName(parts[1]);
+                    }
+                }
                 ticket.setCustomerEmail(warranty.getCustomerEmail());
                 ticket.setCustomerPhoneNumber(warranty.getCustomerPhoneNumber());
                 ticket.setReportedIssue(warranty.getReportedIssue());
