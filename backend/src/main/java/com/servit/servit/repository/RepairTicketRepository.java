@@ -23,7 +23,6 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
 
     @Query("SELECT r FROM RepairTicketEntity r WHERE " +
             "LOWER(r.ticketNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(r.customerName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.customerFirstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.customerLastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.customerEmail) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
@@ -35,7 +34,6 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
 
     @Query("SELECT r FROM RepairTicketEntity r WHERE r.customerEmail = :email AND (" +
             "LOWER(r.ticketNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(r.customerName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.customerFirstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.customerLastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(r.deviceSerialNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

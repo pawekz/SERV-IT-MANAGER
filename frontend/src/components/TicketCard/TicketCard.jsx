@@ -78,9 +78,9 @@ const TicketCard = ({ ticket, onClick }) => {
         setCurrent((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     };
 
-    const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0, -1).join(' ') : '');
-    const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
-    const displayFull = [first, last].filter(Boolean).join(' ') || ticket.customerName;
+    const first = ticket.customerFirstName || '';
+    const last = ticket.customerLastName || '';
+    const displayFull = [first, last].filter(Boolean).join(' ') || '—';
 
     return (
         <div

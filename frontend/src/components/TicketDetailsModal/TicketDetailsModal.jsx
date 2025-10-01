@@ -57,9 +57,9 @@ function TicketDetailsModal({ ticket, onClose }) {
 
     const images = ticket.repairPhotosUrls || [];
     const statusVal = ticket.status || ticket.repairStatus || 'N/A';
-    const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : '');
-    const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
-    const full = [first,last].filter(Boolean).join(' ') || ticket.customerName;
+    // Use only new first/last fields (legacy customerName removed)
+    const first = ticket.customerFirstName || '';
+    const last = ticket.customerLastName || '';
 
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
@@ -113,10 +113,6 @@ function TicketDetailsModal({ ticket, onClose }) {
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
                                 <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400"/> Ticket Information</h3>
                                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-[13px]">
-                                    <div>
-                                        <dt className="text-gray-500">Customer</dt>
-                                        <dd className="font-medium text-gray-800">{full || '—'}</dd>
-                                    </div>
                                     <div>
                                         <dt className="text-gray-500">First Name</dt>
                                         <dd className="font-medium text-gray-800">{first || '—'}</dd>

@@ -22,7 +22,6 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
     const [formData, setFormData] = useState({
         ticketNumber: "",
-        customerName: "", // legacy full name (computed from first + last on submit)
         customerFirstName: "",
         customerLastName: "",
         customerEmail: "",
@@ -173,10 +172,8 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
         const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
         const accessoriesValue = formData.accessories && formData.accessories.trim() !== '' ? formData.accessories : 'N/A';
-        const fullName = `${formData.customerFirstName || ""} ${formData.customerLastName || ""}`.trim();
         const submitData = {
             ...formData,
-            customerName: fullName || formData.customerName, // ensure legacy field populated
             customerPhoneNumber: formattedPhoneNumber,
             warrantyClass: warrantyClass,
             accessories: accessoriesValue

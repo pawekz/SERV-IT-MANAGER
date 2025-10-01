@@ -45,6 +45,9 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
   const deviceDisplay = [ticket.deviceBrand, ticket.deviceModel].filter(Boolean).join(" ") || ticket.deviceType;
   const createdOn = ticket.checkInDate ? new Date(ticket.checkInDate).toLocaleDateString() : "-";
 
+  const first = ticket.customerFirstName || '';
+  const last = ticket.customerLastName || '';
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       <div className="p-5">
@@ -126,14 +129,10 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
             <h3 className="font-medium text-gray-700">Customer Information</h3>
           </div>
           <div className="grid grid-cols-2 gap-y-3 text-sm">
-            {(() => { const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : ''); const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : ''); const full = [first,last].filter(Boolean).join(' ') || ticket.customerName; return (<>
-              <div className="text-gray-500">First Name:</div>
-              <div className="font-medium">{first || '—'}</div>
-              <div className="text-gray-500">Last Name:</div>
-              <div className="font-medium">{last || '—'}</div>
-              <div className="text-gray-500">Full Name (Legacy):</div>
-              <div className="font-medium">{full || '—'}</div>
-            </>); })()}
+            <div className="text-gray-500">First Name:</div>
+            <div className="font-medium">{first || '—'}</div>
+            <div className="text-gray-500">Last Name:</div>
+            <div className="font-medium">{last || '—'}</div>
             <div className="text-gray-500">Email:</div>
             <div className="font-medium">{ticket.customerEmail}</div>
             <div className="text-gray-500">Phone:</div>

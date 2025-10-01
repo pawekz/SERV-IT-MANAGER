@@ -148,7 +148,7 @@ const HistoryPage = () => {
                 const statusVal = (ticket.status || ticket.repairStatus || '').toLowerCase();
                 const first = ticket.customerFirstName?.toLowerCase() || '';
                 const last = ticket.customerLastName?.toLowerCase() || '';
-                const full = ticket.customerName?.toLowerCase() || `${first} ${last}`.trim();
+                const full = `${first} ${last}`.trim();
                 return (
                     ticket.ticketNumber?.toLowerCase().includes(q) ||
                     first.includes(q) ||
@@ -205,8 +205,8 @@ const HistoryPage = () => {
                         <tbody className="divide-y divide-gray-100">
                             {displayedTickets.map(ticket => {
                                 const statusVal = ticket.status || ticket.repairStatus || 'N/A';
-                                const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0, -1).join(' ') : '');
-                                const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
+                                const first = ticket.customerFirstName || '';
+                                const last = ticket.customerLastName || '';
                                 return (
                                     <tr key={ticket.ticketNumber}
                                         className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"

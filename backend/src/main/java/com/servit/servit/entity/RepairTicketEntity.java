@@ -23,9 +23,6 @@ public class RepairTicketEntity {
     @Column(name = "ticket_number", nullable = false)
     private String ticketNumber;
 
-    @Column(name = "customer_name", nullable = false)
-    private String customerName; // legacy full name (first + last), kept for backward compatibility
-
     @Column(name = "customer_first_name")
     private String customerFirstName; // new split field
 

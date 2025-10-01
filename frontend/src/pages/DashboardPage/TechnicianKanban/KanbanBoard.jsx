@@ -60,9 +60,9 @@ const KanbanBoard = () => {
                     const tickets = Array.isArray(data) ? data : data.content ?? []
 
                     tickets.forEach((ticket) => {
-                        const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0, -1).join(' ') : '')
-                        const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '')
-                        const full = [first, last].filter(Boolean).join(' ') || ticket.customerName || '—'
+                        const first = ticket.customerFirstName || ''
+                        const last = ticket.customerLastName || ''
+                        const full = [first, last].filter(Boolean).join(' ') || '—'
                         fetchedTasks.push({
                             id: ticket.ticketNumber,
                             title: ticket.reportedIssue || ticket.deviceModel || ticket.deviceBrand || "Repair Ticket",

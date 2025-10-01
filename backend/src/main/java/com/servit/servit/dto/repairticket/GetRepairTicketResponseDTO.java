@@ -7,7 +7,6 @@ import java.util.List;
 @Data
 public class GetRepairTicketResponseDTO {
     private String ticketNumber;
-    private String customerName; // legacy full name
     private String customerFirstName; // new split field
     private String customerLastName;  // new split field
     private String customerEmail;
