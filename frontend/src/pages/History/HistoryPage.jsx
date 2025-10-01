@@ -188,8 +188,8 @@ const HistoryPage = () => {
     // NEW: render table view
     const renderTable = () => {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <>
+                <div className="overflow-x-auto mb-2">
                     <table className="min-w-full text-sm text-gray-700">
                         <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-600 border-b border-gray-200">
                             <tr>
@@ -239,9 +239,8 @@ const HistoryPage = () => {
                         </tbody>
                     </table>
                 </div>
-                {/* Table Pagination */}
                 {renderPagination(true)}
-            </div>
+            </>
         );
     };
 
@@ -262,9 +261,7 @@ const HistoryPage = () => {
                     key={i}
                     onClick={() => goToPage(i)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                        i === currentPage
-                            ? 'bg-[#25D482] text-white border-[#25D482]' 
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                     }`}
                 >
                     {i + 1}
@@ -272,7 +269,7 @@ const HistoryPage = () => {
             );
         }
         return (
-            <div className={`flex items-center gap-2 flex-wrap justify-between ${compact ? 'px-5 py-4 border-t border-gray-200 bg-white' : 'mt-8'}`}>
+            <div className={`flex items-center gap-2 flex-wrap justify-between ${compact ? 'px-6 py-4 border-t border-gray-200 bg-white' : 'mt-8'}`}>
                 <div className="flex gap-2 items-center">
                     <button
                         onClick={() => currentPage > 0 && goToPage(currentPage - 1)}
@@ -312,10 +309,9 @@ const HistoryPage = () => {
                     <div className="px-6 py-5 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex flex-col gap-1">
                             <h2 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                                Tickets
+                                Repair Tickets
                                 <span className="text-sm font-normal text-gray-500">({clientFilteredTickets.length}{role !== 'CUSTOMER' ? '' : ''})</span>
                             </h2>
-                            <div className="text-xs text-gray-500">{role === 'CUSTOMER' ? 'Client-side filtered' : 'Server paginated'} • Showing {displayedTickets.length} {displayedTickets.length === 1 ? 'ticket' : 'tickets'}</div>
                         </div>
                         <div className="flex flex-col md:flex-row md:items-center gap-3 w-full lg:w-auto">
                             <div className="flex flex-1 min-w-[220px] items-center gap-2">
@@ -376,7 +372,7 @@ const HistoryPage = () => {
                     </div>
 
                     {/* Body */}
-                    <div className="p-6">
+                    <div className={viewMode === 'table' ? '' : 'p-6'}>
                         {loading && (
                             <div className="text-center text-gray-500 py-16">Loading tickets...</div>
                         )}
