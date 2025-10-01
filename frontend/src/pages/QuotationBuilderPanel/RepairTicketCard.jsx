@@ -126,15 +126,18 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
             <h3 className="font-medium text-gray-700">Customer Information</h3>
           </div>
           <div className="grid grid-cols-2 gap-y-3 text-sm">
-            <div className="text-gray-500">Name:</div>
-            <div className="font-medium">{ticket.customerName}</div>
-
+            {(() => { const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : ''); const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : ''); const full = [first,last].filter(Boolean).join(' ') || ticket.customerName; return (<>
+              <div className="text-gray-500">First Name:</div>
+              <div className="font-medium">{first || '—'}</div>
+              <div className="text-gray-500">Last Name:</div>
+              <div className="font-medium">{last || '—'}</div>
+              <div className="text-gray-500">Full Name (Legacy):</div>
+              <div className="font-medium">{full || '—'}</div>
+            </>); })()}
             <div className="text-gray-500">Email:</div>
             <div className="font-medium">{ticket.customerEmail}</div>
-
             <div className="text-gray-500">Phone:</div>
             <div className="font-medium">{ticket.customerPhoneNumber}</div>
-
             <div className="text-gray-500">Created On:</div>
             <div className="font-medium">{createdOn}</div>
           </div>
@@ -144,4 +147,4 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
   );
 };
 
-export default RepairTicketCard; 
+export default RepairTicketCard;

@@ -114,8 +114,12 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
                     </button>
                     <h2 className="text-2xl font-bold mb-4">Ticket #{ticket.ticketNumber} Details</h2>
                     <div className="mb-4">
-                        <strong>Status:</strong> {ticket.status}<br />
-                        <strong>Customer:</strong> {ticket.customerName}<br />
+                        <strong>Status:</strong> {ticket.status || ticket.repairStatus}<br />
+                        {(() => { const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0,-1).join(' ') : ''); const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : ''); const full = [first,last].filter(Boolean).join(' ') || ticket.customerName; return (<>
+                            <strong>First Name:</strong> {first || '—'}<br />
+                            <strong>Last Name:</strong> {last || '—'}<br />
+                            <strong>Full Name (Legacy):</strong> {full || '—'}<br />
+                        </>); })()}
                         <strong>Date:</strong> {ticket.checkInDate}<br />
                         <strong>Device:</strong> {ticket.deviceBrand} {ticket.deviceModel}<br />
                     </div>

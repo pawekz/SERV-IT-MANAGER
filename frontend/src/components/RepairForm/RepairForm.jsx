@@ -21,7 +21,9 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
     const [formData, setFormData] = useState({
         ticketNumber: "",
-        customerName: "",
+        customerName: "", // legacy full name (computed from first + last on submit)
+        customerFirstName: "",
+        customerLastName: "",
         customerEmail: "",
         customerPhoneNumber: "",
         deviceType: "",
@@ -150,8 +152,10 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
 
         const formattedPhoneNumber = formData.customerPhoneNumber.replace(/\s/g, '');
         const accessoriesValue = formData.accessories && formData.accessories.trim() !== '' ? formData.accessories : 'N/A';
+        const fullName = `${formData.customerFirstName || ""} ${formData.customerLastName || ""}`.trim();
         const submitData = {
             ...formData,
+            customerName: fullName || formData.customerName, // ensure legacy field populated
             customerPhoneNumber: formattedPhoneNumber,
             warrantyClass: warrantyClass,
             accessories: accessoriesValue
@@ -297,12 +301,24 @@ const RepairForm = ({ status, onNext, formData: initialFormData = {}, success = 
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label htmlFor="customerName" className="block text-sm font-medium text-gray-700">Full Name:</label>
+                                        <label htmlFor="customerFirstName" className="block text-sm font-medium text-gray-700">First Name:</label>
                                         <input
-                                            id="customerName"
-                                            value={formData.customerName}
+                                            id="customerFirstName"
+                                            value={formData.customerFirstName}
                                             onChange={handleChange}
-                                            placeholder="Enter full name"
+                                            placeholder="Enter first name"
+                                            required
+                                            disabled={success}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label htmlFor="customerLastName" className="block text-sm font-medium text-gray-700">Last Name:</label>
+                                        <input
+                                            id="customerLastName"
+                                            value={formData.customerLastName}
+                                            onChange={handleChange}
+                                            placeholder="Enter last name"
                                             required
                                             disabled={success}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"

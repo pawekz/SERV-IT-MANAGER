@@ -128,9 +128,14 @@ const HistoryPage = () => {
             const q = search.toLowerCase();
             filtered = filtered.filter(ticket => {
                 const statusVal = (ticket.status || ticket.repairStatus || '').toLowerCase();
+                const first = ticket.customerFirstName?.toLowerCase() || '';
+                const last = ticket.customerLastName?.toLowerCase() || '';
+                const full = ticket.customerName?.toLowerCase() || `${first} ${last}`.trim();
                 return (
                     ticket.ticketNumber?.toLowerCase().includes(q) ||
-                    ticket.customerName?.toLowerCase().includes(q) ||
+                    first.includes(q) ||
+                    last.includes(q) ||
+                    full.includes(q) ||
                     ticket.deviceBrand?.toLowerCase().includes(q) ||
                     ticket.deviceModel?.toLowerCase().includes(q) ||
                     ticket.deviceSerialNumber?.toLowerCase().includes(q) ||
@@ -218,7 +223,8 @@ const HistoryPage = () => {
                         <thead className="bg-gray-100/70 text-xs uppercase tracking-wide text-gray-600">
                             <tr>
                                 <th className="px-4 py-3 text-left font-semibold">Ticket #</th>
-                                <th className="px-4 py-3 text-left font-semibold">Customer</th>
+                                <th className="px-4 py-3 text-left font-semibold">First Name</th>
+                                <th className="px-4 py-3 text-left font-semibold">Last Name</th>
                                 <th className="px-4 py-3 text-left font-semibold">Device</th>
                                 <th className="px-4 py-3 text-left font-semibold">Status</th>
                                 <th className="px-4 py-3 text-left font-semibold">Check-In Date</th>
@@ -228,6 +234,8 @@ const HistoryPage = () => {
                         <tbody className="divide-y divide-gray-100">
                             {displayedTickets.map(ticket => {
                                 const statusVal = ticket.status || ticket.repairStatus || 'N/A';
+                                const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0, -1).join(' ') : '');
+                                const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
                                 return (
                                     <tr key={ticket.ticketNumber}
                                         className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"
@@ -237,7 +245,8 @@ const HistoryPage = () => {
                                         aria-label={`View details for ticket ${ticket.ticketNumber}`}
                                     >
                                         <td className="px-4 py-3 font-medium text-gray-900">{ticket.ticketNumber}</td>
-                                        <td className="px-4 py-3 whitespace-nowrap">{ticket.customerName || '—'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">{first || '—'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">{last || '—'}</td>
                                         <td className="px-4 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                         <td className="px-4 py-3">
                                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">

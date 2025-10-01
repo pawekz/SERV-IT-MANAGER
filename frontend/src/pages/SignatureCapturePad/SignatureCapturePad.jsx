@@ -126,9 +126,16 @@ const SignatureCapturePad = ({
 
         if (kind === "repair") {
             requiredFields = [
-                "ticketNumber", "customerName", "customerEmail", "customerPhoneNumber", "deviceColor",
+                "ticketNumber", /* legacy full name no longer strictly required if split provided */
+                "customerEmail", "customerPhoneNumber", "deviceColor",
                 "deviceType", "deviceBrand", "deviceModel", "reportedIssue", "accessories",
             ];
+            // Ensure at least one naming scheme present
+            const hasLegacy = !!(data.customerName && data.customerName.trim());
+            const hasSplit = !!(data.customerFirstName && data.customerFirstName.trim()) && !!(data.customerLastName && data.customerLastName.trim());
+            if (!hasLegacy && !hasSplit) {
+                return "Missing required fields: customerFirstName, customerLastName (or legacy customerName)";
+            }
         } else {
             requiredFields = [
                 "warrantyNumber", "status", "warrantyPhotosUrls"
@@ -167,7 +174,7 @@ const SignatureCapturePad = ({
         const canvas = canvasRef.current;
         const dataUrl = canvas.toDataURL("image/png");
         setSignatureDataURL(dataUrl);
-        const validationError = validateFormData({ ...formData, signatureDataURL: dataUrl });
+        const validationError = validateFormData({ ...formData, signatureDataURL: dataUrl, customerName: formData.customerName || `${formData.customerFirstName || ''} ${formData.customerLastName || ''}`.trim() });
         if (validationError) {
             showToast(validationError, "error");
             return;

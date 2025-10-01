@@ -55,6 +55,10 @@ const TicketCard = ({ ticket, onClick }) => {
         setCurrent((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     };
 
+    const first = ticket.customerFirstName || (ticket.customerName ? ticket.customerName.split(' ').slice(0, -1).join(' ') : '');
+    const last = ticket.customerLastName || (ticket.customerName ? ticket.customerName.split(' ').slice(-1).join(' ') : '');
+    const displayFull = [first, last].filter(Boolean).join(' ') || ticket.customerName;
+
     return (
         <div className="max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 mb-4">
             <div className="relative w-full h-48">
@@ -99,7 +103,9 @@ const TicketCard = ({ ticket, onClick }) => {
                 </a>
                 <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
                     <span className="block"><strong>Status:</strong> {displayStatus}</span>
-                    <span className="block"><strong>Customer:</strong> {ticket.customerName}</span>
+                    <span className="block"><strong>First Name:</strong> {first || '—'}</span>
+                    <span className="block"><strong>Last Name:</strong> {last || '—'}</span>
+                    <span className="block"><strong>Full Name (Legacy):</strong> {displayFull || '—'}</span>
                     <span className="block"><strong>Date:</strong> {ticket.checkInDate}</span>
                     <span className="block"><strong>Device:</strong> {ticket.deviceBrand} {ticket.deviceModel}</span>
                 </p>
