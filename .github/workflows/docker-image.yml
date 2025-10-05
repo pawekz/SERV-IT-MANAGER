@@ -4,6 +4,11 @@ on:
   push:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -35,25 +40,6 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest
           cache-to: type=inline
 
-      - name: Scan Backend with Trivy (Security Report)
-        uses: aquasecurity/trivy-action@0.33.1
-        continue-on-error: true
-        with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-backend-results.sarif'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-
-      - name: Upload Backend Security Results to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-backend-results.sarif'
-          category: 'backend-container'
-
-
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
         with:
@@ -67,25 +53,30 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit:latest
           cache-to: type=inline
-          
-      - name: Run Trivy vulnerability scanner on Frontend
+
+      - name: Scan Backend with Trivy (Console Report)
         uses: aquasecurity/trivy-action@0.33.1
+        if: always()
+        continue-on-error: true
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Scan Frontend with Trivy (Console Report)
+        uses: aquasecurity/trivy-action@0.33.1
+        if: always()
         continue-on-error: true
         with:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-frontend-results.sarif'
+          format: 'table'
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-
-      - name: Upload Trivy Frontend results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-frontend-results.sarif'
-          category: 'frontend-container'
-
+          severity: 'CRITICAL,HIGH'
 
   deploy:
     needs: build-and-push
