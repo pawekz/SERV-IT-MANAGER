@@ -97,3 +97,6 @@ HELP.md
 #run
 .run
 .run/*
+
+# Playwright
+/playwright/.auth/

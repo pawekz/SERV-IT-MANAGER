@@ -35,6 +35,16 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:latest
           cache-to: type=inline
 
+      - name: Run Trivy vulnerability scanner on Backend
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/servit-backend:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
         with:
@@ -48,6 +58,16 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/servit:latest
           cache-to: type=inline
+
+      - name: Run Trivy vulnerability scanner on Frontend
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   deploy:
     needs: build-and-push
