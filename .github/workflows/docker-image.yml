@@ -47,7 +47,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE_URL=https://api.weservit.tech
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/servit:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/servit:${{ github.sha }}
