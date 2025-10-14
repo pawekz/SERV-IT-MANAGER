@@ -7,7 +7,12 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: '0.0.0.0',
-    allowedHosts: ['servit-frontend-bfd2b4fjg8ayc2fn.southeastasia-01.azurewebsites.net']
+    allowedHosts: [
+      'servit-frontend-bfd2b4fjg8ayc2fn.southeastasia-01.azurewebsites.net',
+      'servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net',
+      'weservit.tech',
+      'www.weservit.tech'
+    ]
   },
   define: {
     global: 'window',

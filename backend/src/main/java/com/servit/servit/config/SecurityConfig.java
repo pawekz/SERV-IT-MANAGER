@@ -52,7 +52,6 @@ public class SecurityConfig {
                             "/user/resendOtp",
                             "/user/forgotPassword",
                             "/user/resetPassword",
-                            "/feedback/submitFeedback",
                             "/ws/**",
                             "/topic/**",
                             "/auth/login/staff",
@@ -63,7 +62,10 @@ public class SecurityConfig {
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
-                            "/repairTicket/getRepairTicketsByCustomerEmail"
+                            "/repairTicket/getRepairTicketsByCustomerEmail",
+                            "/feedback/submitFeedback",
+                            "/feedback/getFeedbackByTicketNumber/*",
+                            "/feedback/updateFeedback/"
                     ).hasRole("CUSTOMER")
                     .requestMatchers(
                             "/user/getCurrentUser",
@@ -155,7 +157,8 @@ public class SecurityConfig {
                             "/part/stock/resolveAlert/*",
                             "/user/assignTechnician",
                             "/user/searchTechnicians",
-                            "/user/getTopTechniciansByWorkload"
+                            "/user/getTopTechniciansByWorkload",
+                            "/feedback/getAllFeedback"
                     ).hasRole("ADMIN")
                     .requestMatchers("/parts/create").permitAll()
                     .anyRequest().authenticated()
@@ -180,8 +183,12 @@ public class SecurityConfig {
         
         // Add both local development and production origins
         config.addAllowedOrigin("http://localhost:5173"); // Local development
-        config.addAllowedOrigin("https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net"); // Production frontend
-        
+        config.addAllowedOrigin("https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net"); // Old Azure domain
+
+        // Custom domains
+        config.addAllowedOrigin("https://weservit.tech"); // Production custom domain
+        config.addAllowedOrigin("https://www.weservit.tech"); // Production www subdomain
+
         // Allow common frontend ports for development
         config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedOrigin("http://localhost:4173");
