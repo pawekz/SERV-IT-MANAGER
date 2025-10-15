@@ -161,7 +161,8 @@ public class SecurityConfig {
                             "/user/assignTechnician",
                             "/user/searchTechnicians",
                             "/user/getTopTechniciansByWorkload",
-                            "/feedback/getAllFeedback"
+                            "/feedback/getAllFeedback",
+                            "/feedback/getAllRatings"
                     ).hasRole("ADMIN")
                     .requestMatchers("/parts/create").permitAll()
                     .anyRequest().authenticated()
