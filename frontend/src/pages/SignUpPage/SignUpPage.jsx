@@ -99,8 +99,7 @@ const SignUpPage = () => {
     // Password strength for bar
     const getPasswordProgress = () => {
         if (!formData.password) return 0;
-        const progress = Math.min(formData.password.length / 8 * 100, 100);
-        return progress;
+        return Math.min(formData.password.length / 8 * 100, 100);
     };
 
     // Toggle password visibility
@@ -140,31 +139,27 @@ const SignUpPage = () => {
                 body: JSON.stringify(requestData),
             });
 
-            const responseText = await response.text();
-
             if (!response.ok) {
-                let errorMessage = `Registration failed with status: ${response.status}`;
+                let errorMessage = 'Registration failed. Please try again.';
                 try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorMessage;
-                    }
-                } catch (parseError) {
-                    if (responseText) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {}
+                setError(errorMessage);
+                setLoading(false);
+                setSignupProcessing(false);
+                return;
             }
-
+            // Registration success
             setSuccess(true);
-            setOtpDigits(["", "", "", "", "", ""]);
-            setOtpError('');
-            setResendCooldown(0);
-            setShowOTPModal(true);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Signup failed. Please try again.');
-        } finally {
+            setShowSuccessModal(true);
+            showToast('Registration successful! Please check your email for verification.', 'success');
             setLoading(false);
-            setSignupProcessing(false); // Stop the loading screen
+            setSignupProcessing(false);
+        } catch (err) {
+            setError('Network error. Please try again later.');
+            setLoading(false);
+            setSignupProcessing(false);
         }
     };
 

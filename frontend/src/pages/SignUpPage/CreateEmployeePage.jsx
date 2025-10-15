@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 
 const CreateEmployeePage = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -45,7 +43,7 @@ const CreateEmployeePage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
-  const res = await fetch(`${window.__API_BASE__}/user/createEmployee`, {
+      const res = await fetch(`${window.__API_BASE__}/user/createEmployee`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,12 +51,20 @@ const CreateEmployeePage = () => {
         },
         body: JSON.stringify({ ...formData, phoneNumber: phoneNumber.replace(/\s/g, '') })
       });
-      const txt = await res.text();
-      if (!res.ok) throw new Error(txt || 'Failed to create employee');
+      if (!res.ok) {
+        let errorMessage = 'Failed to create employee';
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {}
+        setError(errorMessage);
+        setLoading(false);
+        return;
+      }
       showToast('Employee created successfully!');
       setFormData({ firstName: '', lastName: '', username: '', phoneNumber: '', email: '' });
     } catch (err) {
-      setError(err.message);
+      setError('Network error. Please try again later.');
     } finally {
       setLoading(false);
     }

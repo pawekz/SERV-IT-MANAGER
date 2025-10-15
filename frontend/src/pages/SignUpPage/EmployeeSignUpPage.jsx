@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
-import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
 import api from '../../config/ApiConfig.jsx';
 
 // Employee Onboarding Page – accessed via emailed link.
@@ -30,17 +29,6 @@ const EmployeeSignUpPage = () => {
     const showToast = (message, type = 'success') => setToast({ show: true, message, type });
     const closeToast = () => setToast({ ...toast, show: false });
 
-    // OTP modal state
-    const [showOTPModal, setShowOTPModal] = useState(false);
-    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-    const [otpLoading, setOtpLoading] = useState(false);
-    const [otpError, setOtpError] = useState('');
-    const [resendCooldown, setResendCooldown] = useState(0);
-    const inputsRef = useRef([]);
-
-    // Success modal state
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-
     // Password regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
 
@@ -56,6 +44,7 @@ const EmployeeSignUpPage = () => {
     }, [toast.show]);
 
     // Cooldown timer effect
+    const [resendCooldown, setResendCooldown] = useState(0);
     useEffect(() => {
         let timer;
         if (resendCooldown > 0) {
@@ -106,11 +95,26 @@ const EmployeeSignUpPage = () => {
         }
         setPwLoading(true);
         try {
-            await api.post('/user/completeOnboarding', { email, onboardingCode, password });
+            const response = await fetch(`${window.__API_BASE__}/user/completeOnboarding`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, onboardingCode, password }),
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to complete onboarding';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {}
+                setPwError(errorMessage);
+                setPwLoading(false);
+                return;
+            }
             showToast('Account activated! Redirecting to login...', 'success');
             setTimeout(() => navigate('/login/staff'), 3000);
         } catch (err) {
-            setPwError(err.response?.data || err.message || 'Failed to complete onboarding');
+            setPwError('Network error. Please try again later.');
         } finally {
             setPwLoading(false);
         }
