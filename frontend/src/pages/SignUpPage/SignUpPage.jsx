@@ -156,6 +156,14 @@ const SignUpPage = () => {
             showToast('Registration successful! Please check your email for verification.', 'success');
             setLoading(false);
             setSignupProcessing(false);
+            // Redirect to login page after 3 seconds
+            setTimeout(() => {
+                if (typeof navigate === 'function') {
+                    navigate('/login');
+                } else if (window.location) {
+                    window.location.href = '/login';
+                }
+            }, 3000);
         } catch (err) {
             setError('Network error. Please try again later.');
             setLoading(false);
