@@ -2,10 +2,15 @@ package com.servit.servit.util;
 
 import com.servit.servit.service.ConfigurationService;
 import com.servit.servit.service.S3Service;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.mock.web.MockMultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -26,14 +31,34 @@ public class FileUtil {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final List<String> VALID_IMAGE_EXTENSIONS = List.of(".png", ".jpg", ".jpeg");
 
+    private MultipartFile compressImage(MultipartFile file) throws IOException {
+        String fileExtension = getFileExtension(file).toLowerCase();
+        if (!VALID_IMAGE_EXTENSIONS.contains(fileExtension)) {
+            return file;
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Thumbnails.of(file.getInputStream())
+                .size(1280, 1280)
+                .outputQuality(0.75)
+                .outputFormat(fileExtension.replace(".", ""))
+                .toOutputStream(outputStream);
+        byte[] compressedBytes = outputStream.toByteArray();
+        return new MockMultipartFile(
+                file.getName(),
+                file.getOriginalFilename(),
+                file.getContentType(),
+                compressedBytes
+        );
+    }
+
     public String saveRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
         validatePhoto(file);
-
-        String fileExtension = getFileExtension(file);
+        MultipartFile compressedFile = compressImage(file);
+        String fileExtension = getFileExtension(compressedFile);
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-rp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
 
-        return s3Service.uploadFile(file, "images/repair_photos/" + fileName);
+        return s3Service.uploadFile(compressedFile, "images/repair_photos/" + fileName);
     }
 
     public String saveRepairTicketPdf(MultipartFile file, String ticketNumber) throws IOException {
@@ -88,31 +113,31 @@ public class FileUtil {
 
     public String saveWarrantyPhoto(MultipartFile file, String warrantyNumber, int incrementalNumber) throws IOException {
         validatePhoto(file);
-
-        String fileExtension = getFileExtension(file);
+        MultipartFile compressedFile = compressImage(file);
+        String fileExtension = getFileExtension(compressedFile);
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-rp-%s-%02d%s", warrantyNumber, date, incrementalNumber, fileExtension);
 
-        return s3Service.uploadFile(file, "images/repair_photos/" + fileName);
+        return s3Service.uploadFile(compressedFile, "images/repair_photos/" + fileName);
     }
 
     public String saveAfterRepairPhoto(MultipartFile file, String ticketNumber, int incrementalNumber) throws IOException {
         validatePhoto(file);
-
-        String fileExtension = getFileExtension(file);
+        MultipartFile compressedFile = compressImage(file);
+        String fileExtension = getFileExtension(compressedFile);
         String date = LocalDate.now().format(DATE_FORMATTER);
         String fileName = String.format("%s-arp-%s-%02d%s", ticketNumber, date, incrementalNumber, fileExtension);
 
-        return s3Service.uploadFile(file, "images/after_repair_photos/" + fileName);
+        return s3Service.uploadFile(compressedFile, "images/after_repair_photos/" + fileName);
     }
 
     public String saveProfilePicture(MultipartFile file, Integer userId) throws IOException {
         validatePhoto(file);
-
-        String fileExtension = getFileExtension(file);
+        MultipartFile compressedFile = compressImage(file);
+        String fileExtension = getFileExtension(compressedFile);
         String fileName = String.format("user-%d-profile%s", userId, fileExtension);
 
-        return s3Service.uploadFile(file, "images/profile_pictures/" + fileName);
+        return s3Service.uploadFile(compressedFile, "images/profile_pictures/" + fileName);
     }
 
     public void deleteProfilePicture(String profilePictureUrl) {
