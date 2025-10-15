@@ -233,6 +233,7 @@ const SignUpPage = () => {
                                     src="https://flagcdn.com/16x12/ph.png"
                                     alt="Philippine flag"
                                     className="mr-2 w-5 h-auto"
+                                    loading="lazy"
                                 />
                                 <span className="text-sm text-gray-600">+63</span>
                             </div>
@@ -404,4 +405,3 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
-

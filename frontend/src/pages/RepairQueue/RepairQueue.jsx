@@ -287,7 +287,7 @@ const RepairQueue = () => {
                                                 >
                                                     <div className="mr-4 flex object-center">
 
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
 
                                                         {/*<Images className="text-[#10B981] size-60" />*/}
 
@@ -359,7 +359,7 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
                                                         {/*<p className="text-[12px]">Ticket Number</p>*/}
 
                                                     </div>
@@ -424,4 +424,3 @@ const RepairQueue = () => {
 };
 
 export default RepairQueue;
-

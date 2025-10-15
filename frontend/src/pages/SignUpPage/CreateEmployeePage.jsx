@@ -105,6 +105,7 @@ const CreateEmployeePage = () => {
             <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#2563eb] focus-within:ring-1 focus-within:ring-[#2563eb] transition-colors overflow-hidden">
               <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
                 <img
+                    loading="lazy"
                     src="https://flagcdn.com/16x12/ph.png"
                     alt="Philippine flag"
                     className="mr-2 w-5 h-auto"
