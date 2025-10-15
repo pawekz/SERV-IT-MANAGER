@@ -89,7 +89,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 });
                 if (signatureDataURL) {
                     const signatureBlob = dataURLtoBlob(signatureDataURL);
-                    form.append("digitalSignature", signatureBlob, "signature.png");
+                    form.append("digitalSignature", signatureBlob, "signature.jpg");
                 } else {
                     setError("Digital signature is required");
                     showToast("Digital signature is required", "error");
@@ -100,7 +100,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
                         if (base64DataURL) {
                             const blob = dataURLtoBlob(base64DataURL);
-                            form.append("repairPhotos", blob, `photo-${index + 1}.png`);
+                            form.append("repairPhotos", blob, `photo-${index + 1}.jpg`);
                         }
                     });
                 }
@@ -177,7 +177,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     formData.warrantyPhotosUrls.slice(0, 3).forEach((base64DataURL, index) => {
                         if (base64DataURL) {
                             const blob = dataURLtoBlob(base64DataURL);
-                            form.append("warrantyPhotosUrls", blob, `photo-${index + 1}.png`);
+                            form.append("warrantyPhotosUrls", blob, `photo-${index + 1}.jpg`);
                         }
                     });
                 }
