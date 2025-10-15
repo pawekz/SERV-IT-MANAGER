@@ -133,7 +133,7 @@ const InitialSetupPage = () => {
             <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-600">Phone Number</label>
             <div className="flex items-center w-full border border-gray-200 rounded-md focus-within:border-[#25D482] focus-within:ring-1 focus-within:ring-[#25D482] transition-colors overflow-hidden">
               <div className="flex items-center bg-gray-50 px-3 py-3 border-r border-gray-200">
-                <img src="https://flagcdn.com/16x12/ph.png" alt="PH" className="mr-2 w-5 h-auto" />
+                <img src="https://flagcdn.com/16x12/ph.png" alt="PH" className="mr-2 w-5 h-auto" loading="lazy" />
                 <span className="text-sm text-gray-600">+63</span>
               </div>
               <input

@@ -275,6 +275,7 @@ const AccountInformation = () => {
                                     <div className="relative flex-shrink-0">
                                         {displayProfileUrl ? (
                                             <img
+                                                loading="lazy"
                                                 src={displayProfileUrl || "/placeholder.svg"}
                                                 alt="Profile"
                                                 onError={() => setDisplayProfileUrl(null)}
@@ -554,3 +555,4 @@ const AccountInformation = () => {
 };
 
 export default AccountInformation;
+

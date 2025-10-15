@@ -5,6 +5,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
 
@@ -34,10 +38,32 @@ public class S3Service {
     public String uploadFile(MultipartFile file) throws IOException {
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         File tempFile = null;
+        String fileExtension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        boolean isImage = Arrays.asList(".png", ".jpg", ".jpeg").contains(fileExtension);
         try {
             tempFile = convertMultiPartToFile(file);
-            amazonS3.putObject(new PutObjectRequest(bucketName, fileName, tempFile));
-            logger.info("File uploaded to S3: {}", fileName);
+            if (isImage) {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setCacheControl("public, max-age=31536000");
+                metadata.setContentType(file.getContentType());
+                metadata.setContentLength(tempFile.length());
+                PutObjectRequest putRequest = new PutObjectRequest(bucketName, fileName, tempFile);
+                putRequest.setMetadata(metadata);
+                PutObjectResult result = amazonS3.putObject(putRequest);
+                String eTag = result.getETag();
+
+                ObjectMetadata existingMetadata = amazonS3.getObjectMetadata(bucketName, fileName);
+
+                existingMetadata.addUserMetadata("ETag", eTag);
+
+                CopyObjectRequest copyObjRequest = new CopyObjectRequest(bucketName, fileName, bucketName, fileName)
+                    .withNewObjectMetadata(existingMetadata);
+                amazonS3.copyObject(copyObjRequest);
+                logger.info("Image uploaded to S3: {} with ETag {}", fileName, eTag);
+            } else {
+                amazonS3.putObject(new PutObjectRequest(bucketName, fileName, tempFile));
+                logger.info("Non-image file uploaded to S3: {}", fileName);
+            }
             return amazonS3.getUrl(bucketName, fileName).toString();
         } catch (IOException e) {
             logger.error("Error converting multipart file to file", e);
@@ -54,10 +80,29 @@ public class S3Service {
 
     public String uploadFile(MultipartFile file, String key) throws IOException {
         File tempFile = null;
+        String fileExtension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        boolean isImage = Arrays.asList(".png", ".jpg", ".jpeg").contains(fileExtension);
         try {
             tempFile = convertMultiPartToFile(file);
-            amazonS3.putObject(new PutObjectRequest(bucketName, key, tempFile));
-            logger.info("File uploaded to S3 with key: {}", key);
+            if (isImage) {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setCacheControl("public, max-age=31536000");
+                metadata.setContentType(file.getContentType());
+                metadata.setContentLength(tempFile.length());
+                PutObjectRequest putRequest = new PutObjectRequest(bucketName, key, tempFile);
+                putRequest.setMetadata(metadata);
+                PutObjectResult result = amazonS3.putObject(putRequest);
+                String eTag = result.getETag();
+                ObjectMetadata existingMetadata = amazonS3.getObjectMetadata(bucketName, key);
+                existingMetadata.addUserMetadata("ETag", eTag);
+                CopyObjectRequest copyObjRequest = new CopyObjectRequest(bucketName, key, bucketName, key)
+                    .withNewObjectMetadata(existingMetadata);
+                amazonS3.copyObject(copyObjRequest);
+                logger.info("Image uploaded to S3 with key: {} and ETag {}", key, eTag);
+            } else {
+                amazonS3.putObject(new PutObjectRequest(bucketName, key, tempFile));
+                logger.info("Non-image file uploaded to S3 with key: {}", key);
+            }
             return amazonS3.getUrl(bucketName, key).toString();
         } catch (IOException e) {
             logger.error("Error converting multipart file to file", e);
@@ -112,5 +157,10 @@ public class S3Service {
             fos.write(file.getBytes());
         }
         return convFile;
+    }
+
+    private String getFileExtension(String fileName) {
+        int lastIndex = fileName.lastIndexOf('.');
+        return (lastIndex == -1) ? "" : fileName.substring(lastIndex);
     }
 }

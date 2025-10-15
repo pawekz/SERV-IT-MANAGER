@@ -575,7 +575,7 @@ const AdminDashboard = () => {
                         </div>
                         <Link to="/accountinformation" className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 bg-gray-100 overflow-hidden">
                             {profileUrl ? (
-                                <img src={profileUrl} alt="Profile" onError={() => setProfileUrl(null)} className="w-full h-full object-cover" />
+                                <img src={profileUrl} alt="Profile" loading="lazy" onError={() => setProfileUrl(null)} className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-sm font-semibold text-gray-600">{getInitials()}</span>
                             )}

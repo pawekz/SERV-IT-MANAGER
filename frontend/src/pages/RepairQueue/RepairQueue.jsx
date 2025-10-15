@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {Wrench, Images, Archive, Search, Bell, Plus, ChevronUp} from "lucide-react";
+import {Wrench, Images, Archive, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import { parseJwt } from "../../config/ApiConfig.jsx";
@@ -201,25 +201,6 @@ const RepairQueue = () => {
 
         <div className="flex-1 overflow-auto">
 
-            <header className="bg-white shadow-sm p-4">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800">Good Day, {userData.firstName}</h2>
-                    <div className="flex items-center space-x-4">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#25D482] focus:border-transparent"
-                            />
-                            <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
-                        </div>
-                        <button className="p-2 rounded-full hover:bg-gray-100">
-                            <Bell className="w-5 h-5 text-gray-600" />
-                        </button>
-                    </div>
-                </div>
-            </header>
-
 
             {/*Main Content */}
 
@@ -287,7 +268,7 @@ const RepairQueue = () => {
                                                 >
                                                     <div className="mr-4 flex object-center">
 
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
 
                                                         {/*<Images className="text-[#10B981] size-60" />*/}
 
@@ -359,7 +340,7 @@ const RepairQueue = () => {
                                                     className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
                                                     <div className="mr-4 flex object-center">
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" />
+                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
                                                         {/*<p className="text-[12px]">Ticket Number</p>*/}
 
                                                     </div>

@@ -29,7 +29,7 @@ const LandingPage = () => {
                             </div>
                         </div>
                         <div className={styles.heroImage}>
-                            <img src="/mock.png" alt="IOCONNECT" />
+                            <img src="/mock.png" alt="IOCONNECT" loading="lazy" />
                         </div>
                     </div>
                 </section>
@@ -40,7 +40,7 @@ const LandingPage = () => {
                     <div className={styles.container}>
                         <div className={styles.sectionHeader}>
                             <div className={styles.aboutImage}>
-                                 <img src="/ioconnect-logo.png" alt="About IOCONNECT" />
+                                 <img src="/ioconnect-logo.png" alt="About IOCONNECT" loading="lazy" />
                                 {/*<img src="../../../src/assets/images/iocon_logo.png" alt="About IOCONNECT" />*/}
                                 {/**/}
                             </div>

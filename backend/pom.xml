@@ -162,6 +162,20 @@
             <artifactId>aws-java-sdk-s3</artifactId>
             <version>1.12.698</version>
         </dependency>
+
+        <!-- Thumbnailator -->
+        <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.21</version>
+        </dependency>
+
+        <!-- Spring Test -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>6.0.13</version>
+        </dependency>
     </dependencies>
 
 	<build>

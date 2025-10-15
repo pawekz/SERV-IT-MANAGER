@@ -65,7 +65,7 @@ public class SecurityConfig {
                             "/repairTicket/getRepairTicketsByCustomerEmail",
                             "/feedback/submitFeedback",
                             "/feedback/getFeedbackByTicketNumber/*",
-                            "/feedback/updateFeedback/"
+                            "/feedback/updateFeedback/*"
                     ).hasRole("CUSTOMER")
                     .requestMatchers(
                             "/user/getCurrentUser",
@@ -130,7 +130,10 @@ public class SecurityConfig {
                             "/quotation/getAllQuotation",
                             "/quotation/getAllQuotationPaginated",
                             "/user/createEmployee",
-                            "/part/getAllPartsForQuotation"
+                            "/part/getAllPartsForQuotation",
+                            "/s3/upload",
+                            "/s3/download/*",
+                            "/s3/delete/*"
                     ).hasAnyRole("ADMIN", "TECHNICIAN")
                     .requestMatchers("/api/admin/backup/**")
                     .hasRole("ADMIN")
@@ -158,7 +161,8 @@ public class SecurityConfig {
                             "/user/assignTechnician",
                             "/user/searchTechnicians",
                             "/user/getTopTechniciansByWorkload",
-                            "/feedback/getAllFeedback"
+                            "/feedback/getAllFeedback",
+                            "/feedback/getAllRatings"
                     ).hasRole("ADMIN")
                     .requestMatchers("/parts/create").permitAll()
                     .anyRequest().authenticated()

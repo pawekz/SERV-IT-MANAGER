@@ -10,39 +10,52 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const inputsRef = useRef([]);
 
-    // Auto-focus next/prev on input
+    // Auto-focus next/prev on input, support paste and improved backspace
     const handleChange = (e, idx) => {
-        const value = e.target.value.replace(/\D/, "");
-        if (!value && idx > 0) { // If value is deleted and not the first input
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = "";
-                return arr;
-            });
-            inputsRef.current[idx - 1].focus();
+        const value = e.target.value.replace(/\D/g, "");
+        // If user pastes a full OTP code
+        if (value.length === 6 && /^[0-9]{6}$/.test(value)) {
+            setOtpDigits(value.split(""));
+            inputsRef.current[5]?.focus();
             return;
         }
-        if (value) { // If a digit is entered
+        if (value.length === 1) {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = value;
                 return arr;
             });
-            if (idx < 5) { // If not the last input, focus next
+            if (idx < 5) {
                 inputsRef.current[idx + 1].focus();
             }
-        } else { // If value is deleted (e.g. backspace on an already filled input)
+        } else if (!value && idx > 0) {
             setOtpDigits((prev) => {
                 const arr = [...prev];
                 arr[idx] = "";
                 return arr;
             });
+            inputsRef.current[idx - 1].focus();
         }
     };
 
     const handleKeyDown = (e, idx) => {
-        if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
-            inputsRef.current[idx - 1].focus();
+        if (e.key === "Backspace") {
+            if (otpDigits[idx]) {
+                // Clear current digit
+                setOtpDigits((prev) => {
+                    const arr = [...prev];
+                    arr[idx] = "";
+                    return arr;
+                });
+            } else if (idx > 0) {
+                // Move focus backward and clear previous digit
+                inputsRef.current[idx - 1].focus();
+                setOtpDigits((prev) => {
+                    const arr = [...prev];
+                    arr[idx - 1] = "";
+                    return arr;
+                });
+            }
         }
     };
 
@@ -336,14 +349,14 @@ const LoginPage = () => {
 
     // Request OTP for account verification (after login if not verified)
     const requestAccountVerificationOTP = async (emailForOTP) => {
-        setOtpLoading(true); // Use the main OTP loading state
+        setOtpLoading(true);
         try {
             await api.post(`/user/resendOtp`, {
                 email: emailForOTP,
-                type: 1 // Type 1 for account verification
+                type: 1
             });
             showToast('Verification code sent to your email.');
-            setResendCooldown(60); // Set cooldown timer
+            setResendCooldown(60);
             setOtpLoading(false);
             return true;
         } catch (err) {
@@ -386,6 +399,7 @@ const LoginPage = () => {
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
             if (data.isVerified === false) {
+                // Do NOT request OTP here; just show modal
                 setShowOTPModal(true);
             } else if (data.status === "Inactive") {
                 localStorage.removeItem('authToken');
@@ -705,12 +719,9 @@ const LoginPage = () => {
             {/* OTP Modal for account verification (after login) */}
             <OTPModal
                 visible={showOTPModal}
-                onClose={() => {
-                    setShowOTPModal(false);
-                    setOtpError(''); // Clear error when closing
-                }}
+                onClose={() => setShowOTPModal(false)}
                 onVerify={handleVerifyOTP}
-                onResend={handleResendAccountOTP}
+                onResend={() => requestAccountVerificationOTP(userEmail)}
                 loading={otpLoading}
                 error={otpError}
                 cooldown={resendCooldown}

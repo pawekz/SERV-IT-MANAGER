@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
-import api from '../../config/ApiConfig.jsx';
 
 const SignUpPage = () => {
     const navigate = useNavigate();
@@ -27,14 +26,6 @@ const SignUpPage = () => {
     const showToast = (message, type = 'success') => setToast({ show: true, message, type });
     const closeToast = () => setToast(prev => ({ ...prev, show: false }));
 
-    // OTP modal state
-    const [showOTPModal, setShowOTPModal] = useState(false);
-    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-    const [otpLoading, setOtpLoading] = useState(false);
-    const [otpError, setOtpError] = useState('');
-    const [resendCooldown, setResendCooldown] = useState(0);
-    const inputsRef = useRef([]);
-
     // Success modal state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -50,17 +41,6 @@ const SignUpPage = () => {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
-
-    // Cooldown timer effect
-    useEffect(() => {
-        let timer;
-        if (resendCooldown > 0) {
-            timer = setTimeout(() => {
-                setResendCooldown(prev => prev - 1);
-            }, 1000);
-        }
-        return () => clearTimeout(timer);
-    }, [resendCooldown]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -99,8 +79,7 @@ const SignUpPage = () => {
     // Password strength for bar
     const getPasswordProgress = () => {
         if (!formData.password) return 0;
-        const progress = Math.min(formData.password.length / 8 * 100, 100);
-        return progress;
+        return Math.min(formData.password.length / 8 * 100, 100);
     };
 
     // Toggle password visibility
@@ -140,167 +119,37 @@ const SignUpPage = () => {
                 body: JSON.stringify(requestData),
             });
 
-            const responseText = await response.text();
-
             if (!response.ok) {
-                let errorMessage = `Registration failed with status: ${response.status}`;
+                let errorMessage = 'Registration failed. Please try again.';
                 try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorMessage;
-                    }
-                } catch (parseError) {
-                    if (responseText) errorMessage = responseText;
-                }
-                throw new Error(errorMessage);
-            }
-
-            setSuccess(true);
-            setOtpDigits(["", "", "", "", "", ""]);
-            setOtpError('');
-            setResendCooldown(0);
-            setShowOTPModal(true);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Signup failed. Please try again.');
-        } finally {
-            setLoading(false);
-            setSignupProcessing(false); // Stop the loading screen
-        }
-    };
-
-    // OTP input handlers
-    const handleOtpChange = (e, idx) => {
-        const value = e.target.value.replace(/\D/, "");
-        if (!value && idx > 0) {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = "";
-                return arr;
-            });
-            inputsRef.current[idx - 1].focus();
-            return;
-        }
-        if (value) {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = value;
-                return arr;
-            });
-            if (idx < 5) {
-                inputsRef.current[idx + 1].focus();
-            }
-        } else {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = "";
-                return arr;
-            });
-        }
-    };
-
-    const handleOtpKeyDown = (e, idx) => {
-        if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
-            inputsRef.current[idx - 1].focus();
-        }
-    };
-
-    // Verify OTP
-    const handleVerifyOTP = async () => {
-        setOtpLoading(true);
-        setOtpError('');
-        const otp = otpDigits.join("");
-        if (otp.length !== 6) {
-            setOtpError('Please enter the 6-digit OTP.');
-            setOtpLoading(false);
-            return;
-        }
-        try {
-            await api.post('/user/verifyOtp', { email: formData.email, otp, type: 1 });
-            setShowOTPModal(false);
-            setShowSuccessModal(true);
-            showToast('Email verified successfully. Redirecting to login...', 'success');
-            setTimeout(() => {
-                setShowSuccessModal(false);
-                navigate('/login');
-            }, 2500);
-        } catch (err) {
-            const backendMsg = err.response?.data?.message || err.response?.data;
-            setOtpError(typeof backendMsg === 'string' ? backendMsg : 'OTP verification failed.');
-        } finally {
-            setOtpLoading(false);
-        }
-    };
-
-    // Resend OTP
-    const handleResendOTP = async () => {
-        if (resendCooldown > 0) return; // Prevent resend if cooldown is active
-
-        setOtpLoading(true);
-        setOtpError('');
-
-        try {
-            const payload = {
-                email: formData.email,
-                type: 1
-            };
-
-            const response = await fetch(`${window.__API_BASE__}/user/resendOtp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const responseText = await response.text();
-
-            if (!response.ok) {
-                let errorMessage = `Failed to resend OTP (${response.status})`;
-                try {
-                    if (responseText) {
-                        const errorData = JSON.parse(responseText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    }
-                } catch (e) {
-                    if (responseText) errorMessage = responseText;
-                }
-                if (response.status === 401 && !errorMessage.includes('Invalid request')) {
-                    errorMessage = 'Invalid request. Please try registering again.';
-                }
-                setOtpError(errorMessage);
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {}
+                setError(errorMessage);
+                setLoading(false);
+                setSignupProcessing(false);
                 return;
             }
-
-            setOtpDigits(["", "", "", "", "", ""]);
-            showToast('OTP has been resent to your email.', 'success');
-            setResendCooldown(60); // Set cooldown timer to 60 seconds
-
-            if (inputsRef.current[0]) {
-                inputsRef.current[0].focus();
-            }
-
+            // Registration success
+            setSuccess(true);
+            setShowSuccessModal(true);
+            showToast('Registration successful! Please check your email for verification.', 'success');
+            setLoading(false);
+            setSignupProcessing(false);
+            // Redirect to login page after 3 seconds
+            setTimeout(() => {
+                if (typeof navigate === 'function') {
+                    navigate('/login');
+                } else if (window.location) {
+                    window.location.href = '/login';
+                }
+            }, 3000);
         } catch (err) {
-            setOtpError(err.message || 'Failed to resend OTP. Please try again.');
-        } finally {
-            setOtpLoading(false);
+            setError('Network error. Please try again later.');
+            setLoading(false);
+            setSignupProcessing(false);
         }
     };
-
-    // Effect to log OTP modal state changes
-    useEffect(() => {
-        if (!showOTPModal) {
-            // Optionally reset OTP fields when modal is closed externally, if desired
-            // setOtpDigits(["", "", "", "", "", ""]);
-            // setOtpError('');
-        }
-    }, [showOTPModal]);
-
-    // Focus on first OTP input when modal opens
-    useEffect(() => {
-        if (showOTPModal && inputsRef.current[0]) {
-            inputsRef.current[0].focus();
-        }
-    }, [showOTPModal]);
 
     return (
         <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
@@ -315,7 +164,7 @@ const SignUpPage = () => {
                 <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
                     Create your account
                 </h1>
-                {success && !showOTPModal && ( // Only show this if OTP modal is not up
+                {success && (
                     <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded">
                         Please check your email to verify your account.
                     </div>
@@ -384,6 +233,7 @@ const SignUpPage = () => {
                                     src="https://flagcdn.com/16x12/ph.png"
                                     alt="Philippine flag"
                                     className="mr-2 w-5 h-auto"
+                                    loading="lazy"
                                 />
                                 <span className="text-sm text-gray-600">+63</span>
                             </div>
@@ -508,76 +358,6 @@ const SignUpPage = () => {
                 </div>
             </div>
 
-            {/* OTP Verification Modal */}
-            {showOTPModal && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
-                    <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-xs relative">
-                        <button
-                            onClick={() => {
-                                setShowOTPModal(false);
-                            }}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-
-                        <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-                            Email Verification
-                        </h2>
-                        <p className="text-gray-600 text-sm mb-6 text-center">
-                            A 6-digit code has been sent to your email: {formData.email}
-                        </p>
-
-                        {otpError && (
-                            <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
-                                {otpError}
-                            </div>
-                        )}
-
-                        <div className="flex justify-center gap-2 mb-6">
-                            {otpDigits.map((digit, idx) => (
-                                <input
-                                    key={idx}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    ref={el => inputsRef.current[idx] = el}
-                                    onChange={e => handleOtpChange(e, idx)}
-                                    onKeyDown={e => handleOtpKeyDown(e, idx)}
-                                    className="w-10 h-12 text-center text-xl border border-gray-300 rounded-md focus:outline-none focus:border-[#25D482] transition-colors"
-                                />
-                            ))}
-                        </div>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleVerifyOTP}
-                                disabled={otpLoading || otpDigits.some(d => d === "")}
-                                className="w-full bg-[#25D482] text-white rounded py-3 font-medium hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300"
-                            >
-                                {otpLoading ? (
-                                    <span className="flex items-center justify-center">
-                                        <Spinner size="small" />
-                                        <span className="ml-2">Verifying...</span>
-                                    </span>
-                                ) : "Verify Email"}
-                            </button>
-
-                            <button
-                                onClick={handleResendOTP}
-                                disabled={otpLoading || resendCooldown > 0}
-                                className="w-full text-[#25D482] text-sm py-2 hover:underline disabled:text-gray-400 disabled:no-underline"
-                            >
-                                {resendCooldown > 0 ? `Resend OTP Code (${resendCooldown}s)` : "Resend OTP Code"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Success Modal */}
             {showSuccessModal && (
                 <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
@@ -625,4 +405,3 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
-

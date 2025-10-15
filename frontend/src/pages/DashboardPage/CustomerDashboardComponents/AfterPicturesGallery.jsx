@@ -30,7 +30,7 @@ function TicketImage({ path, alt, className }) {
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [path]);
   if (!src) return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
-  return <img src={src} alt={alt} className={className} />;
+  return <img loading="lazy" src={src} alt={alt} className={className} />;
 }
 
 const AfterPicturesGallery = ({ photos = [] }) => {
@@ -75,4 +75,4 @@ const AfterPicturesGallery = ({ photos = [] }) => {
   );
 };
 
-export default AfterPicturesGallery; 
+export default AfterPicturesGallery;

@@ -46,6 +46,7 @@ const AboutPage = () => {
                                     src="/ioconnect-logo.png"
                                     alt="IOCONNECT History"
                                     className="w-full rounded-lg shadow-lg"
+                                    loading="lazy"
                                 />
                             </div>
                             <div className="lg:w-1/2">

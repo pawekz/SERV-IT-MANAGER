@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -41,16 +42,21 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
             if ("Email already in use".equals(message)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email Already Used");
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "EMAIL_TAKEN", "message", "Email is already registered"));
             } else if ("Username already in use".equals(message)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username Already Used");
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "USERNAME_TAKEN", "message", "Username is already taken"));
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "VALIDATION_ERROR", "message", message));
             }
         } catch (MessagingException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "EMAIL_SEND_ERROR", "message", "Failed to send verification email"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "UNKNOWN_ERROR", "message", "Internal server error"));
         }
     }
 
@@ -476,15 +482,22 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
-            if ("Email already in use".equals(message) || "Username already in use".equals(message)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(message);
+            if ("Email already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "EMAIL_TAKEN", "message", "Email is already registered"));
+            } else if ("Username already in use".equals(message)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "USERNAME_TAKEN", "message", "Username is already taken"));
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "VALIDATION_ERROR", "message", message));
             }
         } catch (MessagingException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Email service unavailable");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", "EMAIL_SEND_ERROR", "message", "Failed to send verification email"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "UNKNOWN_ERROR", "message", "Internal server error"));
         }
     }
 
@@ -522,3 +535,4 @@ public class UserController {
         }
     }
 }
+
