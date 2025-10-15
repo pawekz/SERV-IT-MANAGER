@@ -384,28 +384,23 @@ const LoginPage = () => {
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
             if (data.isVerified === false) {
-                const otpRequested = await requestAccountVerificationOTP(resolvedUserEmail);
-                if (otpRequested) {
-                    setLoginProcessing(false);
-                    setShowOTPModal(true);
-                } else {
-                    setError('Login successful, but failed to send verification OTP. Please try resending OTP.');
-                    setLoginProcessing(false);
-                }
-            }
-            if(data.status === "Inactive"){
+                // Do NOT request OTP here; just show modal
+                setLoginProcessing(false);
+                setShowOTPModal(true);
+            } else if(data.status === "Inactive"){
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
                 setError('Your account is inactive. Please contact support.');
-            }else {
+                setLoginProcessing(false);
+            } else {
                 navigate('/dashboard');
+                setLoginProcessing(false);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
+            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
             setLoginProcessing(false);
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     };
 
     // OTP verification for account (login/registration)
@@ -690,12 +685,9 @@ const LoginPage = () => {
             {/* OTP Modal for account verification (after login) */}
             <OTPModal
                 visible={showOTPModal}
-                onClose={() => {
-                    setShowOTPModal(false);
-                    setOtpError(''); // Clear error when closing
-                }}
+                onClose={() => setShowOTPModal(false)}
                 onVerify={handleVerifyAccountOTP}
-                onResend={handleResendAccountOTP}
+                onResend={() => requestAccountVerificationOTP(userEmail)}
                 loading={otpLoading}
                 error={otpError}
                 cooldown={resendCooldown}

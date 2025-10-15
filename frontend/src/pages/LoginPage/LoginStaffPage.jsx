@@ -336,14 +336,14 @@ const LoginPage = () => {
 
     // Request OTP for account verification (after login if not verified)
     const requestAccountVerificationOTP = async (emailForOTP) => {
-        setOtpLoading(true); // Use the main OTP loading state
+        setOtpLoading(true);
         try {
             await api.post(`/user/resendOtp`, {
                 email: emailForOTP,
-                type: 1 // Type 1 for account verification
+                type: 1
             });
             showToast('Verification code sent to your email.');
-            setResendCooldown(60); // Set cooldown timer
+            setResendCooldown(60);
             setOtpLoading(false);
             return true;
         } catch (err) {
@@ -386,6 +386,7 @@ const LoginPage = () => {
             setUserEmail(resolvedUserEmail);
             localStorage.setItem('userEmail', resolvedUserEmail);
             if (data.isVerified === false) {
+                // Do NOT request OTP here; just show modal
                 setShowOTPModal(true);
             } else if (data.status === "Inactive") {
                 localStorage.removeItem('authToken');
@@ -705,12 +706,9 @@ const LoginPage = () => {
             {/* OTP Modal for account verification (after login) */}
             <OTPModal
                 visible={showOTPModal}
-                onClose={() => {
-                    setShowOTPModal(false);
-                    setOtpError(''); // Clear error when closing
-                }}
+                onClose={() => setShowOTPModal(false)}
                 onVerify={handleVerifyOTP}
-                onResend={handleResendAccountOTP}
+                onResend={() => requestAccountVerificationOTP(userEmail)}
                 loading={otpLoading}
                 error={otpError}
                 cooldown={resendCooldown}
