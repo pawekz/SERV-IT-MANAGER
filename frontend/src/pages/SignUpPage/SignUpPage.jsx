@@ -171,39 +171,42 @@ const SignUpPage = () => {
         }
     };
 
-    // OTP input handlers
+    // Handle OTP input change
     const handleOtpChange = (e, idx) => {
-        const value = e.target.value.replace(/\D/, "");
-        if (!value && idx > 0) {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = "";
-                return arr;
-            });
-            inputsRef.current[idx - 1].focus();
+        const val = e.target.value;
+        // If user pastes a full OTP code
+        if (val.length === 6 && /^[0-9]{6}$/.test(val)) {
+            setOtpDigits(val.split(""));
+            // Focus last input
+            inputsRef.current[5]?.focus();
             return;
         }
-        if (value) {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = value;
-                return arr;
-            });
-            if (idx < 5) {
+        // Only allow single digit
+        if (/^[0-9]?$/.test(val)) {
+            const newOtpDigits = [...otpDigits];
+            newOtpDigits[idx] = val;
+            setOtpDigits(newOtpDigits);
+            if (val && idx < 5) {
                 inputsRef.current[idx + 1].focus();
             }
-        } else {
-            setOtpDigits((prev) => {
-                const arr = [...prev];
-                arr[idx] = "";
-                return arr;
-            });
         }
     };
 
+    // Handle OTP key down (backspace navigation)
     const handleOtpKeyDown = (e, idx) => {
-        if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
-            inputsRef.current[idx - 1].focus();
+        if (e.key === "Backspace") {
+            if (otpDigits[idx]) {
+                // If current field has a digit, clear it
+                const newOtpDigits = [...otpDigits];
+                newOtpDigits[idx] = "";
+                setOtpDigits(newOtpDigits);
+            } else if (idx > 0) {
+                // Move focus backward and clear previous digit
+                inputsRef.current[idx - 1].focus();
+                const newOtpDigits = [...otpDigits];
+                newOtpDigits[idx - 1] = "";
+                setOtpDigits(newOtpDigits);
+            }
         }
     };
 
