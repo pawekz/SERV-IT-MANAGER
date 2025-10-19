@@ -1,80 +1,75 @@
 <!--suppress ALL -->
 
-ALPHA VERSION
 <!-- Project Banner -->
+
 <br>
+
+<div>
+    <h1 align="center">
+      <a href="#">
+        <img src="frontend/public/ioconnect-logo.png" alt="Logo" width="128" height="128">
+      </a>
+    </h1>
+</div>
+
+<!-- Project Title  -->
+
+<div align="center">
+    <h3>SerV-IT Manager - IT Repair Management Simplified</h3>
+</div>
+
+<!-- Project Links -->
+
+<div align="center">
+      <a href="https://drive.google.com/drive/folders/1YvkQh7dHIJIlPsoKEv7yvOmS9E6V0TCu?usp=drive_link">Documentation</a>
+      ·
+      <a href="https://www.figma.com/files/team/1468057050145322284/all-projects">Figma</a>
+      ·
+      <a href="https://app.clickup.com/9016743808/v/l/8cq15w0-336">ClickUp</a>
+      ·
+      <a href="https://app.diagrams.net/#G12WIIZi7sO82x9UOl-OOXhwl_k8IV1ckr#%7B%22pageId%22%3A%226g_AksQfXcH_2YHReDQJ%22%7D">DrawIO</a>
+</div>
+
+<br>
+
+<!-- Project Badges -->
 
 <p align="center">
-    <a href="#" align="center">
-        <!-- <img src="#insert-logo-here" /> -->
-    </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/status-alpha-yellow.svg?style=for-the-badge" alt="Alpha Version"/>
+  </a>
 </p>
 
-<!-- Project Descripton -->
-
-<p align="justify">
-    <strong>SerV-IT Manager</strong> is a web-based IT repair management system that automates repair tracking, enhances customer communication, and improves service efficiency for IT service providers.
-</p>
-
-<br>
+---
 
 <!-- Project Table of Contents -->
 
-## Table of Contents
-- [Installation](#installation)
+<details open="open">
+    <summary>
+        <h3>Table of Contents</h3>
+    </summary>
+
+- [About](#about)
 - [Features](#features)
 - [Project Info](#project-info)
-- [Links](#links)
+- [Developers](#developers)
 - [Screenshots](#screenshots)
+
+</details>
+
+---
+
+<!-- About Project -->
 
 <br>
 
-<!-- Project Installation -->
+## About
 
-## Installation
-
-### Download the Repository
-
-1. Clone the repository to your local directory using the following command:
-    ```bash
-    git clone https://github.com/pawekz/SERV-IT-MANAGER.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd SERV-IT-MANAGER
-    ```
-
-### Installing the Frontend (ReactJS)
-
-1. Navigate to the frontend directory:
-    ```bash
-    cd frontend
-    ```
-2. Install the dependencies using npm:
-    ```bash
-    npm install
-    ```
-3. Start the frontend development server:
-    ```bash
-    npm run dev
-    ```
-4. The frontend should now be running at [http://localhost:5173/](http://localhost:5173/).
-
-### Installing the Backend (Spring Boot)
-
-1. Navigate to the backend directory:
-    ```bash
-    cd backend
-    ```
-2. Install the dependencies using Maven:
-    ```bash
-    mvn clean install
-    ```
-3. Start the backend server:
-    ```bash
-    mvn spring-boot:run
-    ```
-4. The backend should now be running at [http://localhost:8080/](http://localhost:8080/).
+<div>
+<p>
+    <strong>SerV-IT Manager</strong> is a web-based IT repair management system that automates repair tracking, enhances customer communication, and improves service efficiency for IT service providers. For more details, see the SRS document and code comments.
+</p>
+</div>
 
 <br>
 
@@ -82,7 +77,13 @@ ALPHA VERSION
 
 ## Features
 
-TBA
+- User Account and Access Management
+- Digital Documentation
+- Warranty and RMA Management
+- Customer Engagement and Workflow
+- Inventory and Search
+- Data Backup and Recovery
+- Dashboard
 
 <br>
 
@@ -90,29 +91,48 @@ TBA
 
 ## Project Info
 
-#### Front End:
-<p align="left">
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/axios-671ddf?&style=for-the-badge&logo=axios&logoColor=white" /></a>
-</p>
+<table width="100%" align="center">
+  <tr>
+    <td><strong>Front End</strong></td>
+    <td>
+      <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
+      <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
+      <img src="https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E" />
+      <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+      <img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" />
+      <img src="https://img.shields.io/badge/axios-671ddf?&style=for-the-badge&logo=axios&logoColor=white" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Back End</strong></td>
+    <td>
+      <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+      <img src="https://img.shields.io/badge/Java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>DBMS</strong></td>
+    <td>
+      <img src="https://img.shields.io/badge/mysql-%2300f.svg?style=for-the-badge&logo=mysql&logoColor=white" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Cloud Storage</strong></td>
+    <td>
+      <img src="https://img.shields.io/badge/Amazon_S3-569A31?style=for-the-badge&logo=amazon-s3&logoColor=white" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Hosting</strong></td>
+    <td>
+      <img src="https://img.shields.io/badge/Microsoft_Azure-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white" />
+    </td>
+  </tr>
+</table>
 
-#### Back End:
-<p align="left">
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" /></a>
-    <a href="#languages-frameworks--libraries"><img src="https://img.shields.io/badge/Java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white" /></a>
-</p>
+<br>
 
-#### DBMS:
-
-<p align="left">
-    <a href="#database"><img src="https://img.shields.io/badge/mysql-%2300f.svg?style=for-the-badge&logo=mysql&logoColor=white" /></a>
-</p>
-
-#### Developers:
+## Developers
   <table align="center">
     <tr>
       <td align="center">
@@ -148,19 +168,7 @@ TBA
     </tr>
   </table>
 
-<br>
-
-## Links
-
-- [GitHub Repository](https://github.com/kingkuys2123/SERV-IT-MANAGER)
-- [Figma](https://www.figma.com/files/team/1468057050145322284/all-projects)
-- [ClickUp](https://app.clickup.com/9016743808/v/l/8cq15w0-336)
-- [Documents](https://cebuinstituteoftechnology-my.sharepoint.com/personal/reneekiara_busarang_cit_edu/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Freneekiara_busarang_cit_edu%2FDocuments%2FCapstone)
-- [DrawIO](https://app.diagrams.net/#G12WIIZi7sO82x9UOl-OOXhwl_k8IV1ckr#%7B"pageId"%3A"6g_AksQfXcH_2YHReDQJ"%7D)
-
-<br>
+  <br>
 
 ## Screenshots
-TBA
-
-For more details, see the SRS and code comments.
+<img width="1901" height="960" alt="image" src="https://github.com/user-attachments/assets/9a20c3de-7beb-439d-9920-ae9c69e1decf" />
