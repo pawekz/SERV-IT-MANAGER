@@ -91,7 +91,7 @@
 
 ## Project Info
 
-<table width="100%" align="center">
+<table width="100%">
   <tr>
     <td><strong>Front End</strong></td>
     <td>
@@ -133,7 +133,7 @@
 <br>
 
 ## Developers
-  <table align="center">
+  <table>
     <tr>
       <td align="center">
         <a href="https://github.com/pawekz">
