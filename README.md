@@ -2,8 +2,6 @@
 
 <!-- Project Banner -->
 
-<br>
-
 <div>
     <h1 align="center">
       <a href="#">
