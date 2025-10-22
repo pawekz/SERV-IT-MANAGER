@@ -97,8 +97,6 @@ public class RepairTicketController {
         }
     }
 
-    // Search and fetch a paginated tickets list (ADMIN SIDE)
-    // Note: Ticket History, Ticket List, etc. etc.
     @GetMapping("/searchRepairTickets")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
             @RequestParam String searchTerm,
@@ -121,8 +119,6 @@ public class RepairTicketController {
         }
     }
 
-    // Search and fetch paginated ticket list by customer email, displaying all tickets related to the associated user via email
-    // Note: User's Ticket List, User's Ticket History, etc. etc.
     @GetMapping("/searchRepairTicketsByEmail")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
             @RequestParam String email,
@@ -139,9 +135,6 @@ public class RepairTicketController {
         }
     }
 
-    // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
-    // This endpoint fetches all repair tickets, regardless of the user (ADMIN SIDE)
-    // NOT PAGEABLE
     @GetMapping("/getAllRepairTickets")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
         List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
@@ -150,7 +143,6 @@ public class RepairTicketController {
                 : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
     }
 
-    // Paginated version of getAllRepairTickets (ADMIN SIDE)
     @GetMapping("/getAllRepairTicketsPaginated")
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> getAllRepairTicketsPaginated(
             @PageableDefault(size = 20) Pageable pageable) {
@@ -165,9 +157,6 @@ public class RepairTicketController {
         }
     }
 
-    // OPTIONAL ra ni, mas preferred ang search sa taas for Tickets List and History
-    // This endpoint fetches all repair tickets associated with a specific customer email
-    // NOT PAGEABLE
     @GetMapping("/getRepairTicketsByCustomerEmail")
     public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
         try {
@@ -180,7 +169,6 @@ public class RepairTicketController {
         }
     }
 
-    // Ma fetch/download ang repair ticket document from the backend
     @GetMapping("/getRepairTicketDocument/{ticketNumber}")
     public ResponseEntity<byte[]> getRepairTicketDocument(@PathVariable String ticketNumber) {
         try {
