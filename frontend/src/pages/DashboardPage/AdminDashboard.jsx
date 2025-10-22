@@ -4,7 +4,7 @@ import {
     Bell, Plus,
     Users, ClockAlert, TrendingDown
 } from "lucide-react"
-import {useEffect, useState} from "react";
+import {useEffect, useState, useMemo} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -448,6 +448,16 @@ const AdminDashboard = () => {
             return { name, tickets: t.ticketCount || 0 };
         });
 
+    // Derive pie data from statusDistribution: add percentage and only include slices >= 0.1%
+    const pieData = useMemo(() => {
+        if (!Array.isArray(statusDistribution) || statusDistribution.length === 0) return [];
+        const total = statusDistribution.reduce((s, e) => s + (e.count || 0), 0);
+        if (total === 0) return [];
+        return statusDistribution
+            .map(e => ({ ...e, percentage: total > 0 ? ((e.count || 0) / total) * 100 : 0 }))
+            .filter(e => (e.percentage || 0) >= 0.1);
+    }, [statusDistribution]);
+
     useEffect(() => {
         const fetchCurrentUserWithPicture = async () => {
             try {
@@ -617,30 +627,34 @@ const AdminDashboard = () => {
                                     <div className="h-48 flex items-center justify-center text-gray-500">
                                         <p>No status distribution data available</p>
                                     </div>
+                                ) : pieData.length === 0 ? (
+                                    <div className="h-48 flex items-center justify-center text-gray-500">
+                                        <p>No status distribution data available</p>
+                                    </div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={400}>
-                                        <PieChart>
-                                            <Pie
-                                                data={statusDistribution}
-                                                dataKey="count"
-                                                nameKey="status"
-                                                cx="50%"
-                                                cy="50%"
-                                                outerRadius={100}
-                                                label={({ status, percentage }) => `${status}: ${percentage.toFixed(1)}%`}
-                                            >
-                                                {statusDistribution.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value, name) => [`${value} tickets`, name]}
-                                                contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
-                                                wrapperStyle={{ zIndex: 1000 }}
-                                            />
+                                     <ResponsiveContainer width="100%" height={400}>
+                                         <PieChart>
+                                             <Pie
+                                                 data={pieData}
+                                                 dataKey="count"
+                                                 nameKey="status"
+                                                 cx="50%"
+                                                 cy="50%"
+                                                 outerRadius={100}
+                                                 label={({ payload }) => `${payload.status}: ${payload.percentage.toFixed(1)}%`}
+                                             >
+                                                 {pieData.map((entry, index) => (
+                                                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
+                                                 ))}
+                                             </Pie>
+                                             <Tooltip
+                                                 formatter={(value, name) => [`${value} tickets`, name]}
+                                                 contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
+                                                 wrapperStyle={{ zIndex: 1000 }}
+                                             />
                                             <><Legend/></>
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                         </PieChart>
+                                     </ResponsiveContainer>
                                 )}
                             </div>
                         </div>
