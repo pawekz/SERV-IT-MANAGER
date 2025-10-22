@@ -196,21 +196,6 @@ public class RepairTicketController {
         }
     }
 
-    @GetMapping("/getRepairTicketPdf/{ticketNumber}")
-    public ResponseEntity<byte[]> getRepairTicketPdf(@PathVariable String ticketNumber) {
-        try {
-            RepairTicketPdfResponseDTO pdfResponse = repairTicketService.getRepairTicketPdf(ticketNumber);
-            return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"" + pdfResponse.getFileName() + "\"")
-                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-                    .body(pdfResponse.getFileBytes());
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
     @PatchMapping("/updateRepairStatus")
     public ResponseEntity<?> updateRepairStatus(@RequestBody UpdateRepairStatusRequestDTO request) {
         try {
