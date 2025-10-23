@@ -1,18 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import { Link } from 'react-router-dom';
-import {
-    LayoutGrid,
-    UserCog,
-    Settings,
-    Truck,
-    ShieldCheck,
-    ClipboardList,
-    LogOut,
-    FolderClock,
-    Inbox,
-    FileClock,
-    Menu,X
-} from 'lucide-react';
+import { LayoutGrid, UserCog, Settings, Truck, ShieldCheck, ClipboardList, LogOut, FolderClock, Inbox, FileClock, Menu, X } from 'lucide-react';
 import api from '../../config/ApiConfig.jsx';
 
 const formatName = (raw) => {
@@ -56,6 +44,7 @@ const Sidebar = ({ activePage }) => {
         setShowLogoutMenu(prev => !prev);
     };
     const toggleSidebar = () => setIsOpen(prev => !prev);
+    const closeSidebar = () => setIsOpen(false);
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -221,6 +210,13 @@ const Sidebar = ({ activePage }) => {
                 </h1>
             </div>
 
+            {/* <CHANGE> Backdrop overlay that appears when sidebar is open on mobile */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+                    onClick={closeSidebar}
+                />
+            )}
 
             {/* Sidebar */}
             <div
@@ -229,69 +225,76 @@ const Sidebar = ({ activePage }) => {
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0`}
             >
-            <div className="p-5 pb-4 border-b border-gray-200">
-                <h1 className="text-2xl font-bold text-gray-800">
-                    IO<span className="text-[#33e407]">CONNECT</span>
-                </h1>
-            </div>
-            <nav className="flex-1 py-4 overflow-y-auto">
-                <ul>
-                    {role === 'admin' && adminLinks}
-                    {role === 'customer' && customerLinks}
-                    {role === 'technician' && technicianLinks}
-                </ul>
-            </nav>
-
-            <div
-                className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
-                onClick={toggleLogoutMenu}
-            >
-                {profileUrl ? (
-                    <img
-                        src={profileUrl}
-                        alt="Profile"
-                        onError={() => setProfileUrl(null)}
-                        className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
-                    />
-                ) : (
-                    <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
-                        <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
-                    </div>
-                )}
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-800 m-0">
-                        {fullName}
-                    </h3>
-                    <p className="text-xs text-gray-500 m-0">
-                        {role?.charAt(0).toUpperCase() + role?.slice(1)}
-                    </p>
+                {/* <CHANGE> Added close button in sidebar header */}
+                <div className="p-5 pb-4 border-b border-gray-200 flex items-center justify-between">
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        IO<span className="text-[#33e407]">CONNECT</span>
+                    </h1>
+                    <button
+                        onClick={closeSidebar}
+                        className="md:hidden text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                        <X size={24} />
+                    </button>
                 </div>
+                <nav className="flex-1 py-4 overflow-y-auto">
+                    <ul>
+                        {role === 'admin' && adminLinks}
+                        {role === 'customer' && customerLinks}
+                        {role === 'technician' && technicianLinks}
+                    </ul>
+                </nav>
 
-                {showLogoutMenu && (
-                    <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
-                        <Link
-                            to="/accountinformation"
-                            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
-                            onClick={() => setShowLogoutMenu(false)}
-                        >
-                            <div className="flex items-center">
-                                <Settings size={16} className="mr-2" />
-                                Settings
-                            </div>
-                        </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
-                        >
-                            <div className="flex items-center">
-                                <LogOut size={16} className="mr-2" />
-                                Logout
-                            </div>
-                        </button>
+                <div
+                    className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
+                    onClick={toggleLogoutMenu}
+                >
+                    {profileUrl ? (
+                        <img
+                            src={profileUrl || "/placeholder.svg"}
+                            alt="Profile"
+                            onError={() => setProfileUrl(null)}
+                            className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
+                        />
+                    ) : (
+                        <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
+                            <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
+                        </div>
+                    )}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-800 m-0">
+                            {fullName}
+                        </h3>
+                        <p className="text-xs text-gray-500 m-0">
+                            {role?.charAt(0).toUpperCase() + role?.slice(1)}
+                        </p>
                     </div>
-                )}
+
+                    {showLogoutMenu && (
+                        <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
+                            <Link
+                                to="/accountinformation"
+                                className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                                onClick={() => setShowLogoutMenu(false)}
+                            >
+                                <div className="flex items-center">
+                                    <Settings size={16} className="mr-2" />
+                                    Settings
+                                </div>
+                            </Link>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                            >
+                                <div className="flex items-center">
+                                    <LogOut size={16} className="mr-2" />
+                                    Logout
+                                </div>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
         </>
     );
 };
