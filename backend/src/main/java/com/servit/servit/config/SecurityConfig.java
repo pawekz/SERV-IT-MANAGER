@@ -76,6 +76,7 @@ public class SecurityConfig {
                             "/repairTicket/getRepairTicket/*",
                             "/repairTicket/getRepairTicketDocument/*",
                             "/repairTicket/files/**",
+                            "/repairTicket/getRepairPhotos",
                             "/warranty/checkInWarranty",
                             "/warranty/getWarrantyByCustomerEmail",
                             "/warranty/getWarrantyByNumber",
@@ -124,6 +125,8 @@ public class SecurityConfig {
                             "/repairTicket/getRepairTicketsByStatus",
                             "/repairTicket/getRepairTicketsByStatusPageable",
                             "/repairTicket/getRepairTicketsByStatusPageableAssignedToTech",
+                            "/repairTicket/updateRepairStatusWithPhotos",
+                            "/repairTicket/getRepairStatusHistory/**",
                             "/quotation/addQuotation",
                             "/quotation/editQuotation/*",
                             "/quotation/deleteQuotation/*",
@@ -161,6 +164,9 @@ public class SecurityConfig {
                             "/user/assignTechnician",
                             "/user/searchTechnicians",
                             "/user/getTopTechniciansByWorkload",
+                            "/repairTicket/getStatusDistribution",
+                            "/repairTicket/ticketfiles",
+                            "/repairTicket/getActiveRepairTickets",
                             "/feedback/getAllFeedback",
                             "/feedback/getAllRatings"
                     ).hasRole("ADMIN")

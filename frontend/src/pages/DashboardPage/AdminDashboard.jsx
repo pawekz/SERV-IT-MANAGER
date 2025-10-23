@@ -2,9 +2,9 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Bell, Plus,
-    User, Users, ClockAlert, TrendingDown
+    Users, ClockAlert, TrendingDown
 } from "lucide-react"
-import {useEffect, useState} from "react";
+import {useEffect, useState, useMemo} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -19,8 +19,7 @@ const AdminDashboard = () => {
         password: '********', // Placeholder for security
         role: '' // Added role field
     });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // Note: removed unused loading/error state to reduce warnings
     // State for dashboard statistics
     const [stats, setStats] = useState({
         users: 0,
@@ -42,30 +41,10 @@ const AdminDashboard = () => {
         '1': 0
     });
 
-    // State for total number of ratings
-    const [totalRatings, setTotalRatings] = useState(0);
-
     // State for tracking errors specifically for weekly user stats
     const [statsErrors, setStatsErrors] = useState({
         usersAddedThisWeek: false
     });
-    // State for inventory data
-    const [inventoryData, setInventoryData] = useState([]);
-    const [inventoryLoading, setInventoryLoading] = useState(true);
-    const [inventoryError, setInventoryError] = useState(null);
-
-    // State for repair tickets
-    const [repairTickets, setRepairTickets] = useState([]);
-    const [ticketsLoading, setTicketsLoading] = useState(true);
-    const [ticketsError, setTicketsError] = useState(null);
-
-    // New state for tracking ticket changes
-    const [ticketChanges, setTicketChanges] = useState({
-        value: 0,
-        isIncrease: false,
-        lastUpdated: null
-    });
-
     // State for feedback data
     const [feedbacks, setFeedbacks] = useState([]);
     const [feedbacksLoading, setFeedbacksLoading] = useState(true);
@@ -76,25 +55,19 @@ const AdminDashboard = () => {
     const [techWorkloadLoading, setTechWorkloadLoading] = useState(true);
     const [techWorkloadError, setTechWorkloadError] = useState(null);
 
-    // Modal state for description
-    const [modalData, setModalData] = useState(null);
+    // State for ticket change tracking (was referenced in JSX; reintroduced)
+    const [ticketChanges, setTicketChanges] = useState({
+        value: 0,
+        isIncrease: false,
+        lastUpdated: null
+    });
 
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
+    // totalRatings isn't used in the UI, but the code sets it in fetchSatisfactionRate.
+    // Keep the setter only to avoid unused variable warnings.
+    const [, setTotalRatings] = useState(0);
 
     // Profile picture state
     const [profileUrl, setProfileUrl] = useState(null);
-
-    // Function to show the description modal
-    const showDescriptionModal = (item) => {
-        setModalData(item);
-    };
-
-    // Function to close the modal
-    const closeModal = () => {
-        setModalData(null);
-    };
 
     // Get initials from user data
     const getInitials = () => {
@@ -106,14 +79,11 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                setLoading(true);
-
                 // Check if we have cached user data in sessionStorage first
                 const cachedUserData = sessionStorage.getItem('userData');
                 if (cachedUserData) {
                     const parsedData = JSON.parse(cachedUserData);
                     setUserData(parsedData);
-                    setLoading(false);
                     return;
                 }
 
@@ -121,8 +91,7 @@ const AdminDashboard = () => {
                 const token = localStorage.getItem('authToken');
 
                 if (!token) {
-                    setError("Not authenticated. Please log in.");
-                    setLoading(false);
+                    console.warn("Not authenticated. Please log in.");
                     return;
                 }
 
@@ -145,16 +114,12 @@ const AdminDashboard = () => {
                     // Cache the data in sessionStorage
                     sessionStorage.setItem('userData', JSON.stringify(userData));
                 } else {
-                    setError("Invalid token format");
-                    setLoading(false);
-                    return;
+                    console.warn("Invalid token format");
                 }
-                setError(null);
+                // finished fetching user data
             } catch (err) {
                 console.error("Error fetching user data:", err);
-                setError("Failed to load account information. Please try again later.");
-            } finally {
-                setLoading(false);
+                // swallow - UI shows best-effort data from session
             }
         };
 
@@ -261,47 +226,48 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
-    // Fetch repair tickets from backend
+    // Fetch inventory data from the backend
     useEffect(() => {
-        const fetchRepairTickets = async () => {
-            try {
-                setTicketsLoading(true);
-                const response = await api.get('/repairTicket/getAllRepairTickets');
-                setRepairTickets(response.data);
-                setTicketsError(null);
-            } catch (err) {
-                console.error("Error fetching repair tickets:", err);
-                setTicketsError("Failed to load ticket data");
-            } finally {
-                setTicketsLoading(false);
-            }
-        };
-        fetchRepairTickets();
-    }, []);
-
-    // Add useEffect to fetch inventory data from the backend
-    useEffect(() => {
-        const fetchInventoryData = async () => {
-            try {
-                setInventoryLoading(true);
-                const response = await api.get('/part/getAllParts');
-                const data = response.data;
-                setInventoryData(data);
-                const lowStockCount = data.filter(item => item.currentStock <= 5).length;
-                setStats(prevStats => ({
-                    ...prevStats,
-                    lowStockItems: lowStockCount
-                }));
-                setInventoryError(null);
-            } catch (err) {
-                console.error("Error fetching inventory data:", err);
-                setInventoryError("Failed to load inventory data");
-            } finally {
-                setInventoryLoading(false);
-            }
-        };
-        fetchInventoryData();
-    }, []);
+         const fetchInventoryData = async () => {
+             try {
+                 const response = await api.get('/part/getAllParts');
+                 const data = response.data;
+                 // Normalize response to an array. Some endpoints return an array, others wrap it in { content: [...] } or { data: [...] }
+                 let partsArray;
+                 if (Array.isArray(data)) {
+                     partsArray = data;
+                 } else if (data && Array.isArray(data.content)) {
+                     partsArray = data.content;
+                 } else if (data && Array.isArray(data.data)) {
+                     partsArray = data.data;
+                 } else if (data && Array.isArray(data.parts)) {
+                     partsArray = data.parts;
+                 } else if (data && typeof data === 'object') {
+                     const firstArray = Object.values(data).find(v => Array.isArray(v));
+                     if (firstArray) {
+                         partsArray = firstArray;
+                         console.debug("fetchInventoryData: resolved partsArray from first array in object; sample:", partsArray.slice(0,3));
+                     } else {
+                         partsArray = [];
+                         console.debug("fetchInventoryData: no array found in response object for /part/getAllParts", data);
+                     }
+                 } else {
+                     partsArray = [];
+                     console.debug("fetchInventoryData: unexpected response shape for /part/getAllParts", data);
+                 }
+                 const lowStockCount = partsArray.filter(item => (item && typeof item.currentStock === 'number' ? item.currentStock : 0) <= 5).length;
+                 setStats(prevStats => ({
+                     ...prevStats,
+                     lowStockItems: lowStockCount
+                 }));
+             } catch (err) {
+                 console.error("Error fetching inventory data:", err);
+             } finally {
+                 // finished
+             }
+         };
+         fetchInventoryData();
+     }, []);
 
     // Add useEffect to fetch feedback data from the backend with auto-refresh
     useEffect(() => {
@@ -403,34 +369,33 @@ const AdminDashboard = () => {
     }, []);
 
     // State for pending approvals
-    const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(true);
-    const [pendingApprovalsError, setPendingApprovalsError] = useState(null);
-
     useEffect(() => {
         const fetchPendingApprovals = async () => {
-            setPendingApprovalsLoading(true);
-            setPendingApprovalsError(null);
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`${window.__API_BASE__}/warranty/getPendingApprovals`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                    },
-                });
-                if (!response.ok) throw new Error('Failed to fetch pending approvals');
-                const data = await response.json();
-                setStats(prev => ({ ...prev, pendingApprovals: data.pendingApprovals }));
-            } catch (err) {
-                setPendingApprovalsError(err.message);
-                setStats(prev => ({ ...prev, pendingApprovals: 0 }));
-            } finally {
-                setPendingApprovalsLoading(false);
-            }
-        };
-        fetchPendingApprovals();
-    }, []);
+             try {
+                 const token = localStorage.getItem('authToken');
+                 const response = await fetch(`${window.__API_BASE__}/warranty/getPendingApprovals`, {
+                     method: 'GET',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                     },
+                 });
+                 if (!response.ok) {
+                    console.error('Failed to fetch pending approvals, status:', response.status);
+                    setStats(prev => ({ ...prev, pendingApprovals: 0 }));
+                    return;
+                }
+                 const data = await response.json();
+                 setStats(prev => ({ ...prev, pendingApprovals: data.pendingApprovals }));
+             } catch (err) {
+                console.error('Error fetching pending approvals', err);
+                 setStats(prev => ({ ...prev, pendingApprovals: 0 }));
+             } finally {
+                 // done
+             }
+         };
+         fetchPendingApprovals();
+     }, []);
 
     // State for repair ticket status distribution
     const [statusDistribution, setStatusDistribution] = useState([]);
@@ -468,48 +433,8 @@ const AdminDashboard = () => {
         COMPLETED: '#00c49f',
     };
 
-    // Chart data
-    const chartData = {
-        months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        values: [5, 8, 12, 9, 11, 14],
-    }
+    // Chart/calendar helper data (removed unused chart/calendar constants)
 
-    // Calendar data
-    const currentDate = new Date()
-    const currentMonth = currentDate.toLocaleString("default", { month: "long" })
-    const currentYear = currentDate.getFullYear()
-    const daysInMonth = new Date(currentYear, currentDate.getMonth() + 1, 0).getDate()
-    const firstDayOfMonth = new Date(currentYear, currentDate.getMonth(), 1).getDay()
-
-    // Generate calendar days
-    const calendarDays = []
-    for (let i = 0; i < firstDayOfMonth; i++) {
-        calendarDays.push(null) // Empty cells for days before the 1st of the month
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-        calendarDays.push(i)
-    }
-
-    // Get current inventory items for pagination
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = inventoryData.slice(indexOfFirstItem, indexOfLastItem);
-
-    // Calculate total pages
-    const totalPages = Math.ceil(inventoryData.length / itemsPerPage);
-
-    // Change page
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-    // Previous page
-    const goToPreviousPage = () => {
-        setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
-    };
-
-    // Next page
-    const goToNextPage = () => {
-        setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
-    }
 
     const navigate = useNavigate();
 
@@ -522,6 +447,16 @@ const AdminDashboard = () => {
             const name = rawName.length > 10 ? `${rawName.slice(0, 10)}...` : rawName;
             return { name, tickets: t.ticketCount || 0 };
         });
+
+    // Derive pie data from statusDistribution: add percentage and only include slices >= 0.1%
+    const pieData = useMemo(() => {
+        if (!Array.isArray(statusDistribution) || statusDistribution.length === 0) return [];
+        const total = statusDistribution.reduce((s, e) => s + (e.count || 0), 0);
+        if (total === 0) return [];
+        return statusDistribution
+            .map(e => ({ ...e, percentage: total > 0 ? ((e.count || 0) / total) * 100 : 0 }))
+            .filter(e => (e.percentage || 0) >= 0.1);
+    }, [statusDistribution]);
 
     useEffect(() => {
         const fetchCurrentUserWithPicture = async () => {
@@ -620,8 +555,8 @@ const AdminDashboard = () => {
                         <div className="flex bg-white p-6 rounded-lg shadow-sm">
                             <div className="mr-4 pt-2 text-[#2563eb]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24"
-                                 fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round"
+                                 fill="none" stroke="#e4a144" strokeWidth={2} strokeLinecap="round"
+                                 strokeLinejoin="round"
                                  className="lucide lucide-clipboard-clock-icon lucide-clipboard-clock">
                                 <path d="M16 14v2.2l1.6 1"/>
                                 <path d="M16 4h2a2 2 0 0 1 2 2v.832"/>
@@ -692,30 +627,34 @@ const AdminDashboard = () => {
                                     <div className="h-48 flex items-center justify-center text-gray-500">
                                         <p>No status distribution data available</p>
                                     </div>
+                                ) : pieData.length === 0 ? (
+                                    <div className="h-48 flex items-center justify-center text-gray-500">
+                                        <p>No status distribution data available</p>
+                                    </div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={400}>
-                                        <PieChart>
-                                            <Pie
-                                                data={statusDistribution}
-                                                dataKey="count"
-                                                nameKey="status"
-                                                cx="50%"
-                                                cy="50%"
-                                                outerRadius={100}
-                                                label={({ status, percentage }) => `${status}: ${percentage.toFixed(1)}%`}
-                                            >
-                                                {statusDistribution.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value, name) => [`${value} tickets`, name]}
-                                                contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
-                                                wrapperStyle={{ zIndex: 1000 }}
-                                            />
+                                     <ResponsiveContainer width="100%" height={400}>
+                                         <PieChart>
+                                             <Pie
+                                                 data={pieData}
+                                                 dataKey="count"
+                                                 nameKey="status"
+                                                 cx="50%"
+                                                 cy="50%"
+                                                 outerRadius={100}
+                                                 label={({ payload }) => `${payload.status}: ${payload.percentage.toFixed(1)}%`}
+                                             >
+                                                 {pieData.map((entry, index) => (
+                                                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
+                                                 ))}
+                                             </Pie>
+                                             <Tooltip
+                                                 formatter={(value, name) => [`${value} tickets`, name]}
+                                                 contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
+                                                 wrapperStyle={{ zIndex: 1000 }}
+                                             />
                                             <><Legend/></>
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                         </PieChart>
+                                     </ResponsiveContainer>
                                 )}
                             </div>
                         </div>
