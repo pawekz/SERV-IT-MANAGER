@@ -36,6 +36,7 @@ import Spinner from "./components/Spinner/Spinner.jsx";
 import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'
 import QuotationViewer from "./pages/QuotationViewer/QuotationViewer.jsx";
+import Error404 from "./pages/ErrorPages/Error404";
 
 function AppContent() {
   const location = useLocation();
@@ -218,6 +219,8 @@ function AppContent() {
             <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
           } />
           <Route path="/mockupstatus" element={<MockUpUpdateStatusAndPushNotifications />} />
+          {/* Catch-all 404 route (must be last) */}
+          <Route path="*" element={<Error404 />} />
         </>
       )}
     </Routes>
