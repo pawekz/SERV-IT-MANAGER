@@ -1,8 +1,11 @@
 import Navbar from "../../components/Navbar/Navbar"
 import Footer from "../../components/Footer/Footer"
 import styles from "./LandingPage.module.css"
+import { Link } from "react-router-dom";
 
 const LandingPage = () => {
+    const isLoggedIn = !!localStorage.getItem('authToken');
+
     return (
         <div className={styles.landingPage}>
             <Navbar />
@@ -23,9 +26,15 @@ const LandingPage = () => {
                                 <a href="#features" className={styles.primaryBtn}>
                                     Explore Features
                                 </a>
-                                <a href="/signup" className={styles.secondaryBtn}>
-                                    Get Started
-                                </a>
+                                {isLoggedIn ? (
+                                    <Link to="/dashboard" className={styles.secondaryBtn}>
+                                        Dashboard
+                                    </Link>
+                                ) : (
+                                    <Link to="/signup" className={styles.secondaryBtn}>
+                                        Get Started
+                                    </Link>
+                                )}
                             </div>
                         </div>
                         <div className={styles.heroImage}>
@@ -76,9 +85,15 @@ const LandingPage = () => {
                     <div className={styles.container}>
                         <h2>Ready to streamline your IT repair process?</h2>
                         <p>Join IOCONNECT today and transform your service management</p>
-                        <a href="#contact" className={styles.ctaButton}>
-                            Get Started Now
-                        </a>
+                        {isLoggedIn ? (
+                            <Link to="/dashboard" className={styles.ctaButton}>
+                                Get Started Now
+                            </Link>
+                        ) : (
+                            <Link to="/contact" className={styles.ctaButton}>
+                                Get Started Now
+                            </Link>
+                        )}
                     </div>
                 </section>
 

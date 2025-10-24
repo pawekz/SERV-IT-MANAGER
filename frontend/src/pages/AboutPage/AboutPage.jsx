@@ -1,8 +1,17 @@
 import Navbar from "../../components/Navbar/Navbar"
 import Footer from "../../components/Footer/Footer"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 const AboutPage = () => {
+    const navigate = useNavigate()
+
+    const handleGetStartedClick = (e) => {
+        // Prevent default link behavior to route programmatically
+        e.preventDefault()
+        const token = localStorage.getItem('authToken')
+        if (token) navigate('/dashboard')
+        else navigate('/signup')
+    }
     return (
         <div className="font-['Poppins',sans-serif]">
             <Navbar />
@@ -286,6 +295,7 @@ const AboutPage = () => {
                             <Link
                                 to="/signup"
                                 className="bg-transparent text-white px-10 py-4 rounded font-semibold border border-white inline-block transition-all duration-300 hover:bg-white/10 hover:-translate-y-1 md:w-auto w-full max-w-xs mx-auto"
+                                onClick={handleGetStartedClick}
                             >
                                 Get Started
                             </Link>

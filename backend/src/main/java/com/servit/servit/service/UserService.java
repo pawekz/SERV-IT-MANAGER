@@ -807,11 +807,20 @@ public class UserService {
                 return List.of();
             }
 
+            final String needle = normalize(query);
+
             List<GetUserResponseDTO> result = userRepo.findAll().stream()
-                    .filter(u -> u.getRole() == UserRoleEnum.TECHNICIAN &&
-                            (u.getFirstName().toLowerCase().contains(query.toLowerCase()) ||
-                                    u.getLastName().toLowerCase().contains(query.toLowerCase()) ||
-                                    u.getEmail().toLowerCase().contains(query.toLowerCase())))
+                    .filter(u -> u.getRole() == UserRoleEnum.TECHNICIAN)
+                    .filter(u -> {
+                        String f = normalize(u.getFirstName());
+                        String l = normalize(u.getLastName());
+                        String full = (f + " " + l).trim();
+                        String fullNoSpace = (f + l).trim();
+                        return (!f.isEmpty() && f.contains(needle))
+                                || (!l.isEmpty() && l.contains(needle))
+                                || (!full.isEmpty() && full.contains(needle))
+                                || (!fullNoSpace.isEmpty() && fullNoSpace.contains(needle));
+                    })
                     .limit(3)
                     .map(u -> new GetUserResponseDTO(
                             u.getUserId(), u.getFirstName(), u.getLastName(),
@@ -825,6 +834,13 @@ public class UserService {
             logger.error("Error searching technicians with query '{}': {}", query, e.getMessage(), e);
             throw new RuntimeException("Failed to search technicians", e);
         }
+    }
+
+    private String normalize(String s) {
+        if (s == null) return "";
+        String lowered = s.toLowerCase();
+        // collapse multiple spaces and trim
+        return lowered.replaceAll("\\s+", " ").trim();
     }
 
     public void assignTechnicianToTicket(String ticketNumber, String technicianEmail) {

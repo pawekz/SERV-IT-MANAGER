@@ -1,6 +1,9 @@
-"use client"
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Error404() {
+    const navigate = useNavigate();
+
     return (
         <div
             className="min-h-screen flex items-center justify-center px-4"
@@ -29,13 +32,15 @@ export default function Error404() {
                 <div className="flex flex-col items-center gap-4">
                     <button
                         className="px-12 py-3 bg-[#25D482] text-white font-semibold rounded hover:opacity-90 transition-opacity"
-                        onClick={() => (window.location.href = "/")}
+                        onClick={() => navigate('/')}
+                        aria-label="Go to Home"
                     >
                         Go to Home
                     </button>
                     <button
                         className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors"
-                        onClick={() => window.history.back()}
+                        onClick={() => navigate(-1)}
+                        aria-label="Go Back"
                     >
                         Go Back
                     </button>

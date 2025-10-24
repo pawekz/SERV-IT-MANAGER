@@ -36,12 +36,7 @@ import Spinner from "./components/Spinner/Spinner.jsx";
 import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'
 import QuotationViewer from "./pages/QuotationViewer/QuotationViewer.jsx";
-import Error401 from "./pages/StatusCodeErrorPages/Error401.jsx";
-import Error404 from "./pages/StatusCodeErrorPages/Error404.jsx";
-import Error403 from "./pages/StatusCodeErrorPages/Error403.jsx";
-import Error500 from "./pages/StatusCodeErrorPages/Error500.jsx";
-
-
+import Error404 from "./pages/ErrorPages/Error404";
 
 function AppContent() {
   const location = useLocation();
@@ -146,10 +141,6 @@ function AppContent() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/quotation" element={<Quotation />} />
-          <Route path="/401" element={<Error401 />} />
-          <Route path="/404" element={<Error404 />} />
-          <Route path="/500" element={<Error500 />} />
-          <Route path="/403" element={<Error403 />} />
           <Route path="/quotationapproval/:ticketNumber" element={
             <ProtectedRoute element={<QuotationApproval />} allowedRoles={['customer']} />
           } />
@@ -228,6 +219,8 @@ function AppContent() {
             <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
           } />
           <Route path="/mockupstatus" element={<MockUpUpdateStatusAndPushNotifications />} />
+          {/* Catch-all 404 route (must be last) */}
+          <Route path="*" element={<Error404 />} />
         </>
       )}
     </Routes>
