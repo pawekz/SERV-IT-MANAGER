@@ -1,6 +1,22 @@
-import { MapPin, Phone, Mail, Clock, MessageSquare, Send } from "lucide-react"
+import { MapPin, Phone, Mail, Clock, MessageSquare, Send, Linkedin } from "lucide-react"
 import Navbar from "../../components/Navbar/Navbar"
 import Footer from "../../components/Footer/Footer"
+
+const YoutubeIcon = (props) => (
+    <svg
+        width={24}
+        height={24}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        {...props}
+    >
+        <path
+            d="M21.8 8.001a2.75 2.75 0 0 0-1.94-1.94C18.1 6 12 6 12 6s-6.1 0-7.86.06A2.75 2.75 0 0 0 2.2 8.001 28.6 28.6 0 0 0 2 12a28.6 28.6 0 0 0 .2 3.999 2.75 2.75 0 0 0 1.94 1.94C5.9 18 12 18 12 18s6.1 0 7.86-.061a2.75 2.75 0 0 0 1.94-1.94A28.6 28.6 0 0 0 22 12a28.6 28.6 0 0 0-.2-3.999zM10 15V9l5 3-5 3z"
+            fill="currentColor"
+        />
+    </svg>
+);
 
 const ContactPage = () => {
     return (
@@ -100,6 +116,24 @@ const ContactPage = () => {
                                             >
                                                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                                             </svg>
+                                        </a>
+                                        <a
+                                            href="https://www.linkedin.com/company/ioconnectcebu/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="LinkedIn"
+                                            className="w-10 h-10 bg-[#33e407] rounded-full flex items-center justify-center text-white hover:bg-[#2bc706] transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-[rgba(51,228,7,0.3)]"
+                                        >
+                                            <Linkedin size={24} />
+                                        </a>
+                                        <a
+                                            href="https://www.youtube.com/@ioconnect"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="YouTube"
+                                            className="w-10 h-10 bg-[#33e407] rounded-full flex items-center justify-center text-white hover:bg-[#2bc706] transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-[rgba(51,228,7,0.3)]"
+                                        >
+                                            <YoutubeIcon />
                                         </a>
                                     </div>
                                 </div>
