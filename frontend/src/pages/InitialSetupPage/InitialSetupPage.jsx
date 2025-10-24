@@ -16,10 +16,18 @@ const InitialSetupPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
+  const phoneNumberRegex = /^9\d{9}$/;
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData({ ...formData, [id]: value });
+    if (id === 'phoneNumber') {
+      // Only allow numbers, max 10 digits, must start with 9
+      let sanitized = value.replace(/\D/g, '');
+      if (sanitized.length > 10) sanitized = sanitized.slice(0, 10);
+      setFormData({ ...formData, [id]: sanitized });
+    } else {
+      setFormData({ ...formData, [id]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -29,6 +37,10 @@ const InitialSetupPage = () => {
     // Simple validation
     if (Object.values(formData).some((v) => !v)) {
       setError('All fields are required.');
+      return;
+    }
+    if (!phoneNumberRegex.test(formData.phoneNumber)) {
+      setError('Phone number must be 10 digits, start with 9, and contain only numbers.');
       return;
     }
     if (!passwordRegex.test(formData.password)) {
@@ -144,6 +156,10 @@ const InitialSetupPage = () => {
                 className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
                 placeholder="905 123 4567"
                 required
+                pattern="9[0-9]{9}"
+                maxLength={10}
+                inputMode="numeric"
+                autoComplete="tel"
               />
             </div>
           </div>
