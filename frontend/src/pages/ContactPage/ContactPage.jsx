@@ -1,6 +1,7 @@
 import { MapPin, Phone, Mail, Clock, MessageSquare, Send, Linkedin } from "lucide-react"
 import Navbar from "../../components/Navbar/Navbar"
 import Footer from "../../components/Footer/Footer"
+import { useNavigate } from 'react-router-dom'
 
 const YoutubeIcon = (props) => (
     <svg
@@ -19,6 +20,17 @@ const YoutubeIcon = (props) => (
 );
 
 const ContactPage = () => {
+    const navigate = useNavigate()
+
+    const handleGetStartedClick = (e) => {
+        e.preventDefault()
+        const token = localStorage.getItem('authToken')
+        if (token) {
+            navigate('/dashboard')
+        } else {
+            navigate('/signup')
+        }
+    }
     return (
         <div className="font-['Poppins',sans-serif]">
             <Navbar />
@@ -303,6 +315,7 @@ const ContactPage = () => {
                         <p className="text-lg mb-8 max-w-2xl mx-auto">Join hundreds of businesses that trust IOCONNECT for their repair workflow needs</p>
                         <a
                             href="/signup"
+                            onClick={handleGetStartedClick}
                             className="bg-white text-[#33e407] py-4 px-10 rounded-md font-semibold inline-block transition-all hover:bg-white/90 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/10"
                         >
                             Get Started Now
