@@ -36,10 +36,10 @@ import Spinner from "./components/Spinner/Spinner.jsx";
 import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'
 import QuotationViewer from "./pages/QuotationViewer/QuotationViewer.jsx";
-import Error401 from "./pages/StatusCodeErrorPages/Error401.jsx";
-import Error404 from "./pages/StatusCodeErrorPages/Error404.jsx";
-import Error403 from "./pages/StatusCodeErrorPages/Error403.jsx";
-import Error500 from "./pages/StatusCodeErrorPages/Error500.jsx";
+import Error401 from "./pages/ErrorPages/Error401.jsx";
+import Error404 from "./pages/ErrorPages/Error404.jsx";
+import Error403 from "./pages/ErrorPages/Error403.jsx";
+import Error500 from "./pages/ErrorPages/Error500.jsx";
 
 
 
