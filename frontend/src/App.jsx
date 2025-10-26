@@ -9,13 +9,9 @@ import AccountInformation from "./pages/AccountInformationPage/AccountInformatio
 import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagement";
 import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
-import BackUpPage from "./pages/BackUpPage/BackUpPage.jsx";
+import BackupPage from "./pages/BackupPage/BackupPage.jsx";
 import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
-import DeviceCard from "./components/DeviceCard/DeviceCard.jsx";
-import Sidebar from "./components/SideBar/Sidebar.jsx";
 import InventoryAssignmentPanel from "./pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx";
-import TermsEditor from "./pages/TermsEditor/TermsEditor.jsx";
-import SignatureCapturePad from "./pages/SignatureCapturePad/SignatureCapturePad.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
 import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
@@ -33,206 +29,198 @@ import Quotation from './pages/QuotationBuilderPanel/InventoryAssignmentPanel.js
 import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
 import api from "./config/ApiConfig.jsx";
 import Spinner from "./components/Spinner/Spinner.jsx";
-import CreateEmployeePage from './pages/SignUpPage/CreateEmployeePage';
 import QuotationApproval from './pages/QuotationApproval/QuotationApproval.jsx'
 import QuotationViewer from "./pages/QuotationViewer/QuotationViewer.jsx";
 import Error404 from "./pages/ErrorPages/Error404";
 
 function AppContent() {
-  const location = useLocation();
-  // Function to parse JWT token
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split('.')[1]));
-    } catch (e) {
-      return null;
-    }
-  };
-
-  // Role-based route renderer
-  const ProtectedRoute = ({ element, allowedRoles }) => {
-    // Check if logged in
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      return <Navigate to="/login" />;
-    }
-
-    // Check if role matches
-    const decodedToken = parseJwt(token);
-    if (!decodedToken || !allowedRoles.includes(decodedToken.role?.toLowerCase())) {
-      return <Navigate to="/login" />;
-    }
-
-    return element;
-  };
-
-  // Dashboard component based on role
-  const Dashboard = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      return <Navigate to="/login" />;
-    }
-
-    const decodedToken = parseJwt(token);
-    if (!decodedToken || !decodedToken.role) {
-      return <Navigate to="/login" />;
-    }
-
-    switch (decodedToken.role.toLowerCase()) {
-      case 'admin':
-        return <AdminDashboard />;
-      case 'technician':
-        return <Techniciandashboard />;
-      case 'customer':
-        return <CustomerDashboard />;
-      default:
-        return <Navigate to="/login" />;
-    }
-  };
-
-  // Initial admin setup detection
-  const [needsSetup, setNeedsSetup] = useState(null); // null while loading
-  useEffect(() => {
-    const checkUserCount = async () => {
-      try {
-        const res = await api.get("/user/getUserCountInit");
-        if (res.status === 200) {
-          const count = res.data;
-          setNeedsSetup(count === 0);
-        } else {
-          setNeedsSetup(false); // fallback to normal mode on error
+    const location = useLocation();
+    // Function to parse JWT token
+    const parseJwt = (token) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
         }
-      } catch (e) {
-        setNeedsSetup(false);
-      }
     };
-    if (location.pathname === "/") {
-      checkUserCount();
-    } else {
-      setNeedsSetup(false);
+
+    // Role-based route renderer
+    const ProtectedRoute = ({ element, allowedRoles }) => {
+        // Check if logged in
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            return <Navigate to="/login" />;
+        }
+
+        // Check if role matches
+        const decodedToken = parseJwt(token);
+        if (!decodedToken || !allowedRoles.includes(decodedToken.role?.toLowerCase())) {
+            return <Navigate to="/login" />;
+        }
+
+        return element;
+    };
+
+    // Dashboard component based on role
+    const Dashboard = () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            return <Navigate to="/login" />;
+        }
+
+        const decodedToken = parseJwt(token);
+        if (!decodedToken || !decodedToken.role) {
+            return <Navigate to="/login" />;
+        }
+
+        switch (decodedToken.role.toLowerCase()) {
+            case 'admin':
+                return <AdminDashboard />;
+            case 'technician':
+                return <Techniciandashboard />;
+            case 'customer':
+                return <CustomerDashboard />;
+            default:
+                return <Navigate to="/login" />;
+        }
+    };
+
+    // Initial admin setup detection
+    const [needsSetup, setNeedsSetup] = useState(null); // null while loading
+    useEffect(() => {
+        const checkUserCount = async () => {
+            try {
+                const res = await api.get("/user/getUserCountInit");
+                if (res.status === 200) {
+                    const count = res.data;
+                    setNeedsSetup(count === 0);
+                } else {
+                    setNeedsSetup(false); // fallback to normal mode on error
+                }
+            } catch (e) {
+                setNeedsSetup(false);
+            }
+        };
+        if (location.pathname === "/") {
+            checkUserCount();
+        } else {
+            setNeedsSetup(false);
+        }
+    }, [location.pathname]);
+
+    if (needsSetup === null && location.pathname === "/") {
+        // Still checking the server – show spinner
+        return (
+            <div className="flex flex-col items-center justify-center h-screen gap-4">
+                <Spinner size="large" />
+                <span className="text-gray-600">Loading...</span>
+            </div>
+        );
     }
-  }, [location.pathname]);
 
-  if (needsSetup === null && location.pathname === "/") {
-    // Still checking the server – show spinner
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <Spinner size="large" />
-        <span className="text-gray-600">Loading...</span>
-      </div>
+        <Routes>
+            {needsSetup ? (
+                <Route path="/*" element={<InitialSetupPage />} />
+            ) : (
+                <>
+                    {/* Public routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/signup" element={<SignUpPage />} />
+                    <Route path="/employee-onboarding" element={<EmployeeSignUpPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/login/staff" element={<LoginStaffPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/quotation" element={<Quotation />} />
+                    <Route path="/quotationapproval/:ticketNumber" element={
+                        <ProtectedRoute element={<QuotationApproval />} allowedRoles={['customer']} />
+                    } />
+
+                    {/* Protected History route */}
+                    <Route path="/history" element={
+                        <ProtectedRoute element={<HistoryPage />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+
+                    {/* Single dashboard route that renders different components based on role */}
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+
+                    {/* Protected routes */}
+
+                    <Route path="/faq" element={
+                        <ProtectedRoute element={<FAQ />} allowedRoles={['customer', 'technician', 'admin']} />
+                    } />
+
+                    <Route path="/accountinformation" element={
+                        <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/passwordmanagement" element={
+                        <ProtectedRoute element={<PasswordManagement />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/automatedclaimformgeneration" element={
+                        <ProtectedRoute element={<AutomatedClaimFormGenerationPage />} allowedRoles={['admin', 'technician']} />
+                    } />
+                    <Route path="/backup" element={
+                        <ProtectedRoute element={<BackupPage />} allowedRoles={['admin']} />
+                    } />
+                    <Route path="/warranty" element={
+                        <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/warrantyrequest" element={
+                        <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/quotationeditor" element={
+                        <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
+                    } />
+                    <Route path="/quotation-builder/:ticketNumber" element={
+                        <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
+                    } />
+                    <Route path="/quotationviewer/:ticketNumber" element={
+                        <ProtectedRoute element={<QuotationViewer />} allowedRoles={['admin', 'technician']} />
+                    } />
+                    <Route path="/inventory" element={
+                        <ProtectedRoute element={<Inventory />} allowedRoles={['admin', 'technician']} />
+                    } />
+                    <Route path="/repairqueue" element={
+                        <ProtectedRoute element={<RepairQueue />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/profilemanage" element={
+                        <ProtectedRoute element={<UserManagement />} allowedRoles={['admin']} />
+                    } />
+                    <Route path="/feedbackform/:ticketId" element={
+                        <ProtectedRoute element={<Feedbackform />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/newrepair" element={
+                        <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
+                    } />
+
+                    <Route path="*" element={<Error404 />} />
+
+                    {/* Testing Pages */}
+
+                    <Route path="/test/mockup-status" element={
+                        <ProtectedRoute element={<MockUpUpdateStatusAndPushNotifications />} allowedRoles={['admin']} />
+                    } />
+
+                    <Route path="/realtimestatus" element={
+                        <ProtectedRoute element={<RealTimeStatus />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+
+
+                </>
+            )}
+        </Routes>
     );
-  }
-
-  return (
-    <Routes>
-      {needsSetup ? (
-        <Route path="/*" element={<InitialSetupPage />} />
-      ) : (
-        <>
-          {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/employee-onboarding" element={<EmployeeSignUpPage />} />
-          <Route path="/employee-signup" element={
-            <ProtectedRoute element={<CreateEmployeePage />} allowedRoles={['admin']} />
-          } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/login/staff" element={<LoginStaffPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/quotation" element={<Quotation />} />
-          <Route path="/quotationapproval/:ticketNumber" element={
-            <ProtectedRoute element={<QuotationApproval />} allowedRoles={['customer']} />
-          } />
-
-          {/* Protected History route */}
-          <Route path="/history" element={
-            <ProtectedRoute element={<HistoryPage />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-
-          {/* Single dashboard route that renders different components based on role */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-
-          {/* Protected routes */}
-
-          <Route path="/faq" element={
-            <ProtectedRoute element={<FAQ />} allowedRoles={['customer', 'technician', 'admin']} />
-          } />
-
-          <Route path="/accountinformation" element={
-            <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/passwordmanagement" element={
-            <ProtectedRoute element={<PasswordManagement />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/automatedclaimformgeneration" element={
-            <ProtectedRoute element={<AutomatedClaimFormGenerationPage />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/backup" element={
-            <ProtectedRoute element={<BackUpPage />} allowedRoles={['admin']} />
-          } />
-          <Route path="/warranty" element={
-            <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/warrantyrequest" element={
-            <ProtectedRoute element={<WarrantyRequestPage />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/devicecard" element={
-            <ProtectedRoute element={<DeviceCard />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/sidebar" element={
-            <ProtectedRoute element={<Sidebar />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/quotationeditor" element={
-            <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/quotation-builder/:ticketNumber" element={
-            <ProtectedRoute element={<InventoryAssignmentPanel />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/quotationviewer/:ticketNumber" element={
-            <ProtectedRoute element={<QuotationViewer />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/inventory" element={
-            <ProtectedRoute element={<Inventory />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/termseditor" element={
-            <ProtectedRoute element={<TermsEditor />} allowedRoles={['admin']} />
-          } />
-          <Route path="/signature" element={
-            <ProtectedRoute element={<SignatureCapturePad />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/repairqueue" element={
-            <ProtectedRoute element={<RepairQueue />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/profilemanage" element={
-            <ProtectedRoute element={<UserManagement />} allowedRoles={['admin']} />
-          } />
-          <Route path="/feedbackform/:ticketId" element={
-            <ProtectedRoute element={<Feedbackform />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/realtimestatus" element={
-            <ProtectedRoute element={<RealTimeStatus />} allowedRoles={['admin', 'technician', 'customer']} />
-          } />
-          <Route path="/newrepair" element={
-            <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
-          } />
-          <Route path="/mockupstatus" element={<MockUpUpdateStatusAndPushNotifications />} />
-          {/* Catch-all 404 route (must be last) */}
-          <Route path="*" element={<Error404 />} />
-        </>
-      )}
-    </Routes>
-  );
 }
 
 function App() {
-  return (
-    <Router>
-      <AppContent />
-    </Router>
-  );
+    return (
+        <Router>
+            <AppContent />
+        </Router>
+    );
 }
 
 export default App
