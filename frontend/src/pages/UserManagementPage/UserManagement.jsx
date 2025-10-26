@@ -343,12 +343,22 @@ const UserManagement = () => {
 
             {/* Main Content */}
             <div className="flex-1 p-8 bg-gray-50">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-gray-800 mb-2">User Management</h1>
-                    <p className="text-gray-600 text-base max-w-3xl">
-                        Manage user accounts and control access by assigning appropriate roles. Role-Based Access Control (RBAC)
-                        allows you to define permissions based on user roles.
-                    </p>
+                <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="md:flex-1">
+                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">User Management</h1>
+                        <p className="text-gray-600 text-base max-w-3xl">
+                            Manage user accounts and control access by assigning appropriate roles. Role-Based Access Control (RBAC)
+                            allows you to define permissions based on user roles.
+                        </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <Link
+                            to="/employee-signup"
+                            className="flex items-center py-2 px-4 rounded-md font-medium transition-all text-white bg-[#25D482] hover:bg-[#1fab6b]"
+                        >
+                            Create Employee
+                        </Link>
+                    </div>
                 </div>
 
                 <div>
@@ -418,15 +428,6 @@ const UserManagement = () => {
                                     >
                                         {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
                                     </select>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Link
-                                        to="/employee-signup"
-                                        className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap w-full md:w-auto"
-                                    >
-                                        Create Employee
-                                    </Link>
                                 </div>
                             </div>
                         </div>
