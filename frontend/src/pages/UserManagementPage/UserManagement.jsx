@@ -23,6 +23,7 @@ const UserManagement = () => {
     const [error, setError] = useState(null);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const currentUserEmail = userData.email;
+    const currentUserId = userData.userId || null;
     const [editIndex, setEditIndex] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
@@ -90,8 +91,10 @@ const UserManagement = () => {
         let filtered = users;
 
         // Exclude current logged-in user
+        // Keep userId 1 (initial admin) visible even if it's the logged-in user.
+        // Otherwise exclude the current logged-in user from the list.
         if (currentUserEmail) {
-            filtered = filtered.filter(user => user.email !== currentUserEmail);
+            filtered = filtered.filter(user => (user.email !== currentUserEmail) || String(user.userId) === String(1));
         }
 
         // First filter by search term
@@ -394,105 +397,118 @@ const UserManagement = () => {
                             <tbody className="relative">
                                 {filteredUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="p-4 text-center text-gray-500">
+                                        <td colSpan={6} className="p-4 text-center text-gray-500">
                                             No users matching your search criteria
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredUsers.map((currentUsers, index) => (
-                                        <tr key={currentUsers.userId}>
-                                            <td className="p-4 border-b border-gray-200">
-                                                <div className="flex">
-                                                {editIndex === index ? (
-                                                    <input
-                                                        type="text"
-                                                        name="firstName"
-                                                        value={editFormData.firstName}
-                                                        onChange={handleInputChange}
-                                                        className="border rounded px-2 py-1 w-50"
-                                                    />
-                                                ) : (
-                                                   <span>{currentUsers.firstName}</span>
-                                                )}
-                                                {editIndex === index ? (
-                                                    <input
-                                                        type="text"
-                                                        name="lastName"
-                                                        value={editFormData.lastName}
-                                                        onChange={handleInputChange}
-                                                        className="border rounded px-2 py-1 w-50"
-                                                    />
-                                                ) : (
-                                                    <span className="pl-2">{currentUsers.lastName}</span>
-                                                )}
-                                                </div>
-                                            </td>
-                                            <td className="p-4 border-b border-gray-200">
-                                                {currentUsers.email}
-                                            </td>
-                                            <td className="p-4 border-b border-gray-200">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(currentUsers.status)}`}>
-                                                    {currentUsers.status}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 border-b border-gray-200 text-gray-800">
-                                                {editIndex === index ? (
-                                                        <select  name="role"
-                                                                 value={editFormData.role}
-                                                                 onChange={handleInputChange}
-                                                                 className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                    filteredUsers.map((user, index) => {
+                                        const isSelf = String(user.userId) === String(currentUserId);
+                                        return (
+                                            <tr key={user.userId}>
+                                                <td className="p-4 border-b border-gray-200">
+                                                    <div className="flex">
+                                                        {editIndex === index ? (
+                                                            <input
+                                                                type="text"
+                                                                name="firstName"
+                                                                value={editFormData.firstName}
+                                                                onChange={handleInputChange}
+                                                                className="border rounded px-2 py-1 w-50"
+                                                            />
+                                                        ) : (
+                                                            <span>{user.firstName}</span>
+                                                        )}
+                                                        {editIndex === index ? (
+                                                            <input
+                                                                type="text"
+                                                                name="lastName"
+                                                                value={editFormData.lastName}
+                                                                onChange={handleInputChange}
+                                                                className="border rounded px-2 py-1 w-50"
+                                                            />
+                                                        ) : (
+                                                            <span className="pl-2">{user.lastName}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 border-b border-gray-200">{user.email}</td>
+                                                <td className="p-4 border-b border-gray-200">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
+                                                        {user.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 border-b border-gray-200 text-gray-800">
+                                                    {editIndex === index ? (
+                                                        <select
+                                                            name="role"
+                                                            value={editFormData.role}
+                                                            onChange={handleInputChange}
+                                                            className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
                                                         >
-                                                            <option hidden>
-                                                                {currentUsers.role.charAt(0).toUpperCase()+currentUsers.role.toLowerCase().slice(1)}
-                                                            </option>
+                                                            <option hidden>{user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1)}</option>
                                                             <option>Admin</option>
                                                             <option>Customer</option>
                                                             <option>Technician</option>
                                                         </select>
-                                                ) : (
-                                                    currentUsers.role.charAt(0).toUpperCase()+currentUsers.role.toLowerCase().slice(1)
-                                                )}
-                                            </td>
-                                            <td className="p-4 border-b border-gray-200">
-                                                <div className="flex gap-2">
-                                                    {/*Edit button*/}
-                                                    {editIndex === index ? (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleSubmit(currentUsers, index)} >
-                                                            <CheckCheck size={16} />
-                                                        </button>
+                                                    ) : (
+                                                        user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1)
+                                                    )}
+                                                </td>
+                                                <td className="p-4 border-b border-gray-200">
+                                                    <div className="flex gap-2">
+                                                        {editIndex === index ? (
+                                                            <button
+                                                                className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-gray-200"
+                                                                onClick={() => handleSubmit(user, index)}
+                                                                disabled={isSelf}
+                                                                title={isSelf ? "You cannot edit your own account." : "Save changes"}
+                                                            >
+                                                                <CheckCheck size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                className={`flex items-center justify-center w-8 h-8 rounded ${isSelf ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} border-none transition-all`}
+                                                                onClick={() => !isSelf && handleEdit(user, index)}
+                                                                disabled={isSelf}
+                                                                title={isSelf ? "You cannot edit your own account." : "Edit user"}
+                                                            >
+                                                                <PenLine size={16} />
+                                                            </button>
+                                                        )}
 
-                                                    ) : (
-                                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-600 border-none cursor-pointer transition-all hover:bg-gray-200" onClick={() => handleEdit(currentUsers, index)} >
-                                                            <PenLine size={16} />
-                                                        </button>
-                                                    )}
-                                                    {/*Delete button*/}
-                                                    {currentUsers.status === "Inactive" ? (
-                                                        <button
-                                                            className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-red-100"
-                                                            onClick={() => handleReactivate(currentUsers)}
-                                                        >
-                                                            <Activity size={16} />
-                                                        </button>
-                                                    ) : currentUsers.status === "Active" ? (
-                                                        <button
-                                                            className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
-                                                            onClick={() => handleDelete(currentUsers)}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-gray-700 border-none cursor-pointer transition-all hover:bg-red-100"
-                                                            disabled
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                        {isSelf ? (
+                                                            <button
+                                                                className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-400 border-none cursor-not-allowed"
+                                                                disabled
+                                                                title="You cannot deactivate/reactivate your own account."
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        ) : user.status === 'Inactive' ? (
+                                                            <button
+                                                                className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-red-100"
+                                                                onClick={() => handleReactivate(user)}
+                                                            >
+                                                                <Activity size={16} />
+                                                            </button>
+                                                        ) : user.status === 'Active' ? (
+                                                            <button
+                                                                className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
+                                                                onClick={() => handleDelete(user)}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-gray-700 border-none cursor-pointer transition-all hover:bg-red-100" disabled>
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
