@@ -1,15 +1,7 @@
 import { Link } from "react-router-dom"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import React, { useState, useEffect } from "react"
-import {
-    Search,
-    ChevronLeft,
-    ChevronRight,
-    PenLine,
-    Trash2,
-    CheckCheck,
-    Activity
-} from "lucide-react"
+import { PenLine, Trash2, CheckCheck, Activity } from "lucide-react"
 
 const UserManagement = () => {
     // Sample users data - in a real app this would come from an API
@@ -25,15 +17,17 @@ const UserManagement = () => {
     const currentUserEmail = userData.email;
     const currentUserId = userData.userId || null;
     const [editIndex, setEditIndex] = useState(null);
-    const [isEditing, setIsEditing] = useState(false);
     const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const usersPerPage = 10;
-    const indexOfLastUser = currentPage * usersPerPage;
-    const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+    const [pageSize, setPageSize] = useState(10); // configurable page size (Per Page)
+
+    // Derived paging indices
+    const indexOfLastUser = currentPage * pageSize;
+    const indexOfFirstUser = indexOfLastUser - pageSize;
+    const currentUsers = (filteredUsers || []).slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.max(1, Math.ceil((filteredUsers || []).length / pageSize));
+
     const [selectedUser, setSelectedUser] = useState({
         firstName: '',
         lastName: '',
@@ -86,40 +80,58 @@ const UserManagement = () => {
         setTableMinHeight("380px");
     }, []);
 
+    // derive role & status options from loaded users
+    const roleOptions = ['All Roles', ...Array.from(new Set(users.map(u => (u.role || '').toString().trim()).filter(Boolean))).map(r => (r.charAt(0).toUpperCase() + r.toLowerCase().slice(1)) )];
+    const statusOptions = ['All Status', ...Array.from(new Set(users.map(u => (u.status || '').toString().trim()).filter(Boolean)))];
+
     // Filter users based on search term, selected role, and status
     useEffect(() => {
-        let filtered = users;
+        let filtered = users || [];
 
         // Exclude current logged-in user
         // Keep userId 1 (initial admin) visible even if it's the logged-in user.
-        // Otherwise exclude the current logged-in user from the list.
+        // Otherwise, exclude the current logged-in user from the list.
         if (currentUserEmail) {
             filtered = filtered.filter(user => (user.email !== currentUserEmail) || String(user.userId) === String(1));
         }
 
         // First filter by search term
         if (searchTerm.trim() !== '') {
+            const q = searchTerm.toLowerCase();
             filtered = filtered.filter(user =>
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                (user.email || '').toLowerCase().includes(q) ||
+                ((user.firstName || '') + ' ' + (user.lastName || '')).toLowerCase().includes(q)
             );
         }
 
         // Then filter by role if not "All Roles"
-        if (selectedRole !== 'All Roles') {
-            filtered = filtered.filter(user => user.role.charAt(0).toUpperCase()+user.role.toLowerCase().slice(1) === selectedRole);
+        if (selectedRole && selectedRole !== 'All Roles') {
+            filtered = filtered.filter(user => (user.role || '').charAt(0).toUpperCase()+ (user.role || '').toLowerCase().slice(1) === selectedRole);
         }
 
         // Filter by status if not "All Status"
-        if (selectedStatus !== 'All Status') {
+        if (selectedStatus && selectedStatus !== 'All Status') {
             filtered = filtered.filter(user => user.status === selectedStatus);
         }
 
         setFilteredUsers(filtered);
+        // Reset to first page whenever filters/search/pageSize changes
+        setCurrentPage(1);
     }, [searchTerm, selectedRole, selectedStatus, users]);
 
     // Handle search input change
-    const handleSearch = (e) => {
+    const handleSearchInput = (e) => {
         setSearchTerm(e.target.value);
+    };
+
+    const handleSearch = () => {
+        // Filtering is reactive; ensure page is reset to 1 when user explicitly searches
+        setCurrentPage(1);
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        setCurrentPage(1);
     };
 
     // Handle role selection change
@@ -132,15 +144,23 @@ const UserManagement = () => {
         setSelectedStatus(e.target.value);
     };
 
+    // Handle per-page change
+    const handlePageSizeChange = (e) => {
+        const newSize = parseInt(e.target.value, 10) || 10;
+        setPageSize(newSize);
+        setCurrentPage(1);
+    };
+
     // Handle details selection change
-    const handleEdit = (row, index) => {
-        setIsEditing(true);
-        setEditIndex(index);
+    const handleEdit = (row/*, index*/) => {
+        // Use userId as the edit marker so it remains stable across pages
+        setEditIndex(row.userId);
         setSelectedUser({ ...row });
         setEditFormData({
             firstName: row.firstName,
             lastName: row.lastName,
-            userId: row.userId
+            userId: row.userId,
+            role: row.role
         });
     };
 
@@ -229,7 +249,7 @@ const UserManagement = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async () => {
         setIsSubmitting(true);
         setUpdateStatus({ success: false, message: '' });
 
@@ -272,7 +292,7 @@ const UserManagement = () => {
             }
 
             // Only update role if changed
-            if (selectedUser.role.toUpperCase() !== editFormData.role.toUpperCase()) {
+            if (selectedUser.role && editFormData.role && selectedUser.role.toUpperCase() !== editFormData.role.toUpperCase()) {
                 const roleResponse = await fetch(`${window.__API_BASE__}/user/changeRole/${editFormData.userId}`, {
                     method: 'PATCH',
                     headers: {
@@ -309,7 +329,6 @@ const UserManagement = () => {
         } finally {
             setIsSubmitting(false);
             fetchUsers();
-            setIsEditing(false);
             setEditIndex(null);
         }
     };
@@ -333,235 +352,273 @@ const UserManagement = () => {
                 </div>
 
                 <div>
-                    {/* Responsive filter/search controls */}
-                    <div className="flex flex-col gap-3 md:flex-row md:justify-between mb-4">
-                        {/* Search + Status + Role (inline on desktop, stacked on mobile) */}
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:flex-1">
-                            <div className="relative w-full md:max-w-md md:w-auto">
-                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                <input
-                                    type="text"
-                                    placeholder="Search by email..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    className="w-full py-2 pl-9 pr-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
-                                />
+                    {/* Card Container similar to HistoryPage */}
+                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6 overflow-hidden">
+                        {/* Header / Controls */}
+                        <div className="px-6 py-5 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex flex-col gap-1">
+                                <h2 className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                                    Users
+                                    <span className="text-sm font-normal text-gray-500">({filteredUsers.length})</span>
+                                </h2>
                             </div>
-                            <select
-                                value={selectedStatus}
-                                onChange={handleStatusChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[120px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] w-full md:w-auto"
-                            >
-                                <option>All Status</option>
-                                <option>Active</option>
-                                <option>Pending</option>
-                                <option>Inactive</option>
-                            </select>
-                            <select
-                                value={selectedRole}
-                                onChange={handleRoleChange}
-                                className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm min-w-[120px] focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)] w-full md:w-auto"
-                            >
-                                <option>All Roles</option>
-                                <option>Admin</option>
-                                <option>Customer</option>
-                                <option>Technician</option>
-                            </select>
-                        </div>
-                        {/* Create Employee (inline on desktop, stacked below on mobile) */}
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                            <Link
-                                to="/employee-signup"
-                                className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap w-full md:w-auto"
-                            >
-                                Create Employee
-                            </Link>
-                        </div>
-                    </div>
 
-                    {/* Responsive table container */}
-                    <div
-                        className="bg-white rounded-lg shadow-sm overflow-x-auto mb-6"
-                        style={{ minHeight: tableMinHeight }}
-                    >
-                        <table className="w-full border-collapse min-w-[600px]">
-                            <thead>
-                                <tr>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Role</th>
-                                    <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="relative">
-                                {filteredUsers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="p-4 text-center text-gray-500">
-                                            No users matching your search criteria
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredUsers.map((user, index) => {
-                                        const isSelf = String(user.userId) === String(currentUserId);
-                                        return (
-                                            <tr key={user.userId}>
-                                                <td className="p-4 border-b border-gray-200">
-                                                    <div className="flex">
-                                                        {editIndex === index ? (
-                                                            <input
-                                                                type="text"
-                                                                name="firstName"
-                                                                value={editFormData.firstName}
-                                                                onChange={handleInputChange}
-                                                                className="border rounded px-2 py-1 w-50"
-                                                            />
-                                                        ) : (
-                                                            <span>{user.firstName}</span>
-                                                        )}
-                                                        {editIndex === index ? (
-                                                            <input
-                                                                type="text"
-                                                                name="lastName"
-                                                                value={editFormData.lastName}
-                                                                onChange={handleInputChange}
-                                                                className="border rounded px-2 py-1 w-50"
-                                                            />
-                                                        ) : (
-                                                            <span className="pl-2">{user.lastName}</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="p-4 border-b border-gray-200">{user.email}</td>
-                                                <td className="p-4 border-b border-gray-200">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
-                                                        {user.status}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 border-b border-gray-200 text-gray-800">
-                                                    {editIndex === index ? (
-                                                        <select
-                                                            name="role"
-                                                            value={editFormData.role}
-                                                            onChange={handleInputChange}
-                                                            className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
-                                                        >
-                                                            <option hidden>{user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1)}</option>
-                                                            <option>Admin</option>
-                                                            <option>Customer</option>
-                                                            <option>Technician</option>
-                                                        </select>
-                                                    ) : (
-                                                        user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1)
-                                                    )}
-                                                </td>
-                                                <td className="p-4 border-b border-gray-200">
-                                                    <div className="flex gap-2">
-                                                        {editIndex === index ? (
-                                                            <button
-                                                                className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-gray-200"
-                                                                onClick={() => handleSubmit(user, index)}
-                                                                disabled={isSelf}
-                                                                title={isSelf ? "You cannot edit your own account." : "Save changes"}
-                                                            >
-                                                                <CheckCheck size={16} />
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                className={`flex items-center justify-center w-8 h-8 rounded ${isSelf ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} border-none transition-all`}
-                                                                onClick={() => !isSelf && handleEdit(user, index)}
-                                                                disabled={isSelf}
-                                                                title={isSelf ? "You cannot edit your own account." : "Edit user"}
-                                                            >
-                                                                <PenLine size={16} />
-                                                            </button>
-                                                        )}
-
-                                                        {isSelf ? (
-                                                            <button
-                                                                className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-400 border-none cursor-not-allowed"
-                                                                disabled
-                                                                title="You cannot deactivate/reactivate your own account."
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        ) : user.status === 'Inactive' ? (
-                                                            <button
-                                                                className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-red-100"
-                                                                onClick={() => handleReactivate(user)}
-                                                            >
-                                                                <Activity size={16} />
-                                                            </button>
-                                                        ) : user.status === 'Active' ? (
-                                                            <button
-                                                                className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
-                                                                onClick={() => handleDelete(user)}
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        ) : (
-                                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-gray-700 border-none cursor-pointer transition-all hover:bg-red-100" disabled>
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="flex justify-between items-center py-4">
-                        <div className="text-gray-600 text-sm">
-                            <span>
-                              Showing {filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0} to{' '}
-                                {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} entries
-                            </span>
-                        </div>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
-                                    currentPage === 1
-                                        ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
-                                        : 'bg-white text-gray-600 hover:border-[#25D482] hover:text-[#25D482]'
-                                }`}
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-
-                            {[...Array(totalPages)].map((_, index) => {
-                                const pageNum = index + 1;
-                                return (
+                            <div className="flex flex-col md:flex-row md:items-center gap-3 w-full lg:w-auto">
+                                <div className="flex flex-1 min-w-[220px] items-center gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder={'Search by email or name...'}
+                                        value={searchTerm}
+                                        aria-label="Search users"
+                                        onChange={handleSearchInput}
+                                        onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            onClick={handleClearSearch}
+                                            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                                            aria-label="Clear search"
+                                        >Clear</button>
+                                    )}
                                     <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`flex items-center justify-center min-w-8 h-8 rounded text-sm ${
-                                            currentPage === pageNum
-                                                ? 'bg-[#25D482] text-white border-none'
-                                                : 'bg-white text-gray-600 border border-gray-300 hover:border-[#25D482] hover:text-[#25D482]'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
+                                        onClick={handleSearch}
+                                        className="px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                    >Search</button>
+                                </div>
 
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className={`flex items-center justify-center min-w-8 h-8 rounded border border-gray-300 text-sm ${
-                                    currentPage === totalPages
-                                        ? 'bg-white text-gray-400 cursor-not-allowed opacity-50'
-                                        : 'bg-white text-gray-600 hover:border-[#25D482] hover:text-[#25D482]'
-                                }`}
-                            >
-                                <ChevronRight size={16} />
-                            </button>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-medium text-gray-600">Status</label>
+                                    <select
+                                        value={selectedStatus}
+                                        onChange={handleStatusChange}
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                    >
+                                        {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-medium text-gray-600">Role</label>
+                                    <select
+                                        value={selectedRole}
+                                        onChange={handleRoleChange}
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                    >
+                                        {roleOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-medium text-gray-600">Per Page</label>
+                                    <select
+                                        value={pageSize}
+                                        onChange={handlePageSizeChange}
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                    >
+                                        {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        to="/employee-signup"
+                                        className="bg-[#25D482] hover:bg-[#1fab6b] transition text-white text-sm font-medium py-2 px-4 rounded-md whitespace-nowrap w-full md:w-auto"
+                                    >
+                                        Create Employee
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Body / Table */}
+                        <div className="overflow-x-auto">
+                            {/* small status message for updates */}
+                            {updateStatus.message && (
+                                <div className={`mb-4 text-sm px-3 py-2 rounded ${updateStatus.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                    {updateStatus.message}
+                                </div>
+                            )}
+                            {/* loading / error states */}
+                            {loading ? (
+                                <div className="text-center text-gray-500 py-16">Loading users...</div>
+                            ) : error ? (
+                                <div className="text-center text-red-500 py-16">{error}</div>
+                            ) : (
+                             <table className="w-full border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Role</th>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="relative">
+                                    {(!filteredUsers || filteredUsers.length === 0) ? (
+                                        <tr>
+                                            <td colSpan={6} className="p-4 text-center text-gray-500">
+                                                No users matching your search criteria
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        currentUsers.map((user) => {
+                                             const isSelf = String(user.userId) === String(currentUserId);
+                                             return (
+                                                <tr key={user.userId}>
+                                                    <td className="p-4 border-b border-gray-200">
+                                                        <div className="flex">
+                                                            {editIndex === user.userId ? (
+                                                                 <input
+                                                                     type="text"
+                                                                     name="firstName"
+                                                                     value={editFormData.firstName}
+                                                                     onChange={handleInputChange}
+                                                                     className="border rounded px-2 py-1 w-50"
+                                                                 />
+                                                            ) : (
+                                                                <span>{user.firstName}</span>
+                                                            )}
+                                                            {editIndex === user.userId ? (
+                                                                 <input
+                                                                     type="text"
+                                                                     name="lastName"
+                                                                     value={editFormData.lastName}
+                                                                     onChange={handleInputChange}
+                                                                     className="border rounded px-2 py-1 w-50"
+                                                                 />
+                                                            ) : (
+                                                                <span className="pl-2">{user.lastName}</span>
+                                                            )}
+                                                         </div>
+                                                     </td>
+                                                     <td className="p-4 border-b border-gray-200">{user.email}</td>
+                                                     <td className="p-4 border-b border-gray-200">
+                                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
+                                                             {user.status}
+                                                         </span>
+                                                     </td>
+                                                     <td className="p-4 border-b border-gray-200 text-gray-800">
+                                                        {editIndex === user.userId ? (
+                                                             <select
+                                                                 name="role"
+                                                                 value={editFormData.role}
+                                                                 onChange={handleInputChange}
+                                                                 className="w-full py-2 px-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:border-[#25D482] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                                             >
+                                                                 <option hidden>{user.role && (user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1))}</option>
+                                                                 <option>Admin</option>
+                                                                 <option>Customer</option>
+                                                                 <option>Technician</option>
+                                                             </select>
+                                                         ) : (
+                                                             user.role && (user.role.charAt(0).toUpperCase() + user.role.toLowerCase().slice(1))
+                                                         )}
+                                                     </td>
+                                                     <td className="p-4 border-b border-gray-200">
+                                                         <div className="flex gap-2">
+                                                            {editIndex === user.userId ? (
+                                                                 <button
+                                                                     className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-gray-200"
+                                                                     onClick={() => handleSubmit()}
+                                                                     disabled={isSelf || isSubmitting}
+                                                                     title={isSelf ? "You cannot edit your own account." : (isSubmitting ? 'Saving...' : 'Save changes')}
+                                                                 >
+                                                                     <CheckCheck size={16} />
+                                                                 </button>
+                                                             ) : (
+                                                                 <button
+                                                                    className={`flex items-center justify-center w-8 h-8 rounded ${isSelf ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} border-none transition-all`}
+                                                                    onClick={() => !isSelf && handleEdit(user /*, index*/)}
+                                                                    disabled={isSelf}
+                                                                    title={isSelf ? "You cannot edit your own account." : "Edit user"}
+                                                                 >
+                                                                     <PenLine size={16} />
+                                                                 </button>
+                                                             )}
+
+                                                            {isSelf ? (
+                                                                <button
+                                                                    className="flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-400 border-none cursor-not-allowed"
+                                                                    disabled
+                                                                    title="You cannot deactivate/reactivate your own account."
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            ) : user.status === 'Inactive' ? (
+                                                                <button
+                                                                    className="flex items-center justify-center w-8 h-8 rounded bg-green-100 text-[#25D482] border-none cursor-pointer transition-all hover:bg-red-100"
+                                                                    onClick={() => handleReactivate(user)}
+                                                                >
+                                                                    <Activity size={16} />
+                                                                </button>
+                                                            ) : user.status === 'Active' ? (
+                                                                <button
+                                                                    className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-red-500 border-none cursor-pointer transition-all hover:bg-red-100"
+                                                                    onClick={() => handleDelete(user)}
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            ) : (
+                                                                <button className="flex items-center justify-center w-8 h-8 rounded bg-red-50 text-gray-700 border-none cursor-pointer transition-all hover:bg-red-100" disabled>
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                            )}
+
+                             {/* Pagination area similar to HistoryPage's renderPagination */}
+                             <div className="mt-6 flex items-center justify-between px-4 pb-5">
+                                 <div className="text-gray-600 text-sm">
+                                     <span>
+                                       Showing {filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} entries
+                                     </span>
+                                 </div>
+                                 <div className="flex gap-2 items-center">
+                                     <button
+                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                         disabled={currentPage === 1}
+                                         className={`px-3 py-1.5 rounded-md text-xs font-medium border ${currentPage === 1 ? 'bg-white text-gray-400 cursor-not-allowed opacity-50' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                     >Prev</button>
+
+                                     {/* Compact page number buttons (up to 5 centered) */}
+                                     {(() => {
+                                         const pages = [];
+                                         const maxButtons = 5;
+                                         let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                                         let end = start + maxButtons - 1;
+                                         if (end > totalPages) {
+                                             end = totalPages;
+                                             start = Math.max(1, end - maxButtons + 1);
+                                         }
+                                         for (let i = start; i <= end; i++) {
+                                             pages.push(
+                                                 <button
+                                                     key={i}
+                                                     onClick={() => setCurrentPage(i)}
+                                                     className={`px-3 py-1.5 rounded-md text-xs font-medium border ${i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                                 >{i}</button>
+                                             );
+                                         }
+                                         return pages;
+                                     })()}
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-medium border ${currentPage === totalPages ? 'bg-white text-gray-400 cursor-not-allowed opacity-50' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                    >Next</button>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
