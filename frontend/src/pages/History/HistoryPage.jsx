@@ -341,7 +341,6 @@ const HistoryPage = () => {
                     </p>
                 </div>
 
-                {/* Card Container similar to HistoryTab */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-10 overflow-hidden">
                     {/* Header / Controls */}
                     <div className="px-6 py-5 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
