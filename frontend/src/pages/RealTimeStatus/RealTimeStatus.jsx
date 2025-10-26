@@ -43,7 +43,33 @@ const RealTimeStatus = () => {
             if (!ticketNumberParam) return;
             try {
                 const { data } = await api.get(`/repairTicket/getRepairTicket/${ticketNumberParam}`);
-                setTicketDetails(data);
+
+                // Resolve photo URLs to presigned URLs via backend endpoint
+                const resolvePhotoArray = async (arr) => {
+                    if (!arr || arr.length === 0) return arr;
+                    try {
+                        const resolved = await Promise.all(arr.map(async (p) => {
+                            try {
+                                const res = await api.get('/repairTicket/getRepairPhotos', { params: { photoUrl: p } });
+                                return res.data; // presigned URL or fallback
+                            } catch (err) {
+                                console.error('Failed to resolve photo to presigned URL, using original:', p, err);
+                                return p;
+                            }
+                        }));
+                        return resolved;
+                    } catch (e) {
+                        console.error('Failed to resolve photo array', e);
+                        return arr;
+                    }
+                };
+
+                // Clone data so we don't mutate the original object unintentionally
+                const modified = { ...data };
+                modified.repairPhotosUrls = await resolvePhotoArray(data.repairPhotosUrls);
+                modified.afterRepairPhotosUrls = await resolvePhotoArray(data.afterRepairPhotosUrls);
+
+                setTicketDetails(modified);
             } catch (e) {
                 console.error('Failed to fetch ticket details', e);
             }
