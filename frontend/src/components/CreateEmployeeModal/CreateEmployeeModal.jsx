@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import Toast from '../../components/Toast/Toast.jsx';
-import Spinner from '../../components/Spinner/Spinner.jsx';
+import React, { useState, useEffect } from 'react';
+import Toast from '../Toast/Toast.jsx';
+import Spinner from '../Spinner/Spinner.jsx';
 
-const CreateEmployeePage = () => {
+const CreateEmployeeModal = ({ isOpen = false, onClose = () => {}, onSuccess = () => {} }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -15,6 +15,25 @@ const CreateEmployeePage = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const showToast = (msg, type = 'success') => setToast({ show: true, message: msg, type });
   const closeToast = () => setToast({ ...toast, show: false });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // reset form when modal is closed
+      setFormData({ firstName: '', lastName: '', username: '', phoneNumber: '', email: '' });
+      setError('');
+      setToast({ show: false, message: '', type: 'success' });
+      setLoading(false);
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -63,6 +82,18 @@ const CreateEmployeePage = () => {
       }
       showToast('Employee created successfully!');
       setFormData({ firstName: '', lastName: '', username: '', phoneNumber: '', email: '' });
+
+      // notify parent to refresh list
+      try {
+        onSuccess && onSuccess();
+      } catch (e) {
+        // ignore
+      }
+
+      // close after a short delay so the user sees the toast
+      setTimeout(() => {
+        onClose && onClose();
+      }, 700);
     } catch (err) {
       setError('Network error. Please try again later.');
     } finally {
@@ -70,11 +101,26 @@ const CreateEmployeePage = () => {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-      <div className="flex justify-center items-center min-h-screen w-full bg-gray-50">
-        <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-md relative overflow-hidden">
-          <div className="absolute left-0 top-0 w-1 h-full bg-[#2563eb]"></div>
-          <div className="text-center mb-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Overlay */}
+      <div onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+      {/* Modal container */}
+      <div className="relative w-full max-w-md mx-4 p-6 bg-white rounded-xl shadow-lg z-10">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          aria-label="Close create employee modal"
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 bg-transparent p-1 rounded"
+        >
+          <span className="text-lg font-semibold">×</span>
+        </button>
+
+        <div className="absolute left-0 top-0 w-1 h-full bg-[#2563eb]"></div>
+        <div className="text-center mb-2">
           <div className="text-2xl font-bold text-gray-800 tracking-wide">
             IO<span className="text-[#33e407]">CONNECT</span>
           </div>
@@ -134,4 +180,4 @@ const CreateEmployeePage = () => {
   );
 };
 
-export default CreateEmployeePage;
+export default CreateEmployeeModal;

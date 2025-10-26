@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import React, { useState, useEffect } from "react"
 import { PenLine, Trash2, CheckCheck, Activity } from "lucide-react"
 import Toast from "../../components/Toast/Toast.jsx";
+import CreateEmployeeModal from "../../components/CreateEmployeeModal/CreateEmployeeModal.jsx";
 
 const UserManagement = () => {
     // Sample users data - in a real app this would come from an API
@@ -28,9 +28,11 @@ const UserManagement = () => {
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success');
 
+    // modal state for create employee
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
     // Derived paging indices (server-side pagination)
     const indexOfFirstUser = (currentPage - 1) * pageSize;
-    const indexOfLastUser = indexOfFirstUser + (filteredUsers?.length || 0);
     const currentUsers = filteredUsers || users; // filteredUsers is derived from users (current page)
     const totalPages = Math.max(1, Math.ceil((filteredUsers || []).length / pageSize));
 
@@ -387,14 +389,17 @@ const UserManagement = () => {
                         </p>
                     </div>
                     <div className="flex-shrink-0">
-                        <Link
-                            to="/employee-signup"
+                        <button
+                            onClick={() => setShowCreateModal(true)}
                             className="flex items-center py-2 px-4 rounded-md font-medium transition-all text-white bg-[#25D482] hover:bg-[#1fab6b]"
                         >
                             Create Employee
-                        </Link>
+                        </button>
                     </div>
                 </div>
+
+                {/* Create Employee Modal */}
+                <CreateEmployeeModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={() => fetchUsers(1)} />
 
                 <div>
                     {/* Card Container similar to HistoryPage */}
