@@ -259,6 +259,9 @@ const TicketImageThumb = ({ path, alt }) => {
         return () => { if (urlRef) URL.revokeObjectURL(urlRef); };
     }, [path]);
 
+    if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
+    if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
+    return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
 
 export default TicketDetailsModal;
