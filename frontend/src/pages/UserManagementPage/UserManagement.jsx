@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import React, { useState, useEffect } from "react"
 import { PenLine, Trash2, CheckCheck, Activity } from "lucide-react"
+import Toast from "../../components/Toast/Toast.jsx";
 
 const UserManagement = () => {
     // Sample users data - in a real app this would come from an API
@@ -10,17 +11,20 @@ const UserManagement = () => {
     const [selectedRole, setSelectedRole] = useState('All Roles');
     const [selectedStatus, setSelectedStatus] = useState('All Status');
     const [filteredUsers, setFilteredUsers] = useState(users);
-    const [tableMinHeight, setTableMinHeight] = useState("auto");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const currentUserEmail = userData.email;
     const currentUserId = userData.userId || null;
     const [editIndex, setEditIndex] = useState(null);
-    const [updateStatus, setUpdateStatus] = useState({ success: false, message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10); // configurable page size (Per Page)
+
+    // Toast state for global success/error messages
+    const [toastShow, setToastShow] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState('success');
 
     // Derived paging indices
     const indexOfLastUser = currentPage * pageSize;
@@ -61,7 +65,11 @@ const UserManagement = () => {
             const data = await response.json();
             setUsers(data);
         } catch (err) {
-            setError(err.message);
+            const msg = err.message || 'Error fetching users.';
+            setError(msg);
+            setToastMessage(msg);
+            setToastType('error');
+            setToastShow(true);
         } finally {
             setLoading(false);
         }
@@ -72,13 +80,6 @@ const UserManagement = () => {
         fetchUsers();
     }, []);
 
-
-    // Set initial table height on component mount
-    useEffect(() => {
-        // Set a minimum table height based on initial content
-        // Using a fixed height that accommodates ~5 rows + header
-        setTableMinHeight("380px");
-    }, []);
 
     // derive role & status options from loaded users
     const roleOptions = ['All Roles', ...Array.from(new Set(users.map(u => (u.role || '').toString().trim()).filter(Boolean))).map(r => (r.charAt(0).toUpperCase() + r.toLowerCase().slice(1)) )];
@@ -190,8 +191,16 @@ const UserManagement = () => {
             // Optional: refetch all users to refresh the list
             fetchUsers();
 
+            // show success toast
+            setToastMessage('User deactivated successfully.');
+            setToastType('success');
+            setToastShow(true);
         } catch (err) {
-            setError(err.message);
+            const msg = err.message || 'Failed to deactivate user.';
+            setError(msg);
+            setToastMessage(msg);
+            setToastType('error');
+            setToastShow(true);
         } finally {
             setLoading(false);
         }
@@ -223,8 +232,15 @@ const UserManagement = () => {
             // Optional: refetch all users to refresh the list
             fetchUsers();
 
+            setToastMessage('User reactivated successfully.');
+            setToastType('success');
+            setToastShow(true);
         } catch (err) {
-            setError(err.message);
+            const msg = err.message || 'Failed to reactivate user.';
+            setError(msg);
+            setToastMessage(msg);
+            setToastType('error');
+            setToastShow(true);
         } finally {
             setLoading(false);
         }
@@ -251,7 +267,6 @@ const UserManagement = () => {
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
-        setUpdateStatus({ success: false, message: '' });
 
         try {
             const token = localStorage.getItem('authToken');
@@ -315,17 +330,21 @@ const UserManagement = () => {
 
             if (!nameUpdated && !roleUpdated) {
                 console.log("no changed");
-                setUpdateStatus({ success: true, message: "No changes to update." });
+                setToastMessage("No changes to update.");
+                setToastType('info');
+                setToastShow(true);
             } else {
                 console.log("something changed");
-                setUpdateStatus({ success: true, message: "Profile updated successfully." });
+                setToastMessage("Profile updated successfully.");
+                setToastType('success');
+                setToastShow(true);
             }
             // <-- Exit edit mode
         } catch (err) {
-            setUpdateStatus({
-                success: false,
-                message: err.message || "Failed to update profile. Please try again."
-            });
+            const msg = err.message || "Failed to update profile. Please try again.";
+            setToastMessage(msg);
+            setToastType('error');
+            setToastShow(true);
         } finally {
             setIsSubmitting(false);
             fetchUsers();
@@ -434,18 +453,15 @@ const UserManagement = () => {
 
                         {/* Body / Table */}
                         <div className="overflow-x-auto">
-                            {/* small status message for updates */}
-                            {updateStatus.message && (
-                                <div className={`mb-4 text-sm px-3 py-2 rounded ${updateStatus.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                                    {updateStatus.message}
-                                </div>
-                            )}
+                            {/* global toast for success/error messages (renders fixed bottom-right) */}
+                            <Toast show={toastShow} message={toastMessage} type={toastType} onClose={() => setToastShow(false)} duration={3500} />
+
                             {/* loading / error states */}
                             {loading ? (
-                                <div className="text-center text-gray-500 py-16">Loading users...</div>
-                            ) : error ? (
-                                <div className="text-center text-red-500 py-16">{error}</div>
-                            ) : (
+                                 <div className="text-center text-gray-500 py-16">Loading users...</div>
+                             ) : error ? (
+                                 <div className="text-center text-red-500 py-16">{error}</div>
+                             ) : (
                              <table className="w-full border-collapse min-w-[600px]">
                                 <thead>
                                     <tr>
