@@ -731,27 +731,42 @@ const AdminDashboard = () => {
                                 ) : feedbacks.length === 0 ? (
                                     <div className="text-center text-gray-500 py-4">No feedback available</div>
                                 ) : (
-                                    feedbacks.map((feedback, index) => (
-                                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                                            <div className={`flex ${feedback.anonymous ? "justify-end" : "justify-between"} items-center mb-2`}>
-                                                {!feedback.anonymous && (
-                                                    <div className="font-medium">
-                                                        {feedback.repairTicketNumber || "Repair Ticket"}
+                                    feedbacks.map((feedback, index) => {
+                                        const rawTicket = feedback.repairTicketNumber || feedback.ticketNumber || feedback.ticketId || feedback.repairTicketId || (feedback.repairTicket && (feedback.repairTicket.ticketNumber || feedback.repairTicket.id));
+
+                                        let ticketLabel;
+                                        if (rawTicket) {
+                                            const asString = String(rawTicket);
+                                            if (/^IORT-\d{1,}$/.test(asString.toUpperCase())) {
+                                                ticketLabel = asString.toUpperCase();
+                                            } else if (/^\d+$/.test(asString)) {
+                                                ticketLabel = `Ticket #: IORT-${asString.padStart(6, '0')}`;
+                                            } else {
+                                                ticketLabel = asString;
+                                            }
+                                        } else {
+                                            ticketLabel = 'Ticket #N/A';
+                                        }
+
+                                        return (
+                                            <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                                                <div className={`flex ${feedback.anonymous ? "justify-end" : "justify-between"} items-center mb-2`}>
+                                                    {/* Always surface the ticket identifier (keeps original format when present) */}
+                                                    <div className="font-medium text-sm text-gray-700">{ticketLabel}</div>
+                                                    <div className="text-yellow-500">
+                                                        {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
+                                                        {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
                                                     </div>
-                                                )}
-                                                <div className="text-yellow-500">
-                                                    {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
-                                                    {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
+                                                </div>
+                                                <div className="text-sm text-gray-600">
+                                                    "{feedback.comments || "No comments provided"}"
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {feedback.anonymous ? "Anonymous" : feedback.customerName || userData.firstName || "Customer"}
                                                 </div>
                                             </div>
-                                            <div className="text-sm text-gray-600">
-                                                "{feedback.comments || "No comments provided"}"
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                {feedback.anonymous ? "Anonymous" : feedback.customerName || userData.firstName || "Customer"}
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>
