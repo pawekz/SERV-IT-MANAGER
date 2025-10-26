@@ -42,6 +42,17 @@ public interface RepairTicketRepository extends JpaRepository<RepairTicketEntity
             "LOWER(r.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     Page<RepairTicketEntity> searchRepairTicketsByEmail(@Param("email") String email, @Param("searchTerm") String searchTerm, Pageable pageable);
 
+    // Search tickets assigned to a technician (by technician's user email)
+    @Query("SELECT r FROM RepairTicketEntity r WHERE r.technicianEmail.email = :email AND (" +
+            "LOWER(r.ticketNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.customerFirstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.customerLastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.deviceSerialNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.deviceModel) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.deviceBrand) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(r.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<RepairTicketEntity> searchRepairTicketsByTechnicianEmail(@Param("email") String email, @Param("searchTerm") String searchTerm, Pageable pageable);
+
     @Query("SELECT r FROM RepairTicketEntity r WHERE r.repairStatus IN ('RECEIVED', 'DIAGNOSING', 'AWAITING_PARTS', 'REPAIRING', 'READY_FOR_PICKUP')")
     Page<RepairTicketEntity> findActiveRepairTickets(Pageable pageable);
 

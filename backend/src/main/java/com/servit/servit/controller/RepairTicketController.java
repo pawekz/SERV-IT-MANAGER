@@ -46,6 +46,9 @@ public class RepairTicketController {
     @Autowired
     private S3Service s3Service;
 
+    @Autowired
+    private com.servit.servit.repository.UserRepository userRepository;
+
     public RepairTicketController(RepairTicketService repairTicketService) {
         this.repairTicketService = repairTicketService;
     }
@@ -101,37 +104,61 @@ public class RepairTicketController {
     public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTickets(
             @RequestParam String searchTerm,
             @PageableDefault(size = 20) Pageable pageable,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
 
         String role = authentication.getAuthorities().iterator().next().getAuthority();
+
         String email = authentication.getName();
+        try {
+            String authorizationHeader = request.getHeader("Authorization");
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String jwt = authorizationHeader.substring(7);
+                String extractedEmail = jwtUtil.extractAllClaims(jwt).get("email", String.class);
+                // Only use the extracted email if it looks like a real email address (contains '@')
+                if (extractedEmail != null && extractedEmail.contains("@")) {
+                    email = extractedEmail.trim();
+                } else if (extractedEmail != null && !extractedEmail.isBlank()) {
+                    // If the token contains a username-like value (without '@'), try to map it via user repository to a real email.
+                    String resolved = userRepository.findByUsername(extractedEmail).map(u -> u.getEmail()).orElse(extractedEmail);
+                    if (resolved != null && resolved.contains("@")) {
+                        email = resolved.trim();
+                        logger.debug("Mapped username '{}' from JWT to email '{}'", extractedEmail, email);
+                    } else {
+                        logger.debug("JWT 'email' claim looks like a username '{}' and could not be resolved to an email; using authentication.getName() ('{}') instead.", extractedEmail, email);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            logger.warn("Failed to extract email from JWT for searchRepairTickets; falling back to authentication.getName(): {}", ex.getMessage());
+        }
+
+        if (email != null && !email.contains("@")) {
+            String resolvedByUsername = userRepository.findByUsername(email).map(u -> u.getEmail()).orElse(email);
+            if (resolvedByUsername != null && resolvedByUsername.contains("@")) {
+                logger.debug("Resolved authentication name '{}' to email '{}' via UserRepository", email, resolvedByUsername);
+                email = resolvedByUsername;
+            } else {
+                logger.debug("Could not resolve '{}' to an email; proceeding with '{}'. If this is a username, tickets may not be found.", email, email);
+            }
+        }
+
+        logger.debug("searchRepairTickets invoked by role='{}' using email='{}' and rawSearchTerm='{}'", role, email, searchTerm);
+
+        String term = (searchTerm == null) ? "" : searchTerm.trim();
 
         if (role.equals("ROLE_CUSTOMER")) {
-            // Only show tickets for this customer
             return ResponseEntity.ok(
-                repairTicketService.searchRepairTicketsByEmail(email, searchTerm, pageable)
+                repairTicketService.searchRepairTicketsByCustomerEmail(email, term, pageable)
+            );
+        } else if (role.equals("ROLE_TECHNICIAN")) {
+            return ResponseEntity.ok(
+                repairTicketService.searchRepairTicketsByTechnicianEmail(email, term, pageable)
             );
         } else {
-            // Admin/Tech: show all
             return ResponseEntity.ok(
-                repairTicketService.searchRepairTickets(searchTerm, pageable)
+                repairTicketService.searchRepairTickets(term, pageable)
             );
-        }
-    }
-
-    @GetMapping("/searchRepairTicketsByEmail")
-    public ResponseEntity<Page<GetRepairTicketResponseDTO>> searchRepairTicketsByEmail(
-            @RequestParam String email,
-            @RequestParam String searchTerm,
-            @PageableDefault(size = 20) Pageable pageable) {
-        try {
-            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.searchRepairTicketsByEmail(email, searchTerm, pageable);
-            if (repairTickets.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-            }
-            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -220,6 +247,7 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
     // this is the new endpoint for getting the files, the old one is still working (possible bug due to capturing only the first part of the path)
     @GetMapping("/files/{category}/{subfolder}/{filename:.+}")
     public ResponseEntity<Resource> getTicketFileV2(@PathVariable String category,
@@ -305,12 +333,24 @@ public class RepairTicketController {
             }
             String jwt = authorizationHeader.substring(7);
 
-            // Extract email claim from JWT token
+            // Extract email claim from JWT token (prefer full email). If token only contains username, try to resolve to full email via UserRepository.
             String email;
             try {
-                email = jwtUtil.extractAllClaims(jwt).get("email", String.class);
+                String extracted = jwtUtil.extractAllClaims(jwt).get("email", String.class);
+                if (extracted != null && extracted.contains("@")) {
+                    email = extracted.trim();
+                } else if (extracted != null && !extracted.isBlank()) {
+                    // extracted looks like a username; try to resolve to email
+                    email = userRepository.findByUsername(extracted)
+                            .map(u -> u.getEmail())
+                            .orElse(extracted);
+                    logger.debug("Resolved username '{}' to email '{}' for technician query", extracted, email);
+                } else {
+                    logger.error("JWT did not contain an email claim when fetching tickets by status. JWT: {}", jwt);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
             } catch (Exception e) {
-                logger.error("Failed to extract email claim from JWT when fetching tickets by status. JWT: {}", jwt);
+                logger.error("Failed to extract/resolve email claim from JWT when fetching tickets by status. JWT: {}", jwt, e);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
@@ -374,3 +414,4 @@ public class RepairTicketController {
         }
     }
 }
+

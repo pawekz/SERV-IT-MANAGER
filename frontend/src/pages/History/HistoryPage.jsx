@@ -73,44 +73,37 @@ const HistoryPage = () => {
         }
         setError(null);
         try {
-            if (role === 'CUSTOMER') {
-                const res = await api.get('/repairTicket/getAllRepairTicketsByCustomer', { params: { email } });
-                const newTickets = res.data || [];
-                setTickets(newTickets);
-                setTotalEntries(newTickets.length);
-                setTotalPages(Math.max(1, Math.ceil(newTickets.length / pageSize)));
-                setCurrentPage(0);
-            } else {
-                const searchTerm = search.trim() || '';
-                const res = await api.get('/repairTicket/searchRepairTickets', {
-                    params: {
-                        searchTerm,
-                        page,
-                        size: pageSize
-                    }
-                });
-                const newTickets = res.data.content || [];
-                const totalPagesCount = res.data.totalPages ?? 0;
-                // Try to extract total elements (common in Spring Data responses)
-                const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
-                setTickets(newTickets);
-                setCurrentPage(page);
-                // ensure we always have at least 1 page so pagination UI renders consistently
-                setTotalPages(Math.max(1, totalPagesCount));
-                // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
-                if (typeof totalElements === 'number') {
-                    setTotalEntries(totalElements);
-                } else {
-                    // if server didn't provide total, estimate conservatively
-                    const estimate = (newTickets.length || 0) + (page * pageSize || 0);
-                    setTotalEntries(estimate || 0);
-                }
+            {
+                 const searchTerm = search.trim() || '';
+                 const res = await api.get('/repairTicket/searchRepairTickets', {
+                     params: {
+                         searchTerm,
+                         page,
+                         size: pageSize
+                     }
+                 });
+                 const newTickets = res.data.content || [];
+                 const totalPagesCount = res.data.totalPages ?? 0;
+                 // Try to extract total elements (common in Spring Data responses)
+                 const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
+                 setTickets(newTickets);
+                 setCurrentPage(page);
+                 // ensure we always have at least 1 page so pagination UI renders consistently
+                 setTotalPages(Math.max(1, totalPagesCount));
+                 // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
+                 if (typeof totalElements === 'number') {
+                     setTotalEntries(totalElements);
+                 } else {
+                     // if server didn't provide total, estimate conservatively
+                     const estimate = (newTickets.length || 0) + (page * pageSize || 0);
+                     setTotalEntries(estimate || 0);
+                 }
             }
-        } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Unknown error');
-        } finally {
-            setLoading(false);
-        }
+         } catch (err) {
+             setError(err.response?.data?.message || err.message || 'Unknown error');
+         } finally {
+             setLoading(false);
+         }
     };
 
     // refetch on role/email/pageSize/search changes (for non-customer) or pageSize change (for customer)
