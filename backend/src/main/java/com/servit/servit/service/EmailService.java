@@ -249,7 +249,7 @@ public class EmailService {
                 "      <p>Welcome to <span style='color: #33e407;'>IO</span><span style='color: #000000;'>CONNECT</span>! Your employee account has been created.</p>" +
                 "      <p>To activate your account, please follow these steps:</p>" +
                 "      <ol>" +
-                "        <li>Go to the Employee Onboarding page:<br><strong>https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net/employee-onboarding</strong></li>" +
+                "        <li>Go to the Employee Onboarding page:<br><strong>https://weservit.tech/employee-onboarding</strong></li>" +
                 "        <li>Enter your email address (<strong>" + to + "</strong>) in the Email field.</li>" +
                 "        <li>Enter the Onboarding Code below in the Onboarding Code field.</li>" +
                 "        <li>Click <strong>Verify Code</strong> and set your secure password.</li>" +
