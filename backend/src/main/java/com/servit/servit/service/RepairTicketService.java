@@ -269,7 +269,7 @@ public class RepairTicketService {
         }
     }
 
-    public Page<GetRepairTicketResponseDTO> getAllRepairTicketsPaginated(Pageable pageable) {
+    public Page<GetRepairTicketResponseDTO> getAllRepairTickets(Pageable pageable) {
         logger.info("Fetching paginated repair tickets.");
         try {
             // Create a new Pageable with the same pagination but with DESC sort
@@ -291,7 +291,7 @@ public class RepairTicketService {
         }
     }
 
-    public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
+    public List<GetRepairTicketResponseDTO> getAllRepairTicketsByCustomer(String email) {
         logger.info("Fetching repair tickets for customer email: {}", email);
         try {
             List<GetRepairTicketResponseDTO> tickets = repairTicketRepository

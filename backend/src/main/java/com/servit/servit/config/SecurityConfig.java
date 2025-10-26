@@ -62,7 +62,7 @@ public class SecurityConfig {
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
-                            "/repairTicket/getRepairTicketsByCustomerEmail",
+                            "/repairTicket/getAllRepairTicketsByCustomer",
                             "/feedback/submitFeedback",
                             "/feedback/getFeedbackByTicketNumber/*",
                             "/feedback/updateFeedback/*"

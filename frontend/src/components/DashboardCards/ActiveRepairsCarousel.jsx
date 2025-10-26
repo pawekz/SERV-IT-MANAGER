@@ -15,7 +15,7 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
         return;
       }
       try {
-        const { data } = await api.get('/repairTicket/getRepairTicketsByCustomerEmail', {
+        const { data } = await api.get('/repairTicket/getAllRepairTicketsByCustomer', {
           params: { email: customerEmail },
         });
         const active = data.filter((t) => t.repairStatus !== 'COMPLETED');

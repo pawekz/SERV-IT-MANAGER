@@ -136,18 +136,10 @@ public class RepairTicketController {
     }
 
     @GetMapping("/getAllRepairTickets")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTickets() {
-        List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets();
-        return repairTickets.isEmpty()
-                ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
-                : ResponseEntity.status(HttpStatus.OK).body(repairTickets);
-    }
-
-    @GetMapping("/getAllRepairTicketsPaginated")
-    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getAllRepairTicketsPaginated(
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getAllRepairTickets(
             @PageableDefault(size = 20) Pageable pageable) {
         try {
-            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTicketsPaginated(pageable);
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTickets(pageable);
             if (repairTickets.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             }
@@ -157,10 +149,10 @@ public class RepairTicketController {
         }
     }
 
-    @GetMapping("/getRepairTicketsByCustomerEmail")
-    public ResponseEntity<List<GetRepairTicketResponseDTO>> getRepairTicketsByCustomerEmail(@RequestParam String email) {
+    @GetMapping("/getAllRepairTicketsByCustomer")
+    public ResponseEntity<List<GetRepairTicketResponseDTO>> getAllRepairTicketsByCustomer(@RequestParam String email) {
         try {
-            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getRepairTicketsByCustomerEmail(email);
+            List<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTicketsByCustomer(email);
             return repairTickets.isEmpty()
                     ? ResponseEntity.status(HttpStatus.NO_CONTENT).build()
                     : ResponseEntity.status(HttpStatus.OK).body(repairTickets);

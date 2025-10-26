@@ -26,7 +26,7 @@ const ActiveRepairCard = ({ customerEmail, ticket: externalTicket, className = '
       }
       try {
         // `api` automatically attaches Authorization header if token exists
-        const { data } = await api.get('/repairTicket/getRepairTicketsByCustomerEmail', {
+        const { data } = await api.get('/repairTicket/getAllRepairTicketsByCustomer', {
           params: { email: customerEmail },
         });
 

@@ -74,7 +74,7 @@ const HistoryPage = () => {
         setError(null);
         try {
             if (role === 'CUSTOMER') {
-                const res = await api.get('/repairTicket/getRepairTicketsByCustomerEmail', { params: { email } });
+                const res = await api.get('/repairTicket/getAllRepairTicketsByCustomer', { params: { email } });
                 const newTickets = res.data || [];
                 setTickets(newTickets);
                 setTotalEntries(newTickets.length);
