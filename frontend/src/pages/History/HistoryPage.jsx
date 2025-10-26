@@ -56,6 +56,7 @@ const HistoryPage = () => {
     const [error, setError] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalEntries, setTotalEntries] = useState(0); // total items across all pages (if available)
     const [pageSize, setPageSize] = useState(10); // configurable page size
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
@@ -76,6 +77,7 @@ const HistoryPage = () => {
                 const res = await api.get('/repairTicket/getRepairTicketsByCustomerEmail', { params: { email } });
                 const newTickets = res.data || [];
                 setTickets(newTickets);
+                setTotalEntries(newTickets.length);
                 setTotalPages(Math.max(1, Math.ceil(newTickets.length / pageSize)));
                 setCurrentPage(0);
             } else {
@@ -88,10 +90,21 @@ const HistoryPage = () => {
                     }
                 });
                 const newTickets = res.data.content || [];
-                const totalPagesCount = res.data.totalPages || 0;
+                const totalPagesCount = res.data.totalPages ?? 0;
+                // Try to extract total elements (common in Spring Data responses)
+                const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
                 setTickets(newTickets);
                 setCurrentPage(page);
-                setTotalPages(totalPagesCount);
+                // ensure we always have at least 1 page so pagination UI renders consistently
+                setTotalPages(Math.max(1, totalPagesCount));
+                // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
+                if (typeof totalElements === 'number') {
+                    setTotalEntries(totalElements);
+                } else {
+                    // if server didn't provide total, estimate conservatively
+                    const estimate = (newTickets.length || 0) + (page * pageSize || 0);
+                    setTotalEntries(estimate || 0);
+                }
             }
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Unknown error');
@@ -180,6 +193,13 @@ const HistoryPage = () => {
         }
         // eslint-disable-next-line
     }, [clientFilteredTickets.length, pageSize, role]);
+    
+    // Keep totalEntries in sync for CUSTOMER when filters change
+    useEffect(() => {
+        if (role === 'CUSTOMER') {
+            setTotalEntries(clientFilteredTickets.length);
+        }
+    }, [clientFilteredTickets.length, role]);
 
     const displayedTickets = role === 'CUSTOMER'
         ? clientFilteredTickets.slice(currentPage * pageSize, currentPage * pageSize + pageSize)
@@ -246,13 +266,15 @@ const HistoryPage = () => {
 
     // Enhance pagination to optionally render inside table card
     const renderPagination = (compact = false) => {
-        if (totalPages <= 1) return null;
+        // always render pagination footer (even for single page) to display counts like UserManagement
         const pages = [];
         const maxButtons = 5;
+        const pagesCount = Math.max(1, totalPages);
+        // Center current page within pagination buttons when possible
         let start = Math.max(0, currentPage - Math.floor(maxButtons / 2));
         let end = start + maxButtons - 1;
-        if (end >= totalPages - 1) {
-            end = totalPages - 1;
+        if (end > pagesCount - 1) {
+            end = pagesCount - 1;
             start = Math.max(0, end - maxButtons + 1);
         }
         for (let i = start; i <= end; i++) {
@@ -270,21 +292,37 @@ const HistoryPage = () => {
         }
         return (
             <div className={`flex items-center gap-2 flex-wrap justify-between ${compact ? 'px-6 py-4 border-t border-gray-200 bg-white' : 'mt-8'}`}>
+                <div className="text-gray-600 text-sm">
+                    {/* Compute showing indices robustly */}
+                    {(() => {
+                        const total = totalEntries || 0;
+                        const startIndex = total > 0 ? (currentPage * pageSize) + 1 : 0;
+                        const shown = displayedTickets.length || 0;
+                        const endIndex = Math.min((currentPage * pageSize) + shown, total || (currentPage * pageSize) + shown);
+                        return (
+                            <span>
+                                Showing {startIndex} to {endIndex} of {total} entries
+                            </span>
+                        );
+                    })()}
+                </div>
                 <div className="flex gap-2 items-center">
                     <button
                         onClick={() => currentPage > 0 && goToPage(currentPage - 1)}
                         disabled={currentPage === 0}
                         className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                     >Prev</button>
-                    <div className="flex gap-1">{pages}</div>
+                    <div className="flex gap-1">{pages.length > 0 ? pages : (
+                        <button className="px-3 py-1.5 rounded-md text-xs font-medium border bg-[#25D482] text-white">1</button>
+                    )}</div>
                     <button
-                        onClick={() => currentPage < totalPages - 1 && goToPage(currentPage + 1)}
-                        disabled={currentPage >= totalPages - 1}
+                        onClick={() => currentPage < (Math.max(1, totalPages) - 1) && goToPage(currentPage + 1)}
+                        disabled={currentPage >= (Math.max(1, totalPages) - 1)}
                         className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                     >Next</button>
                 </div>
                 <div className="text-xs text-gray-500 ml-auto">
-                    Page {currentPage + 1} of {totalPages}
+                    Page {currentPage + 1} of {Math.max(1, totalPages)}
                 </div>
             </div>
         );
