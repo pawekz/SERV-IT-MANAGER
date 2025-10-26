@@ -48,7 +48,7 @@ const ConfirmModal = ({ open, title, message, onConfirm, onCancel, confirmText =
     );
 };
 
-const HistoryTab = () => {
+const BackupHistoryTab = () => {
     const [backupList, setBackupList] = useState([]);
     const [listLoading, setListLoading] = useState(false);
     const [listError, setListError] = useState(null);
@@ -405,4 +405,4 @@ const HistoryTab = () => {
     );
 };
 
-export default HistoryTab;
+export default BackupHistoryTab;
