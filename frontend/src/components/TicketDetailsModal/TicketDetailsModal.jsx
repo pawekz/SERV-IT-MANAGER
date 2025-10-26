@@ -60,6 +60,8 @@ function TicketDetailsModal({ ticket, onClose }) {
     // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
     const last = ticket.customerLastName || '';
+    // Technician name (fall back to a few common ticket properties)
+    const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
 
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
@@ -120,6 +122,10 @@ function TicketDetailsModal({ ticket, onClose }) {
                                     <div>
                                         <dt className="text-gray-500">Last Name</dt>
                                         <dd className="font-medium text-gray-800">{last || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-gray-500">Assigned Technician</dt>
+                                        <dd className="font-medium text-gray-800">{techName || 'Unassigned'}</dd>
                                     </div>
                                     <div>
                                         <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12}/> Check-In Date</dt>
@@ -253,9 +259,6 @@ const TicketImageThumb = ({ path, alt }) => {
         return () => { if (urlRef) URL.revokeObjectURL(urlRef); };
     }, [path]);
 
-    if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
-    if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
-    return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
 
 export default TicketDetailsModal;
