@@ -269,7 +269,7 @@ public class RepairTicketService {
         }
     }
 
-    public Page<GetRepairTicketResponseDTO> getAllRepairTicketsPaginated(Pageable pageable) {
+    public Page<GetRepairTicketResponseDTO> getAllRepairTickets(Pageable pageable) {
         logger.info("Fetching paginated repair tickets.");
         try {
             // Create a new Pageable with the same pagination but with DESC sort
@@ -291,7 +291,7 @@ public class RepairTicketService {
         }
     }
 
-    public List<GetRepairTicketResponseDTO> getRepairTicketsByCustomerEmail(String email) {
+    public List<GetRepairTicketResponseDTO> getAllRepairTicketsByCustomer(String email) {
         logger.info("Fetching repair tickets for customer email: {}", email);
         try {
             List<GetRepairTicketResponseDTO> tickets = repairTicketRepository
@@ -321,7 +321,7 @@ public class RepairTicketService {
         }
     }
 
-    public Page<GetRepairTicketResponseDTO> searchRepairTicketsByEmail(String email, String searchTerm, Pageable pageable) {
+    public Page<GetRepairTicketResponseDTO> searchRepairTicketsByCustomerEmail(String email, String searchTerm, Pageable pageable) {
         logger.info("Searching repair tickets for email: {} with searchTerm: {}", email, searchTerm);
         try {
             Page<GetRepairTicketResponseDTO> result = repairTicketRepository.searchRepairTicketsByEmail(email, searchTerm, pageable)
@@ -331,6 +331,19 @@ public class RepairTicketService {
         } catch (Exception e) {
             logger.error("Error searching repair tickets for email: {} with searchTerm: {}", email, searchTerm, e);
             throw new RuntimeException("Failed to search repair tickets by email", e);
+        }
+    }
+
+    public Page<GetRepairTicketResponseDTO> searchRepairTicketsByTechnicianEmail(String email, String searchTerm, Pageable pageable) {
+        logger.info("Searching repair tickets assigned to technician: {} with searchTerm: {}", email, searchTerm);
+        try {
+            Page<GetRepairTicketResponseDTO> result = repairTicketRepository.searchRepairTicketsByTechnicianEmail(email, searchTerm, pageable)
+                    .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Found {} repair tickets for technician email: {} and searchTerm: {}", result.getTotalElements(), email, searchTerm);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error searching repair tickets for technician email: {} with searchTerm: {}", email, searchTerm, e);
+            throw new RuntimeException("Failed to search repair tickets by technician email", e);
         }
     }
 

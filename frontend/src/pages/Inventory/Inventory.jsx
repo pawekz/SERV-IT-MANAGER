@@ -844,7 +844,7 @@ const Inventory = () => {
 
 
             {/* Main Content */}
-            <div className="flex-1 p-8 bg-gray-50">
+            <div className="flex-1 bg-gray-50">
                 <div className="px-10 py-8">
                     {/* Header with enhanced controls */}
                     <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center">

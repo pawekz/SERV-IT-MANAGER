@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { HardDriveDownload, AlertCircle, } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import ScheduleTab from "../../components/ScheduleTab/ScheduleTab.jsx";
-import HistoryTab from "../../components/HistoryTab/HistoryTab.jsx";
+import BackupScheduleTab from "../../components/BackupScheduleTab/BackupScheduleTab.jsx";
+import BackupHistoryTab from "../../components/BackupHistoryTab/BackupHistoryTab.jsx";
 import api from '../../config/ApiConfig';
 import Toast from "../../components/Toast/Toast";
 
@@ -28,7 +28,7 @@ function getUserRole() {
     }
 }
 
-const BackUpPage = () => {
+const BackupPage = () => {
     const [initialLoading, setInitialLoading] = useState(false); // For initial page data if any
     const [initialError, setInitialError] = useState(null); // For initial page data error
 
@@ -178,8 +178,8 @@ const BackUpPage = () => {
                         </div>
 
                         <div className="p-6">
-                            {activeTab === 'Schedule' && <ScheduleTab />}
-                            {activeTab === 'Back Up History' && <HistoryTab />}
+                            {activeTab === 'Schedule' && <BackupScheduleTab />}
+                            {activeTab === 'Back Up History' && <BackupHistoryTab />}
                         </div>
                     </div>
                 )}
@@ -188,4 +188,4 @@ const BackUpPage = () => {
     );
 };
 
-export default BackUpPage;
+export default BackupPage;

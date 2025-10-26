@@ -8,9 +8,9 @@ import api from '../../config/ApiConfig';
 import 'react-calendar/dist/Calendar.css';
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';
-import './ScheduleTab.css';
+import './BackupScheduleTab.css';
 
-const ScheduleTab = () => {
+const BackupScheduleTab = () => {
     const [scheduleType, setScheduleType] = useState('disabled'); // 'disabled', 'daily', 'weekly', 'monthly', 'custom'
     const [selectedTime, setSelectedTime] = useState('02:00');
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -389,4 +389,4 @@ const ScheduleTab = () => {
     );
 };
 
-export default ScheduleTab;
+export default BackupScheduleTab;

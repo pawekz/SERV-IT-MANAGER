@@ -9,6 +9,8 @@ import com.servit.servit.repository.UserRepository;
 import com.servit.servit.service.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -253,9 +255,10 @@ public class UserController {
     // ADMIN SIDE
 
     @GetMapping("/getAllUsers")
-    public ResponseEntity<?> getAllUsers() {
+    public ResponseEntity<?> getAllUsers(Pageable pageable) {
         try {
-            return ResponseEntity.ok(userSvc.getAllUsers());
+            Page<?> page = userSvc.getAllUsers(pageable);
+            return ResponseEntity.ok(page);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }

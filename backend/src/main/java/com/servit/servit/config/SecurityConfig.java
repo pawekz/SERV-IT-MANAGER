@@ -62,7 +62,7 @@ public class SecurityConfig {
                     ).permitAll()
                     .requestMatchers(
                             "/repairTicket/searchRepairTicketsByEmail",
-                            "/repairTicket/getRepairTicketsByCustomerEmail",
+                            "/repairTicket/getAllRepairTicketsByCustomer",
                             "/feedback/submitFeedback",
                             "/feedback/getFeedbackByTicketNumber/*",
                             "/feedback/updateFeedback/*"
@@ -75,6 +75,7 @@ public class SecurityConfig {
                             "/user/updateCurrentUsername",
                             "/repairTicket/getRepairTicket/*",
                             "/repairTicket/getRepairTicketDocument/*",
+                            "/repairTicket/searchRepairTickets",
                             "/repairTicket/files/**",
                             "/repairTicket/getRepairPhotos",
                             "/warranty/checkInWarranty",
@@ -98,7 +99,6 @@ public class SecurityConfig {
                             "/user/getTechnicianByEmail",
                             "/repairTicket/getAllRepairTickets",
                             "/repairTicket/uploadRepairTicketPdf/*",
-                            "/repairTicket/searchRepairTickets",
                             "/part/addPart",
                             "/part/addBulkParts",
                             "/part/stock/updateStocks/*",
