@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -484,20 +486,19 @@ public class UserService {
         }
     }
 
-    public List<GetUserResponseDTO> getAllUsers() {
+    public Page<GetUserResponseDTO> getAllUsers(Pageable pageable) {
         try {
-            logger.info("Fetching all users");
-            List<GetUserResponseDTO> users = userRepo.findAll().stream()
-                    .map(user -> new GetUserResponseDTO(
-                            user.getUserId(), user.getFirstName(), user.getLastName(),
-                            user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
-                            user.getStatus(), user.getProfilePictureUrl()))
-                    .toList();
-            logger.info("Successfully fetched {} users", users.size());
-            return users;
+            logger.info("Fetching paginated users: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+            Page<UserEntity> page = userRepo.findAll(pageable);
+            Page<GetUserResponseDTO> dtoPage = page.map(user -> new GetUserResponseDTO(
+                    user.getUserId(), user.getFirstName(), user.getLastName(),
+                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                    user.getStatus(), user.getProfilePictureUrl()));
+            logger.info("Successfully fetched page with {} users (totalElements={})", dtoPage.getNumberOfElements(), dtoPage.getTotalElements());
+            return dtoPage;
         } catch (Exception e) {
-            logger.error("Error fetching all users: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch all users", e);
+            logger.error("Error fetching paginated users: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch users", e);
         }
     }
 
@@ -1097,4 +1098,5 @@ public class UserService {
             return profilePictureUrl;
         }
     }
+
 }

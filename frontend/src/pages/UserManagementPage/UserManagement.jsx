@@ -18,18 +18,20 @@ const UserManagement = () => {
     const currentUserId = userData.userId || null;
     const [editIndex, setEditIndex] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1); // 1-based for UI
     const [pageSize, setPageSize] = useState(10); // configurable page size (Per Page)
+    const [totalEntries, setTotalEntries] = useState(0);
+    const [serverTotalPages, setServerTotalPages] = useState(1);
 
     // Toast state for global success/error messages
     const [toastShow, setToastShow] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success');
 
-    // Derived paging indices
-    const indexOfLastUser = currentPage * pageSize;
-    const indexOfFirstUser = indexOfLastUser - pageSize;
-    const currentUsers = (filteredUsers || []).slice(indexOfFirstUser, indexOfLastUser);
+    // Derived paging indices (server-side pagination)
+    const indexOfFirstUser = (currentPage - 1) * pageSize;
+    const indexOfLastUser = indexOfFirstUser + (filteredUsers?.length || 0);
+    const currentUsers = filteredUsers || users; // filteredUsers is derived from users (current page)
     const totalPages = Math.max(1, Math.ceil((filteredUsers || []).length / pageSize));
 
     const [selectedUser, setSelectedUser] = useState({
@@ -43,14 +45,16 @@ const UserManagement = () => {
         userId:''
     });
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (page = currentPage) => {
         try {
             const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error("Not authenticated. Please log in.");
             }
 
-            const response = await fetch(`${window.__API_BASE__}/user/getAllUsers`, {
+            // backend expects 0-based page index
+            const params = new URLSearchParams({ page: String(Math.max(0, page - 1)), size: String(pageSize) });
+            const response = await fetch(`${window.__API_BASE__}/user/getAllUsers?${params.toString()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -63,7 +67,15 @@ const UserManagement = () => {
             }
 
             const data = await response.json();
-            setUsers(data);
+            // Spring Page shape: { content: [...], totalElements, totalPages, number }
+            const content = data.content || data;
+            setUsers(content || []);
+            setFilteredUsers(content || []);
+            setTotalEntries(data.totalElements ?? data.total ?? (content ? content.length : 0));
+            setServerTotalPages(data.totalPages ?? Math.max(1, Math.ceil((content?.length || 0) / pageSize)));
+            // sync currentPage to server-provided page (number is 0-based)
+            const serverPageNumber = (typeof data.number === 'number') ? data.number : (page - 1);
+            setCurrentPage(serverPageNumber + 1);
         } catch (err) {
             const msg = err.message || 'Error fetching users.';
             setError(msg);
@@ -77,8 +89,10 @@ const UserManagement = () => {
 
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        // fetch when component mounts and whenever currentPage or pageSize changes
+        fetchUsers(currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, pageSize]);
 
 
     // derive role & status options from loaded users
@@ -126,8 +140,9 @@ const UserManagement = () => {
     };
 
     const handleSearch = () => {
-        // Filtering is reactive; ensure page is reset to 1 when user explicitly searches
+        // Filtering is client-side within the current page; reset to first page of server data
         setCurrentPage(1);
+        fetchUsers(1);
     };
 
     const handleClearSearch = () => {
@@ -149,6 +164,7 @@ const UserManagement = () => {
     const handlePageSizeChange = (e) => {
         const newSize = parseInt(e.target.value, 10) || 10;
         setPageSize(newSize);
+        // fetchUsers will be triggered by useEffect when pageSize changes
         setCurrentPage(1);
     };
 
@@ -188,8 +204,8 @@ const UserManagement = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Optional: refetch all users to refresh the list
-            fetchUsers();
+            // Optional: refetch current page
+            fetchUsers(currentPage);
 
             // show success toast
             setToastMessage('User deactivated successfully.');
@@ -229,8 +245,8 @@ const UserManagement = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Optional: refetch all users to refresh the list
-            fetchUsers();
+            // Optional: refetch current page
+            fetchUsers(currentPage);
 
             setToastMessage('User reactivated successfully.');
             setToastType('success');
@@ -347,7 +363,7 @@ const UserManagement = () => {
             setToastShow(true);
         } finally {
             setIsSubmitting(false);
-            fetchUsers();
+            fetchUsers(currentPage);
             setEditIndex(null);
         }
     };
@@ -596,12 +612,17 @@ const UserManagement = () => {
                              <div className="mt-6 flex items-center justify-between px-4 pb-5">
                                  <div className="text-gray-600 text-sm">
                                      <span>
-                                       Showing {filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} entries
+                                       {(() => {
+                                           const total = totalEntries || 0;
+                                           const start = total > 0 ? indexOfFirstUser + 1 : 0;
+                                           const end = Math.min(indexOfFirstUser + (filteredUsers?.length || 0), total);
+                                           return `Showing ${start} to ${end} of ${total} entries`;
+                                       })()}
                                      </span>
                                  </div>
                                  <div className="flex gap-2 items-center">
                                      <button
-                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                         onClick={() => fetchUsers(Math.max(currentPage - 1, 1))}
                                          disabled={currentPage === 1}
                                          className={`px-3 py-1.5 rounded-md text-xs font-medium border ${currentPage === 1 ? 'bg-white text-gray-400 cursor-not-allowed opacity-50' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
                                      >Prev</button>
@@ -620,7 +641,7 @@ const UserManagement = () => {
                                              pages.push(
                                                  <button
                                                      key={i}
-                                                     onClick={() => setCurrentPage(i)}
+                                                     onClick={() => fetchUsers(i)}
                                                      className={`px-3 py-1.5 rounded-md text-xs font-medium border ${i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
                                                  >{i}</button>
                                              );
@@ -629,19 +650,19 @@ const UserManagement = () => {
                                      })()}
 
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                        disabled={currentPage === totalPages}
+                                        onClick={() => fetchUsers(Math.min(currentPage + 1, serverTotalPages))}
+                                        disabled={currentPage === serverTotalPages}
                                         className={`px-3 py-1.5 rounded-md text-xs font-medium border ${currentPage === totalPages ? 'bg-white text-gray-400 cursor-not-allowed opacity-50' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
                                     >Next</button>
-                                </div>
-                            </div>
+                                 </div>
+                             </div>
 
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     )
+ }
 
-export default UserManagement
+ export default UserManagement
