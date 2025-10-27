@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
-import ChangePassworldModal from '../../components/ChangePasswordModal/ChangePassworldModal.jsx';
+import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal.jsx';
 
 // Utility to title-case multi-word names
 const toTitleCase = (str) => str
@@ -367,7 +367,7 @@ const AccountInformation = () => {
 
             {/* Password modal */}
             {showPasswordModal && (
-                <ChangePassworldModal onClose={() => setShowPasswordModal(false)} />
+                <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />
             )}
         </div>
     );

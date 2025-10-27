@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../../config/ApiConfig.jsx';
 
-const ChangePassworldModal = ({ onClose }) => {
+const ChangePasswordModal = ({ onClose }) => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -202,5 +202,5 @@ const ChangePassworldModal = ({ onClose }) => {
     );
 };
 
-export default ChangePassworldModal;
+export default ChangePasswordModal;
 
