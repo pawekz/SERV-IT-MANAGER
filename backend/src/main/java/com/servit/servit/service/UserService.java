@@ -67,7 +67,7 @@ public class UserService {
 
             logger.info("Successfully retrieved current user: {}", user.getEmail());
             return new GetUserResponseDTO(
-                    user.getUserId(), user.getFirstName(), user.getLastName(),
+                    user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                     user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                     user.getStatus(), user.getProfilePictureUrl()
             );
@@ -491,7 +491,7 @@ public class UserService {
             logger.info("Fetching paginated users: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
             Page<UserEntity> page = userRepo.findAll(pageable);
             Page<GetUserResponseDTO> dtoPage = page.map(user -> new GetUserResponseDTO(
-                    user.getUserId(), user.getFirstName(), user.getLastName(),
+                    user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                     user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                     user.getStatus(), user.getProfilePictureUrl()));
             logger.info("Successfully fetched page with {} users (totalElements={})", dtoPage.getNumberOfElements(), dtoPage.getTotalElements());
@@ -514,7 +514,7 @@ public class UserService {
                     });
 
             GetUserResponseDTO response = new GetUserResponseDTO(
-                    user.getUserId(), user.getFirstName(), user.getLastName(),
+                    user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                     user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                     user.getStatus(), user.getProfilePictureUrl()
             );
@@ -716,7 +716,7 @@ public class UserService {
             List<GetUserResponseDTO> technicians = userRepo.findAll().stream()
                     .filter(user -> user.getRole() == UserRoleEnum.TECHNICIAN)
                     .map(user -> new GetUserResponseDTO(
-                            user.getUserId(), user.getFirstName(), user.getLastName(),
+                            user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                             user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                             user.getStatus(), user.getProfilePictureUrl()))
                     .toList();
@@ -745,7 +745,7 @@ public class UserService {
             }
 
             GetUserResponseDTO response = new GetUserResponseDTO(
-                    user.getUserId(), user.getFirstName(), user.getLastName(),
+                    user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                     user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                     user.getStatus(), user.getProfilePictureUrl());
             logger.info("Successfully fetched technician by email: {}", email);
@@ -786,7 +786,7 @@ public class UserService {
                             user.getCreatedAt().isAfter(startOfWeek) &&
                             user.getCreatedAt().isBefore(endOfWeek))
                     .map(user -> new GetUserResponseDTO(
-                            user.getUserId(), user.getFirstName(), user.getLastName(),
+                            user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                             user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
                             user.getStatus(), user.getProfilePictureUrl()))
                     .toList();
@@ -824,7 +824,7 @@ public class UserService {
                     })
                     .limit(3)
                     .map(u -> new GetUserResponseDTO(
-                            u.getUserId(), u.getFirstName(), u.getLastName(),
+                            u.getUserId(), u.getFirstName(), u.getLastName(), u.getUsername(),
                             u.getEmail(), u.getRole().name(), u.getPhoneNumber(),
                             u.getStatus(), u.getProfilePictureUrl()))
                     .toList();
