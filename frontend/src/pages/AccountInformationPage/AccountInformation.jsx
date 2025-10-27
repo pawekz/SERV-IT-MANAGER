@@ -324,7 +324,7 @@ const AccountInformation = () => {
                     <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-y-auto">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                             <h3 className="text-lg font-semibold">Edit Profile</h3>
-                            <button onClick={handleCloseEdit} className="text-gray-500">Close</button>
+                            <button onClick={handleCloseEdit} className="text-gray-500" aria-label="Close" title="Close">×</button>
                         </div>
 
                         <div className="p-4">

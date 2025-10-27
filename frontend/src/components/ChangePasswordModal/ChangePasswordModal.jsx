@@ -108,7 +108,7 @@ const ChangePasswordModal = ({ onClose }) => {
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold">Change Your Password</h2>
-                        <button onClick={handleCancel} className="text-gray-500">Close</button>
+                        <button onClick={handleCancel} className="text-gray-500" aria-label="Close" title="Close">×</button>
                     </div>
 
                     {error && (
@@ -203,4 +203,3 @@ const ChangePasswordModal = ({ onClose }) => {
 };
 
 export default ChangePasswordModal;
-
