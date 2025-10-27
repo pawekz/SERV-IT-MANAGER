@@ -6,7 +6,6 @@ import LoginStaffPage from "./pages/LoginPage/LoginStaffPage.jsx";
 import ContactPage from "./pages/ContactPage/ContactPage";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import AccountInformation from "./pages/AccountInformationPage/AccountInformation";
-import PasswordManagement from "./pages/PasswordManagementPage/PasswordManagement";
 import UserManagement from "./pages/UserManagementPage/UserManagement";
 import AutomatedClaimFormGenerationPage from "./pages/AutomatedClaimFormGenerationPage/AutomatedClaimFormGenerationPage";
 import BackupPage from "./pages/BackupPage/BackupPage.jsx";
@@ -155,9 +154,6 @@ function AppContent() {
 
                     <Route path="/accountinformation" element={
                         <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
-                    } />
-                    <Route path="/passwordmanagement" element={
-                        <ProtectedRoute element={<PasswordManagement />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
                     <Route path="/automatedclaimformgeneration" element={
                         <ProtectedRoute element={<AutomatedClaimFormGenerationPage />} allowedRoles={['admin', 'technician']} />

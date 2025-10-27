@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
+import ChangePassworldModal from '../../components/ChangePasswordModal/ChangePassworldModal.jsx';
 
 // Utility to title-case multi-word names
 const toTitleCase = (str) => str
@@ -36,6 +37,9 @@ const AccountInformation = () => {
     const [isUploadingPic, setIsUploadingPic] = useState(false);
     const [uploadError, setUploadError] = useState(null);
     const fileInputRef = useRef(null);
+
+    // New state: password modal
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
 
     // Fetch user
     useEffect(() => {
@@ -304,7 +308,7 @@ const AccountInformation = () => {
                                     </div>
 
                                     <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3">
-                                        <button onClick={() => navigate('/passwordmanagement')} className="w-full sm:w-auto py-2 px-4 rounded-md text-white bg-[#17A2B8] hover:bg-[#138496]">Change Password</button>
+                                        <button onClick={() => setShowPasswordModal(true)} className="w-full sm:w-auto py-2 px-4 rounded-md text-white bg-[#17A2B8] hover:bg-[#138496]">Change Password</button>
                                         <button onClick={handleEditClick} className="w-full sm:w-auto py-2 px-4 rounded-md text-white bg-[#33e407] hover:bg-[#2bc706]">Edit Profile</button>
                                     </div>
                                 </div>
@@ -359,6 +363,11 @@ const AccountInformation = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Password modal */}
+            {showPasswordModal && (
+                <ChangePassworldModal onClose={() => setShowPasswordModal(false)} />
             )}
         </div>
     );
