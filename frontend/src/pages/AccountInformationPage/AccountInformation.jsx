@@ -64,7 +64,8 @@ const AccountInformation = () => {
                     userId: data.userId,
                     firstName: toTitleCase(data.firstName || ''),
                     lastName: toTitleCase(data.lastName || ''),
-                    username: data.email || data.username || data.firstName || '',
+                    // Robust username selection: backend may use `username` or `userName`, or we fall back to email/sub/firstName
+                    username: data.username || data.userName || data.email || data.sub || data.firstName || '',
                     email: data.email || '',
                     phoneNumber: data.phoneNumber || '',
                     password: '********',
