@@ -414,26 +414,29 @@ const UserManagement = () => {
                             </div>
 
                             <div className="flex flex-col md:flex-row md:items-center gap-3 w-full lg:w-auto">
-                                <div className="flex flex-1 min-w-[220px] items-center gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder={'Search by email or name...'}
-                                        value={searchTerm}
-                                        aria-label="Search users"
-                                        onChange={handleSearchInput}
-                                        onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
-                                    />
-                                    {searchTerm && (
-                                        <button
-                                            onClick={handleClearSearch}
-                                            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
-                                            aria-label="Clear search"
-                                        >Clear</button>
-                                    )}
+                                <div className="flex flex-1 min-w-[220px] items-center gap-2 flex-col sm:flex-row sm:items-center">
+                                    <div className="flex items-center gap-2 w-full sm:flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder={'Search by email or name...'}
+                                            value={searchTerm}
+                                            aria-label="Search users"
+                                            onChange={handleSearchInput}
+                                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                        />
+                                        {searchTerm && (
+                                            <button
+                                                onClick={handleClearSearch}
+                                                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                                                aria-label="Clear search"
+                                            >Clear</button>
+                                        )}
+                                    </div>
+
                                     <button
                                         onClick={handleSearch}
-                                        className="px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                        className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium"
                                     >Search</button>
                                 </div>
 
