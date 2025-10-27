@@ -253,23 +253,23 @@ const AccountInformation = () => {
 
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                                <div className="flex flex-col items-center md:items-start">
+                                <div className="flex flex-col items-center px-6">
                                     {displayProfileUrl ? (
-                                        <img loading="lazy" src={displayProfileUrl} alt="Profile" onError={() => setDisplayProfileUrl(null)} className="w-28 h-28 rounded-full object-cover border-2" style={{ borderColor: 'rgba(51, 228, 7, 0.18)' }} />
+                                        <img loading="lazy" src={displayProfileUrl} alt="Profile" onError={() => setDisplayProfileUrl(null)} className="w-44 h-44 rounded-full object-cover border-2 mx-auto" style={{ borderColor: 'rgba(51, 228, 7, 0.18)' }} />
                                     ) : (
-                                        <div className="w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center text-3xl text-gray-400" style={{ border: '2px solid rgba(51, 228, 7, 0.18)' }}>{getInitials()}</div>
+                                        <div className="w-44 h-44 rounded-full bg-gray-100 flex items-center justify-center text-4xl text-gray-400 mx-auto" style={{ border: '2px solid rgba(51, 228, 7, 0.18)' }}>{getInitials()}</div>
                                     )}
                                     <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleFileChange} />
 
-                                    <div className="mt-4 w-full flex flex-col sm:flex-row gap-2">
-                                        <button onClick={triggerFileInput} disabled={isUploadingPic} className="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-50">{isUploadingPic ? 'Uploading...' : (displayProfileUrl ? 'Change Photo' : 'Upload Photo')}</button>
-                                        {displayProfileUrl && <button onClick={handleRemovePicture} disabled={isUploadingPic} className="flex-1 border border-red-200 text-red-600 px-3 py-2 rounded text-sm hover:bg-red-50 disabled:opacity-50">Remove</button>}
+                                    <div className="mt-4 w-full flex flex-col gap-2 items-center">
+                                        <button onClick={triggerFileInput} disabled={isUploadingPic} className="w-full border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-50">{isUploadingPic ? 'Uploading...' : (displayProfileUrl ? 'Change Photo' : 'Upload Photo')}</button>
+                                        {displayProfileUrl && <button onClick={handleRemovePicture} disabled={isUploadingPic} className="w-full border border-red-200 text-red-600 px-3 py-2 rounded text-sm hover:bg-red-50 disabled:opacity-50">Remove Photo</button>}
                                     </div>
                                     {uploadError && <p className="text-xs text-red-500 mt-2">{uploadError}</p>}
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
                                             <input type="text" value={userData.firstName} readOnly className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-800" />
@@ -280,17 +280,18 @@ const AccountInformation = () => {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4">
+                                    <div className="mt-6">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
                                         <input type="text" value={userData.username} readOnly className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-800" />
                                     </div>
 
-                                    <div className="mt-4">
+                                    <div className="mt-6">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
                                         <input type="email" value={userData.email} readOnly className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-800 break-all" />
+                                        <p className="text-xs text-gray-500 mt-1">Email cannot be edited.</p>
                                     </div>
 
-                                    <div className="mt-4">
+                                    <div className="mt-6">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">Phone Number</label>
                                         <div className="flex items-center w-full border border-gray-200 rounded-md overflow-hidden bg-white">
                                             <div className="flex items-center bg-gray-50 px-3 py-2 border-r border-gray-200">
