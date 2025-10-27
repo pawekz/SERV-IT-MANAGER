@@ -214,15 +214,15 @@ const Navbar = () => {
                         ) : (
                             <>
                                 <Link to="/dashboard" className="flex items-center justify-center gap-2 text-gray-800 font-medium">
-                                    <LayoutGrid size={16} />
+                                    <LayoutGrid size={16} className="hidden md:inline-flex" />
                                     <span>Dashboard</span>
                                 </Link>
                                 <Link to="/accountinformation" className="flex items-center justify-center gap-2 text-gray-800 font-medium">
-                                    <Settings size={16} />
+                                    <Settings size={16} className="hidden md:inline-flex" />
                                     <span>Settings</span>
                                 </Link>
                                 <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-gray-800 font-medium">
-                                    <LogOut size={16} />
+                                    <LogOut size={16} className="hidden md:inline-flex" />
                                     <span>Logout</span>
                                 </button>
                             </>
