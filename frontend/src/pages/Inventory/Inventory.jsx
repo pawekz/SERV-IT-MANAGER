@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Pen, Trash, Plus, CheckCircle, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw, Copy, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Plus, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
 import api, { parseJwt } from '../../config/ApiConfig';
 import InventoryTable from './InventoryTable';
 import Toast from '../../components/Toast/Toast.jsx';
@@ -45,7 +43,8 @@ const Inventory = () => {
         activeAlertsCount: 0
     });
     const [showStockSettingsModal, setShowStockSettingsModal] = useState(false);
-    const [selectedPartNumberForSettings, setSelectedPartNumberForSettings] = useState(null);
+    // only need setter; the selected value isn't referenced elsewhere
+    const [, setSelectedPartNumberForSettings] = useState(null);
 
     // Enhanced bulk add state for multiple serial numbers
     const [showBulkAddModal, setShowBulkAddModal] = useState(false);
@@ -60,8 +59,6 @@ const Inventory = () => {
         addToExisting: false
     }]);
     const [bulkAddLoading, setBulkAddLoading] = useState(false);
-
-    const [isMasterRow, setIsMasterRow] = useState(true); // First row is master
 
     // Edit functionality state variables
     const [showEditModal, setShowEditModal] = useState(false);
@@ -486,12 +483,16 @@ const Inventory = () => {
             try {
                 const storedToken = localStorage.getItem('authToken');
                 if (!storedToken) {
-                    throw new Error("No authentication token found");
+                    showNotification("Authentication failed: no token found. Please log in.", 'error', 5000);
+                    setLoading(false);
+                    return;
                 }
 
                 const decodedToken = parseJwt(storedToken);
                 if (!decodedToken) {
-                    throw new Error("Invalid authentication token");
+                    showNotification("Authentication failed: invalid token. Please log in.", 'error', 5000);
+                    setLoading(false);
+                    return;
                 }
 
                 const role = decodedToken?.role ||
@@ -1162,6 +1163,44 @@ const Inventory = () => {
                     onClose={() => setShowDeleteModal(false)}
                     onConfirm={confirmDeletePart}
                     partToDelete={partToDelete}
+                />
+            )}
+
+            {/* Bulk Add Modal */}
+            {showBulkAddModal && (
+                <BulkAddModal
+                    isOpen={showBulkAddModal}
+                    onClose={() => setShowBulkAddModal(false)}
+                    onSubmit={handleBulkAdd}
+                    bulkAddItems={bulkAddItems}
+                    onBulkItemChange={handleBulkItemChange}
+                    onAddBulkItem={addBulkItem}
+                    onRemoveBulkItem={removeBulkItem}
+                    loading={bulkAddLoading}
+                />
+            )}
+
+            {/* Stock Settings Modal */}
+            {showStockSettingsModal && (
+                <StockSettingsModal
+                    isOpen={showStockSettingsModal}
+                    onClose={() => setShowStockSettingsModal(false)}
+                    onSubmit={updateStockSettings}
+                    stockSettings={stockSettings}
+                    onStockSettingsChange={setStockSettings}
+                />
+            )}
+
+            {/* Low Stock Modal */}
+            {showLowStockModal && (
+                <LowStockModal
+                    isOpen={showLowStockModal}
+                    onClose={() => setShowLowStockModal(false)}
+                    lowStockItems={lowStockPartNumbers}
+                    onConfigureStock={(partNumber) => {
+                        setShowLowStockModal(false);
+                        handleStockSettings(partNumber);
+                    }}
                 />
             )}
 
