@@ -5,6 +5,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import api, { parseJwt } from '../../config/ApiConfig';
 import InventoryTable from './InventoryTable';
+import Toast from '../../components/Toast/Toast.jsx';
 
 // Import modal components
 import DescriptionModal from "./DescriptionModal/DescriptionModal.jsx";
@@ -19,8 +20,7 @@ const Inventory = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
+    // Removed `error` state in favor of centralized `toast` notifications
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [inventoryItems, setInventoryItems] = useState([]);
@@ -29,7 +29,8 @@ const Inventory = () => {
     const [addPartError, setAddPartError] = useState(null);
     const [showDescriptionModal, setShowDescriptionModal] = useState(false);
     const [selectedDescription, setSelectedDescription] = useState({ title: "", content: "", part: null });
-    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+    // New toast state compatible with Toast component (single source of truth)
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success', duration: 3000 });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [partToDelete, setPartToDelete] = useState(null);
     const [userRole, setUserRole] = useState(null);
@@ -175,11 +176,14 @@ const Inventory = () => {
     };*/
 
     // Show notification helper function
-    const showNotification = (message, type = 'success') => {
-        setNotification({ show: true, message, type });
-        setTimeout(() => {
-            setNotification({ show: false, message: '', type: '' });
-        }, 4000);
+    const showNotification = (message, type = 'success', duration = 3000) => {
+        setToast({ show: true, message, type, duration });
+        // If duration > 0, Toast component will auto-hide and call onClose; we also ensure state resets after a short buffer
+        if (duration > 0) {
+            setTimeout(() => {
+                setToast({ show: false, message: '', type: 'success', duration: 3000 });
+            }, duration + 350);
+        }
     };
 
     // Highlight matching text in search results
@@ -234,6 +238,8 @@ const Inventory = () => {
             return;
         }
         try {
+            // show loading toast
+            setToast({ show: true, message: 'Refreshing stock tracking...', type: 'loading', duration: 0 });
             await api.post('/part/stock/refreshAllTracking', {});
             showNotification("Stock tracking refreshed successfully");
             await fetchInventory();
@@ -243,6 +249,9 @@ const Inventory = () => {
         } catch (err) {
             console.error("Error refreshing stock tracking:", err);
             showNotification("Failed to refresh stock tracking", "error");
+        } finally {
+            // close loading toast
+            setToast({ show: false, message: '', type: 'success', duration: 3000 });
         }
     };
 
@@ -320,6 +329,8 @@ const Inventory = () => {
     // Confirm delete part
     const confirmDeletePart = async () => {
         try {
+            // show loading toast
+            setToast({ show: true, message: 'Deleting part...', type: 'loading', duration: 0 });
             await api.delete(`/part/deletePart/${partToDelete.id}`);
             showNotification("Part deleted successfully");
             await fetchInventory();
@@ -330,6 +341,8 @@ const Inventory = () => {
         } finally {
             setShowDeleteModal(false);
             setPartToDelete(null);
+            // close loading toast if still open
+            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
         }
     };
 
@@ -347,6 +360,8 @@ const Inventory = () => {
     // Enhanced inventory fetching with part number aggregation
     const fetchInventory = async () => {
         setLoading(true);
+        // show loading toast
+        setToast({ show: true, message: 'Loading inventory...', type: 'loading', duration: 0 });
         try {
             const response = await api.get('/part/getAllParts');
 
@@ -455,9 +470,12 @@ const Inventory = () => {
             });
 
             setLoading(false);
+            // close loading toast
+            setToast({ show: false, message: '', type: 'success', duration: 3000 });
         } catch (err) {
             console.error("Error fetching inventory:", err);
-            setError("Failed to load inventory items, add items or check your connection.");
+            // notify user of failure via toast
+            showNotification("Failed to load inventory items, add items or check your connection.", 'error', 5000);
             setLoading(false);
         }
     };
@@ -490,7 +508,7 @@ const Inventory = () => {
                 await fetchBackendLowStockData();
             } catch (err) {
                 console.error("Authentication error:", err);
-                setError("Authentication failed. Please log in again.");
+                showNotification("Authentication failed. Please log in again.", 'error', 5000);
                 setLoading(false);
             }
         };
@@ -567,6 +585,9 @@ const Inventory = () => {
         setBulkAddLoading(true);
 
         try {
+            // show loading toast
+            setToast({ show: true, message: 'Adding parts...', type: 'loading', duration: 0 });
+
             // Filter out empty items
             const validItems = bulkAddItems.filter(item => 
                 item.partNumber.trim() && 
@@ -602,7 +623,7 @@ const Inventory = () => {
             showNotification(validItems[0].addToExisting ?
                 `Successfully added ${response.data.length} parts to existing part number` : 
                 `Successfully added ${response.data.length} parts`);
-            
+
             // Reset form
             setBulkAddItems([{
                 partNumber: "",
@@ -655,6 +676,8 @@ const Inventory = () => {
             showNotification(errorMessage, "error");
         } finally {
             setBulkAddLoading(false);
+            // close loading toast if still open
+            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
         }
     };
 
@@ -706,6 +729,9 @@ const Inventory = () => {
         setEditSuccess(false);
 
         try {
+            // show loading toast
+            setToast({ show: true, message: 'Updating part...', type: 'loading', duration: 0 });
+
             const updateData = {
                 partNumber: editPart.partNumber || "",
                 name: editPart.name || "",
@@ -731,8 +757,11 @@ const Inventory = () => {
         } catch (err) {
             console.error("Error updating part:", err);
             setEditError(err.message || err.response?.data?.message || "Failed to update part");
+            showNotification(err.message || err.response?.data?.message || "Failed to update part", 'error');
         } finally {
             setEditLoading(false);
+            // close loading toast if still open
+            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
         }
     };
 
@@ -750,6 +779,9 @@ const Inventory = () => {
         setAddPartSuccess(false);
 
         try {
+            // show loading toast
+            setToast({ show: true, message: 'Adding part...', type: 'loading', duration: 0 });
+
             const partData = {
                 ...newPart,
                 unitCost: parseFloat(newPart.unitCost),
@@ -810,8 +842,11 @@ const Inventory = () => {
             }
             
             setAddPartError(errorMessage);
+            showNotification(errorMessage, 'error');
         } finally {
             setAddPartLoading(false);
+            // close loading toast if still open
+            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
         }
     };
 
@@ -952,13 +987,6 @@ const Inventory = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Error Display */}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-md">
-                            <p className="font-medium">{error}</p>
                         </div>
                     )}
 
@@ -1137,67 +1165,16 @@ const Inventory = () => {
                 />
             )}
 
-            {/* Notification Toast */}
-            {notification.show && (
-                <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-md z-50 transition-all duration-300 flex items-center ${
-                    notification.type === 'error' ? 'bg-red-100 text-red-800' :
-                        notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                }`}>
-                    <div className="flex items-center">
-                        {notification.type === 'error' ? (
-                            <X size={20} className="mr-2" />
-                        ) : notification.type === 'warning' ? (
-                            <AlertTriangle size={20} className="mr-2" />
-                        ) : (
-                            <CheckCircle size={20} className="mr-2" />
-                        )}
-                        <p>{notification.message}</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Bulk Add Modal */}
-            {showBulkAddModal && (
-                <BulkAddModal
-                    isOpen={showBulkAddModal}
-                    onClose={() => setShowBulkAddModal(false)}
-                    onSubmit={handleBulkAdd}
-                    bulkAddItems={bulkAddItems}
-                    onBulkItemChange={handleBulkItemChange}
-
-                    onAddBulkItem={addBulkItem}
-                    onRemoveBulkItem={removeBulkItem}
-                    loading={bulkAddLoading}
-                />
-            )}
-
-            {/* Stock Settings Modal */}
-            {showStockSettingsModal && (
-                <StockSettingsModal
-                    isOpen={showStockSettingsModal}
-                    onClose={() => setShowStockSettingsModal(false)}
-                    onSubmit={updateStockSettings}
-                    stockSettings={stockSettings}
-                    onStockSettingsChange={setStockSettings}
-                />
-            )}
-
-            {/* Enhanced Low Stock Alert Modal */}
-            {showLowStockModal && (
-                <LowStockModal
-                    isOpen={showLowStockModal}
-                    onClose={() => setShowLowStockModal(false)}
-                    lowStockItems={lowStockPartNumbers}
-                    onConfigureStock={(partNumber) => {
-                        setShowLowStockModal(false);
-                        handleStockSettings(partNumber);
-                    }}
-                />
-            )}
+            {/* Toast component (single source for notifications, loading, errors) */}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                duration={toast.duration}
+                onClose={() => setToast({ show: false, message: '', type: 'success', duration: 3000 })}
+            />
         </div>
     );
 };
 
 export default Inventory;
-
