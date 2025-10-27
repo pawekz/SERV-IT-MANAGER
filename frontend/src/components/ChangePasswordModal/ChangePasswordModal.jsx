@@ -102,61 +102,60 @@ const ChangePasswordModal = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-            <div className="w-full max-w-lg bg-white rounded-xl shadow-md relative overflow-hidden my-6">
-                <div className="absolute left-0 top-0 w-1 h-full bg-[#33e407]"></div>
+            <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-y-auto">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold">Change Password</h3>
+                    <button onClick={handleCancel} className="text-gray-500" aria-label="Close" title="Close">×</button>
+                </div>
 
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold">Change Your Password</h2>
-                        <button onClick={handleCancel} className="text-gray-500" aria-label="Close" title="Close">×</button>
-                    </div>
-
+                <div className="p-4">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-md text-sm">
-                            <p className="flex items-center">{error}</p>
+                        <div className="mb-3 p-2 rounded bg-red-100 text-red-700 text-sm">
+                            {error}
                         </div>
                     )}
 
                     {success && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-100 text-green-600 rounded-md text-sm">
-                            <p className="flex items-center">{success}</p>
+                        <div className="mb-3 p-2 rounded bg-green-100 text-green-700 text-sm">
+                            {success}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label htmlFor="current-password" className="block mb-2 text-sm font-medium text-gray-600">Current Password</label>
+                        <div className="mb-3">
+                            <label htmlFor="current-password" className="block text-xs font-medium text-gray-700 mb-1">Current Password</label>
                             <div className="relative">
                                 <input
                                     type={showCurrentPassword ? "text" : "password"}
                                     id="current-password"
-                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none"
                                     placeholder="Enter your current password"
                                     required
                                     value={formValues.currentPassword}
                                     onChange={handleInputChange}
                                 />
-                                <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={toggleCurrentPasswordVisibility}>
+                                <button type="button" className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700" onClick={toggleCurrentPasswordVisibility}>
                                     {showCurrentPassword ? 'Hide' : 'Show'}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <label htmlFor="new-password" className="block mb-2 text-sm font-medium text-gray-600">New Password</label>
+                        <div className="mb-3">
+                            <label htmlFor="new-password" className="block text-xs font-medium text-gray-700 mb-1">New Password</label>
                             <div className="relative">
                                 <input
                                     type={showNewPassword ? "text" : "password"}
                                     id="new-password"
-                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none"
                                     placeholder="Enter new password"
                                     required
                                     value={formValues.newPassword}
                                     onChange={handleInputChange}
                                 />
-                                <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={toggleNewPasswordVisibility}>{showNewPassword ? 'Hide' : 'Show'}</button>
+                                <button type="button" className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700" onClick={toggleNewPasswordVisibility}>{showNewPassword ? 'Hide' : 'Show'}</button>
                             </div>
 
+                            {/* Password strength indicator - retained */}
                             {formValues.newPassword.length > 0 ? (
                                 <div className="mt-2">
                                     <div className="h-1 bg-gray-200 rounded-sm overflow-hidden">
@@ -176,24 +175,24 @@ const ChangePasswordModal = ({ onClose }) => {
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="confirm-password" className="block mb-2 text-sm font-medium text-gray-600">Confirm New Password</label>
+                            <label htmlFor="confirm-password" className="block text-xs font-medium text-gray-700 mb-1">Confirm New Password</label>
                             <div className="relative">
                                 <input
                                     type={showConfirmPassword ? "text" : "password"}
                                     id="confirm-password"
-                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#33e407] focus:ring-1 focus:ring-[#33e407] transition-colors"
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none"
                                     placeholder="Confirm new password"
                                     required
                                     value={formValues.confirmPassword}
                                     onChange={handleInputChange}
                                 />
-                                <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700" onClick={toggleConfirmPasswordVisibility}>{showConfirmPassword ? 'Hide' : 'Show'}</button>
+                                <button type="button" className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700" onClick={toggleConfirmPasswordVisibility}>{showConfirmPassword ? 'Hide' : 'Show'}</button>
                             </div>
                         </div>
 
-                        <div className="flex justify-between gap-3 mt-2 sm:flex-row flex-col-reverse">
-                            <button type="button" onClick={handleCancel} className="px-6 py-3 bg-gray-50 text-gray-600 border border-gray-200 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors">Cancel</button>
-                            <button type="submit" disabled={isLoading} className={`px-6 py-3 ${isLoading ? 'bg-gray-400' : 'bg-[#33e407] hover:bg-[#2bc906]'} text-white rounded-md font-medium text-sm transition-colors`}>{isLoading ? 'Changing Password...' : 'Change Password'}</button>
+                        <div className="flex justify-end gap-2">
+                            <button type="button" onClick={handleCancel} className="px-3 py-2 border rounded">Cancel</button>
+                            <button type="submit" disabled={isLoading} className={`px-3 py-2 bg-[#33e407] text-white rounded ${isLoading ? 'opacity-60' : 'hover:bg-[#2bc706]'}`}>{isLoading ? 'Changing...' : 'Change Password'}</button>
                         </div>
                     </form>
                 </div>
