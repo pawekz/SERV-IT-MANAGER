@@ -9,12 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "quotation", indexes = {
-    @Index(name = "idx_quotation_repair_ticket", columnList = "repair_ticket_number"),
-    @Index(name = "idx_quotation_status", columnList = "status"),
-    @Index(name = "idx_quotation_created_at", columnList = "created_at"),
-    @Index(name = "idx_quotation_ticket_status", columnList = "repair_ticket_number, status")
-})
+@Table(name = "quotation")
 @Data
 public class QuotationEntity {
     @Id
