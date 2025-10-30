@@ -11,7 +11,17 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Data
 @Entity
-@Table(name = "part")
+@Table(name = "part", indexes = {
+    @Index(name = "idx_part_number", columnList = "partNumber"),
+    @Index(name = "idx_part_serial_number", columnList = "serial_number", unique = true),
+    @Index(name = "idx_part_type", columnList = "part_type"),
+    @Index(name = "idx_part_is_deleted", columnList = "is_deleted"),
+    @Index(name = "idx_part_is_reserved", columnList = "is_reserved"),
+    @Index(name = "idx_part_reserved_for_ticket", columnList = "reserved_for_ticket_id"),
+    @Index(name = "idx_part_type_deleted", columnList = "part_type, is_deleted"),
+    @Index(name = "idx_part_customer_purchased", columnList = "is_customer_purchased"),
+    @Index(name = "idx_part_quotation", columnList = "quotation_part")
+})
 public class PartEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
