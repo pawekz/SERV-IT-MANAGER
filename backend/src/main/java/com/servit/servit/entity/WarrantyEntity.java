@@ -11,7 +11,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "warranty")
+@Table(name = "warranty", indexes = {
+    @Index(name = "idx_warranty_number", columnList = "warranty_number", unique = true),
+    @Index(name = "idx_warranty_customer_email", columnList = "customer_email"),
+    @Index(name = "idx_warranty_status", columnList = "status"),
+    @Index(name = "idx_warranty_customer_status", columnList = "customer_email, status"),
+    @Index(name = "idx_warranty_created_at", columnList = "created_at")
+})
 @Data
 public class WarrantyEntity {
     @Id

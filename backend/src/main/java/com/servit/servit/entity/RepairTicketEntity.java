@@ -12,7 +12,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "repair_ticket")
+@Table(name = "repair_ticket", indexes = {
+    @Index(name = "idx_repair_ticket_number", columnList = "ticket_number", unique = true),
+    @Index(name = "idx_repair_customer_email", columnList = "customer_email"),
+    @Index(name = "idx_repair_status", columnList = "repair_status"),
+    @Index(name = "idx_repair_check_in_date", columnList = "check_in_date"),
+    @Index(name = "idx_repair_status_technician", columnList = "repair_status, technician_email"),
+    @Index(name = "idx_repair_customer_status", columnList = "customer_email, repair_status"),
+    @Index(name = "idx_repair_serial_number", columnList = "device_serial_number")
+})
 @Data
 public class RepairTicketEntity {
     @Id

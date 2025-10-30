@@ -8,7 +8,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notification")
+@Table(name = "notification", indexes = {
+    @Index(name = "idx_notification_recipient_email", columnList = "recipient_email"),
+    @Index(name = "idx_notification_is_read", columnList = "is_read"),
+    @Index(name = "idx_notification_recipient_read", columnList = "recipient_email, is_read"),
+    @Index(name = "idx_notification_created_at", columnList = "created_at"),
+    @Index(name = "idx_notification_ticket_number", columnList = "ticket_number")
+})
 @Data
 public class NotificationEntity {
     @Id
