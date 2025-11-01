@@ -253,7 +253,7 @@ public class EmailService {
                 "        <li>Enter your email address (<strong>" + to + "</strong>) in the Email field.</li>" +
                 "        <li>Enter the Onboarding Code below in the Onboarding Code field.</li>" +
                 "        <li>Click <strong>Verify Code</strong> and set your secure password.</li>" +
-                "        <li>After successful registration, log in using this link:<br><strong>https://servit-hpcgfre4dvdzaaf0.southeastasia-01.azurewebsites.net/login/staff</strong></li>" +
+                "        <li>After successful registration, log in using this link:<br><strong>https://weservit.tech/login/staff</strong></li>" +
                 "      </ol>" +
                 "      <div style='text-align: center;'>" +
                 "        <p>Your Onboarding Code:</p>" +
