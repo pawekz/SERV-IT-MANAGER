@@ -52,16 +52,30 @@ public class BackupController {
 
     @PostMapping("/restore")
     public ResponseEntity<Map<String, Object>> restoreBackup(@RequestBody Map<String, String> payload) {
-        String backupIdentifier = payload.getOrDefault("backupId", "N/A");
-        logger.info("POST /api/backup/restore received - initiating restore for backup ID: {}", backupIdentifier);
+        String s3Key = payload.get("s3Key");
+        String backupId = payload.get("backupId");
         try {
-            String result = backupService.restoreBackup(backupIdentifier);
+            String result;
+            if (s3Key != null && !s3Key.isBlank()) {
+                logger.info("POST /api/backup/restore received - initiating restore from S3 key: {}", s3Key);
+                result = backupService.restoreFromS3(s3Key);
+            } else if (backupId != null && !backupId.isBlank()) {
+                logger.info("POST /api/backup/restore received - initiating restore for local backup ID: {}", backupId);
+                result = backupService.restoreBackup(backupId);
+            } else {
+                logger.warn("POST /api/backup/restore received with neither s3Key nor backupId");
+                return ResponseEntity.badRequest().body(new java.util.HashMap<String, Object>() {{
+                    put("message", "Either 's3Key' (for S3 restore) or 'backupId' (for local restore) must be provided.");
+                    put("requireSignout", false);
+                }});
+            }
             Map<String, Object> response = new HashMap<>();
             response.put("message", result);
             response.put("requireSignout", true);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Restore failed for backup ID: {}", backupIdentifier, e);
+            String ref = (s3Key != null && !s3Key.isBlank()) ? ("S3 key: " + s3Key) : ("backup ID: " + (backupId == null ? "N/A" : backupId));
+            logger.error("Restore failed ({}).", ref, e);
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Restore failed: " + e.getMessage());
             response.put("requireSignout", true);
