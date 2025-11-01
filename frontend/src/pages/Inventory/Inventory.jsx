@@ -84,7 +84,8 @@ const Inventory = () => {
         warrantyExpiration: "",
         /*category: "GENERAL",*/
         addedBy: "",
-        addToExisting: false
+        addToExisting: false,
+        image: null
     });
 
     // Stock settings form state
@@ -791,7 +792,20 @@ const Inventory = () => {
                 addedBy: newPart.addedBy,
                 addToExisting: newPart.addToExisting || false
             };
-            await api.post('/part/addPart', partData);
+
+            // If an image file is present, send multipart/form-data with 'part' JSON and 'file' file
+            if (newPart.image instanceof File) {
+                const formData = new FormData();
+                formData.append('part', new Blob([JSON.stringify(partData)], { type: 'application/json' }));
+                formData.append('file', newPart.image);
+
+                await api.post('/part/addPart', formData);
+            } else {
+                // No file, send JSON as before but using form-data compatibility
+                // Some backends may still accept JSON; use previous endpoint for compatibility
+                await api.post('/part/addPart', partData);
+            }
+
             setAddPartSuccess(true);
             showNotification(newPart.addToExisting ? "Part added to existing part number successfully" : "Part added successfully");
             setNewPart({
@@ -806,7 +820,8 @@ const Inventory = () => {
                 datePurchasedByCustomer: null,
                 warrantyExpiration: "",
                 addedBy: "",
-                addToExisting: false
+                addToExisting: false,
+                image: null
             });
             await fetchInventory();
             await refreshAllStockTracking();
