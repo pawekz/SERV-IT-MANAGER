@@ -31,4 +31,7 @@ public class AddPartRequestDTO {
     
     // New field to indicate if we're adding to an existing part number
     private Boolean addToExisting = false;
-} 
+
+    // Optional picture URL (can be set after uploading image)
+    private String pictureUrl;
+}

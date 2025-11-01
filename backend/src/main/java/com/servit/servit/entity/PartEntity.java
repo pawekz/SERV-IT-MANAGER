@@ -110,4 +110,8 @@ public class PartEntity {
 
     @Column(name = "model")
     private String model;
+
+    // New column to store picture URL for the part
+    @Column(name = "picture_url", length = 1024)
+    private String pictureUrl;
 }

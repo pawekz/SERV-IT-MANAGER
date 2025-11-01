@@ -27,6 +27,8 @@ import java.time.temporal.ChronoUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
 /**
  * Service class for managing parts/inventory items in the system.
@@ -40,15 +42,17 @@ public class PartService {
     private final AlertService alertService;
     private final PartNumberStockTrackingService stockTrackingService;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     private static final Logger logger = LoggerFactory.getLogger(PartService.class);
 
     @Autowired
-    public PartService(PartRepository partRepository, AlertService alertService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository) {
+    public PartService(PartRepository partRepository, AlertService alertService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository, S3Service s3Service) {
         this.partRepository = partRepository;
         this.alertService = alertService;
         this.stockTrackingService = stockTrackingService;
         this.userRepository = userRepository;
+        this.s3Service = s3Service;
     }
 
     // ================ CRUD Operations ================
@@ -732,12 +736,42 @@ public class PartService {
         dto.setVersion(partEntity.getVersion());
         dto.setBrand(partEntity.getBrand());
         dto.setModel(partEntity.getModel());
-        
+        // Part picture URL
+        dto.setPictureUrl(partEntity.getPictureUrl());
+
         logger.info("Part converted to DTO: {}", dto);
         return dto;
     }
     
-    // Removed calculateAvailabilityStatus - now handled at part number level by PartNumberStockTrackingService
+    /**
+     * Uploads a picture for a specific part and saves the S3 URL to the part entity.
+     * Only ADMIN and TECHNICIAN roles should be allowed to call this (controller should enforce).
+     * @param partId the id of the part to attach the picture to
+     * @param file the multipart image file
+     * @return the S3 URL of the uploaded image
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public String uploadPartPicture(Long partId, MultipartFile file) throws IOException {
+        logger.info("Uploading picture for part id: {}", partId);
+        PartEntity part = partRepository.findById(partId)
+                .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
+
+        try {
+            // Create a key prefix so images are grouped by part id
+            String fileKey = "parts/" + part.getPartNumber() + "/" + java.util.UUID.randomUUID() + "_" + file.getOriginalFilename();
+            String url = s3Service.uploadFile(file, fileKey);
+            part.setPictureUrl(url);
+            part.setModifiedBy(getCurrentUserEmail());
+            part.setDateModified(java.time.LocalDateTime.now());
+            partRepository.save(part);
+            logger.info("Picture uploaded and saved for part id: {}, url: {}", partId, url);
+            return url;
+        } catch (Exception e) {
+            // Catch general exceptions from S3 upload and rethrow as runtime exception
+            logger.error("Error uploading picture for part id: " + partId, e);
+            throw new RuntimeException("Failed to upload picture", e);
+        }
+    }
 
     /**
      * Verifies the warranty status of a part
@@ -789,4 +823,5 @@ public class PartService {
         
         return warrantyInfo;
     }
-} 
+}
+

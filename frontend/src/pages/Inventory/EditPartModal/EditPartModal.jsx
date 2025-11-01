@@ -1,23 +1,34 @@
+// javascript
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, Calendar as CalendarIcon } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
-const EditPartModal = ({ 
-    isOpen, 
-    onClose, 
-    editPart,
-    onInputChange,
-    onSubmit,
-    loading,
-    success,
-    error
-}) => {
+const EditPartModal = ({
+                           isOpen,
+                           onClose,
+                           editPart,
+                           onInputChange,
+                           onSubmit,
+                           loading,
+                           success,
+                           error,
+                           // new props for fetching/displaying customer
+                           fetchCustomer, // function({ phone, email }) => void
+                           fetchedCustomer, // object returned from fetch
+                           fetchingCustomer // optional boolean
+                       }) => {
     const [showPurchaseDateCalendar, setShowPurchaseDateCalendar] = useState(false);
     const [showWarrantyExpirationCalendar, setShowWarrantyExpirationCalendar] = useState(false);
     const [isCustomerPurchased, setIsCustomerPurchased] = useState(false);
     const [warrantyType, setWarrantyType] = useState('7_DAYS');
     const [customWarrantyDays, setCustomWarrantyDays] = useState(7);
+
+    // Customer detail local state
+    const [customerFirstName, setCustomerFirstName] = useState('');
+    const [customerLastName, setCustomerLastName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
 
     // Initialize state when editPart changes
     useEffect(() => {
@@ -28,8 +39,34 @@ const EditPartModal = ({
                 setWarrantyType('7_DAYS');
                 setCustomWarrantyDays(7);
             }
+
+            // Initialize customer fields from editPart if present
+            setCustomerFirstName(editPart.customerFirstName || (editPart.customer ? editPart.customer.firstName : '') || '');
+            setCustomerLastName(editPart.customerLastName || (editPart.customer ? editPart.customer.lastName : '') || '');
+            setCustomerPhone(editPart.customerPhone || (editPart.customer ? editPart.customer.phone : '') || '');
+            setCustomerEmail(editPart.customerEmail || (editPart.customer ? editPart.customer.email : '') || '');
         }
     }, [editPart]);
+
+    // When fetchedCustomer updates, populate fields and notify parent
+    useEffect(() => {
+        if (fetchedCustomer) {
+            const fn = fetchedCustomer.firstName || '';
+            const ln = fetchedCustomer.lastName || '';
+            const ph = fetchedCustomer.phone || '';
+            const em = fetchedCustomer.email || '';
+
+            setCustomerFirstName(fn);
+            setCustomerLastName(ln);
+            setCustomerPhone(ph);
+            setCustomerEmail(em);
+
+            onInputChange({ target: { name: 'customerFirstName', value: fn } });
+            onInputChange({ target: { name: 'customerLastName', value: ln } });
+            onInputChange({ target: { name: 'customerPhone', value: ph } });
+            onInputChange({ target: { name: 'customerEmail', value: em } });
+        }
+    }, [fetchedCustomer]);
 
     // Close calendar when clicking outside
     useEffect(() => {
@@ -44,11 +81,10 @@ const EditPartModal = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Calculate warranty expiration date based on purchase date and warranty type
     const calculateWarrantyExpiration = (purchaseDate, type, customDays = 7) => {
         if (!purchaseDate) return null;
         const date = new Date(purchaseDate);
-        
+
         switch(type) {
             case '7_DAYS':
                 date.setDate(date.getDate() + 7);
@@ -71,18 +107,14 @@ const EditPartModal = ({
         return date;
     };
 
-    // Handle warranty type change
     const handleWarrantyTypeChange = (e) => {
         const type = e.target.value;
         setWarrantyType(type);
-        
-        // No need to update editPart since we don't store warranty type
-        
+
         if (type === 'CUSTOM') {
-            // For custom option, don't auto-calculate, let user pick the date
             return;
         }
-        
+
         if (editPart.datePurchasedByCustomer) {
             const expirationDate = calculateWarrantyExpiration(
                 editPart.datePurchasedByCustomer,
@@ -93,45 +125,36 @@ const EditPartModal = ({
         }
     };
 
-    // Handle custom warranty expiration date change
     const handleWarrantyExpirationDateChange = (date) => {
-        // Set time to 23:59:59 for end of day
         const expirationDate = new Date(date);
         expirationDate.setHours(23, 59, 59, 999);
-        
+
         onInputChange({ target: { name: 'warrantyExpiration', value: expirationDate } });
         setShowWarrantyExpirationCalendar(false);
     };
 
-    // Handle purchase date change
     const handlePurchaseDateChange = (date) => {
         onInputChange({ target: { name: 'datePurchasedByCustomer', value: date } });
         setShowPurchaseDateCalendar(false);
-        
-        // Recalculate warranty expiration
+
         const expirationDate = calculateWarrantyExpiration(date, warrantyType, customWarrantyDays);
         onInputChange({ target: { name: 'warrantyExpiration', value: expirationDate } });
     };
 
-    // Handle customer purchase toggle
     const handleCustomerPurchaseToggle = (e) => {
         const isEnabled = e.target.checked;
         setIsCustomerPurchased(isEnabled);
-        
-        // Update the editPart object
+
         onInputChange({ target: { name: 'isCustomerPurchased', value: isEnabled } });
-        
+
         if (!isEnabled) {
-            // Clear dates when disabled
             onInputChange({ target: { name: 'datePurchasedByCustomer', value: null } });
             onInputChange({ target: { name: 'warrantyExpiration', value: null } });
-            // Reset warranty type UI state when disabled
             setWarrantyType('7_DAYS');
             setCustomWarrantyDays(7);
         }
     };
 
-    // Calculate days remaining in warranty
     const calculateDaysRemaining = () => {
         if (!editPart.warrantyExpiration) return null;
         const expiration = new Date(editPart.warrantyExpiration);
@@ -141,13 +164,37 @@ const EditPartModal = ({
         return diffDays;
     };
 
+    // Customer input handlers that update local state and parent editPart
+    const handleCustomerFirstNameChange = (e) => {
+        setCustomerFirstName(e.target.value);
+        onInputChange({ target: { name: 'customerFirstName', value: e.target.value } });
+    };
+    const handleCustomerLastNameChange = (e) => {
+        setCustomerLastName(e.target.value);
+        onInputChange({ target: { name: 'customerLastName', value: e.target.value } });
+    };
+    const handleCustomerPhoneChange = (e) => {
+        setCustomerPhone(e.target.value);
+        onInputChange({ target: { name: 'customerPhone', value: e.target.value } });
+    };
+    const handleCustomerEmailChange = (e) => {
+        setCustomerEmail(e.target.value);
+        onInputChange({ target: { name: 'customerEmail', value: e.target.value } });
+    };
+
+    const handleLookupCustomer = () => {
+        if (fetchCustomer) {
+            fetchCustomer({ phone: customerPhone, email: customerEmail });
+        }
+    };
+
     if (!isOpen || !editPart) return null;
 
     const daysRemaining = calculateDaysRemaining();
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-gray-800">Edit Part</h2>
                     <button
@@ -158,7 +205,6 @@ const EditPartModal = ({
                     </button>
                 </div>
 
-                {/* Success Message */}
                 {success && (
                     <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md flex items-center">
                         <CheckCircle size={20} className="mr-2" />
@@ -166,14 +212,12 @@ const EditPartModal = ({
                     </div>
                 )}
 
-                {/* Error Message */}
                 {error && (
                     <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
                         {error}
                     </div>
                 )}
 
-                {/* Edit Part Form */}
                 <form onSubmit={onSubmit}>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
@@ -261,34 +305,6 @@ const EditPartModal = ({
                         </div>
                     </div>
 
-                    {/* Current Stock and Low Stock Threshold are managed at SKU/part_number level, not individual parts */}
-                    {/* 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Current Stock</label>
-                            <input
-                                type="number"
-                                name="currentStock"
-                                value={editPart.currentStock || 0}
-                                onChange={onInputChange}
-                                min="0"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-1">Low Stock Threshold</label>
-                            <input
-                                type="number"
-                                name="lowStockThreshold"
-                                value={editPart.lowStockThreshold || 0}
-                                onChange={onInputChange}
-                                min="0"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-                    */}
-
                     {/* Customer Purchase Toggle */}
                     <div className="mb-4">
                         <label className="flex items-center space-x-2 cursor-pointer">
@@ -315,8 +331,7 @@ const EditPartModal = ({
                     {isCustomerPurchased && (
                         <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                             <h3 className="text-sm font-medium text-gray-700 mb-3">Warranty Information</h3>
-                            
-                            {/* Purchase Date */}
+
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-medium mb-1">Date Purchased by Customer</label>
                                 <div className="relative">
@@ -341,7 +356,6 @@ const EditPartModal = ({
                                 )}
                             </div>
 
-                            {/* Warranty Type Selection */}
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-medium mb-1">Warranty Period</label>
                                 <select
@@ -357,7 +371,6 @@ const EditPartModal = ({
                                 </select>
                             </div>
 
-                            {/* Custom Warranty Expiration Date Selection */}
                             {warrantyType === 'CUSTOM' && (
                                 <div className="mb-4">
                                     <label className="block text-gray-700 text-sm font-medium mb-1">Custom Warranty Expiration Date</label>
@@ -388,12 +401,11 @@ const EditPartModal = ({
                                 </div>
                             )}
 
-                            {/* Warranty Expiration Date Display */}
                             {editPart.warrantyExpiration && (
                                 <div className="mt-4 p-3 bg-blue-50 rounded-md">
                                     <div className="text-sm text-gray-700">
                                         <span className="font-medium">Warranty Expiration:</span>{' '}
-                                        {warrantyType === 'CUSTOM' 
+                                        {warrantyType === 'CUSTOM'
                                             ? new Date(editPart.warrantyExpiration).toLocaleString()
                                             : new Date(editPart.warrantyExpiration).toLocaleDateString()
                                         }
@@ -401,10 +413,10 @@ const EditPartModal = ({
                                     {daysRemaining !== null && (
                                         <div className={`text-sm mt-1 ${
                                             daysRemaining > 30 ? 'text-green-600' :
-                                            daysRemaining > 7 ? 'text-yellow-600' :
-                                            'text-red-600'
+                                                daysRemaining > 7 ? 'text-yellow-600' :
+                                                    'text-red-600'
                                         }`}>
-                                            {daysRemaining > 0 
+                                            {daysRemaining > 0
                                                 ? `${daysRemaining} days remaining`
                                                 : 'Warranty expired'}
                                         </div>
@@ -416,6 +428,97 @@ const EditPartModal = ({
                                     )}
                                 </div>
                             )}
+
+                            {/* Customer Details Table / Inputs */}
+                            <div className="mt-4">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Customer Details</h4>
+
+                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <label className="block text-gray-700 text-xs font-medium mb-1">First Name</label>
+                                        <input
+                                            type="text"
+                                            name="customerFirstName"
+                                            value={customerFirstName}
+                                            onChange={handleCustomerFirstNameChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            placeholder="First name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-700 text-xs font-medium mb-1">Last Name</label>
+                                        <input
+                                            type="text"
+                                            name="customerLastName"
+                                            value={customerLastName}
+                                            onChange={handleCustomerLastNameChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            placeholder="Last name"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <div>
+                                        <label className="block text-gray-700 text-xs font-medium mb-1">Phone</label>
+                                        <input
+                                            type="text"
+                                            name="customerPhone"
+                                            value={customerPhone}
+                                            onChange={handleCustomerPhoneChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            placeholder="Phone"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-700 text-xs font-medium mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            name="customerEmail"
+                                            value={customerEmail}
+                                            onChange={handleCustomerEmailChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            placeholder="Email"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2 mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleLookupCustomer}
+                                        className="px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300"
+                                        disabled={!fetchCustomer || fetchingCustomer}
+                                    >
+                                        {fetchingCustomer ? 'Looking up...' : 'Lookup Customer'}
+                                    </button>
+                                    <div className="text-xs text-gray-500">Use phone or email to find existing customer records</div>
+                                </div>
+
+                                {/* If fetchedCustomer exists, show it in a small table */}
+                                {fetchedCustomer && (
+                                    <div className="mt-4 overflow-x-auto">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <thead>
+                                            <tr>
+                                                <th className="px-2 py-1 border-b text-gray-600">First Name</th>
+                                                <th className="px-2 py-1 border-b text-gray-600">Last Name</th>
+                                                <th className="px-2 py-1 border-b text-gray-600">Phone</th>
+                                                <th className="px-2 py-1 border-b text-gray-600">Email</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr className="bg-white">
+                                                <td className="px-2 py-1 border-b">{fetchedCustomer.firstName || '-'}</td>
+                                                <td className="px-2 py-1 border-b">{fetchedCustomer.lastName || '-'}</td>
+                                                <td className="px-2 py-1 border-b">{fetchedCustomer.phone || '-'}</td>
+                                                <td className="px-2 py-1 border-b">{fetchedCustomer.email || '-'}</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -441,4 +544,4 @@ const EditPartModal = ({
     );
 };
 
-export default EditPartModal; 
+export default EditPartModal;

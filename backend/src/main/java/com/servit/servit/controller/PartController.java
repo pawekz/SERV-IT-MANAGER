@@ -24,6 +24,7 @@ import com.servit.servit.dto.part.UpdatePartNumberStockTrackingDTO;
 import com.servit.servit.entity.InventoryTransactionEntity;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.repository.PartRepository;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -681,6 +682,30 @@ public class PartController {
             logger.error("API Error: Error getting part details - {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error getting part details: " + e.getMessage());
+        }
+    }
+// ================ Picture Upload Endpoint ================
+    /**
+     * Uploads a picture for a part and attaches it to the part record.
+     * URL: POST /part/uploadPicture/{id}
+     */
+    @PostMapping(value = "/uploadPicture/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> uploadPartPicture(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        logger.info("API Request: Uploading picture for part id: {}", id);
+        try {
+            String url = partService.uploadPartPicture(id, file);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (java.io.IOException e) {
+            logger.error("IO error uploading picture for part: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload picture: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error uploading picture for part: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload picture: " + e.getMessage());
         }
     }
 }
