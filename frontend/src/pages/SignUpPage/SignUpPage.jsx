@@ -21,6 +21,12 @@ const SignUpPage = () => {
     const [isPasswordValid, setIsPasswordValid] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // OTP verification state
+    const [showOtpModal, setShowOtpModal] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [otpError, setOtpError] = useState('');
+    const [otpLoading, setOtpLoading] = useState(false);
+
     // Toast notification state
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const showToast = (message, type = 'success') => setToast({ show: true, message, type });
@@ -31,8 +37,6 @@ const SignUpPage = () => {
 
     // Password regex
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
-
-    // Toast auto-hide effect
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
@@ -87,6 +91,142 @@ const SignUpPage = () => {
         setShowPassword(!showPassword);
     };
 
+    // Handle OTP input
+    const handleOtpInput = (e) => {
+        const { value } = e.target;
+        const numericValue = value.replace(/\D/g, '').slice(0, 6);
+        setOtp(numericValue);
+    };
+
+    // Verify OTP and login user
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        setOtpError('');
+        
+        if (!otp || otp.length !== 6) {
+            setOtpError('Please enter a valid 6-digit code');
+            return;
+        }
+
+        setOtpLoading(true);
+
+        try {
+            // Retrieve stored credentials
+            const storedCredentials = sessionStorage.getItem('signupCredentials');
+            if (!storedCredentials) {
+                setOtpError('Session expired. Please sign up again.');
+                setOtpLoading(false);
+                return;
+            }
+
+            let credentials;
+            try {
+                credentials = JSON.parse(storedCredentials);
+            } catch (parseErr) {
+                setOtpError('Invalid session data. Please sign up again.');
+                console.error('Credentials parsing error:', parseErr);
+                sessionStorage.removeItem('signupCredentials');
+                setOtpLoading(false);
+                return;
+            }
+
+            const { email, username, password } = credentials;
+
+            // Validate credentials exist
+            if (!email || !username || !password) {
+                setOtpError('Session data incomplete. Please sign up again.');
+                sessionStorage.removeItem('signupCredentials');
+                setOtpLoading(false);
+                return;
+            }
+
+            // Step 1: Verify OTP
+            const verifyResponse = await fetch(`${window.__API_BASE__}/user/verifyOtp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    otp: otp,
+                    type: 1 // Registration verification
+                }),
+            });
+
+            if (!verifyResponse.ok) {
+                let errorMessage = 'Invalid or expired verification code';
+                try {
+                    const errorData = await verifyResponse.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {}
+                setOtpError(errorMessage);
+                setOtpLoading(false);
+                return;
+            }
+
+            showToast('Email verified successfully! Logging you in...', 'success');
+
+            // Step 2: Auto-login after successful verification
+            const loginResponse = await fetch(`${window.__API_BASE__}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    identifier: username,
+                    password: password,
+                }),
+            });
+
+            if (!loginResponse.ok) {
+                let errorMessage = 'Login failed after verification';
+                try {
+                    const errorData = await loginResponse.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {}
+                showToast(errorMessage, 'error');
+                // Clear stored credentials on login failure
+                sessionStorage.removeItem('signupCredentials');
+                // Still redirect to login page
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000);
+                setOtpLoading(false);
+                return;
+            }
+
+            const loginData = await loginResponse.json();
+            
+            // Store auth token
+            if (loginData.token) {
+                localStorage.setItem('authToken', loginData.token);
+            }
+
+            // Cache user data from login response
+            if (loginData.user) {
+                sessionStorage.setItem('userData', JSON.stringify(loginData.user));
+            }
+
+            // IMPORTANT: Clear stored credentials after successful login for security
+            sessionStorage.removeItem('signupCredentials');
+
+            showToast('Welcome! Redirecting to your dashboard...', 'success');
+            
+            // Redirect to customer dashboard
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 1500);
+
+        } catch (err) {
+            setOtpError('Network error. Please try again later.');
+            console.error('OTP verification error:', err);
+            // Clear stored credentials on error
+            sessionStorage.removeItem('signupCredentials');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
     // Submit registration
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -131,19 +271,19 @@ const SignUpPage = () => {
                 return;
             }
             // Registration success
+            // Store credentials temporarily for auto-login after OTP verification
+            // This ensures credentials are available even if component state is lost
+            sessionStorage.setItem('signupCredentials', JSON.stringify({
+                username: formData.username,
+                password: formData.password,
+                email: formData.email
+            }));
+            
             setSuccess(true);
-            setShowSuccessModal(true);
-            showToast('Registration successful! Please check your email for verification.', 'success');
+            setShowOtpModal(true);
+            showToast('Registration successful! Please enter the verification code sent to your email.', 'success');
             setLoading(false);
             setSignupProcessing(false);
-            // Redirect to login page after 3 seconds
-            setTimeout(() => {
-                if (typeof navigate === 'function') {
-                    navigate('/login');
-                } else if (window.location) {
-                    window.location.href = '/login';
-                }
-            }, 3000);
         } catch (err) {
             setError('Network error. Please try again later.');
             setLoading(false);
@@ -379,6 +519,65 @@ const SignUpPage = () => {
 
                         <div className="flex justify-center">
                             <Spinner size="normal" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* OTP Verification Modal */}
+            {showOtpModal && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+                    <div className="bg-white rounded-xl p-8 shadow-xl w-full max-w-sm relative">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                            Verify Your Email
+                        </h2>
+                        <p className="text-gray-600 mb-6 text-center text-sm">
+                            We've sent a verification code to <strong>{formData.email}</strong>
+                        </p>
+
+                        {otpError && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded text-sm">
+                                {otpError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleVerifyOtp}>
+                            <div className="mb-6">
+                                <label htmlFor="otp" className="block mb-2 text-sm font-medium text-gray-600">
+                                    Verification Code
+                                </label>
+                                <input
+                                    type="text"
+                                    id="otp"
+                                    maxLength={6}
+                                    value={otp}
+                                    onChange={handleOtpInput}
+                                    disabled={otpLoading}
+                                    className="w-full px-4 py-3 text-center text-lg font-semibold border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    placeholder="000000"
+                                    required
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Enter the 6-digit code from your email
+                                </p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={otpLoading || otp.length !== 6}
+                                className="w-full px-4 py-3 text-sm font-medium text-white bg-[#25D482] rounded-md hover:bg-[#1fab6b] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {otpLoading ? (
+                                    <span className="flex items-center justify-center">
+                                        <Spinner size="small" />
+                                        <span className="ml-2">Verifying...</span>
+                                    </span>
+                                ) : 'Verify & Continue'}
+                            </button>
+                        </form>
+
+                        <div className="mt-4 text-center text-sm text-gray-600">
+                            Didn't receive a code? <a href="#" className="text-[#25D482] font-medium hover:underline">Resend</a>
                         </div>
                     </div>
                 </div>
