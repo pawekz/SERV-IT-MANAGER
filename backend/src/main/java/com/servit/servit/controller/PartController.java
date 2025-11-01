@@ -42,7 +42,6 @@ public class PartController {
 
     private static final Logger logger = LoggerFactory.getLogger(PartController.class);
 
-    @Autowired
     private final PartService partService;
 
     @Autowired
@@ -684,16 +683,16 @@ public class PartController {
                     .body("Error getting part details: " + e.getMessage());
         }
     }
-// ================ Picture Upload Endpoint ================
-    /**
-     * Uploads a picture for a part and attaches it to the part record.
-     * URL: POST /part/uploadPicture/{id}
-     */
+
     @PostMapping(value = "/uploadPicture/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<?> uploadPartPicture(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         logger.info("API Request: Uploading picture for part id: {}", id);
         try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("API Error: No file provided for upload for part id: {}", id);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File must not be null or empty");
+            }
             String url = partService.uploadPartPicture(id, file);
             return ResponseEntity.ok(Map.of("url", url));
         } catch (EntityNotFoundException e) {
@@ -709,3 +708,4 @@ public class PartController {
         }
     }
 }
+

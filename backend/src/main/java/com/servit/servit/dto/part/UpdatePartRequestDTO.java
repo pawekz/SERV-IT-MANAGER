@@ -34,4 +34,7 @@ public class UpdatePartRequestDTO {
 
     private String brand;
     private String model;
+
+    // URL to the part's picture
+    private String partPhotoUrl;
 } 
