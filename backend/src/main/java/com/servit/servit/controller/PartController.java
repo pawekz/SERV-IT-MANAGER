@@ -686,14 +686,14 @@ public class PartController {
 
     @PostMapping(value = "/uploadPicture/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<?> uploadPartPicture(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadPartPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         logger.info("API Request: Uploading picture for part id: {}", id);
         try {
             if (file == null || file.isEmpty()) {
                 logger.warn("API Error: No file provided for upload for part id: {}", id);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File must not be null or empty");
             }
-            String url = partService.uploadPartPicture(id, file);
+            String url = partService.uploadPartPhoto(id, file);
             return ResponseEntity.ok(Map.of("url", url));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");

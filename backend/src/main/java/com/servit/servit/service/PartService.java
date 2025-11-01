@@ -745,7 +745,7 @@ public class PartService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public String uploadPartPicture(Long partId, MultipartFile file) throws IOException {
+    public String uploadPartPhoto(Long partId, MultipartFile file) throws IOException {
         logger.info("Uploading picture for part id: {}", partId);
         PartEntity part = partRepository.findById(partId)
                 .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
