@@ -46,5 +46,5 @@ public class PartResponseDTO {
     private String model;
 
     // URL to the part's picture
-    private String pictureUrl;
+    private String partPhotoUrl;
 }

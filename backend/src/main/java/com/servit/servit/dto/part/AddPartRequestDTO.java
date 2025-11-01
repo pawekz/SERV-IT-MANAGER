@@ -33,5 +33,5 @@ public class AddPartRequestDTO {
     private Boolean addToExisting = false;
 
     // Optional picture URL (can be set after uploading image)
-    private String pictureUrl;
+    private String partPhotoUrl;
 }
