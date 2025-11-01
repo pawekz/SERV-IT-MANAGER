@@ -734,4 +734,60 @@ public class PartController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload picture: " + e.getMessage());
         }
     }
+
+    @GetMapping("/getPartPhoto/{id}")
+    public ResponseEntity<?> getPartPhoto(@PathVariable Long id) {
+        logger.info("API Request: Getting part photo for part id: {}", id);
+        try {
+            String presignedUrl = partService.getPartPhoto(id, 5); // 5 minute expiry
+            if (presignedUrl == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part photo not set");
+            }
+            return ResponseEntity.ok(presignedUrl);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (Exception e) {
+            logger.error("Error getting part photo for id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to get part photo: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/updatePartPhoto/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> updatePartPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        logger.info("API Request: Updating picture for part id: {}", id);
+        try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("API Error: No file provided for update for part id: {}", id);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File must not be null or empty");
+            }
+            partService.updatePartPhoto(id, file);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (java.io.IOException e) {
+            logger.error("IO error updating picture for part: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update picture: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating picture for part: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update picture: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/removePartPhoto/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> removePartPhoto(@PathVariable Long id) {
+        logger.info("API Request: Removing picture for part id: {}", id);
+        try {
+            partService.removePartPhoto(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (Exception e) {
+            logger.error("Error removing picture for part id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to remove picture: " + e.getMessage());
+        }
+    }
 }

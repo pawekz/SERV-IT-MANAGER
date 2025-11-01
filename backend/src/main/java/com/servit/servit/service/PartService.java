@@ -44,16 +44,18 @@ public class PartService {
     private final PartNumberStockTrackingService stockTrackingService;
     private final UserRepository userRepository;
     private final FileUtil fileUtil;
+    private final S3Service s3Service;
 
     private static final Logger logger = LoggerFactory.getLogger(PartService.class);
 
     @Autowired
-    public PartService(PartRepository partRepository, AlertService alertService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository, FileUtil fileUtil) {
+    public PartService(PartRepository partRepository, AlertService alertService, PartNumberStockTrackingService stockTrackingService, UserRepository userRepository, FileUtil fileUtil, S3Service s3Service) {
         this.partRepository = partRepository;
         this.alertService = alertService;
         this.stockTrackingService = stockTrackingService;
         this.userRepository = userRepository;
         this.fileUtil = fileUtil;
+        this.s3Service = s3Service;
     }
 
     // ================ CRUD Operations ================
@@ -852,6 +854,77 @@ public class PartService {
             logger.error("Error uploading picture for part id: {}", partId, e);
             throw new RuntimeException("Failed to upload picture", e);
         }
+    }
+
+    public String getPartPhoto(Long partId, int expirationMinutes) {
+        logger.info("Getting part photo for part id: {}", partId);
+        PartEntity part = partRepository.findById(partId)
+                .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
+
+        String partPhotoUrl = part.getPartPhotoUrl();
+        if (partPhotoUrl == null || partPhotoUrl.equals("0") || partPhotoUrl.isBlank()) {
+            return null;
+        }
+        if (partPhotoUrl.contains("amazonaws.com/")) {
+            int idx = partPhotoUrl.indexOf(".amazonaws.com/");
+            String s3Key = partPhotoUrl.substring(idx + ".amazonaws.com/".length());
+            return s3Service.generatePresignedUrl(s3Key, expirationMinutes);
+        } else {
+            return partPhotoUrl;
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public void updatePartPhoto(Long partId, MultipartFile file) throws IOException {
+        logger.info("Updating part photo for part id: {}", partId);
+        PartEntity part = partRepository.findById(partId)
+                .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
+
+        String oldUrl = part.getPartPhotoUrl();
+        if (oldUrl != null && !oldUrl.equals("0") && !oldUrl.isBlank()) {
+            try {
+                // Reuse FileUtil.deleteProfilePicture for deleting by extracting key
+                fileUtil.deleteProfilePicture(oldUrl);
+            } catch (Exception e) {
+                logger.warn("Failed to delete old part picture for id {}: {}", partId, e.getMessage());
+            }
+        }
+
+        String newUrl;
+        try {
+            newUrl = fileUtil.savePartPhoto(file, part.getPartNumber());
+        } catch (Exception e) {
+            logger.error("Failed to save new part picture for id {}: {}", partId, e.getMessage());
+            throw new RuntimeException("Failed to save new part picture", e);
+        }
+
+        part.setPartPhotoUrl(newUrl);
+        part.setModifiedBy(getCurrentUserEmail());
+        part.setDateModified(LocalDateTime.now());
+        partRepository.save(part);
+        logger.info("Part picture updated successfully for id {}", partId);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public void removePartPhoto(Long partId) {
+        logger.info("Removing part photo for part id: {}", partId);
+        PartEntity part = partRepository.findById(partId)
+                .orElseThrow(() -> new EntityNotFoundException("Part not found with id: " + partId));
+
+        String oldUrl = part.getPartPhotoUrl();
+        if (oldUrl != null && !oldUrl.equals("0") && !oldUrl.isBlank()) {
+            try {
+                fileUtil.deleteProfilePicture(oldUrl);
+            } catch (Exception e) {
+                logger.warn("Failed to delete part picture for id {}: {}", partId, e.getMessage());
+            }
+        }
+
+        part.setPartPhotoUrl("0");
+        part.setModifiedBy(getCurrentUserEmail());
+        part.setDateModified(LocalDateTime.now());
+        partRepository.save(part);
+        logger.info("Part photo removed successfully for id: {}", partId);
     }
 
     public Map<String, Object> verifyWarranty(Long partId) {
