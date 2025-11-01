@@ -37,6 +37,10 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/part")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -61,14 +65,30 @@ public class PartController {
 
     // ================ CRUD Operations ================
 
-    @PostMapping(value = "/addPart", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/addPart")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<?> addPart(@RequestPart("part") AddPartRequestDTO req,
+    public ResponseEntity<?> addPart(HttpServletRequest request,
+                                     @RequestPart(value = "part", required = false) AddPartRequestDTO partReq,
                                      @RequestPart(value = "file", required = false) MultipartFile file) {
-        logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}",
-                   req.getPartNumber(), req.getSerialNumber());
         try {
+            // Determine how the request was sent. If 'part' RequestPart is null, attempt to read JSON body.
+            AddPartRequestDTO req = partReq;
+            if (req == null) {
+                // Try to parse JSON body (handles application/json requests)
+                ObjectMapper mapper = new ObjectMapper();
+                req = mapper.readValue(request.getInputStream(), AddPartRequestDTO.class);
+            }
+
+            if (req == null) {
+                logger.warn("API Error: No part data provided in request");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Part data is required");
+            }
+
+            logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}",
+                       req.getPartNumber(), req.getSerialNumber());
+
             PartResponseDTO result = partService.addpart(req, file);
+
             // Ensure stock tracking is updated immediately
             stockTrackingService.updateStockTracking(result.getPartNumber());
             logger.info("API Response: Part added successfully - ID: {}, Part Number: {}", 
@@ -77,32 +97,10 @@ public class PartController {
         } catch (IllegalArgumentException e) {
             logger.warn("API Error: Bad request while adding part - {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
-        } catch (java.io.IOException e) {
-            logger.error("API Error: IO error while uploading part photo - {}", e.getMessage(), e);
+        } catch (IOException e) {
+            logger.error("API Error: IO error while reading request or uploading part photo - {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to upload picture: " + e.getMessage());
-        } catch (Exception e) {
-            logger.error("API Error: Internal server error while adding part - {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
-        }
-    }
-
-    @PostMapping(value = "/addPart", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<?> addPartJson(@RequestBody AddPartRequestDTO req) {
-        logger.info("API Request (JSON): Adding single part - Part Number: {}, Serial Number: {}",
-                   req.getPartNumber(), req.getSerialNumber());
-        try {
-            PartResponseDTO result = partService.addpart(req);
-            // Ensure stock tracking is updated immediately
-            stockTrackingService.updateStockTracking(result.getPartNumber());
-            logger.info("API Response: Part added successfully - ID: {}, Part Number: {}",
-                       result.getId(), result.getPartNumber());
-            return ResponseEntity.status(HttpStatus.CREATED).body(result);
-        } catch (IllegalArgumentException e) {
-            logger.warn("API Error: Bad request while adding part - {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+                    .body("Failed to read request or upload picture: " + e.getMessage());
         } catch (Exception e) {
             logger.error("API Error: Internal server error while adding part - {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -737,4 +735,3 @@ public class PartController {
         }
     }
 }
-
