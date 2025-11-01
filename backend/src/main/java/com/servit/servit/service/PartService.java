@@ -130,6 +130,90 @@ public class PartService {
     }
 
     /**
+     * Overloaded addpart method that accepts an optional MultipartFile for the part photo.
+     * Saves the part entity first, then if a file is present, uploads the photo and updates the part.
+     * @param req AddPartRequestDTO containing part data
+     * @param file Optional MultipartFile representing the part image
+     * @return PartResponseDTO of the created part
+     * @throws IOException if file upload fails
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public PartResponseDTO addpart(AddPartRequestDTO req, MultipartFile file) throws IOException {
+        logger.info("Adding part with optional file: {}", req);
+
+        // Validate serial number uniqueness
+        if (partRepository.findBySerialNumber(req.getSerialNumber()).isPresent()) {
+            throw new IllegalArgumentException("Serial number already exists: " + req.getSerialNumber());
+        }
+
+        PartEntity part = new PartEntity();
+        part.setPartNumber(req.getPartNumber());
+        part.setSerialNumber(req.getSerialNumber());
+        part.setAddedBy(getCurrentUserEmail());
+
+        if (Boolean.TRUE.equals(req.getAddToExisting())) {
+            List<PartEntity> existingParts = partRepository.findAllByPartNumber(req.getPartNumber())
+                    .stream()
+                    .filter(p -> !p.getIsDeleted())
+                    .collect(Collectors.toList());
+
+            if (existingParts.isEmpty()) {
+                throw new IllegalArgumentException("No active parts found with part number: " + req.getPartNumber());
+            }
+
+            PartEntity existingPart = existingParts.get(0);
+            part.setName(existingPart.getName());
+            part.setDescription(existingPart.getDescription());
+            part.setUnitCost(existingPart.getUnitCost());
+            part.setPartType(existingPart.getPartType());
+            part.setBrand(existingPart.getBrand());
+            part.setModel(existingPart.getModel());
+        } else {
+            part.setName(req.getName());
+            part.setDescription(req.getDescription());
+            part.setUnitCost(req.getUnitCost());
+            part.setPartType(req.getPartType());
+            part.setBrand(req.getBrand());
+            part.setModel(req.getModel());
+        }
+
+        part.setCurrentStock(1);
+        part.setIsDeleted(false);
+        part.setIsCustomerPurchased(false);
+
+        try {
+            PartEntity savedPart = partRepository.save(part);
+            logger.info("Successfully added part with ID: {}", savedPart.getPartId());
+
+            // If file provided, attempt to upload and update part photo URL
+            if (file != null && !file.isEmpty()) {
+                try {
+                    String url = uploadPartPhoto(savedPart.getPartId(), file);
+                    savedPart.setPartPhotoUrl(url);
+                    savedPart.setModifiedBy(getCurrentUserEmail());
+                    savedPart.setDateModified(LocalDateTime.now());
+                    partRepository.save(savedPart);
+                    logger.info("Uploaded part photo and updated part with URL: {}", url);
+                } catch (IOException e) {
+                    logger.error("Failed to upload part photo for part id {}: {}", savedPart.getPartId(), e.getMessage(), e);
+                    throw e; // propagate so controller can return 500
+                }
+            }
+
+            // Update stock tracking for this part number
+            stockTrackingService.updateStockTracking(req.getPartNumber());
+
+            return convertToDto(savedPart);
+        } catch (IOException e) {
+            // Already logged above; rethrow
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error adding part with file: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to add part: " + e.getMessage());
+        }
+    }
+
+    /**
      * Creates multiple parts with the same part number but different serial numbers.
      * All parts will have the same part number for proper stock tracking aggregation.
      * Only ADMIN and TECHNICIAN roles can add parts.

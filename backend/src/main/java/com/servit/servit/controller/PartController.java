@@ -25,6 +25,8 @@ import com.servit.servit.entity.InventoryTransactionEntity;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.repository.PartRepository;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.List;
 import java.util.Map;
@@ -59,16 +61,43 @@ public class PartController {
 
     // ================ CRUD Operations ================
 
-    @PostMapping("/addPart")
+    @PostMapping(value = "/addPart", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<?> addPart(@RequestBody AddPartRequestDTO req) {
-        logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}", 
+    public ResponseEntity<?> addPart(@RequestPart("part") AddPartRequestDTO req,
+                                     @RequestPart(value = "file", required = false) MultipartFile file) {
+        logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}",
+                   req.getPartNumber(), req.getSerialNumber());
+        try {
+            PartResponseDTO result = partService.addpart(req, file);
+            // Ensure stock tracking is updated immediately
+            stockTrackingService.updateStockTracking(result.getPartNumber());
+            logger.info("API Response: Part added successfully - ID: {}, Part Number: {}", 
+                       result.getId(), result.getPartNumber());
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (IllegalArgumentException e) {
+            logger.warn("API Error: Bad request while adding part - {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (java.io.IOException e) {
+            logger.error("API Error: IO error while uploading part photo - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to upload picture: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("API Error: Internal server error while adding part - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/addPart", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> addPartJson(@RequestBody AddPartRequestDTO req) {
+        logger.info("API Request (JSON): Adding single part - Part Number: {}, Serial Number: {}",
                    req.getPartNumber(), req.getSerialNumber());
         try {
             PartResponseDTO result = partService.addpart(req);
             // Ensure stock tracking is updated immediately
             stockTrackingService.updateStockTracking(result.getPartNumber());
-            logger.info("API Response: Part added successfully - ID: {}, Part Number: {}", 
+            logger.info("API Response: Part added successfully - ID: {}, Part Number: {}",
                        result.getId(), result.getPartNumber());
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (IllegalArgumentException e) {
