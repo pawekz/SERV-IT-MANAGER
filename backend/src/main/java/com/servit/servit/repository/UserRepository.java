@@ -14,6 +14,5 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     Optional<UserEntity> findByUsernameAndPassword(String username, String password);
     Optional<UserEntity> findByUsername(String username);
 
-    // Returns the number of users with the given role
     long countByRole(UserRoleEnum role);
 }
