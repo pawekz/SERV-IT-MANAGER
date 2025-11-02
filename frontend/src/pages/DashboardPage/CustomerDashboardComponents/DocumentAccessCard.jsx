@@ -102,7 +102,7 @@ const DocumentAccessCard = () => {
                   <FileText className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <div className="font-medium">{t.ticketNumber}</div>
+                  <div className="font-medium">Repair Ticket - {t.ticketNumber}</div>
                   <div className="text-xs text-gray-500">{formatDate(t.checkInDate)}</div>
                 </div>
               </div>
