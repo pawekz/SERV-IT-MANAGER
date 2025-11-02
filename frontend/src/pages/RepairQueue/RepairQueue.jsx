@@ -233,11 +233,28 @@ const RepairQueue = () => {
                         <section className="mb-8 -ml-10">
                             <div className="bg-white rounded-lg shadow-md p-6">
                                 <div className="flex justify-between items-end mb-6">
-                                    <h1 className="text-xl font-semibold text-gray-800">Pending Repairs</h1>
+                                    <div className="flex items-center space-x-3">
+                                        {/* Pending Repairs */}
+                                        <Link
+                                            to="/repairqueue"
+                                            className="text-xl font-semibold text-[#25D482] hover:underline"
+                                        >
+                                            Pending Repairs
+                                        </Link>
 
-                                    <div className="flex items-center gap-2">
+                                        {/* Separator */}
+                                        <span className="text-gray-400">|</span>
 
+                                        {/* Resolved Repairs Link */}
+                                        <Link
+                                            to="/resolvedrepairs"
+                                            className="text-xl font-semibold text-black hover:underline"
+                                        >
+                                            Resolved Repairs
+                                        </Link>
                                     </div>
+
+                                    {/* Add Ticket Button */}
                                     {role !== "customer" && (
                                         <Link to="/newrepair">
                                             <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
