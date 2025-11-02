@@ -3,7 +3,11 @@ import {
     HelpCircle,
     Mail,
     HandHelpingIcon as HelpIcon,
+    FileText,
+    X
 } from "lucide-react"
+
+import TermsEditor from "../TermsEditor/TermsEditor.jsx";
 
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from "react";
@@ -48,6 +52,9 @@ const CustomerDashboard = () => {
     const [itemsPerPage] = useState(5);
 
     const [profileUrl, setProfileUrl] = useState(null);
+
+    // Modal state for Terms & Conditions
+    const [showTermsModal, setShowTermsModal] = useState(false);
 
     const parseJwt = (token) => {
         try {
@@ -287,11 +294,11 @@ const CustomerDashboard = () => {
                         <RequiredActionsCard />
                     </div>
 
-                    {/* Documents and Support */}
+                    {/* Others */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <DocumentAccessCard />
                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Support Options</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Others</h3>
                             <div className="space-y-3">
 
                                 <a href="mailto:servit.validation@gmail.com?subject=Support%20Request&body=Hello%20Support%20Team," className="flex items-center w-full px-4 py-3 bg-purple-50 text-purple-600 rounded-md no-underline cursor-pointer">
@@ -306,11 +313,47 @@ const CustomerDashboard = () => {
                                     </button>
                                 </Link>
 
+                                <button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-700 rounded-md mt-4" onClick={() => setShowTermsModal(true)}>
+                                    <FileText className="h-5 w-5 mr-3 text-green-600" />
+                                    Terms and Conditions
+                                </button>
+
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Terms Modal */}
+            {showTermsModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+                    tabIndex={-1}
+                    aria-modal="true"
+                    role="dialog"
+                    onClick={() => setShowTermsModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-10 relative border border-gray-100"
+                        style={{ maxWidth: "900px", minHeight: "60vh" }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-red-400 transition-colors"
+                            onClick={() => setShowTermsModal(false)}
+                            aria-label="Close"
+                        >
+                            <X size={28} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center tracking-tight">
+                            Terms & Conditions
+                        </h2>
+                        <div className="max-h-[60vh] overflow-y-auto border border-gray-100 rounded-lg p-6 bg-gray-50">
+                            <TermsEditor />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
