@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../config/ApiConfig.jsx';
+import TicketDetailsModal from '../../../components/TicketDetailsModal/TicketDetailsModal';
 
 const DocumentAccessCard = () => {
   const [tickets, setTickets] = useState([]);
@@ -8,6 +9,7 @@ const DocumentAccessCard = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
 
@@ -100,11 +102,16 @@ const DocumentAccessCard = () => {
                   <FileText className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <div className="font-medium">Repair Ticket - {t.ticketNumber}</div>
+                  <div className="font-medium">{t.ticketNumber}</div>
                   <div className="text-xs text-gray-500">{formatDate(t.checkInDate)}</div>
                 </div>
               </div>
-              <button className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded">View</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setSelectedTicket(t); }}
+                className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded"
+              >
+                View
+              </button>
             </div>
           ))
         )}
@@ -113,6 +120,11 @@ const DocumentAccessCard = () => {
       {/* Optional page indicator at bottom */}
       {!loading && totalPages > 0 && (
         <div className="mt-4 text-sm text-gray-500 text-right">Page {page + 1} of {totalPages}</div>
+      )}
+
+      {/* Ticket details modal */}
+      {selectedTicket && (
+        <TicketDetailsModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
       )}
     </div>
   );
