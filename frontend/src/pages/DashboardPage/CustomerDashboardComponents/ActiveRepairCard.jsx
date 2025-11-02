@@ -46,7 +46,23 @@ const ActiveRepairCard = ({ customerEmail, ticket: externalTicket, className = '
   }, [customerEmail, externalTicket]);
 
   if (loading) return null; // or spinner
-  if (error || !ticket) return null; // optionally show informative message
+
+  // If there's an error or there simply isn't an active ticket, show a friendly empty-state card
+  if (error || !ticket) {
+    return (
+      <div className={`bg-white p-6 rounded-lg shadow-sm mb-8 ${className}`}>
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
+            <Monitor className="w-8 h-8 text-gray-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">No active tickets</h3>
+            <p className="text-sm text-gray-600 mt-1">There are no active tickets at the moment.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const progress = progressMap[ticket.repairStatus] ?? 0;
   const statusColor = progress < 100 ? 'text-amber-500' : 'text-green-600';
@@ -99,4 +115,4 @@ const ActiveRepairCard = ({ customerEmail, ticket: externalTicket, className = '
   );
 };
 
-export default ActiveRepairCard; 
+export default ActiveRepairCard;

@@ -263,7 +263,7 @@ const CustomerDashboard = () => {
                 {/* Header with User Menu */}
                 <div className="bg-white px-8 py-4 flex justify-between items-center border-b border-gray-200">
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-800">Customer Portal</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
                     <div className="flex items-center space-x-5">
                         <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
@@ -283,7 +283,7 @@ const CustomerDashboard = () => {
 
                 {/* Dashboard Content */}
                 <div className="p-8">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Hello {userData.firstName}</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Active Tickets</h1>
 
                     {/* Active Repair Card */}
                     <ActiveRepairsCarousel customerEmail={userData.email} />
