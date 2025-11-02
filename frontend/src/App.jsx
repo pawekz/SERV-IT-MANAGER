@@ -100,12 +100,9 @@ function AppContent() {
                 setNeedsSetup(false);
             }
         };
-        if (location.pathname === "/") {
-            checkUserCount();
-        } else {
-            setNeedsSetup(false);
-        }
-    }, [location.pathname]);
+        // Only check user count once on initial app mount
+        checkUserCount();
+    }, []); // Empty dependency array - runs only once on mount
 
     if (needsSetup === null && location.pathname === "/") {
         // Still checking the server – show spinner
