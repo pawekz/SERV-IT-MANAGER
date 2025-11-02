@@ -1099,4 +1099,10 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasTechnicians() {
+        long count = userRepo.countByRole(UserRoleEnum.TECHNICIAN);
+        return count > 0;
+    }
+
 }
