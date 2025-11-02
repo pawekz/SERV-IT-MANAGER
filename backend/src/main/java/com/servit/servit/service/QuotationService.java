@@ -179,15 +179,16 @@ public class QuotationService {
                         // Populate required fields from repair ticket
                         RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(entity.getRepairTicketNumber()).orElse(null);
                         if (ticket != null) {
-                            String fullName = ((ticket.getCustomerFirstName()==null?"":ticket.getCustomerFirstName()) + " " + (ticket.getCustomerLastName()==null?"":ticket.getCustomerLastName())).trim();
-                            warranty.setCustomerName(fullName.isEmpty()?"UNKNOWN":fullName);
+                            warranty.setCustomerFirstName(ticket.getCustomerFirstName()==null?"UNKNOWN":ticket.getCustomerFirstName());
+                            warranty.setCustomerLastName(ticket.getCustomerLastName()==null?"UNKNOWN":ticket.getCustomerLastName());
                             warranty.setCustomerEmail(ticket.getCustomerEmail());
                             warranty.setCustomerPhoneNumber(ticket.getCustomerPhoneNumber());
                             warranty.setReturnReason("PART_PURCHASE");
                             warranty.setReportedIssue("Customer purchased part via quotation");
                             warranty.setKind("PART_ONLY");
                         } else {
-                            warranty.setCustomerName("UNKNOWN");
+                            warranty.setCustomerFirstName("UNKNOWN");
+                            warranty.setCustomerLastName("UNKNOWN");
                             warranty.setCustomerEmail("unknown@example.com");
                             warranty.setCustomerPhoneNumber("N/A");
                             warranty.setReturnReason("PART_PURCHASE");

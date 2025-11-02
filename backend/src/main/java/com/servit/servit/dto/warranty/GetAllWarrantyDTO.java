@@ -9,7 +9,8 @@ import java.util.List;
 @Data
 public class GetAllWarrantyDTO {
     private String warrantyNumber;
-    private String customerName;
+    private String customerFirstName;
+    private String customerLastName;
     private String customerEmail;
     private String customerPhoneNumber;
     private WarrantyStatus status;

@@ -48,12 +48,12 @@ async function fetchPresignedPhotoUrl(photoUrl) {
     return res.data;
 }
 
-function TicketDetailsModal({ ticket, onClose }) {
+function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
 
-    if (!ticket) return null;
+    if (!isOpen || !ticket) return null;
 
     const images = ticket.repairPhotosUrls || [];
     const statusVal = ticket.status || ticket.repairStatus || 'N/A';

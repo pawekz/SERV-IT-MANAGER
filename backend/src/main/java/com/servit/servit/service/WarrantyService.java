@@ -125,7 +125,8 @@ public class WarrantyService {
         GetAllWarrantyDTO dto = new GetAllWarrantyDTO();
         dto.setWarrantyNumber(warranty.getWarrantyNumber());
         dto.setStatus(warranty.getStatus());
-        dto.setCustomerName(warranty.getCustomerName());
+        dto.setCustomerFirstName(warranty.getCustomerFirstName());
+        dto.setCustomerLastName(warranty.getCustomerLastName());
         dto.setCustomerEmail(warranty.getCustomerEmail());
         dto.setCustomerPhoneNumber(warranty.getCustomerPhoneNumber());
         dto.setReturnReason(warranty.getReturnReason());
@@ -160,7 +161,7 @@ public class WarrantyService {
                 logger.warn("A warranty with this warranty number already exists: {}", req.getWarrantyNumber());
                 throw new IllegalArgumentException("A warranty with this warranty number already exists.");
             }
-            if (req.getCustomerName() == null || req.getSerialNumber() == null) {
+            if (req.getCustomerFirstName() == null || req.getCustomerLastName() == null || req.getSerialNumber() == null) {
                 logger.warn("Required fields are missing in the warranty form for ticket: {}", req.getWarrantyNumber());
                 throw new IllegalArgumentException("Required fields are missing in the warranty form");
             }
@@ -169,7 +170,8 @@ public class WarrantyService {
                     .orElseThrow(() -> new EntityNotFoundException("Part not found"));
 
             WarrantyEntity warranty = new WarrantyEntity();
-            warranty.setCustomerName(req.getCustomerName());
+            warranty.setCustomerFirstName(req.getCustomerFirstName());
+            warranty.setCustomerLastName(req.getCustomerLastName());
             warranty.setCustomerEmail(req.getCustomerEmail());
             warranty.setCustomerPhoneNumber(req.getCustomerPhoneNumber());
             warranty.setItem(part);
@@ -307,7 +309,7 @@ public class WarrantyService {
                 // Map basic customer and issue details
                 ticket.setTicketNumber(warranty.getWarrantyNumber());
                 // Split full customer name into first / last if possible
-                String fullName = warranty.getCustomerName();
+                String fullName = warranty.getCustomerFirstName() + " " + warranty.getCustomerLastName();
                 if (fullName != null && !fullName.isBlank()) {
                     String trimmed = fullName.trim();
                     String[] parts = trimmed.split("\\s+", 2); // split into at most 2 parts
@@ -381,7 +383,7 @@ public class WarrantyService {
                 emailService.sendWarrrantyPdfEmail(
                         warranty.getCustomerEmail(),
                         warranty.getWarrantyNumber(),
-                        warranty.getCustomerName(),
+                        warranty.getCustomerFirstName() + " " + warranty.getCustomerLastName(),
                         pdfPath
                 );
             } catch (Exception emailEx) {

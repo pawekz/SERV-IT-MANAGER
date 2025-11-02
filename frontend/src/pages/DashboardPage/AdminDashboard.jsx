@@ -599,7 +599,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex bg-white p-6 rounded-lg shadow-sm">
                         <div className="mr-4 pt-2 text-[#2563eb]">
-                        <TrendingDown size={72} color="#e4a144" />
+                        <TrendingDown size={72} color="#DC143C" />
                         </div>
                         <div>
                         <div className="text-gray-600 text-sm mb-2">Low Stock Items</div>

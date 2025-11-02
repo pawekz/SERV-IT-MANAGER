@@ -235,13 +235,22 @@ const WarrantyRequestPage = () => {
         const name = deviceType.toLowerCase();
 
         if (name.includes("laptop") || name.includes("computer") || name.includes("pc")) {
-            return <Computer className="text-[#10B981] size-10" />;
+            return <Computer
+                className={` size-10
+                             ${role !== "customer" ? "text-[#2563eb]" : "text-[#10B981]"}`
+            } />;
         } else if (name.includes("phone") || name.includes("smartphone") || name.includes("tablet")) {
-            return <TabletSmartphone className="text-[#10B981] size-10" />;
+            return <TabletSmartphone className={` size-10
+                             ${role !== "customer" ? "text-[#2563eb]" : "text-[#10B981]"}`
+            } />;
         } else if (name.includes("headset") || name.includes("earphone") || name.includes("headphone")) {
-            return <Headphones className="text-[#10B981] size-10" />;
+            return <Headphones className={` size-10
+                             ${role !== "customer" ? "text-[#2563eb]" : "text-[#10B981]"}`
+            } />;
         } else {
-            return <Archive className="text-[#10B981] size-10" />;
+            return <Archive className={` size-10
+                             ${role !== "customer" ? "text-[#2563eb]" : "text-[#10B981]"}`
+            } />;
         }
     };
 
@@ -320,7 +329,9 @@ const WarrantyRequestPage = () => {
                                                         <div
                                                             key={index}
                                                             onClick={() => handleCardClick(request)}
-                                                            className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition overflow-hidden"
+                                                            className={`cursor-pointer flex border rounded-lg p-4 shadow-sm hover:shadow-md transition overflow-hidden 
+                                                                        ${role !== "customer" ? "bg-[rgba(37,99,235,0.05)] border-[#2563eb]" : "bg-[rgba(51,228,7,0.05)] border-[#33e407]"}`
+                                                            }
                                                         >
                                                             <div className="mr-4 flex items-start">{getProductIcon(request.deviceName)}</div>
                                                             <div>
@@ -439,7 +450,9 @@ const WarrantyRequestPage = () => {
                                                     <div
                                                         key={index}
                                                         onClick={() => handleCardClick(request)}
-                                                        className="cursor-pointer flex bg-[rgba(51,228,7,0.05)] border border-[#33e407] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                        className={`cursor-pointer flex border rounded-lg p-4 shadow-sm hover:shadow-md transition overflow-hidden 
+                                                                        ${role !== "customer" ? "bg-[rgba(37,99,235,0.05)] border-[#2563eb]" : "bg-[rgba(51,228,7,0.05)] border-[#33e407]"}`
+                                                        }
                                                     >
                                                         <div className="mr-4 flex items-start">{getProductIcon(request.deviceType)}</div>
                                                         <div>
