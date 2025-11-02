@@ -3,18 +3,22 @@ package com.servit.servit.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -22,12 +26,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,55 +41,37 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.time.ZoneId;
-import java.nio.charset.StandardCharsets;
 
 // AWS S3 imports
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import org.springframework.beans.factory.annotation.Value;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 
-// Custom Exceptions
+// Package-private exceptions used by services in this package
 class BackupException extends RuntimeException {
-    public BackupException(String message) {
-        super(message);
-    }
-    public BackupException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    public BackupException(String message) { super(message); }
+    public BackupException(String message, Throwable cause) { super(message, cause); }
 }
 
 class BackupNotFoundException extends BackupException {
-    public BackupNotFoundException(String message) {
-        super(message);
-    }
+    public BackupNotFoundException(String message) { super(message); }
 }
 
 class BackupOperationFailedException extends BackupException {
-    public BackupOperationFailedException(String message, Throwable cause) {
-        super(message, cause);
-    }
-     public BackupOperationFailedException(String message) {
-        super(message);
-    }
+    public BackupOperationFailedException(String message, Throwable cause) { super(message, cause); }
+    public BackupOperationFailedException(String message) { super(message); }
 }
-
 
 @Service
 public class BackupService {
 
     private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
 
-    // DATE_FORMATTER for "yyyyMMdd"
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd"); 
-
-    private static final Pattern BACKUP_DIR_PATTERN = Pattern.compile("^backup-(\\d{8})$");
-    private static final Pattern BACKUP_FILENAME_PATTERN = Pattern.compile("^SERVIT-(\\d{8})(?:-(\\d{6}))?\\.sql$");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final Environment environment;
     private final ConfigurationService configurationService;
@@ -96,7 +82,7 @@ public class BackupService {
     private String bucketName;
 
     @Autowired
-    public BackupService(Environment environment, ConfigurationService configurationService, DataSource dataSource, AmazonS3 s3Client) { // Updated constructor
+    public BackupService(Environment environment, ConfigurationService configurationService, DataSource dataSource, AmazonS3 s3Client) {
         this.environment = environment;
         this.configurationService = configurationService;
         this.dataSource = dataSource;
@@ -129,13 +115,14 @@ public class BackupService {
         final String host;
         final String port;
         final String databaseName;
-
         ParsedDbUrl(String host, String port, String databaseName) {
             this.host = host;
             this.port = port;
             this.databaseName = databaseName;
         }
     }
+
+    // ===================== BACKUP (CREATE + UPLOAD) =====================
 
     public String initiateManualBackup() {
         ParsedDbUrl dbUrl = parseDbUrl();
@@ -148,7 +135,7 @@ public class BackupService {
         String backupFileName = "SERVIT-" + currentDate + "-" + currentTime + ".sql";
         String basePath = configurationService.getBackupPath();
         Path backupDir = Paths.get(basePath);
-        Path backupFilePath = backupDir.resolve(backupFileName); // Declare here for wider scope
+        Path backupFilePath = backupDir.resolve(backupFileName);
         try {
             if (!Files.exists(backupDir)) {
                 Files.createDirectories(backupDir);
@@ -188,7 +175,7 @@ public class BackupService {
             logger.error("Backup process failed.", e);
             throw new BackupOperationFailedException("Backup process failed.", e);
         }
-        return backupFilePath.toString(); // Now accessible here
+        return backupFilePath.toString();
     }
 
     private void backupTableDataOnly(Connection connection, String tableName, PrintWriter printWriter) throws SQLException {
@@ -205,24 +192,21 @@ public class BackupService {
             while (resultSet.next()) {
                 StringBuilder insertSql = new StringBuilder("INSERT INTO `").append(dbName).append("`.`").append(tableName).append("` VALUES (");
                 for (int i = 1; i <= columnCount; i++) {
-                    if (i > 1) {
-                        insertSql.append(", ");
-                    }
+                    if (i > 1) insertSql.append(", ");
                     Object value = resultSet.getObject(i);
-
                     if (value == null) {
                         insertSql.append("NULL");
                     } else if (value instanceof String) {
                         String safe = ((String) value).replace("\\", "\\\\").replace("'", "\\'");
                         insertSql.append('\'').append(safe).append('\'');
                     } else if (value instanceof java.sql.Timestamp) {
-                        String formatted = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value);
+                        String formatted = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value);
                         insertSql.append('\'').append(formatted).append('\'');
                     } else if (value instanceof java.sql.Date) {
-                        String formatted = new java.text.SimpleDateFormat("yyyy-MM-dd").format(value);
+                        String formatted = new SimpleDateFormat("yyyy-MM-dd").format(value);
                         insertSql.append('\'').append(formatted).append('\'');
                     } else if (value instanceof java.sql.Time) {
-                        String formatted = new java.text.SimpleDateFormat("HH:mm:ss").format(value);
+                        String formatted = new SimpleDateFormat("HH:mm:ss").format(value);
                         insertSql.append('\'').append(formatted).append('\'');
                     } else if (value instanceof java.time.LocalDateTime) {
                         String formatted = ((java.time.LocalDateTime) value).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -231,7 +215,7 @@ public class BackupService {
                         insertSql.append(value.toString());
                     } else {
                         String strVal = value.toString();
-                        if (strVal.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?")) {
+                        if (strVal.matches("\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(\\\\.\\\\d+)?")) {
                             strVal = strVal.replace('T', ' ');
                         }
                         String safe = strVal.replace("\\", "\\\\").replace("'", "\\'");
@@ -244,6 +228,48 @@ public class BackupService {
         }
         printWriter.println();
     }
+
+    public void uploadBackupToS3(String localFilePath, String backupFileName) {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, "backup/" + backupFileName, new java.io.File(localFilePath));
+        s3Client.putObject(putObjectRequest);
+    }
+
+    public List<Map<String, Object>> listS3BackupsWithPresignedUrls() {
+        ListObjectsV2Request req = new ListObjectsV2Request()
+            .withBucketName(bucketName)
+            .withPrefix("backup/");
+        ListObjectsV2Result result = s3Client.listObjectsV2(req);
+        return result.getObjectSummaries().stream()
+            .filter(obj -> obj.getKey().endsWith(".sql"))
+            .map(obj -> {
+                Map<String, Object> info = new HashMap<>();
+                info.put("fileName", obj.getKey().substring("backup/".length()));
+                info.put("s3Key", obj.getKey());
+                Date expiration = new Date(System.currentTimeMillis() + 3600 * 1000);
+                GeneratePresignedUrlRequest presignedReq = new GeneratePresignedUrlRequest(bucketName, obj.getKey())
+                    .withMethod(com.amazonaws.HttpMethod.GET)
+                    .withExpiration(expiration);
+                String presignedUrl = s3Client.generatePresignedUrl(presignedReq).toString();
+                info.put("url", presignedUrl);
+                info.put("lastModified", obj.getLastModified());
+                info.put("size", obj.getSize());
+                return info;
+            })
+            .collect(Collectors.toList());
+    }
+
+    public void deleteS3Backup(String s3Key) {
+        if (s3Key == null || s3Key.isEmpty()) {
+            throw new BackupOperationFailedException("s3Key is required for S3 deletion.");
+        }
+        try {
+            s3Client.deleteObject(bucketName, s3Key);
+        } catch (Exception e) {
+            throw new BackupOperationFailedException("Failed to delete backup: " + s3Key, e);
+        }
+    }
+
+    // ===================== RESTORE (LOCAL OR S3) =====================
 
     public void clearAllTables() {
         try (Connection conn = dataSource.getConnection();
@@ -281,24 +307,12 @@ public class BackupService {
         Path backupFilePath = Paths.get(basePath, backupIdentifier);
         if (!Files.exists(backupFilePath) || !Files.isRegularFile(backupFilePath)) {
             logger.error("Backup file not found: {} (Base path: {})", backupFilePath, basePath);
-            throw new BackupNotFoundException("Backup file not found: " + backupFilePath.toString());
+            throw new BackupNotFoundException("Backup file not found: " + backupFilePath);
         }
-        clearAllTables();
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.execute("SET FOREIGN_KEY_CHECKS=0");
-            String sql = new String(Files.readAllBytes(backupFilePath), StandardCharsets.UTF_8);
-            for (String statement : sql.split(";\\s*\\n")) {
-                String trimmed = statement.trim();
-                if (trimmed.startsWith("INSERT INTO") && trimmed.contains("`user`") && trimmed.matches("INSERT INTO `[^`]+`\\.user` VALUES \\(1,.*")) {
-                    logger.info("[RESTORE] Skipping ADMIN user insert: {}", trimmed);
-                    continue;
-                }
-                if (!trimmed.isEmpty()) {
-                    logger.info("[RESTORE] Executing: {}", trimmed);
-                    stmt.execute(trimmed);
-                }
-            }
-            stmt.execute("SET FOREIGN_KEY_CHECKS=1");
+        try {
+            clearAllTables();
+            String sql = Files.readString(backupFilePath, StandardCharsets.UTF_8);
+            executeSqlDump(sql);
             logger.info("Restore completed successfully from: {}", backupIdentifier);
             return "Restore completed successfully from: " + backupIdentifier;
         } catch (Exception e) {
@@ -307,45 +321,89 @@ public class BackupService {
         }
     }
 
-    public void uploadBackupToS3(String localFilePath, String s3Key) {
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, "backup/" + s3Key, new java.io.File(localFilePath));
-        s3Client.putObject(putObjectRequest);
-    }
-
-
-    public List<Map<String, Object>> listS3BackupsWithPresignedUrls() {
-        ListObjectsV2Request req = new ListObjectsV2Request()
-            .withBucketName(bucketName)
-            .withPrefix("backup/");
-        ListObjectsV2Result result = s3Client.listObjectsV2(req);
-        List<Map<String, Object>> backups = result.getObjectSummaries().stream()
-            .filter(obj -> obj.getKey().endsWith(".sql"))
-            .map(obj -> {
-                Map<String, Object> info = new HashMap<>();
-                info.put("fileName", obj.getKey().substring("backup/".length()));
-                info.put("s3Key", obj.getKey());
-                Date expiration = new Date(System.currentTimeMillis() + 3600 * 1000);
-                GeneratePresignedUrlRequest presignedReq = new GeneratePresignedUrlRequest(bucketName, obj.getKey())
-                    .withMethod(com.amazonaws.HttpMethod.GET)
-                    .withExpiration(expiration);
-                String presignedUrl = s3Client.generatePresignedUrl(presignedReq).toString();
-                info.put("url", presignedUrl);
-                info.put("lastModified", obj.getLastModified());
-                info.put("size", obj.getSize());
-                return info;
-            })
-            .collect(Collectors.toList());
-        return backups;
-    }
-
-    public void deleteS3Backup(String s3Key) {
-        if (s3Key == null || s3Key.isEmpty()) {
-            throw new BackupOperationFailedException("s3Key is required for S3 deletion.");
+    public String restoreFromS3(String s3Key) {
+        if (s3Key == null || s3Key.isBlank()) {
+            throw new BackupNotFoundException("s3Key is required");
+        }
+        if (s3Key.contains("..")) {
+            throw new BackupOperationFailedException("Invalid s3Key");
+        }
+        if (!s3Key.endsWith(".sql")) {
+            throw new BackupOperationFailedException("Unsupported file type for restore: " + s3Key);
+        }
+        if (!s3Key.startsWith("backup/")) {
+            logger.warn("s3Key does not start with expected prefix 'backup/': {}", s3Key);
         }
         try {
-            s3Client.deleteObject(bucketName, s3Key);
+            logger.info("Downloading backup from S3: bucket={}, key={}", bucketName, s3Key);
+            S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, s3Key));
+            try (InputStream in = new BufferedInputStream(object.getObjectContent());
+                 InputStreamReader isr = new InputStreamReader(in, StandardCharsets.UTF_8);
+                 BufferedReader br = new BufferedReader(isr)) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line).append('\n');
+                }
+                clearAllTables();
+                executeSqlDump(sb.toString());
+            }
+            logger.info("Restore completed successfully from S3: {}", s3Key);
+            return "Restore completed successfully from: " + s3Key;
         } catch (Exception e) {
-            throw new BackupOperationFailedException("Failed to delete backup: " + s3Key, e);
+            logger.error("Restore from S3 failed for key: {}", s3Key, e);
+            throw new BackupOperationFailedException("Restore from S3 failed for " + s3Key + ": " + e.getMessage(), e);
         }
+    }
+
+    private void executeSqlDump(String sql) throws SQLException, IOException {
+        // Normalize statements: remove USE, strip schema qualifiers to target current DB
+        String normalized = sql
+            .replaceAll("(?i)\\bUSE\\s+`?[a-zA-Z0-9_]+`?;", "")
+            .replaceAll("(?i)INSERT\\s+INTO\\s+`[^`]+`\\.", "INSERT INTO ")
+            .replaceAll("(?i)CREATE\\s+TABLE\\s+`[^`]+`\\.", "CREATE TABLE ")
+            .replaceAll("(?i)ALTER\\s+TABLE\\s+`[^`]+`\\.", "ALTER TABLE ")
+            .replaceAll("(?i)REPLACE\\s+INTO\\s+`[^`]+`\\.", "REPLACE INTO ");
+
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+            // Session setup for safer cross-environment imports
+            stmt.execute("SET FOREIGN_KEY_CHECKS=0");
+            safeExecute(stmt, "SET sql_mode=''");
+            safeExecute(stmt, "SET time_zone = '+00:00'");
+            safeExecute(stmt, "SET NAMES utf8mb4");
+            // If needed: safeExecute(stmt, "SET lc_time_names='en_US'");
+
+            // Split and execute by ';' (simple but effective for our generated dumps)
+            String[] parts = normalized.split(";");
+            for (String raw : parts) {
+                String trimmed = raw == null ? "" : raw.trim();
+                if (trimmed.isEmpty()) continue;
+
+                // Skip inserting built-in admin user (id=1)
+                if (trimmed.matches("(?is)INSERT\\s+INTO\\s+`?(?:[a-zA-Z0-9_]+`?\\.)?`?user`?\\s+VALUES\\s*\\(1,.*")) {
+                    logger.info("[RESTORE] Skipping ADMIN user insert");
+                    continue;
+                }
+
+                logger.info("[RESTORE] Executing: {}", truncateForLog(trimmed));
+                stmt.execute(trimmed);
+            }
+
+            stmt.execute("SET FOREIGN_KEY_CHECKS=1");
+        }
+    }
+
+    private void safeExecute(Statement stmt, String sql) {
+        try {
+            stmt.execute(sql);
+        } catch (Exception e) {
+            logger.warn("[RESTORE] Non-fatal session statement failed: {} -> {}", sql, e.getMessage());
+        }
+    }
+
+    private String truncateForLog(String s) {
+        if (s == null) return "";
+        final int max = 400;
+        return s.length() > max ? s.substring(0, max) + "..." : s;
     }
 }
