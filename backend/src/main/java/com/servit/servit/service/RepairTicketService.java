@@ -308,6 +308,24 @@ public class RepairTicketService {
         }
     }
 
+    public Page<GetRepairTicketResponseDTO> getAllRepairTicketsByCustomer(String email, Pageable pageable) {
+        logger.info("Fetching paginated repair tickets for customer email: {}", email);
+        try {
+            Pageable pageableWithSort = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "repairTicketId")
+            );
+            Page<GetRepairTicketResponseDTO> tickets = repairTicketRepository.findByCustomerEmail(email, pageableWithSort)
+                    .map(this::mapToGetRepairTicketResponseDTO);
+            logger.info("Fetched {} repair tickets for customer email: {} (page {} of {})", tickets.getContent().size(), email, pageable.getPageNumber(), tickets.getTotalPages());
+            return tickets;
+        } catch (Exception e) {
+            logger.error("Error fetching paginated repair tickets for customer email: {}", email, e);
+            throw new RuntimeException("Failed to fetch repair tickets by customer email", e);
+        }
+    }
+
     public Page<GetRepairTicketResponseDTO> searchRepairTickets(String searchTerm, Pageable pageable) {
         logger.info("Searching repair tickets with searchTerm: {}", searchTerm);
         try {
