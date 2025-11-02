@@ -23,7 +23,9 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
         setTickets(active);
         setError(null);
       } catch (err) {
+        console.warn('Failed to fetch tickets', err);
         setError(err?.message || 'Failed to fetch tickets');
+        setTickets([]);
       } finally {
         setLoading(false);
       }
@@ -31,8 +33,27 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
     fetchTickets();
   }, [customerEmail]);
 
-  if (loading) return null;
-  if (error || tickets.length === 0) return null;
+  // If still loading, show a loading placeholder
+  if (loading) {
+    return (
+      <div className="w-full mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm text-center text-gray-600">
+          Loading active tickets...
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty-state card when there are no active tickets or an error occurred
+  if (tickets.length === 0) {
+    return (
+      <div className="w-full mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm text-center text-gray-600">
+          {error ? 'There are no active tickets.' : 'There are no active tickets.'}
+        </div>
+      </div>
+    );
+  }
 
   const prev = () => setCurrent((prev) => (prev - 2 + tickets.length) % tickets.length);
   const next = () => setCurrent((prev) => (prev + 2) % tickets.length);
@@ -71,4 +92,4 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
   );
 };
 
-export default ActiveRepairsCarousel; 
+export default ActiveRepairsCarousel;

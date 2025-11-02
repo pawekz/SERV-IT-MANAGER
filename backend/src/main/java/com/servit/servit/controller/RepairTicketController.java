@@ -188,6 +188,23 @@ public class RepairTicketController {
         }
     }
 
+    @GetMapping("/getAllRepairTicketsByCustomerPaginated")
+    public ResponseEntity<Page<GetRepairTicketResponseDTO>> getAllRepairTicketsByCustomerPaginated(
+            @RequestParam String email,
+            @RequestParam int page) {
+        try {
+            // fixed page size of 3 as requested
+            Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 3, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "repairTicketId"));
+            Page<GetRepairTicketResponseDTO> repairTickets = repairTicketService.getAllRepairTicketsByCustomer(email, pageable);
+            if (repairTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(repairTickets);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/getRepairTicketDocument/{ticketNumber}")
     public ResponseEntity<byte[]> getRepairTicketDocument(@PathVariable String ticketNumber) {
         try {

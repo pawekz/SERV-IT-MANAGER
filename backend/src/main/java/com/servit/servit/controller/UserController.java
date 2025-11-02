@@ -537,5 +537,14 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
+
+    @GetMapping("/hasTechnicians")
+    public ResponseEntity<Map<String, Object>> hasTechnicians() {
+        boolean exists = userSvc.hasTechnicians();
+        return ResponseEntity.ok(Map.of(
+            "exists", exists,
+            "value", exists ? 1 : 0
+        ));
+    }
 }
 
