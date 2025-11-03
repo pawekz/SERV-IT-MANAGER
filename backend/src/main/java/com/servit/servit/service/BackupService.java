@@ -153,9 +153,40 @@ public class BackupService {
 
             printWriter.println("SET FOREIGN_KEY_CHECKS=0;");
             List<String> orderedTables = Arrays.asList(
-                "user", "part", "system_configuration", "repair_ticket", "warranty",
-                "repair_status_history", "repair_photo", "warranty_photo", "digital_signature",
-                "part_number_stock_tracking", "inventory_transaction", "feedback"
+                    // Base tables (no Foreign Key dependencies)
+                    "user",                        // 1. Base table
+                    "system_configuration",        // 2. Base table
+                    "warranty",                    // 3. Base table (part references it)
+
+                    // Part related (depends on warranty)
+                    "part",                        // 4. References warranty
+
+                    // Repair ticket (depends on user)
+                    "repair_ticket",               // 5. References user
+
+                    // Repair ticket children (depend on repair_ticket)
+                    "repair_status_history",       // 6. References repair_ticket
+                    "repair_photo",                // 7. References repair_ticket
+                    "after_repair_photo",          // 8. References repair_ticket
+
+                    // Warranty children (depend on warranty)
+                    "warranty_photo",              // 9. References warranty
+
+                    // Quotation (depends on repair_ticket)
+                    "quotation",                   // 10. References repair_ticket
+                    "quotation_part_ids",          // 11. Join table for quotation @ElementCollection
+
+                    // Notifications (depends on repair_ticket)
+                    "notification",                // 12. References repair_ticket
+
+                    // Part tracking (depends on part)
+                    "part_number_stock_tracking",  // 13. References part
+
+                    // Inventory (depends on part)
+                    "inventory_transaction",       // 14. References part
+
+                    // Feedback (depends on repair_ticket)
+                    "feedback"                     // 15. References repair_ticket
             );
             Set<String> dbTables = new HashSet<>();
             DatabaseMetaData metaData = connection.getMetaData();
