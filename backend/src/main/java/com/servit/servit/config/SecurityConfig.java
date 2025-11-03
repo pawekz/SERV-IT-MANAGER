@@ -164,6 +164,7 @@ public class SecurityConfig {
                             "/part/stock/resolveAlert/*",
                             "/user/assignTechnician",
                             "/user/searchTechnicians",
+                            "/user/hasTechnicians",
                             "/user/getTopTechniciansByWorkload",
                             "/repairTicket/getStatusDistribution",
                             "/repairTicket/ticketfiles",
