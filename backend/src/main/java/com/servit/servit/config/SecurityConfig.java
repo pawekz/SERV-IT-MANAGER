@@ -78,6 +78,7 @@ public class SecurityConfig {
                             "/repairTicket/searchRepairTickets",
                             "/repairTicket/files/**",
                             "/repairTicket/getRepairPhotos",
+                            "/repairTicket/getAllRepairTicketsByCustomerPaginated",
                             "/warranty/checkInWarranty",
                             "/warranty/getWarrantyByCustomerEmail",
                             "/warranty/getWarrantyByNumber",
