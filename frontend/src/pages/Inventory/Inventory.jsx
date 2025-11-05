@@ -1101,6 +1101,7 @@ const Inventory = () => {
                                 onEditClick={handleEditClick}
                                 onDeletePart={handleDeletePart}
                                 highlightText={highlightText}
+                                onRefresh={fetchInventory}
                             />
                         </div>
 

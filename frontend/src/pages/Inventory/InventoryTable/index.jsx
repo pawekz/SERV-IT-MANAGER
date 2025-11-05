@@ -9,30 +9,42 @@ const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
     const [error, setError] = useState(false);
 
     useEffect(() => {
+        // Reset state when photoUrl or partId changes
+        setLoading(true);
+        setError(false);
+        setSrc(null);
+
         const fetchPhoto = async () => {
             if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
                 setLoading(false);
                 setError(true);
+                setSrc(null);
                 return;
             }
 
             // Check if it's an S3 URL that needs presigning
             if (photoUrl.includes('amazonaws.com/') && partId) {
                 try {
-                    const response = await api.get(`/part/getPartPhoto/${partId}`);
+                    // Add timestamp to force refresh of presigned URL
+                    const response = await api.get(`/part/getPartPhoto/${partId}?t=${Date.now()}`);
                     if (response.data) {
                         setSrc(response.data);
+                        setError(false);
                     } else {
                         setError(true);
+                        setSrc(null);
                     }
                 } catch (err) {
                     console.error('Error fetching presigned photo URL:', err);
                     // Fallback to original URL
                     setSrc(photoUrl);
+                    setError(false);
                 }
             } else {
                 // Use URL directly if it's not S3 or no partId
-                setSrc(photoUrl);
+                // Add timestamp to force refresh
+                setSrc(photoUrl + (photoUrl.includes('?') ? '&' : '?') + 't=' + Date.now());
+                setError(false);
             }
             setLoading(false);
         };
@@ -132,14 +144,14 @@ const InventoryTable = ({
             const formData = new FormData();
             formData.append('file', file);
             
-            await api.post(`/part/updatePartPhoto/${partId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            // Don't set Content-Type manually - axios will set it with boundary
+            await api.post(`/part/updatePartPhoto/${partId}`, formData);
             
+            // Wait for refresh to complete so the new photo URL is available
             if (onRefresh) {
                 await onRefresh();
+                // Small delay to ensure state updates propagate
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             setPartToUpdatePhoto(null);
             if (fileInputRef.current) {
@@ -229,6 +241,7 @@ const InventoryTable = ({
                                                 return (
                                                     <div className="flex items-center gap-2">
                                                         <PartPhoto 
+                                                            key={`photo-${firstPart?.id}-${firstPart?.partPhotoUrl || 'no-photo'}`}
                                                             partId={firstPart?.id} 
                                                             photoUrl={firstPart?.partPhotoUrl} 
                                                             size="md"
