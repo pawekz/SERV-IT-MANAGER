@@ -12,6 +12,7 @@ import BackupPage from "./pages/BackupPage/BackupPage.jsx";
 import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
 import InventoryAssignmentPanel from "./pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
+import ResolvedRepairs   from "./pages/ResolvedRepairs/ResolvedRepairs.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
 import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
 import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
@@ -178,6 +179,9 @@ function AppContent() {
                     } />
                     <Route path="/repairqueue" element={
                         <ProtectedRoute element={<RepairQueue />} allowedRoles={['admin', 'technician', 'customer']} />
+                    } />
+                    <Route path="/resolvedrepairs" element={
+                        <ProtectedRoute element={<ResolvedRepairs />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
                     <Route path="/profilemanage" element={
                         <ProtectedRoute element={<UserManagement />} allowedRoles={['admin']} />

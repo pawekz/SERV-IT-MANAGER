@@ -26,8 +26,11 @@ public class WarrantyEntity {
     @Column(name = "status", nullable = false)
     private WarrantyStatus status = WarrantyStatus.CHECKED_IN;
 
-    @Column(name = "customer_name", nullable = false)
-    private String customerName;
+    @Column(name = "customer_first_name")
+    private String customerFirstName;
+
+    @Column(name = "customer_last_name")
+    private String customerLastName;
 
     @Column(name = "customer_email", nullable = false)
     private String customerEmail;

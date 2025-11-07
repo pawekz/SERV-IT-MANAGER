@@ -23,7 +23,8 @@ public interface WarrantyRepository extends JpaRepository<WarrantyEntity, Long> 
 
     @Query("SELECT w FROM WarrantyEntity w WHERE w.customerEmail = :email AND (" +
             "LOWER(CAST(w.warrantyNumber AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(w.customerName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(w.customerFirstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(w.customerLastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.customerPhoneNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.returnReason) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(w.reportedIssue) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

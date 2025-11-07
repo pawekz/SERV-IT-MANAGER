@@ -5,7 +5,8 @@ import lombok.Data;
 @Data
 public class CheckInWarrantyDTO {
     private String warrantyNumber;
-    private String customerName;
+    private String customerFirstName;
+    private String customerLastName;
     private String customerEmail;
     private String customerPhoneNumber;
     private String returnReason;
