@@ -40,6 +40,7 @@ const ResolvedRepairs = () => {
     const token = localStorage.getItem('authToken');
     const decoded = parseJwt(token);
     const role = decoded?.role?.toLowerCase();
+    const email = userData?.email;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [ticketRequests, setTicketRequests] = useState([]);
@@ -95,29 +96,69 @@ const ResolvedRepairs = () => {
     useEffect(() => {
         const fetchTickets = async () => {
             setLoading(true);
-            const statuses = ["READY_FOR_PICKUP"];
 
             try {
-                const allResults = [];
+                let res;
+                if (role === "admin") {
+                    // ADMIN: Fetch all repair tickets across multiple statuses
+                    const allResults = [];
 
-                for (const status of statuses) {
-                    const res = await api.get(
-                        `repairTicket/getAllRepairTickets`,
-                        {
-                            params: { status, page: 0, size: 20 },
-                        }
-                    );
 
-                    const content = res.data?.content || [];
+                    const response = await api.get(`/repairTicket/getAllRepairTickets`, {
+                        params: { status, page: 0, size: 20 },
+                    });
+                    const content = response.data?.content || [];
                     allResults.push(...content);
+
+                    // Remove duplicates based on ticketNumber
+                    const uniqueTickets = Array.from(
+                        new Map(allResults.map(ticket => [ticket.ticketNumber, ticket])).values()
+                    );
+                    setTicketRequests(uniqueTickets);
+
+                } else if (role === "technician") {
+                    // TECHNICIAN: Fetch tickets assigned to the logged-in technician
+                    if (!email) {
+                        console.warn("No technician email found in sessionStorage");
+                        return;
+                    }
+
+                    const statuses = ["READY_FOR_PICKUP"];
+                    const allResults = [];
+
+                    for (const status of statuses) {
+                        const response = await api.get(
+                            `/repairTicket/getRepairTicketsByStatusPageableAssignedToTech`,
+                            {
+                                params: { status, page: 0, size: 20 },
+                            }
+                        );
+                        const content = response.data?.content || [];
+                        allResults.push(...content);
+                    }
+
+                    const uniqueTickets = Array.from(
+                        new Map(allResults.map(ticket => [ticket.ticketNumber, ticket])).values()
+                    );
+                    setTicketRequests(uniqueTickets);
+
+                } else if (role === "customer") {
+                    // CUSTOMER: Fetch tickets linked to the customer’s email
+                    if (!email) {
+                        console.warn("No customer email found in sessionStorage");
+                        return;
+                    }
+
+                    res = await api.get(`/repairTicket/getAllRepairTicketsByCustomer`, {
+                        params: { email },
+                    });
+
+                    setTicketRequests(res.data || []);
+
+                } else {
+                    console.warn("Unknown role:", role);
+                    setTicketRequests([]);
                 }
-
-                // Remove duplicates based on ticketNumber
-                const uniqueTickets = Array.from(
-                    new Map(allResults.map(ticket => [ticket.ticketNumber, ticket])).values()
-                );
-
-                setTicketRequests(uniqueTickets);
 
             } catch (err) {
                 console.error("Failed to fetch repair tickets:", err);
@@ -127,8 +168,10 @@ const ResolvedRepairs = () => {
             }
         };
 
-        fetchTickets();
-    }, []);
+        if (role) {
+            fetchTickets();
+        }
+    }, [role, email]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -216,7 +259,9 @@ const ResolvedRepairs = () => {
                                             {/* Resolved Repairs Link */}
                                             <Link
                                                 to="/resolvedrepairs"
-                                                className="text-xl font-semibold text-[#25D482] hover:underline"
+                                                className= {`text-xl font-semibold hover:underline ${
+                                                    role === "customer" ? "text-[#25D482]" : "text-[#2563eb]"
+                                                }`}
                                             >
                                                 Resolved Repairs
                                             </Link>
@@ -225,7 +270,7 @@ const ResolvedRepairs = () => {
                                         {/* Add Ticket Button */}
                                         {role !== "customer" && (
                                             <Link to="/newrepair">
-                                                <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                                <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
                                                     <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
                                                     <span className="text-sm sm:text-base">Add Ticket</span>
                                                 </button>
