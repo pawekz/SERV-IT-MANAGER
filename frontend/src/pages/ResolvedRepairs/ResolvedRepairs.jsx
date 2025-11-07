@@ -1,9 +1,36 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {Wrench, Images, Archive, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
-import { parseJwt } from "../../config/ApiConfig.jsx";
+import api, { parseJwt } from "../../config/ApiConfig.jsx";
+import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
+function TicketImage({ path, alt, className }) {
+    const [src, setSrc] = useState(null);
+    useEffect(() => {
+        let url;
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => {
+                    url = presignedUrl;
+                    setSrc(presignedUrl);
+                })
+                .catch(err => {
+                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
+                });
+        }
+        return () => { if (url) URL.revokeObjectURL(url); };
+    }, [path]);
+    if (!src) {
+        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
+    }
+    return <img src={src} alt={alt} className={className} />;
+}
+
+async function fetchPresignedPhotoUrl(photoUrl) {
+    if (!photoUrl) return null;
+    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
+    return res.data;
+}
 
 const ResolvedRepairs = () => {
     const navigate = useNavigate()
@@ -15,8 +42,7 @@ const ResolvedRepairs = () => {
     const role = decoded?.role?.toLowerCase();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [warrantyRequests, setWarrantyRequests] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [ticketRequests, setTicketRequests] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [filterBy, setFilterBy] = useState("serial");
@@ -53,7 +79,7 @@ const ResolvedRepairs = () => {
         e.stopPropagation(); // Prevent triggering the card click
 
         // Update the status in state
-        setWarrantyRequests(prevRequests =>
+        setTicketRequests(prevRequests =>
             prevRequests.map(request =>
                 request.id === requestId ? { ...request, status: newStatus } : request
             )
@@ -65,102 +91,44 @@ const ResolvedRepairs = () => {
         console.log(`Status for request ${requestId} changed to ${newStatus}`);
     };
 
+
     useEffect(() => {
-        setLoading(true);
-        setTimeout(() => {
+        const fetchTickets = async () => {
+            setLoading(true);
+            const statuses = ["READY_FOR_PICKUP"];
+
             try {
-                // Replace this with your actual API call
-                const fetchedData = [
-                    {
-                        id: 1,
-                        name: "Alice Thompson",
-                        phoneNumber: "09171234567",
-                        email: "alice.thompson@example.com",
-                        orderNumber: "ORD123456",
-                        deviceType: "Laptop",
-                        purchaseDate: "2024-09-15",
-                        serialNumber: "SN-LTP-00123",
-                        issueDescription: "Screen flickers randomly during use.",
-                        reasons: ["Defective/Not Working", "Performance Issues"],
-                        status: "Requested",
-                        color: "blue",
-                        deviceName: "RAZER BLADE 15",
+                const allResults = [];
 
-                    },
-                    {
-                        id: 2,
-                        name: "Brian Reyes",
-                        phoneNumber: "09281234567",
-                        email: "brian.reyes@example.com",
-                        orderNumber: "ORD987654",
-                        deviceType: "Phone",
-                        purchaseDate: "2024-11-02",
-                        serialNumber: "SN-PHN-00987",
-                        issueDescription: "Received a different model than ordered.",
-                        reasons: ["Wrong Item Received"],
-                        status: "Approved",
-                        color: "black",
-                        deviceName: "ASUS ROG",
+                for (const status of statuses) {
+                    const res = await api.get(
+                        `repairTicket/getAllRepairTickets`,
+                        {
+                            params: { status, page: 0, size: 20 },
+                        }
+                    );
 
-                    },
-                    {
-                        id: 3,
-                        name: "Catherine Lee",
-                        phoneNumber: "09081234567",
-                        email: "catherine.lee@example.com",
-                        orderNumber: "ORD456789",
-                        deviceType: "Headset",
-                        purchaseDate: "2024-12-20",
-                        serialNumber: "SN-ACC-04567",
-                        issueDescription: "Bluetooth connection keeps dropping.",
-                        reasons: ["Performance Issues", "Defective/Not Working"],
-                        status: "Claimed",
-                        color: "pink",
-                        deviceName: "MACBOOK AIR",
+                    const content = res.data?.content || [];
+                    allResults.push(...content);
+                }
 
-                    },
-                    {
-                        id: 4,
-                        name: "Daniel Cruz",
-                        phoneNumber: "09391234567",
-                        email: "daniel.cruz@example.com",
-                        orderNumber: "ORD654321",
-                        deviceType: "Others",
-                        purchaseDate: "2025-01-10",
-                        serialNumber: "SN-OTH-06543",
-                        issueDescription: "Requesting upgrade to a newer model.",
-                        reasons: ["Upgrade Request"],
-                        status: "Denied",
-                        color: "red",
-                        deviceName: "Dell XPS 13",
+                // Remove duplicates based on ticketNumber
+                const uniqueTickets = Array.from(
+                    new Map(allResults.map(ticket => [ticket.ticketNumber, ticket])).values()
+                );
 
-                    }
-                ];
-                setWarrantyRequests(fetchedData);
-                setLoading(false);
+                setTicketRequests(uniqueTickets);
+
             } catch (err) {
-                setError("Failed to fetch warranty requests.");
+                console.error("Failed to fetch repair tickets:", err);
+                setError("Failed to fetch repair tickets.");
+            } finally {
                 setLoading(false);
             }
-        }, 1000);
+        };
+
+        fetchTickets();
     }, []);
-
-    const getProductIcon = (deviceType) => {
-        if (!deviceType || typeof deviceType !== "string") return <Archive className="text-gray-500 w-8 h-8" />;
-
-        const name = deviceType.toLowerCase();
-
-        if (name.includes("laptop") || name.includes("computer") || name.includes("pc")) {
-
-            return <Images className="text-[#10B981] size-10" />;
-        } else if (name.includes("phone") || name.includes("smartphone") || name.includes("tablet")) {
-            return <Images className="text-[#10B981] size-10" />;
-        } else if (name.includes("headset") || name.includes("earphone") || name.includes("headphone")) {
-            return <Images className="text-[#10B981] size-20" />;
-        } else {
-            return <Archive className="text-[#10B981] size-10" />;
-        }
-    };
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -264,49 +232,61 @@ const ResolvedRepairs = () => {
                                             </Link>
                                         )}
                                     </div>
-                                    {warrantyRequests.length === 0 ? (
+                                    {ticketRequests.filter(request => request.status === "READY_FOR_PICKUP" ).length === 0 ? (
                                         <p className="text-center text-gray-600">
-                                            No warranty return requests have been made yet.
+                                            No repair requests have been is resolved.
                                         </p>
 
                                     ) : (
 
-                                        // Pending Repairs
+                                        // Resolved Repairs
 
                                         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                                            {warrantyRequests
-                                                .filter((request) => request.status === "Requested" || request.status === "Approved" ||
-                                                    statusOptions.includes(request.status))
+                                            {ticketRequests
+                                                .filter(request => request.status === "READY_FOR_PICKUP" )
                                                 .map((request) => (
                                                     <div
-                                                        key={request.id}
+                                                        key={request.ticketId}
                                                         onClick={() => handleCardClick(request)}
-                                                        className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                        className="cursor-pointer flex-row bg-[rgba(37,99,235,0.05)] border border-[#2563eb] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                     >
-                                                        <div className="mr-4 flex object-center">
+                                                        {/* 🔹 Repair Photos Section */}
+                                                        <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-3 shadow-sm mb-3">
 
-                                                            <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
 
-                                                            {/*<Images className="text-[#10B981] size-60" />*/}
-
-                                                            {/*<p className="text-[12px]">Ticket Number</p>*/}
-                                                        </div>
-                                                        <p className="text-[12px] mt-[5px]">Ticket Number# </p>
-                                                        <div className="my-2 h-px bg-[#25D482]">
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {request.repairPhotosUrls?.length > 0 ? (
+                                                                    request.repairPhotosUrls.map((url, idx) => (
+                                                                        <button
+                                                                            key={idx}
+                                                                            type="button"
+                                                                            className="group relative w-40 h-40 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40"
+                                                                        >
+                                                                            <TicketImage path={url} alt={`Repair Photo ${idx + 1}`} className="object-cover w-full h-full" />
+                                                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                                        </button>
+                                                                    ))
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400">No photos</span>
+                                                                )}
+                                                            </div>
+                                                        </section>
+                                                        <p className="text-[12px] mt-[5px]">Ticket Number# {request.ticketNumber}</p>
+                                                        <div className="my-2 h-px bg-[#2563eb]">
                                                         </div>
 
                                                         <div>
                                                             <h2 className="text-[16px] font-semibold text-gray-800 mb-1">
-                                                                {request.deviceName}
+                                                                {request.deviceType}
 
                                                             </h2>
                                                             <p className="text-[14px] text-gray-600">
                                                                 {/*<strong>Customer:</strong> {request.deviceType}*/}
-                                                                {request.issueDescription}
+                                                                Issue: {request.reportedIssue}
                                                             </p>
                                                             <div className="mt-[5px]"></div>
                                                             <p className="text-sm text-gray-600">
-                                                                {request.serialNumber}
+                                                                Serail Number: {request.deviceSerialNumber}
 
                                                             </p>
                                                             <div className="relative">
@@ -314,7 +294,7 @@ const ResolvedRepairs = () => {
                                                                     onClick={(e) => handleStatusClick(e, request.id)}
                                                                     className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
                                                                 >
-                                                                    <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.status}
+                                                                    <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.repairStatus}
                                                                 </p>
 
                                                                 {statusDropdownOpen === request.id && (
@@ -338,77 +318,12 @@ const ResolvedRepairs = () => {
                                                 ))}
                                         </div>
                                     )}
-
-                                    <h1 className="text-xl font-semibold text-gray-800 mb-6 mt-6"> Resolved Repairs </h1>
-                                    {warrantyRequests.length === 0 ? (
-                                        <p className="text-center text-gray-600">
-                                            No warranty request has been resolved yet.
-                                        </p>
-
-                                        // Resolved Repairs
-                                    ) : (
-                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                                            {warrantyRequests
-                                                .filter((request) => request.status === "Claimed" || request.status === "Denied")
-                                                .map((request) => (
-                                                    <div
-                                                        key={request.id}
-                                                        onClick={() => handleCardClick(request)}
-                                                        className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
-                                                    >
-                                                        <div className="mr-4 flex object-center">
-                                                            <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
-                                                            {/*<p className="text-[12px]">Ticket Number</p>*/}
-
-                                                        </div>
-                                                        <p className="text-[12px] mt-[5px]">Ticket Number# </p>
-                                                        <div className="my-2 h-px bg-[#25D482]"></div>
-
-                                                        <div>
-                                                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                                {request.deviceName}
-                                                            </h2>
-                                                            <p className="text-sm text-gray-600">
-                                                                {request.issueDescription}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                {request.serialNumber}
-                                                            </p>
-                                                            <div className="relative">
-                                                                <p
-                                                                    onClick={(e) => handleStatusClick(e, request.id)}
-                                                                    className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
-                                                                >
-                                                                    <ChevronUp className="ml-1 w-4 h-4" />   Status: {request.status}
-                                                                </p>
-
-                                                                {statusDropdownOpen === request.id && (
-                                                                    <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
-                                                                        {statusOptions.map((status) => (
-                                                                            <button
-                                                                                key={status}
-                                                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                                                    request.status === status ? 'font-bold' : ''
-                                                                                }`}
-                                                                                onClick={(e) => changeStatus(e, request.id, status)}
-                                                                            >
-                                                                                {status}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
-                                    {/*<WarrantyRequest*/}
-                                    {/*    isOpen={modalOpen}*/}
-                                    {/*    onClose={() => setModalOpen(false)}*/}
-                                    {/*    data={selectedRequest}*/}
-                                    {/*    readonly={true}*/}
-                                    {/*/>*/}
+                                    <TicketDetailsModal
+                                        isOpen={modalOpen}
+                                        onClose={() => setModalOpen(false)}
+                                        data={selectedRequest}
+                                        readonly={true}
+                                    />
                                 </div>
                             </section>
                         )}

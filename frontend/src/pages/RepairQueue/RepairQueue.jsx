@@ -1,10 +1,38 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {Wrench, Images, Archive, Plus, ChevronUp} from "lucide-react";
+import {User, Images, Archive, Plus, ChevronUp} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
+
+function TicketImage({ path, alt, className }) {
+    const [src, setSrc] = useState(null);
+    useEffect(() => {
+        let url;
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => {
+                    url = presignedUrl;
+                    setSrc(presignedUrl);
+                })
+                .catch(err => {
+                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
+                });
+        }
+        return () => { if (url) URL.revokeObjectURL(url); };
+    }, [path]);
+    if (!src) {
+        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
+    }
+    return <img src={src} alt={alt} className={className} />;
+}
+
+async function fetchPresignedPhotoUrl(photoUrl) {
+    if (!photoUrl) return null;
+    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
+    return res.data;
+}
 
 const RepairQueue = () => {
     const navigate = useNavigate()
@@ -17,11 +45,9 @@ const RepairQueue = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [ticketRequests, setTicketRequests] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [filterBy, setFilterBy] = useState("serial");
-    const [searchQuery, setSearchQuery] = useState("");
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
 
     const filterByLabel = {
@@ -39,6 +65,7 @@ const RepairQueue = () => {
         "Ready for Pickup",
         "Completed"
     ];
+
 
     const handleCardClick = (request) => {
         setSelectedRequest(request);
@@ -199,9 +226,9 @@ const RepairQueue = () => {
                                     {/* Add Ticket Button */}
                                     {role !== "customer" && (
                                         <Link to="/newrepair">
-                                            <button className="flex items-center bg-[#25D482] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
-                                                <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
-                                                <span className="text-sm sm:text-base">Add Ticket</span>
+                                            <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                                <Plus className=" w-4 h-4 mr-2 flex-shrink-0" />
+                                                <span className="text-sm sm:text-base ">Add Ticket</span>
                                             </button>
                                         </Link>
                                     )}
@@ -217,36 +244,50 @@ const RepairQueue = () => {
 
                                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                                         {ticketRequests
+                                            .filter(request => request.status !== "COMPLETED" || request.status !== "READY_FOR_PICKUP" )
                                             .map((request) => (
                                                 <div
-                                                    key={request.ticketNumber}
+                                                    key={request.ticketId}
                                                     onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                                    className="cursor-pointer flex-row bg-[rgba(37,99,235,0.05)] border border-[#2563eb] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                 >
-                                                    <div className="mr-4 flex object-center">
+                                                    {/* 🔹 Repair Photos Section */}
+                                                    <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-3 shadow-sm mb-3">
 
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
 
-                                                        {/*<Images className="text-[#10B981] size-60" />*/}
-
-                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
-                                                    </div>
-                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
-                                                    <div className="my-2 h-px bg-[#25D482]">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {request.repairPhotosUrls?.length > 0 ? (
+                                                                request.repairPhotosUrls.map((url, idx) => (
+                                                                    <button
+                                                                        key={idx}
+                                                                        type="button"
+                                                                        className="group relative w-40 h-40 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40"
+                                                                    >
+                                                                        <TicketImage path={url} alt={`Repair Photo ${idx + 1}`} className="object-cover w-full h-full" />
+                                                                        <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                                    </button>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">No photos</span>
+                                                            )}
+                                                        </div>
+                                                    </section>
+                                                    <p className="text-[12px] mt-[5px]">Ticket Number# {request.ticketNumber}</p>
+                                                    <div className="my-2 h-px bg-[#2563eb]">
                                                     </div>
 
                                                     <div>
                                                         <h2 className="text-[16px] font-semibold text-gray-800 mb-1">
-                                                            {request.deviceName}
+                                                            {request.deviceType}
 
                                                         </h2>
                                                         <p className="text-[14px] text-gray-600">
                                                             {/*<strong>Customer:</strong> {request.deviceType}*/}
-                                                            {request.issueDescription}
+                                                            Issue: {request.reportedIssue}
                                                         </p>
                                                         <div className="mt-[5px]"></div>
                                                         <p className="text-sm text-gray-600">
-                                                            {request.serialNumber}
+                                                            Serail Number: {request.deviceSerialNumber}
 
                                                         </p>
                                                         <div className="relative">
@@ -254,72 +295,7 @@ const RepairQueue = () => {
                                                                 onClick={(e) => handleStatusClick(e, request.id)}
                                                                 className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
                                                             >
-                                                                <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.status}
-                                                            </p>
-
-                                                            {statusDropdownOpen === request.id && (
-                                                                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
-                                                                    {statusOptions.map((status) => (
-                                                                        <button
-                                                                            key={status}
-                                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                                                request.status === status ? 'font-bold' : ''
-                                                                            }`}
-                                                                            onClick={(e) => changeStatus(e, request.id, status)}
-                                                                        >
-                                                                            {status}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                )}
-
-                                <h1 className="text-xl font-semibold text-gray-800 mb-6 mt-6"> Resolved Repairs </h1>
-                                {ticketRequests.length === 0 ? (
-                                    <p className="text-center text-gray-600">
-                                        No warranty request has been resolved yet.
-                                    </p>
-
-                                    // Resolved Repairs
-                                ) : (
-                                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                                        {ticketRequests
-                                            .filter((request) => request.status === "Claimed" || request.status === "Denied")
-                                            .map((request) => (
-                                                <div
-                                                    key={request.id}
-                                                    onClick={() => handleCardClick(request)}
-                                                    className="cursor-pointer flex-row bg-[rgba(51,228,7,0.05)] border border-[#25D482] rounded-lg p-4 shadow-sm hover:shadow-md transition"
-                                                >
-                                                    <div className="mr-4 flex object-center">
-                                                        <img src="https://i.ebayimg.com/images/g/JB4AAOSwjAJjbrnk/s-l1200.jpg" alt="Image description" className="w-15 h-15" loading="lazy" />
-                                                        {/*<p className="text-[12px]">Ticket Number</p>*/}
-
-                                                    </div>
-                                                    <p className="text-[12px] mt-[5px]">Ticket Number# </p>
-                                                    <div className="my-2 h-px bg-[#25D482]"></div>
-
-                                                    <div>
-                                                        <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                            {request.deviceName}
-                                                        </h2>
-                                                        <p className="text-sm text-gray-600">
-                                                            {request.issueDescription}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            {request.serialNumber}
-                                                        </p>
-                                                        <div className="relative">
-                                                            <p
-                                                                onClick={(e) => handleStatusClick(e, request.id)}
-                                                                className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
-                                                            >
-                                                                <ChevronUp className="ml-1 w-4 h-4" />   Status: {request.status}
+                                                                <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.repairStatus}
                                                             </p>
 
                                                             {statusDropdownOpen === request.id && (
