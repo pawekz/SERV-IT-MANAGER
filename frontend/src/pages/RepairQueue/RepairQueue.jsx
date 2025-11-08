@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {User, Images, Archive, Plus, ChevronUp} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, ChevronUp } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 
@@ -35,7 +34,6 @@ async function fetchPresignedPhotoUrl(photoUrl) {
 }
 
 const RepairQueue = () => {
-    const navigate = useNavigate()
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
     // Determine user role from JWT token (stored in localStorage as 'authToken')
@@ -48,15 +46,7 @@ const RepairQueue = () => {
     const [ticketRequests, setTicketRequests] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [filterBy, setFilterBy] = useState("serial");
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
-
-    const filterByLabel = {
-        serial: "Serial Number",
-        tracking: "Tracking Number",
-        device: "Device Type",
-        customer: "Customer Name",
-    }[filterBy];
 
     const statusOptions = [
         "Received",
@@ -97,7 +87,6 @@ const RepairQueue = () => {
     useEffect(() => {
         const fetchTickets = async () => {
             setLoading(true);
-            const statuses = ["RECEIVED", "DIAGNOSING", "AWAITING_PARTS", "REPAIRING"];
 
             try {
                 let res;
@@ -107,7 +96,7 @@ const RepairQueue = () => {
 
 
                         const response = await api.get(`/repairTicket/getAllRepairTickets`, {
-                            params: { status, page: 0, size: 20 },
+                            params: { page: 0, size: 20 },
                         });
                         const content = response.data?.content || [];
                         allResults.push(...content);
@@ -220,11 +209,25 @@ const RepairQueue = () => {
 
             <div className="flex-1 p-8 bg-gray-50">
                 <div className="flex justify-between">
-                    <div className="mb-4">
-                        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Repair Queue Dashboard</h1>
-                        <p className="text-gray-600 text-base max-w-3xl">
-                            Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
-                        </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-4">
+                        <div className="mb-4 sm:mb-0">
+                            <h1 className="text-3xl font-semibold text-gray-800 mb-2">Repair Queue Dashboard</h1>
+                            <p className="text-gray-600 text-base max-w-3xl">
+                                Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
+                            </p>
+                        </div>
+
+                        {/* Add Ticket Button moved to top-right of page header (responsive) */}
+                        {role !== "customer" && (
+                            <div className="flex-shrink-0">
+                                <Link to="/newrepair">
+                                    <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                        <Plus className=" w-4 h-4 mr-2 flex-shrink-0" />
+                                        <span className="text-sm sm:text-base ">Add Ticket</span>
+                                    </button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="px-10 py-8">
@@ -246,39 +249,31 @@ const RepairQueue = () => {
                         <section className="mb-8 -ml-10">
                             <div className="bg-white rounded-lg shadow-md p-6">
                                 <div className="flex justify-between items-end mb-6">
-                                    <div className="flex items-center space-x-3">
-                                        {/* Pending Repairs */}
-                                        <Link
-                                            to="/repairqueue"
-                                            className={`text-xl font-semibold hover:underline ${
-                                                role === "customer" ? "text-[#25D482]" : "text-[#2563eb]"
-                                            }`}
-                                        >
-                                            Pending Repairs
-                                        </Link>
+                                     <div className="flex items-center space-x-3">
+                                         {/* Pending Repairs */}
+                                         <Link
+                                             to="/repairqueue"
+                                             className={`text-xl font-semibold hover:underline ${
+                                                 role === "customer" ? "text-[#25D482]" : "text-[#2563eb]"
+                                             }`}
+                                         >
+                                             Pending Repairs
+                                         </Link>
 
-                                        {/* Separator */}
-                                        <span className="text-gray-400">|</span>
+                                         {/* Separator */}
+                                         <span className="text-gray-400">|</span>
 
-                                        {/* Resolved Repairs Link */}
-                                        <Link
-                                            to="/resolvedrepairs"
-                                            className="text-xl font-semibold text-black hover:underline"
-                                        >
-                                            Resolved Repairs
-                                        </Link>
-                                    </div>
+                                         {/* Resolved Repairs Link */}
+                                         <Link
+                                             to="/resolvedrepairs"
+                                             className="text-xl font-semibold text-black hover:underline"
+                                         >
+                                             Resolved Repairs
+                                         </Link>
+                                     </div>
 
-                                    {/* Add Ticket Button */}
-                                    {role !== "customer" && (
-                                        <Link to="/newrepair">
-                                            <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
-                                                <Plus className=" w-4 h-4 mr-2 flex-shrink-0" />
-                                                <span className="text-sm sm:text-base ">Add Ticket</span>
-                                            </button>
-                                        </Link>
-                                    )}
-                                </div>
+                                    {/* Add Ticket button intentionally moved to the page header for a cleaner layout */}
+                                 </div>
                                 {ticketRequests.length === 0 ? (
                                     <p className="text-center text-gray-600">
                                         No warranty return requests have been made yet.
@@ -384,4 +379,3 @@ const RepairQueue = () => {
 };
 
 export default RepairQueue;
-
