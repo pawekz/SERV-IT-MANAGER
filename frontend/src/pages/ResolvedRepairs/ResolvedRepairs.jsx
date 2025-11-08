@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {Wrench, Images, Archive, Plus, ChevronUp} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, ChevronUp } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from "../../config/ApiConfig.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
@@ -33,7 +33,6 @@ async function fetchPresignedPhotoUrl(photoUrl) {
 }
 
 const ResolvedRepairs = () => {
-    const navigate = useNavigate()
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
     // Determine user role from JWT token (stored in localStorage as 'authToken')
@@ -46,16 +45,7 @@ const ResolvedRepairs = () => {
     const [ticketRequests, setTicketRequests] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [filterBy, setFilterBy] = useState("serial");
-    const [searchQuery, setSearchQuery] = useState("");
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
-
-    const filterByLabel = {
-        serial: "Serial Number",
-        tracking: "Tracking Number",
-        device: "Device Type",
-        customer: "Customer Name",
-    }[filterBy];
 
     const statusOptions = [
         "Received",
@@ -218,11 +208,25 @@ const ResolvedRepairs = () => {
 
                 <div className="flex-1 p-8 bg-gray-50">
                     <div className="flex justify-between">
-                        <div className="mb-4">
-                            <h1 className="text-3xl font-semibold text-gray-800 mb-2">Repair Queue Dashboard</h1>
-                            <p className="text-gray-600 text-base max-w-3xl">
-                                Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
-                            </p>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-4">
+                            <div className="mb-4 sm:mb-0">
+                                <h1 className="text-3xl font-semibold text-gray-800 mb-2">Repair Queue Dashboard</h1>
+                                <p className="text-gray-600 text-base max-w-3xl">
+                                    Track and manage all repair tickets in real-time. View status updates, technician assignments, and estimated completion times.
+                                </p>
+                            </div>
+
+                            {/* Add Ticket Button moved to top-right of page header (responsive) */}
+                            {role !== "customer" && (
+                                <div className="flex-shrink-0">
+                                    <Link to="/newrepair">
+                                        <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
+                                            <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
+                                            <span className="text-sm sm:text-base">Add Ticket</span>
+                                        </button>
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="px-10 py-8">
@@ -266,17 +270,7 @@ const ResolvedRepairs = () => {
                                                 Resolved Repairs
                                             </Link>
                                         </div>
-
-                                        {/* Add Ticket Button */}
-                                        {role !== "customer" && (
-                                            <Link to="/newrepair">
-                                                <button className="flex items-center bg-[#2563eb] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-opacity-90 min-w-[44px] min-h-[44px] whitespace-nowrap">
-                                                    <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
-                                                    <span className="text-sm sm:text-base">Add Ticket</span>
-                                                </button>
-                                            </Link>
-                                        )}
-                                    </div>
+                                     </div>
                                     {ticketRequests.filter(request => request.status === "READY_FOR_PICKUP" ).length === 0 ? (
                                         <p className="text-center text-gray-600">
                                             No repair requests have been is resolved.
@@ -382,5 +376,3 @@ const ResolvedRepairs = () => {
 };
 
 export default ResolvedRepairs;
-
-
