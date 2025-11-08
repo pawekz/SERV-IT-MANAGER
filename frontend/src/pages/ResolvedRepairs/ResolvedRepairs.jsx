@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Plus, ChevronUp } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from "../../config/ApiConfig.jsx";
@@ -249,26 +249,20 @@ const ResolvedRepairs = () => {
                                 <div className="bg-white rounded-lg shadow-md p-6">
                                     <div className="flex justify-between items-end mb-6">
                                         <div className="flex items-center space-x-3">
-                                            {/* Pending Repairs */}
-                                            <Link
-                                                to="/repairqueue"
-                                                className="text-xl font-semibold text-black hover:underline"
-                                            >
-                                                Pending Repairs
-                                            </Link>
-
-                                            {/* Separator */}
-                                            <span className="text-gray-400">|</span>
-
-                                            {/* Resolved Repairs Link */}
-                                            <Link
-                                                to="/resolvedrepairs"
-                                                className= {`text-xl font-semibold hover:underline ${
-                                                    role === "customer" ? "text-[#25D482]" : "text-[#2563eb]"
-                                                }`}
-                                            >
-                                                Resolved Repairs
-                                            </Link>
+                                            <div className="flex border-b border-gray-300">
+                                                <NavLink
+                                                    to="/repairqueue"
+                                                    className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                >
+                                                    Pending Repairs
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/resolvedrepairs"
+                                                    className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                >
+                                                    Resolved Repairs
+                                                </NavLink>
+                                            </div>
                                         </div>
                                      </div>
                                     {ticketRequests.filter(request => request.status === "READY_FOR_PICKUP" ).length === 0 ? (
