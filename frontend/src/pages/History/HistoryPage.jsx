@@ -440,7 +440,8 @@ const HistoryPage = () => {
 
                 {selectedTicket && (
                     <TicketDetailsModal
-                        ticket={selectedTicket}
+                        data={selectedTicket}
+                        isOpen={!!selectedTicket}
                         onClose={() => setSelectedTicket(null)}
                     />
                 )}
