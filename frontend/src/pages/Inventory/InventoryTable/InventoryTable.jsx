@@ -1,5 +1,78 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Pen, Trash, Eye, Settings } from 'lucide-react';
+import api from '../../../config/ApiConfig';
+
+// Component to handle part photo display with presigned URL fetching
+const PartPhoto = ({ partId, photoUrl, size = 'md' }) => {
+    const [src, setSrc] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        const fetchPhoto = async () => {
+            if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+                setLoading(false);
+                setError(true);
+                return;
+            }
+
+            // Check if it's an S3 URL that needs presigning
+            if (photoUrl.includes('amazonaws.com/') && partId) {
+                try {
+                    const response = await api.get(`/part/getPartPhoto/${partId}`);
+                    if (response.data) {
+                        setSrc(response.data);
+                    } else {
+                        setError(true);
+                    }
+                } catch (err) {
+                    console.error('Error fetching presigned photo URL:', err);
+                    // Fallback to original URL
+                    setSrc(photoUrl);
+                }
+            } else {
+                // Use URL directly if it's not S3 or no partId
+                setSrc(photoUrl);
+            }
+            setLoading(false);
+        };
+
+        fetchPhoto();
+    }, [partId, photoUrl]);
+
+    const sizeClasses = {
+        sm: 'w-12 h-12',
+        md: 'w-16 h-16',
+        lg: 'w-24 h-24'
+    };
+
+    const sizeClass = sizeClasses[size] || sizeClasses.md;
+
+    if (loading) {
+        return (
+            <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse`}>
+                <span className="text-xs text-gray-400">Loading...</span>
+            </div>
+        );
+    }
+
+    if (error || !src) {
+        return (
+            <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center`}>
+                <span className="text-xs text-gray-400">No Photo</span>
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={src} 
+            alt="Part photo"
+            className={`${sizeClass} object-cover rounded-lg border border-gray-200 shadow-sm`}
+            onError={() => setError(true)}
+        />
+    );
+};
 
 const InventoryTable = ({
     paginatedItems,
@@ -23,6 +96,9 @@ const InventoryTable = ({
                                 <ChevronDown size={14} className="mr-1 text-gray-400" />
                                 Part Number Groups
                             </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Photo
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Description / Serial Numbers
@@ -61,6 +137,21 @@ const InventoryTable = ({
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.category} • {item.totalParts} items</div>
                                             </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center">
+                                            {(() => {
+                                                // Get photo from first part in the group
+                                                const firstPart = item.allParts && item.allParts.length > 0 ? item.allParts[0] : null;
+                                                return (
+                                                    <PartPhoto 
+                                                        partId={firstPart?.id} 
+                                                        photoUrl={firstPart?.partPhotoUrl} 
+                                                        size="md"
+                                                    />
+                                                );
+                                            })()}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -140,6 +231,15 @@ const InventoryTable = ({
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3">
+                                                <div className="flex items-center justify-center">
+                                                    <PartPhoto 
+                                                        partId={part.id} 
+                                                        photoUrl={part.partPhotoUrl} 
+                                                        size="sm"
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3">
                                                 <div className="text-sm text-gray-700">
                                                     <div className="font-medium">
                                                         Serial: {highlightText(part.serialNumber, searchQuery)}
@@ -214,7 +314,7 @@ const InventoryTable = ({
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                                 No inventory items found. Add a new part to get started.
                             </td>
                         </tr>

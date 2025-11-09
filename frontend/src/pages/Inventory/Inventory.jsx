@@ -66,6 +66,10 @@ const Inventory = () => {
     const [editLoading, setEditLoading] = useState(false);
     const [editSuccess, setEditSuccess] = useState(false);
     const [editError, setEditError] = useState(null);
+    
+    // Customer fetching state
+    const [fetchedCustomer, setFetchedCustomer] = useState(null);
+    const [fetchingCustomer, setFetchingCustomer] = useState(false);
 
     // Accordion state for expanding part number groups
     const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -84,7 +88,8 @@ const Inventory = () => {
         warrantyExpiration: "",
         /*category: "GENERAL",*/
         addedBy: "",
-        addToExisting: false
+        addToExisting: false,
+        image: null
     });
 
     // Stock settings form state
@@ -695,8 +700,46 @@ const Inventory = () => {
         });
     };
 
+    // Fetch customer details by phone or email
+    const fetchCustomerDetails = async ({ phone, email }) => {
+        if (!phone && !email) {
+            return null;
+        }
+
+        setFetchingCustomer(true);
+        try {
+            // Try to find customer by phone or email
+            // Note: This assumes there's a customer/user endpoint that can search by phone or email
+            // If no such endpoint exists, this will need to be implemented on the backend
+            const params = {};
+            if (phone) params.phone = phone;
+            if (email) params.email = email;
+
+            // For now, we'll check if there's a user endpoint that can search customers
+            // This is a placeholder - adjust the endpoint based on your actual API
+            try {
+                const response = await api.get('/user/searchCustomer', { params });
+                if (response.data) {
+                    setFetchedCustomer(response.data);
+                    return response.data;
+                }
+            } catch (err) {
+                // If endpoint doesn't exist, try alternative approach
+                console.log("Customer lookup endpoint not available or customer not found");
+                setFetchedCustomer(null);
+                return null;
+            }
+        } catch (err) {
+            console.error("Error fetching customer details:", err);
+            setFetchedCustomer(null);
+            return null;
+        } finally {
+            setFetchingCustomer(false);
+        }
+    };
+
     // Handle edit button click for individual parts
-    const handleEditClick = (part) => {
+    const handleEditClick = async (part) => {
         if (!isAdmin()) {
             showTechnicianRestrictionMessage();
             return;
@@ -705,6 +748,16 @@ const Inventory = () => {
         console.log("Editing individual part:", part);
         setEditPart({...part});
         setShowEditModal(true);
+        
+        // Automatically fetch customer details if phone or email exists
+        const customerPhone = part.customerPhone || (part.customer ? part.customer.phone : null);
+        const customerEmail = part.customerEmail || (part.customer ? part.customer.email : null);
+        
+        if (customerPhone || customerEmail) {
+            await fetchCustomerDetails({ phone: customerPhone, email: customerEmail });
+        } else {
+            setFetchedCustomer(null);
+        }
     };
 
     // Handle edit form input changes
@@ -744,7 +797,12 @@ const Inventory = () => {
                 warrantyExpiration: editPart.warrantyExpiration,
                 addedBy: editPart.addedBy || '',
                 brand: editPart.brand || '',
-                model: editPart.model || ''
+                model: editPart.model || '',
+                // Include customer details if they exist
+                customerFirstName: editPart.customerFirstName || '',
+                customerLastName: editPart.customerLastName || '',
+                customerPhone: editPart.customerPhone || '',
+                customerEmail: editPart.customerEmail || ''
             };
             await api.patch(`/part/updatePart/${editPart.id}`, updateData);
             setEditSuccess(true);
@@ -791,7 +849,20 @@ const Inventory = () => {
                 addedBy: newPart.addedBy,
                 addToExisting: newPart.addToExisting || false
             };
-            await api.post('/part/addPart', partData);
+
+            // If an image file is present, send multipart/form-data with 'part' JSON and 'file' file
+            if (newPart.image instanceof File) {
+                const formData = new FormData();
+                formData.append('part', new Blob([JSON.stringify(partData)], { type: 'application/json' }));
+                formData.append('file', newPart.image);
+
+                await api.post('/part/addPart', formData);
+            } else {
+                // No file, send JSON as before but using form-data compatibility
+                // Some backends may still accept JSON; use previous endpoint for compatibility
+                await api.post('/part/addPart', partData);
+            }
+
             setAddPartSuccess(true);
             showNotification(newPart.addToExisting ? "Part added to existing part number successfully" : "Part added successfully");
             setNewPart({
@@ -806,7 +877,8 @@ const Inventory = () => {
                 datePurchasedByCustomer: null,
                 warrantyExpiration: "",
                 addedBy: "",
-                addToExisting: false
+                addToExisting: false,
+                image: null
             });
             await fetchInventory();
             await refreshAllStockTracking();
@@ -1086,6 +1158,7 @@ const Inventory = () => {
                                 onEditClick={handleEditClick}
                                 onDeletePart={handleDeletePart}
                                 highlightText={highlightText}
+                                onRefresh={fetchInventory}
                             />
                         </div>
 
@@ -1135,13 +1208,19 @@ const Inventory = () => {
             {showEditModal && editPart && (
                 <EditPartModal
                     isOpen={showEditModal}
-                    onClose={() => setShowEditModal(false)}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setFetchedCustomer(null);
+                    }}
                     onSubmit={handleUpdatePart}
                     onInputChange={handleEditInputChange}
                     editPart={editPart}
                     loading={editLoading}
                     success={editSuccess}
                     error={editError}
+                    fetchCustomer={fetchCustomerDetails}
+                    fetchedCustomer={fetchedCustomer}
+                    fetchingCustomer={fetchingCustomer}
                 />
             )}
 
@@ -1217,3 +1296,5 @@ const Inventory = () => {
 };
 
 export default Inventory;
+
+//

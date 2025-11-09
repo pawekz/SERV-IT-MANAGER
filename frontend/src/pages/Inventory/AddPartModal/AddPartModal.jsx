@@ -14,6 +14,8 @@ const AddPartModal = ({
 }) => {
     const [partExists, setPartExists] = useState(false);
     const [checkingPart, setCheckingPart] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [objectUrl, setObjectUrl] = useState(null); // track generated object URLs
 
     // Function to check if part number exists and auto-fill fields
     const checkPartNumber = useCallback(async (partNumber) => {
@@ -122,6 +124,82 @@ const AddPartModal = ({
         const value = e.target.value;
         checkPartNumber(value);
     }, [checkPartNumber]);
+
+    // Handle single image upload and preview
+    const handleImageChange = useCallback((e) => {
+        const file = e.target.files && e.target.files[0];
+        // Revoke previous object URL if we created one
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            setObjectUrl(null);
+        }
+
+        onInputChange({
+            target: {
+                name: 'image',
+                value: file || null
+            }
+        });
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setImagePreview(url);
+            setObjectUrl(url);
+        } else {
+            setImagePreview(null);
+        }
+    }, [onInputChange, objectUrl]);
+
+    // Remove currently selected image
+    const handleRemoveImage = useCallback(() => {
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            setObjectUrl(null);
+        }
+        setImagePreview(null);
+        onInputChange({
+            target: {
+                name: 'image',
+                value: null
+            }
+        });
+    }, [onInputChange, objectUrl]);
+
+    useEffect(() => {
+        // If parent passes an image (string URL or File), show preview
+        if (newPart && newPart.image) {
+            // If the parent provided a File, create an object URL
+            if (typeof newPart.image === 'string') {
+                // Revoke previous if we created one
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    setObjectUrl(null);
+                }
+                setImagePreview(newPart.image);
+            } else if (newPart.image instanceof File) {
+                // Revoke previous if we created one
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                }
+                const url = URL.createObjectURL(newPart.image);
+                setImagePreview(url);
+                setObjectUrl(url);
+                return () => {
+                    // cleanup created url when component unmounts or new file arrives
+                    if (url) URL.revokeObjectURL(url);
+                };
+            }
+        } else {
+            setImagePreview(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [newPart]);
+
+    // Cleanup on unmount: revoke any created object URL
+    useEffect(() => {
+        return () => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [objectUrl]);
 
     if (!isOpen) return null;
 
@@ -268,6 +346,51 @@ const AddPartModal = ({
                         />
                     </div>
 
+                    {/* Upload picture - custom file input and larger preview */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Upload picture
+                        </label>
+
+                        {/* Hidden native input - we use a label/button so filename won't be displayed */}
+                        <div className="flex items-center space-x-3">
+                            <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                Select image
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="sr-only" // hide from visual flow and screen readers handled by label
+                                />
+                            </label>
+
+                            {imagePreview && (
+                                <button
+                                    type="button"
+                                    onClick={handleRemoveImage}
+                                    className="px-3 py-2 bg-red-50 text-red-700 border border-red-100 rounded-md text-sm hover:bg-red-100"
+                                >
+                                    Remove
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Larger, clearer preview area */}
+                        <div className="mt-3">
+                            <div className="w-full h-48 md:h-60 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="preview"
+                                        className="w-full h-full object-contain"
+                                    />
+                                ) : (
+                                    <div className="text-sm text-gray-400">No image selected</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {error && (
                         <div className="p-3 bg-red-100 text-red-800 rounded-md">
                             {error}
@@ -302,4 +425,5 @@ const AddPartModal = ({
     );
 };
 
-export default AddPartModal; 
+export default AddPartModal;
+

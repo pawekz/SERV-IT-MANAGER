@@ -24,6 +24,9 @@ import com.servit.servit.dto.part.UpdatePartNumberStockTrackingDTO;
 import com.servit.servit.entity.InventoryTransactionEntity;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.repository.PartRepository;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,10 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/part")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -41,7 +48,6 @@ public class PartController {
 
     private static final Logger logger = LoggerFactory.getLogger(PartController.class);
 
-    @Autowired
     private final PartService partService;
 
     @Autowired
@@ -61,11 +67,28 @@ public class PartController {
 
     @PostMapping("/addPart")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<?> addPart(@RequestBody AddPartRequestDTO req) {
-        logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}", 
-                   req.getPartNumber(), req.getSerialNumber());
+    public ResponseEntity<?> addPart(HttpServletRequest request,
+                                     @RequestPart(value = "part", required = false) AddPartRequestDTO partReq,
+                                     @RequestPart(value = "file", required = false) MultipartFile file) {
         try {
-            PartResponseDTO result = partService.addpart(req);
+            // Determine how the request was sent. If 'part' RequestPart is null, attempt to read JSON body.
+            AddPartRequestDTO req = partReq;
+            if (req == null) {
+                // Try to parse JSON body (handles application/json requests)
+                ObjectMapper mapper = new ObjectMapper();
+                req = mapper.readValue(request.getInputStream(), AddPartRequestDTO.class);
+            }
+
+            if (req == null) {
+                logger.warn("API Error: No part data provided in request");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Part data is required");
+            }
+
+            logger.info("API Request: Adding single part - Part Number: {}, Serial Number: {}",
+                       req.getPartNumber(), req.getSerialNumber());
+
+            PartResponseDTO result = partService.addpart(req, file);
+
             // Ensure stock tracking is updated immediately
             stockTrackingService.updateStockTracking(result.getPartNumber());
             logger.info("API Response: Part added successfully - ID: {}, Part Number: {}", 
@@ -74,6 +97,10 @@ public class PartController {
         } catch (IllegalArgumentException e) {
             logger.warn("API Error: Bad request while adding part - {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (IOException e) {
+            logger.error("API Error: IO error while reading request or uploading part photo - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to read request or upload picture: " + e.getMessage());
         } catch (Exception e) {
             logger.error("API Error: Internal server error while adding part - {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -681,6 +708,86 @@ public class PartController {
             logger.error("API Error: Error getting part details - {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error getting part details: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/uploadPicture/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> uploadPartPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        logger.info("API Request: Uploading picture for part id: {}", id);
+        try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("API Error: No file provided for upload for part id: {}", id);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File must not be null or empty");
+            }
+            String url = partService.uploadPartPhoto(id, file);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (java.io.IOException e) {
+            logger.error("IO error uploading picture for part: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload picture: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error uploading picture for part: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload picture: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getPartPhoto/{id}")
+    public ResponseEntity<?> getPartPhoto(@PathVariable Long id) {
+        logger.info("API Request: Getting part photo for part id: {}", id);
+        try {
+            String presignedUrl = partService.getPartPhoto(id, 5); // 5 minute expiry
+            if (presignedUrl == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part photo not set");
+            }
+            return ResponseEntity.ok(presignedUrl);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (Exception e) {
+            logger.error("Error getting part photo for id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to get part photo: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/updatePartPhoto/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> updatePartPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        logger.info("API Request: Updating picture for part id: {}", id);
+        try {
+            if (file == null || file.isEmpty()) {
+                logger.warn("API Error: No file provided for update for part id: {}", id);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File must not be null or empty");
+            }
+            partService.updatePartPhoto(id, file);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        } catch (java.io.IOException e) {
+            logger.error("IO error updating picture for part: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update picture: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating picture for part: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update picture: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/removePartPhoto/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    public ResponseEntity<?> removePartPhoto(@PathVariable Long id) {
+        logger.info("API Request: Removing picture for part id: {}", id);
+        try {
+            partService.removePartPhoto(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Part not found");
+        } catch (Exception e) {
+            logger.error("Error removing picture for part id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to remove picture: " + e.getMessage());
         }
     }
 }

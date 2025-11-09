@@ -140,6 +140,15 @@ public class FileUtil {
         return s3Service.uploadFile(compressedFile, "images/profile_pictures/" + fileName);
     }
 
+    public String savePartPhoto(MultipartFile file, String partNumber) throws IOException {
+        validatePhoto(file);
+        MultipartFile compressedFile = compressImage(file);
+        String fileExtension = getFileExtension(compressedFile);
+        String fileName = String.format("%s%s", partNumber, fileExtension);
+
+        return s3Service.uploadFile(compressedFile, "images/parts/" + fileName);
+    }
+
     public void deleteProfilePicture(String profilePictureUrl) {
         if (profilePictureUrl == null || profilePictureUrl.isEmpty()) {
             return;

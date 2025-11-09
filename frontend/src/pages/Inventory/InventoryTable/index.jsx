@@ -1,5 +1,91 @@
-import React from 'react';
-import { ChevronDown, Pen, Trash, Eye, Settings } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Pen, Trash, Eye, Settings, X, Upload } from 'lucide-react';
+import api from '../../../config/ApiConfig';
+
+// Component to handle part photo display with presigned URL fetching
+const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
+    const [src, setSrc] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        // Reset state when photoUrl or partId changes
+        setLoading(true);
+        setError(false);
+        setSrc(null);
+
+        const fetchPhoto = async () => {
+            if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+                setLoading(false);
+                setError(true);
+                setSrc(null);
+                return;
+            }
+
+            // Check if it's an S3 URL that needs presigning
+            if (photoUrl.includes('amazonaws.com/') && partId) {
+                try {
+                    // Add timestamp to force refresh of presigned URL
+                    const response = await api.get(`/part/getPartPhoto/${partId}?t=${Date.now()}`);
+                    if (response.data) {
+                        setSrc(response.data);
+                        setError(false);
+                    } else {
+                        setError(true);
+                        setSrc(null);
+                    }
+                } catch (err) {
+                    console.error('Error fetching presigned photo URL:', err);
+                    // Fallback to original URL
+                    setSrc(photoUrl);
+                    setError(false);
+                }
+            } else {
+                // Use URL directly if it's not S3 or no partId
+                // Add timestamp to force refresh
+                setSrc(photoUrl + (photoUrl.includes('?') ? '&' : '?') + 't=' + Date.now());
+                setError(false);
+            }
+            setLoading(false);
+        };
+
+        fetchPhoto();
+    }, [partId, photoUrl]);
+
+    const sizeClasses = {
+        sm: 'w-12 h-12',
+        md: 'w-16 h-16',
+        lg: 'w-24 h-24'
+    };
+
+    const sizeClass = sizeClasses[size] || sizeClasses.md;
+
+    if (loading) {
+        return (
+            <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse`}>
+                <span className="text-xs text-gray-400">Loading...</span>
+            </div>
+        );
+    }
+
+    if (error || !src) {
+        return (
+            <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center`}>
+                <span className="text-xs text-gray-400">No Photo</span>
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={src} 
+            alt="Part photo"
+            className={`${sizeClass} object-cover rounded-lg border border-gray-200 shadow-sm ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+            onError={() => setError(true)}
+            onClick={onClick ? () => onClick(src) : undefined}
+        />
+    );
+};
 
 const InventoryTable = ({
     paginatedItems,
@@ -11,9 +97,88 @@ const InventoryTable = ({
     onStockSettings,
     onEditClick,
     onDeletePart,
-    highlightText
+    highlightText,
+    onRefresh
 }) => {
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [selectedImageSrc, setSelectedImageSrc] = useState(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [partToDeletePhoto, setPartToDeletePhoto] = useState(null);
+    const [updatingPhoto, setUpdatingPhoto] = useState(false);
+    const [deletingPhoto, setDeletingPhoto] = useState(false);
+    const fileInputRef = useRef(null);
+    const [partToUpdatePhoto, setPartToUpdatePhoto] = useState(null);
+
+    const openImageModal = (imageSrc) => {
+        setSelectedImageSrc(imageSrc);
+        setImageModalOpen(true);
+    };
+
+    const closeImageModal = () => {
+        setImageModalOpen(false);
+        setSelectedImageSrc(null);
+    };
+
+    const handleDeletePhoto = async (partId, partNumber) => {
+        setDeletingPhoto(true);
+        try {
+            await api.delete(`/part/removePartPhoto/${partId}`);
+            if (onRefresh) {
+                await onRefresh();
+            }
+            setDeleteConfirmOpen(false);
+            setPartToDeletePhoto(null);
+        } catch (error) {
+            console.error('Error deleting photo:', error);
+            alert('Failed to delete photo. Please try again.');
+        } finally {
+            setDeletingPhoto(false);
+        }
+    };
+
+    const handleUpdatePhoto = async (partId, file) => {
+        if (!file) return;
+        
+        setUpdatingPhoto(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Don't set Content-Type manually - axios will set it with boundary
+            await api.post(`/part/updatePartPhoto/${partId}`, formData);
+            
+            // Wait for refresh to complete so the new photo URL is available
+            if (onRefresh) {
+                await onRefresh();
+                // Small delay to ensure state updates propagate
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            setPartToUpdatePhoto(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        } catch (error) {
+            console.error('Error updating photo:', error);
+            alert('Failed to update photo. Please try again.');
+        } finally {
+            setUpdatingPhoto(false);
+        }
+    };
+
+    const openDeleteConfirm = (partId, partNumber) => {
+        setPartToDeletePhoto({ id: partId, partNumber });
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file && partToUpdatePhoto) {
+            handleUpdatePhoto(partToUpdatePhoto.id, file);
+        }
+    };
+
     return (
+        <>
         <div className="overflow-x-auto">
             <table className="w-full">
                 <thead>
@@ -23,6 +188,9 @@ const InventoryTable = ({
                                 <ChevronDown size={14} className="mr-1 text-gray-400" />
                                 Part Number Groups
                             </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Photo
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Description / Serial Numbers
@@ -61,6 +229,56 @@ const InventoryTable = ({
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.category} • {item.totalParts} items</div>
                                             </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center gap-2">
+                                            {(() => {
+                                                // Get photo from first part in the group
+                                                const firstPart = item.allParts && item.allParts.length > 0 ? item.allParts[0] : null;
+                                                const hasPhoto = firstPart?.partPhotoUrl && firstPart.partPhotoUrl !== '0' && firstPart.partPhotoUrl.trim() !== '';
+                                                
+                                                return (
+                                                    <div className="flex items-center gap-2">
+                                                        <PartPhoto 
+                                                            key={`photo-${firstPart?.id}-${firstPart?.partPhotoUrl || 'no-photo'}`}
+                                                            partId={firstPart?.id} 
+                                                            photoUrl={firstPart?.partPhotoUrl} 
+                                                            size="md"
+                                                            onClick={openImageModal}
+                                                        />
+                                                        {isAdmin && firstPart && (
+                                                            <div className="flex flex-col gap-1">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPartToUpdatePhoto({ id: firstPart.id, partNumber: item.partNumber });
+                                                                        fileInputRef.current?.click();
+                                                                    }}
+                                                                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                                                    title="Update photo"
+                                                                    disabled={updatingPhoto}
+                                                                >
+                                                                    <Upload size={14} />
+                                                                </button>
+                                                                {hasPhoto && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            openDeleteConfirm(firstPart.id, item.partNumber);
+                                                                        }}
+                                                                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                                                        title="Delete photo"
+                                                                        disabled={deletingPhoto}
+                                                                    >
+                                                                        <Trash size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -133,7 +351,7 @@ const InventoryTable = ({
                                 {expandedGroups.has(item.partNumber) && item.allParts && (
                                     item.allParts.map((part, index) => (
                                         <tr key={`${item.partNumber}-${part.id}`} className="animate-in slide-in-from-top-1 duration-200 ease-in-out bg-gray-50 border-l-4 border-gray-300 hover:bg-gray-100 transition-colors duration-150">
-                                            <td className="px-6 py-3 whitespace-nowrap pl-12">
+                                            <td className="px-6 py-3 whitespace-nowrap pl-12" colSpan="2">
                                                 <div className="text-sm text-gray-700">
                                                     <span className="font-medium">Item #{index + 1}</span>
                                                     <div className="text-xs text-gray-500">ID: {part.id}</div>
@@ -214,7 +432,7 @@ const InventoryTable = ({
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                                 No inventory items found. Add a new part to get started.
                             </td>
                         </tr>
@@ -222,6 +440,90 @@ const InventoryTable = ({
                 </tbody>
             </table>
         </div>
+
+        {/* Hidden file input for photo update */}
+        <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+        />
+
+        {/* Image Modal */}
+        {imageModalOpen && selectedImageSrc && (
+            <div 
+                className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" 
+                onClick={closeImageModal}
+                role="dialog"
+                aria-modal="true"
+            >
+                <div 
+                    className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <button
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm z-10"
+                        onClick={closeImageModal}
+                        aria-label="Close image viewer"
+                    >
+                        <X size={24} />
+                    </button>
+                    <img
+                        src={selectedImageSrc}
+                        alt="Part photo - full size"
+                        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+                        onError={(e) => {
+                            console.error('Error loading full-size image');
+                            e.target.style.display = 'none';
+                        }}
+                    />
+                </div>
+            </div>
+        )}
+
+        {/* Delete Photo Confirmation Modal */}
+        {deleteConfirmOpen && partToDeletePhoto && (
+            <div 
+                className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
+                onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setPartToDeletePhoto(null);
+                }}
+                role="dialog"
+                aria-modal="true"
+            >
+                <div 
+                    className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Photo</h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                        Are you sure you want to delete the photo for part <span className="font-medium">{partToDeletePhoto.partNumber}</span>? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={() => {
+                                setDeleteConfirmOpen(false);
+                                setPartToDeletePhoto(null);
+                            }}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                            disabled={deletingPhoto}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => handleDeletePhoto(partToDeletePhoto.id, partToDeletePhoto.partNumber)}
+                            className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-50"
+                            disabled={deletingPhoto}
+                        >
+                            {deletingPhoto ? 'Deleting...' : 'Delete'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 
