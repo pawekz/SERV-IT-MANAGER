@@ -287,9 +287,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Lookup user by email. Returns 200 with GetUserResponseDTO when found, 404 otherwise.
-     */
     @GetMapping("/findByEmail")
     public ResponseEntity<?> findByEmail(@RequestParam String email) {
         try {
