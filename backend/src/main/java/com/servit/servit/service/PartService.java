@@ -367,10 +367,22 @@ public class PartService {
                 }
                 part.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
                 part.setWarrantyExpiration(partDto.getWarrantyExpiration());
+                // If customer info present in DTO, save snapshot/reference
+                if (partDto.getCustomerId() != null) part.setCustomerId(partDto.getCustomerId());
+                if (partDto.getCustomerFirstName() != null) part.setCustomerFirstName(partDto.getCustomerFirstName());
+                if (partDto.getCustomerLastName() != null) part.setCustomerLastName(partDto.getCustomerLastName());
+                if (partDto.getCustomerPhone() != null) part.setCustomerPhone(partDto.getCustomerPhone());
+                if (partDto.getCustomerEmail() != null) part.setCustomerEmail(partDto.getCustomerEmail());
             } else {
                 // Clear warranty information if not customer purchased
                 part.setDatePurchasedByCustomer(null);
                 part.setWarrantyExpiration(null);
+                // Also clear customer info
+                part.setCustomerId(null);
+                part.setCustomerFirstName(null);
+                part.setCustomerLastName(null);
+                part.setCustomerPhone(null);
+                part.setCustomerEmail(null);
             }
         }
 
@@ -823,6 +835,12 @@ public class PartService {
         dto.setVersion(partEntity.getVersion());
         dto.setBrand(partEntity.getBrand());
         dto.setModel(partEntity.getModel());
+        // Customer snapshot
+        dto.setCustomerId(partEntity.getCustomerId());
+        dto.setCustomerFirstName(partEntity.getCustomerFirstName());
+        dto.setCustomerLastName(partEntity.getCustomerLastName());
+        dto.setCustomerPhone(partEntity.getCustomerPhone());
+        dto.setCustomerEmail(partEntity.getCustomerEmail());
         // Part picture URL
         dto.setPartPhotoUrl(partEntity.getPartPhotoUrl());
 
