@@ -276,7 +276,6 @@ const EditPartModal = ({
         const phDigits = extractPhoneDigits(phRaw);
         const phDisplay = formatPhoneDisplay(phDigits);
         const em = lookupResult.email || '';
-        const id = lookupResult.userId || null;
 
         setCustomerFirstName(fn);
         setCustomerLastName(ln);
