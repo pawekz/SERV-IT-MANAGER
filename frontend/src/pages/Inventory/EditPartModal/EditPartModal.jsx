@@ -1,6 +1,6 @@
 // javascript
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { X, CheckCircle, Calendar as CalendarIcon, Search, User, Phone, Mail, AlertCircle, Loader2, UserCheck } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
@@ -573,45 +573,151 @@ const EditPartModal = ({
                                     <button
                                         type="button"
                                         onClick={handleLookupCustomer}
-                                        className="px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300"
+                                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-md text-xs font-medium border border-gray-300 hover:bg-gray-200 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
                                         disabled={isLookingUp}
                                     >
-                                        {isLookingUp ? 'Looking up...' : 'Lookup Customer'}
+                                        {isLookingUp ? (
+                                            <>
+                                                <Loader2 size={14} className="animate-spin" />
+                                                Looking up...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Search size={14} />
+                                                Lookup Customer
+                                            </>
+                                        )}
                                     </button>
                                     <div className="text-xs text-gray-500">Use email to find existing customer records</div>
                                 </div>
 
                                 {lookupModalOpen && (
-                                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                                        <div className="absolute inset-0 bg-black opacity-40" onClick={handleCloseLookupModal}></div>
-                                        <div className="bg-white p-4 rounded-md z-10 w-96">
-                                            <div className="flex justify-between items-center mb-3">
-                                                <h3 className="text-sm font-medium">Customer Lookup</h3>
-                                                <button onClick={handleCloseLookupModal} className="text-gray-500">X</button>
-                                            </div>
-                                            {lookupError && (
-                                                <div className="mb-2 text-sm text-gray-700">{lookupError}</div>
-                                            )}
-                                            {lookupResult && (
-                                                <div>
-                                                    <div className="text-sm text-gray-700 mb-2">Customer Found</div>
-                                                    <table className="w-full text-sm text-left mb-3">
-                                                        <tbody>
-                                                        <tr><td className="font-medium">First Name</td><td>{lookupResult.firstName || '-'}</td></tr>
-                                                        <tr><td className="font-medium">Last Name</td><td>{lookupResult.lastName || '-'}</td></tr>
-                                                        <tr><td className="font-medium">Phone</td><td>{lookupResult.phoneNumber || lookupResult.phone || '-'}</td></tr>
-                                                        <tr><td className="font-medium">Email</td><td>{lookupResult.email || '-'}</td></tr>
-                                                        </tbody>
-                                                    </table>
-                                                    <div className="flex justify-end space-x-2">
-                                                        <button onClick={handleCloseLookupModal} className="px-3 py-1 border rounded">Cancel</button>
-                                                        <button onClick={handleUseCustomerInfo} className="px-3 py-1 bg-blue-600 text-white rounded">Use Customer Info</button>
+                                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                        {/* Backdrop with blur effect */}
+                                        <div
+                                            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                                            onClick={handleCloseLookupModal}
+                                        ></div>
+
+                                        {/* Modal Content */}
+                                        <div className="bg-white rounded-xl shadow-2xl z-10 w-full max-w-md transform transition-all animate-in fade-in zoom-in duration-200">
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                        <Search className="text-blue-600" size={20} />
                                                     </div>
+                                                    <h3 className="text-lg font-semibold text-gray-800">Customer Lookup</h3>
                                                 </div>
-                                            )}
-                                            {!lookupResult && !lookupError && (
-                                                <div className="text-sm text-gray-700">No data</div>
-                                            )}
+                                                <button
+                                                    onClick={handleCloseLookupModal}
+                                                    className="text-gray-400 hover:text-gray-600 hover:bg-white/60 rounded-lg p-2 transition-colors"
+                                                    aria-label="Close modal"
+                                                >
+                                                    <X size={20} />
+                                                </button>
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="p-6">
+                                                {/* Error State */}
+                                                {lookupError && (
+                                                    <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                                                        <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-medium text-red-800 mb-1">
+                                                                {lookupError.includes('Not Found') ? 'Customer Not Found' : 'Lookup Failed'}
+                                                            </h4>
+                                                            <p className="text-sm text-red-600">{lookupError}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Success State - Customer Found */}
+                                                {lookupResult && (
+                                                    <div className="space-y-4">
+                                                        {/* Success Banner */}
+                                                        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                                            <UserCheck className="text-green-600 flex-shrink-0" size={24} />
+                                                            <div>
+                                                                <h4 className="text-sm font-semibold text-green-800">Customer Found!</h4>
+                                                                <p className="text-xs text-green-600">Review the details below</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Customer Details Card */}
+                                                        <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                                                            {/* Name */}
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                                    <User className="text-gray-600" size={16} />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Full Name</p>
+                                                                    <p className="text-sm font-semibold text-gray-800 truncate">
+                                                                        {lookupResult.firstName || '-'} {lookupResult.lastName || '-'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Phone */}
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                                    <Phone className="text-gray-600" size={16} />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Phone Number</p>
+                                                                    <p className="text-sm font-medium text-gray-800 truncate">
+                                                                        {lookupResult.phoneNumber || lookupResult.phone || '-'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Email */}
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                                    <Mail className="text-gray-600" size={16} />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Email Address</p>
+                                                                    <p className="text-sm font-medium text-gray-800 truncate">
+                                                                        {lookupResult.email || '-'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Empty State */}
+                                                {!lookupResult && !lookupError && (
+                                                    <div className="text-center py-8">
+                                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                            <Search className="text-gray-400" size={32} />
+                                                        </div>
+                                                        <p className="text-sm text-gray-500">No data to display</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Footer */}
+                                            <div className="flex gap-3 p-6 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+                                                <button
+                                                    onClick={handleCloseLookupModal}
+                                                    className="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-white hover:border-gray-400 transition-all duration-200"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                {lookupResult && (
+                                                    <button
+                                                        onClick={handleUseCustomerInfo}
+                                                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                                                    >
+                                                        <CheckCircle size={18} />
+                                                        Use Customer Info
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
