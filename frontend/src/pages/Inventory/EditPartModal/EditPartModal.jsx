@@ -29,7 +29,6 @@ const EditPartModal = ({
     const [customerLastName, setCustomerLastName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
-    const [customerId, setCustomerId] = useState(null);
     const [lookupModalOpen, setLookupModalOpen] = useState(false);
     const [lookupResult, setLookupResult] = useState(null);
     const [lookupError, setLookupError] = useState(null);
@@ -69,7 +68,6 @@ const EditPartModal = ({
             const initialPhone = editPart.customerPhone || (editPart.customer ? editPart.customer.phone : '') || '';
             setCustomerPhone(formatPhoneDisplay(initialPhone));
             setCustomerEmail(editPart.customerEmail || (editPart.customer ? editPart.customer.email : '') || '');
-            setCustomerId(editPart.customerId || null);
         }
     }, [editPart]);
 
@@ -284,16 +282,12 @@ const EditPartModal = ({
         setCustomerLastName(ln);
         setCustomerPhone(phDisplay);
         setCustomerEmail(em);
-        setCustomerId(id);
 
         onInputChange({ target: { name: 'customerFirstName', value: fn } });
         onInputChange({ target: { name: 'customerLastName', value: ln } });
-        // Store digits-only in parent state
         onInputChange({ target: { name: 'customerPhone', value: phDigits } });
         onInputChange({ target: { name: 'customerEmail', value: em } });
-        if (id !== null) {
-            onInputChange({ target: { name: 'customerId', value: id } });
-        }
+
         setLookupModalOpen(false);
     };
 
