@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Plus, ChevronUp } from "lucide-react";
+import { Plus, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
@@ -24,7 +24,7 @@ function TicketImage({ path, alt, className }) {
     if (!src) {
         return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
     }
-    return <img src={src} alt={alt} className={className} />;
+    return <img src={src || "/placeholder.svg"} alt={alt} className={className} />;
 }
 
 async function fetchPresignedPhotoUrl(photoUrl) {
@@ -47,6 +47,7 @@ const RepairQueue = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
+    const [carouselIndices, setCarouselIndices] = useState({});
 
     // Resolve a stable key for each request so dropdown state is tied to a single card
     const resolveTicketKey = (request) => {
@@ -62,6 +63,21 @@ const RepairQueue = () => {
         "Completed"
     ];
 
+    const handleCarouselNext = (e, ticketKey, totalImages) => {
+        e.stopPropagation();
+        setCarouselIndices(prev => ({
+            ...prev,
+            [ticketKey]: (prev[ticketKey] ?? 0) + 1 >= totalImages ? 0 : (prev[ticketKey] ?? 0) + 1
+        }));
+    };
+
+    const handleCarouselPrev = (e, ticketKey, totalImages) => {
+        e.stopPropagation();
+        setCarouselIndices(prev => ({
+            ...prev,
+            [ticketKey]: (prev[ticketKey] ?? 0) - 1 < 0 ? totalImages - 1 : (prev[ticketKey] ?? 0) - 1
+        }));
+    };
 
     const handleCardClick = (request) => {
         setSelectedRequest(request);
@@ -139,7 +155,7 @@ const RepairQueue = () => {
                     setTicketRequests(uniqueTickets);
 
                 } else if (role === "customer") {
-                    // CUSTOMER: Fetch tickets linked to the customer’s email
+                    // CUSTOMER: Fetch tickets linked to the customer's email
                     if (!email) {
                         console.warn("No customer email found in sessionStorage");
                         return;
@@ -294,24 +310,46 @@ const RepairQueue = () => {
                                                             onClick={() => handleCardClick(request)}
                                                             className="cursor-pointer flex-row bg-[rgba(37,99,235,0.05)] border border-[#2563eb] rounded-lg p-4 shadow-sm hover:shadow-md transition"
                                                         >
-                                                            {/* 🔹 Repair Photos Section */}
                                                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-3 shadow-sm mb-3">
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {request.repairPhotosUrls?.length > 0 ? (
-                                                                        request.repairPhotosUrls.map((url, idx) => (
-                                                                            <button
-                                                                                key={idx}
-                                                                                type="button"
-                                                                                className="group relative w-40 h-40 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40"
-                                                                            >
-                                                                                <TicketImage path={url} alt={`Repair Photo ${idx + 1}`} className="object-cover w-full h-full" />
-                                                                                <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                                                            </button>
-                                                                        ))
-                                                                    ) : (
+                                                                {request.repairPhotosUrls?.length > 0 ? (
+                                                                    <div className="relative">
+                                                                        {/* Carousel Display */}
+                                                                        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200">
+                                                                            <TicketImage
+                                                                                path={request.repairPhotosUrls[carouselIndices[ticketKey] ?? 0]}
+                                                                                alt={`Repair Photo ${(carouselIndices[ticketKey] ?? 0) + 1}`}
+                                                                                className="object-cover w-full h-full"
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* Navigation Buttons */}
+                                                                        {request.repairPhotosUrls.length > 1 && (
+                                                                            <>
+                                                                                <button
+                                                                                    onClick={(e) => handleCarouselPrev(e, ticketKey, request.repairPhotosUrls.length)}
+                                                                                    className="absolute left-1 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full transition"
+                                                                                >
+                                                                                    <ChevronLeft className="w-4 h-4" />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={(e) => handleCarouselNext(e, ticketKey, request.repairPhotosUrls.length)}
+                                                                                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full transition"
+                                                                                >
+                                                                                    <ChevronRight className="w-4 h-4" />
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Image Counter */}
+                                                                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                                                                            {(carouselIndices[ticketKey] ?? 0) + 1} / {request.repairPhotosUrls.length}
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="w-full h-40 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
                                                                         <span className="text-xs text-gray-400">No photos</span>
-                                                                    )}
-                                                                </div>
+                                                                    </div>
+                                                                )}
                                                             </section>
 
                                                             <p className="text-[12px] mt-[5px]">Ticket Number# {request.ticketNumber}</p>
