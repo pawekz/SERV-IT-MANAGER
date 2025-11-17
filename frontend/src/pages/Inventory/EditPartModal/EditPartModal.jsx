@@ -35,6 +35,23 @@ const EditPartModal = ({
     const [lookupError, setLookupError] = useState(null);
     const [isLookingUp, setIsLookingUp] = useState(false);
 
+    // Phone formatting helpers (match SignUpPage behavior)
+    const extractPhoneDigits = (raw) => {
+        const digits = String(raw || '').replace(/\D/g, '');
+        // Prefer last 10 digits if longer (handles leading 0 or country code like 63)
+        return digits.length > 10 ? digits.slice(-10) : digits;
+    };
+    const formatPhoneDisplay = (raw) => {
+        const digits = extractPhoneDigits(raw);
+        let formatted = '';
+        if (digits.length > 0) {
+            formatted = digits.slice(0, 3);
+            if (digits.length > 3) formatted += ' ' + digits.slice(3, 6);
+            if (digits.length > 6) formatted += ' ' + digits.slice(6, 10);
+        }
+        return formatted;
+    };
+
     // Initialize state when editPart changes
     useEffect(() => {
         if (editPart) {
@@ -48,7 +65,9 @@ const EditPartModal = ({
             // Initialize customer fields from editPart if present
             setCustomerFirstName(editPart.customerFirstName || (editPart.customer ? editPart.customer.firstName : '') || '');
             setCustomerLastName(editPart.customerLastName || (editPart.customer ? editPart.customer.lastName : '') || '');
-            setCustomerPhone(editPart.customerPhone || (editPart.customer ? editPart.customer.phone : '') || '');
+            // Phone: show formatted display from any stored value
+            const initialPhone = editPart.customerPhone || (editPart.customer ? editPart.customer.phone : '') || '';
+            setCustomerPhone(formatPhoneDisplay(initialPhone));
             setCustomerEmail(editPart.customerEmail || (editPart.customer ? editPart.customer.email : '') || '');
             setCustomerId(editPart.customerId || null);
         }
@@ -59,17 +78,20 @@ const EditPartModal = ({
         if (fetchedCustomer) {
             const fn = fetchedCustomer.firstName || '';
             const ln = fetchedCustomer.lastName || '';
-            const ph = fetchedCustomer.phone || '';
+            const phRaw = fetchedCustomer.phone || '';
+            const phDigits = extractPhoneDigits(phRaw);
+            const phDisplay = formatPhoneDisplay(phDigits);
             const em = fetchedCustomer.email || '';
 
             setCustomerFirstName(fn);
             setCustomerLastName(ln);
-            setCustomerPhone(ph);
+            setCustomerPhone(phDisplay);
             setCustomerEmail(em);
 
             onInputChange({ target: { name: 'customerFirstName', value: fn } });
             onInputChange({ target: { name: 'customerLastName', value: ln } });
-            onInputChange({ target: { name: 'customerPhone', value: ph } });
+            // Store digits-only in parent state
+            onInputChange({ target: { name: 'customerPhone', value: phDigits } });
             onInputChange({ target: { name: 'customerEmail', value: em } });
         }
     }, [fetchedCustomer]);
@@ -179,9 +201,13 @@ const EditPartModal = ({
         setCustomerLastName(e.target.value);
         onInputChange({ target: { name: 'customerLastName', value: e.target.value } });
     };
+    // Replace simple phone handler with formatted input and digits-only storage
     const handleCustomerPhoneChange = (e) => {
-        setCustomerPhone(e.target.value);
-        onInputChange({ target: { name: 'customerPhone', value: e.target.value } });
+        const digits = extractPhoneDigits(e.target.value);
+        const display = formatPhoneDisplay(digits);
+        setCustomerPhone(display);
+        // Store digits-only in parent state
+        onInputChange({ target: { name: 'customerPhone', value: digits } });
     };
     const handleCustomerEmailChange = (e) => {
         setCustomerEmail(e.target.value);
@@ -248,19 +274,22 @@ const EditPartModal = ({
         if (!lookupResult) return;
         const fn = lookupResult.firstName || '';
         const ln = lookupResult.lastName || '';
-        const ph = lookupResult.phoneNumber || lookupResult.phone || '';
+        const phRaw = lookupResult.phoneNumber || lookupResult.phone || '';
+        const phDigits = extractPhoneDigits(phRaw);
+        const phDisplay = formatPhoneDisplay(phDigits);
         const em = lookupResult.email || '';
         const id = lookupResult.userId || null;
 
         setCustomerFirstName(fn);
         setCustomerLastName(ln);
-        setCustomerPhone(ph);
+        setCustomerPhone(phDisplay);
         setCustomerEmail(em);
         setCustomerId(id);
 
         onInputChange({ target: { name: 'customerFirstName', value: fn } });
         onInputChange({ target: { name: 'customerLastName', value: ln } });
-        onInputChange({ target: { name: 'customerPhone', value: ph } });
+        // Store digits-only in parent state
+        onInputChange({ target: { name: 'customerPhone', value: phDigits } });
         onInputChange({ target: { name: 'customerEmail', value: em } });
         if (id !== null) {
             onInputChange({ target: { name: 'customerId', value: id } });
@@ -546,15 +575,27 @@ const EditPartModal = ({
 
                                 <div className="grid grid-cols-2 gap-4 items-end">
                                     <div>
-                                        <label className="block text-gray-700 text-xs font-medium mb-1">Phone</label>
-                                        <input
-                                            type="text"
-                                            name="customerPhone"
-                                            value={customerPhone}
-                                            onChange={handleCustomerPhoneChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                            placeholder="Phone"
-                                        />
+                                        <label className="block text-gray-700 text-xs font-medium mb-1">Phone Number</label>
+                                        <div className="flex items-center w-full border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-colors overflow-hidden">
+                                            <div className="flex items-center bg-gray-50 px-3 py-2 border-r border-gray-200">
+                                                <img
+                                                    src="https://flagcdn.com/16x12/ph.png"
+                                                    alt="Philippine flag"
+                                                    className="mr-2 w-5 h-auto"
+                                                    loading="lazy"
+                                                />
+                                                <span className="text-sm text-gray-600">+63</span>
+                                            </div>
+                                            <input
+                                                maxLength={13}
+                                                type="tel"
+                                                name="customerPhone"
+                                                value={customerPhone}
+                                                onChange={handleCustomerPhoneChange}
+                                                className="flex-1 px-3 py-2 text-sm border-none focus:outline-none"
+                                                placeholder="905 123 4567"
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-gray-700 text-xs font-medium mb-1">Email</label>
