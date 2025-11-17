@@ -114,4 +114,16 @@ public class PartEntity {
     // New column to store picture URL for the part
     @Column(name = "part_photo_url", length = 1024)
     private String partPhotoUrl;
+
+    @Column(name = "customer_first_name")
+    private String customerFirstName;
+
+    @Column(name = "customer_last_name")
+    private String customerLastName;
+
+    @Column(name = "customer_phone")
+    private String customerPhone;
+
+    @Column(name = "customer_email")
+    private String customerEmail;
 }

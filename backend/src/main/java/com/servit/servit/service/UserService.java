@@ -413,7 +413,8 @@ public class UserService {
         try {
             logger.info("Forgot password request for email: {}", req.getEmail());
 
-            UserEntity user = userRepo.findByEmail(req.getEmail())
+            // Verify user exists before sending OTP
+            userRepo.findByEmail(req.getEmail())
                     .orElseThrow(() -> {
                         logger.error("User not found for email: {}", req.getEmail());
                         return new IllegalArgumentException("User not found");
@@ -503,29 +504,57 @@ public class UserService {
     }
 
     @Transactional
-    public GetUserResponseDTO getUser(Integer userId) {
+    public GetUserResponseDTO getUser(Integer id) {
         try {
-            logger.info("Fetching user with ID: {}", userId);
+            logger.info("Fetching user by id: {}", id);
 
-            UserEntity user = userRepo.findById(userId)
+            UserEntity user = userRepo.findById(id)
                     .orElseThrow(() -> {
-                        logger.error("User not found for ID: {}", userId);
+                        logger.error("User not found for id: {}", id);
                         return new IllegalArgumentException("User not found");
                     });
 
             GetUserResponseDTO response = new GetUserResponseDTO(
                     user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
                     user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
-                    user.getStatus(), user.getProfilePictureUrl()
-            );
-            logger.info("Successfully fetched user with ID: {}", userId);
+                    user.getStatus(), user.getProfilePictureUrl());
+            logger.info("Successfully fetched user by id: {}", id);
             return response;
-
         } catch (IllegalArgumentException e) {
             logger.error("Get user validation error: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Unexpected error fetching user with ID: {}", userId, e);
+            logger.error("Unexpected error fetching user by id: {}", id, e);
+            throw new RuntimeException("Failed to fetch user", e);
+        }
+    }
+
+    @Transactional
+    public GetUserResponseDTO getUserByEmail(String email) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be empty");
+            }
+
+            logger.info("Fetching user by email: {}", email);
+
+            UserEntity user = userRepo.findByEmail(email)
+                    .orElseThrow(() -> {
+                        logger.error("User not found for email: {}", email);
+                        return new IllegalArgumentException("User not found");
+                    });
+
+            GetUserResponseDTO response = new GetUserResponseDTO(
+                    user.getUserId(), user.getFirstName(), user.getLastName(), user.getUsername(),
+                    user.getEmail(), user.getRole().name(), user.getPhoneNumber(),
+                    user.getStatus(), user.getProfilePictureUrl());
+            logger.info("Successfully fetched user by email: {}", email);
+            return response;
+        } catch (IllegalArgumentException e) {
+            logger.error("Get user by email validation error: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error fetching user by email: {}", email, e);
             throw new RuntimeException("Failed to fetch user", e);
         }
     }
@@ -667,7 +696,8 @@ public class UserService {
         try {
             logger.info("User deletion request for user ID: {}", userId);
 
-            UserEntity user = userRepo.findById(userId)
+            // Verify user exists before soft delete
+            userRepo.findById(userId)
                     .orElseThrow(() -> {
                         logger.error("User not found for ID: {}", userId);
                         return new IllegalArgumentException("User not found");

@@ -21,7 +21,12 @@ public class UpdatePartRequestDTO {
     private LocalDateTime warrantyExpiration;
     private String addedBy;
     private String modifiedBy;
-    
+
+    private String customerFirstName;
+    private String customerLastName;
+    private String customerPhone;
+    private String customerEmail;
+
     // Supplier information (for SUPPLIER_REPLACEMENT parts)
     private String supplierName;
     private String supplierPartNumber;
@@ -37,4 +42,4 @@ public class UpdatePartRequestDTO {
 
     // URL to the part's picture
     private String partPhotoUrl;
-} 
+}

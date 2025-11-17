@@ -45,6 +45,11 @@ public class PartResponseDTO {
     private String brand;
     private String model;
 
+    private String customerFirstName;
+    private String customerLastName;
+    private String customerPhone;
+    private String customerEmail;
+
     // URL to the part's picture
     private String partPhotoUrl;
 }

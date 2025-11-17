@@ -287,6 +287,17 @@ public class UserController {
         }
     }
 
+    @GetMapping("/findByEmail")
+    public ResponseEntity<?> findByEmail(@RequestParam String email) {
+        try {
+            return ResponseEntity.ok(userSvc.getUserByEmail(email));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
+        }
+    }
+
     @PatchMapping("/changePassword/{id}")
     public ResponseEntity<?> changePassword(@PathVariable Integer id, @RequestBody ChangePasswordRequestDTO req) {
         try {

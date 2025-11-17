@@ -25,13 +25,11 @@ import com.servit.servit.entity.InventoryTransactionEntity;
 import com.servit.servit.entity.PartEntity;
 import com.servit.servit.repository.PartRepository;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -240,8 +238,8 @@ public class PartController {
             List<String> partNumbers = partService.getAllParts().stream()
                     .map(PartResponseDTO::getPartNumber)
                     .distinct()
-                    .collect(Collectors.toList());
-            
+                    .toList();
+
             List<PartNumberStockSummaryDTO> summaries = new ArrayList<>();
             for (String partNumber : partNumbers) {
                 PartNumberStockSummaryDTO summary = stockTrackingService.getStockSummary(partNumber);
@@ -616,8 +614,8 @@ public class PartController {
             List<PartResponseDTO> activeParts = parts.stream()
                     .filter(part -> !part.getIsDeleted())
                     .filter(part -> part.getPartNumber().equals(partNumber))
-                    .collect(Collectors.toList());
-            
+                    .toList();
+
             int partCount = activeParts.size();
             int stockSum = activeParts.stream().mapToInt(PartResponseDTO::getCurrentStock).sum();
             
@@ -649,18 +647,6 @@ public class PartController {
         }
     }
 
-    @PostMapping("/stock/resolveAlert/{partNumber}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> resolveStockAlert(@PathVariable String partNumber) {
-        try {
-            stockTrackingService.resolveAlert(partNumber);
-            return ResponseEntity.ok("Stock alert resolved for part number: " + partNumber);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error resolving stock alert: " + e.getMessage());
-        }
-    }
-
     // Add new endpoint to verify warranty
     @GetMapping("/verifyWarranty/{partId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
@@ -683,8 +669,8 @@ public class PartController {
             List<PartEntity> parts = partRepository.findAllByPartNumber(partNumber)
                 .stream()
                 .filter(part -> !part.getIsDeleted())
-                .collect(Collectors.toList());
-            
+                .toList();
+
             if (!parts.isEmpty()) {
                 // Use the first non-deleted part to get the common details
                 PartEntity existingPart = parts.get(0);

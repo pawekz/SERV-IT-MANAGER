@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,16 +24,13 @@ public class PartNumberStockTrackingService {
     
     private final PartNumberStockTrackingRepository trackingRepository;
     private final PartRepository partRepository;
-    private final AlertService alertService;
-    
+
     @Autowired
     public PartNumberStockTrackingService(
             PartNumberStockTrackingRepository trackingRepository,
-            PartRepository partRepository,
-            AlertService alertService) {
+            PartRepository partRepository) {
         this.trackingRepository = trackingRepository;
         this.partRepository = partRepository;
-        this.alertService = alertService;
     }
     
     /**
@@ -51,8 +47,8 @@ public class PartNumberStockTrackingService {
         List<PartEntity> parts = partRepository.findAllByPartNumber(partNumber)
                 .stream()
                 .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                .collect(Collectors.toList());
-        
+                .toList();
+
         if (parts.isEmpty()) {
             // If no non-deleted parts exist, we should remove or mark the tracking as inactive
             // For now, we'll keep the tracking but set stock to 0
@@ -109,13 +105,6 @@ public class PartNumberStockTrackingService {
     }
     
     /**
-     * Checks if a part number is low stock (for manual alerts)
-     */
-    private boolean isLowStock(PartNumberStockTrackingEntity tracking) {
-        return tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold();
-    }
-    
-    /**
      * Updates stock tracking settings for a part number
      */
     public PartNumberStockTrackingEntity updateTrackingSettings(UpdatePartNumberStockTrackingDTO dto) {
@@ -148,7 +137,7 @@ public class PartNumberStockTrackingService {
         List<PartNumberStockTrackingEntity> lowStockItems = trackingRepository.findLowStockPartNumbers();
         return lowStockItems.stream()
                 .map(this::convertToSummaryDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -173,7 +162,7 @@ public class PartNumberStockTrackingService {
         List<PartNumberStockTrackingEntity> needingReorder = trackingRepository.findPartNumbersNeedingReorder();
         return needingReorder.stream()
                 .map(this::convertToSummaryDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -183,7 +172,7 @@ public class PartNumberStockTrackingService {
         List<PartNumberStockTrackingEntity> results = trackingRepository.searchPartNumbers(searchTerm);
         return results.stream()
                 .map(this::convertToSummaryDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -198,8 +187,8 @@ public class PartNumberStockTrackingService {
             List<PartEntity> activeParts = partRepository.findAllByPartNumber(partNumber)
                     .stream()
                     .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                    .collect(Collectors.toList());
-            
+                    .toList();
+
             // Only update tracking if there are active parts
             if (!activeParts.isEmpty()) {
                 updateStockTracking(partNumber);
@@ -221,8 +210,10 @@ public class PartNumberStockTrackingService {
     
     /**
      * Manual alert resolution - removed as alerts are now handled manually
+     * @deprecated This method is no longer functional as alert system was removed
      */
     @Deprecated
+    @SuppressWarnings("unused")
     public void resolveAlert(String partNumber) {
         // Alert functionality removed - manual inventory management approach
     }
@@ -248,8 +239,8 @@ public class PartNumberStockTrackingService {
         List<PartEntity> parts = partRepository.findAllByPartNumber(tracking.getPartNumber())
                 .stream()
                 .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                .collect(Collectors.toList());
-        
+                .toList();
+
         long uniqueSuppliers = parts.stream()
                 .map(PartEntity::getSupplierName)
                 .filter(supplier -> supplier != null && !supplier.trim().isEmpty())
@@ -270,7 +261,7 @@ public class PartNumberStockTrackingService {
                 .map(PartEntity::getSupplierName)
                 .filter(supplier -> supplier != null && !supplier.trim().isEmpty())
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
         dto.setAvailableSuppliers(suppliers);
         
         // Add sum of currentStock fields for reference

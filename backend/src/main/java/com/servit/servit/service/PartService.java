@@ -23,7 +23,6 @@ import com.servit.servit.util.FileUtil;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.time.temporal.ChronoUnit;
 
 import org.slf4j.Logger;
@@ -86,7 +85,7 @@ public class PartService {
             List<PartEntity> existingParts = partRepository.findAllByPartNumber(req.getPartNumber())
                     .stream()
                     .filter(p -> !p.getIsDeleted())
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (existingParts.isEmpty()) {
                 throw new IllegalArgumentException("No active parts found with part number: " + req.getPartNumber());
@@ -157,7 +156,7 @@ public class PartService {
             List<PartEntity> existingParts = partRepository.findAllByPartNumber(req.getPartNumber())
                     .stream()
                     .filter(p -> !p.getIsDeleted())
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (existingParts.isEmpty()) {
                 throw new IllegalArgumentException("No active parts found with part number: " + req.getPartNumber());
@@ -243,7 +242,7 @@ public class PartService {
             List<PartEntity> existingParts = partRepository.findAllByPartNumber(partNumber)
                     .stream()
                     .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (existingParts.isEmpty()) {
                 throw new IllegalArgumentException("Part number does not exist: " + partNumber);
@@ -333,7 +332,7 @@ public class PartService {
         }
 
         logger.info("Bulk parts added successfully: {} parts with part number: {}", savedParts.size(), partNumber);
-        return savedParts.stream().map(this::convertToDto).collect(Collectors.toList());
+        return savedParts.stream().map(this::convertToDto).toList();
     }
 
     /**
@@ -367,10 +366,20 @@ public class PartService {
                 }
                 part.setDatePurchasedByCustomer(partDto.getDatePurchasedByCustomer());
                 part.setWarrantyExpiration(partDto.getWarrantyExpiration());
+                // If customer info present in DTO, save snapshot/reference
+                if (partDto.getCustomerFirstName() != null) part.setCustomerFirstName(partDto.getCustomerFirstName());
+                if (partDto.getCustomerLastName() != null) part.setCustomerLastName(partDto.getCustomerLastName());
+                if (partDto.getCustomerPhone() != null) part.setCustomerPhone(partDto.getCustomerPhone());
+                if (partDto.getCustomerEmail() != null) part.setCustomerEmail(partDto.getCustomerEmail());
             } else {
                 // Clear warranty information if not customer purchased
                 part.setDatePurchasedByCustomer(null);
                 part.setWarrantyExpiration(null);
+
+                part.setCustomerFirstName(null);
+                part.setCustomerLastName(null);
+                part.setCustomerPhone(null);
+                part.setCustomerEmail(null);
             }
         }
 
@@ -458,7 +467,7 @@ public class PartService {
     @Transactional(readOnly = true)
     public List<PartResponseDTO> searchParts(String searchTerm) {
         logger.info("Searching parts with term: {}", searchTerm);
-        return partRepository.searchParts(searchTerm).stream().map(this::convertToDto).collect(Collectors.toList());
+        return partRepository.searchParts(searchTerm).stream().map(this::convertToDto).toList();
     }
 
     // ================ List Operations ================
@@ -472,7 +481,7 @@ public class PartService {
         logger.info("Retrieving all parts");
         return partRepository.findByIsDeletedFalse().stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -499,7 +508,7 @@ public class PartService {
                     }
                 })
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -523,13 +532,13 @@ public class PartService {
             List<PartEntity> partsForNumber = partRepository.findAllByPartNumber(lowStockSummary.getPartNumber())
                     .stream()
                     .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                    .collect(Collectors.toList());
+                    .toList();
             lowStockParts.addAll(partsForNumber);
         }
 
         return lowStockParts.stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -541,7 +550,7 @@ public class PartService {
     public List<PartResponseDTO> getAllPartsForQuotation() {
         try {
             List<PartEntity> parts = partRepository.findEligiblePartsForQuotation();
-            return parts.stream().map(this::convertToDto).collect(Collectors.toList());
+            return parts.stream().map(this::convertToDto).toList();
         } catch (Exception e) {
             logger.error("Error retrieving parts for quotation: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to retrieve parts for quotation", e);
@@ -823,6 +832,12 @@ public class PartService {
         dto.setVersion(partEntity.getVersion());
         dto.setBrand(partEntity.getBrand());
         dto.setModel(partEntity.getModel());
+
+        dto.setCustomerFirstName(partEntity.getCustomerFirstName());
+        dto.setCustomerLastName(partEntity.getCustomerLastName());
+        dto.setCustomerPhone(partEntity.getCustomerPhone());
+        dto.setCustomerEmail(partEntity.getCustomerEmail());
+
         // Part picture URL
         dto.setPartPhotoUrl(partEntity.getPartPhotoUrl());
 
