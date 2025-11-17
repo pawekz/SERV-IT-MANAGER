@@ -531,6 +531,10 @@ public class UserService {
     @Transactional
     public GetUserResponseDTO getUserByEmail(String email) {
         try {
+            if (email == null || email.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be empty");
+            }
+
             logger.info("Fetching user by email: {}", email);
 
             UserEntity user = userRepo.findByEmail(email)
