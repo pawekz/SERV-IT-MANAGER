@@ -290,6 +290,20 @@ public class UserController {
     @GetMapping("/findByEmail")
     public ResponseEntity<?> findByEmail(@RequestParam String email) {
         try {
+            String authenticatedUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+            UserEntity authenticatedUser = userRepo.findByEmail(authenticatedUserEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found"));
+
+            String userRole = authenticatedUser.getRole().name();
+
+            if (!"ADMIN".equals(userRole) && !"TECHNICIAN".equals(userRole)) {
+                if (!email.equalsIgnoreCase(authenticatedUserEmail)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("error", "You do not have permission to access other users' information"));
+                }
+            }
+
             return ResponseEntity.ok(userSvc.getUserByEmail(email));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));

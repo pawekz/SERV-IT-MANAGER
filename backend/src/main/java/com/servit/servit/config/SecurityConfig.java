@@ -98,6 +98,7 @@ public class SecurityConfig {
                             "/repairTicket/generateRepairTicketNumber",
                             "/repairTicket/getAllRepairTickets",
                             "/user/getTechnicianByEmail",
+                            "/user/findByEmail",
                             "/repairTicket/getAllRepairTickets",
                             "/repairTicket/uploadRepairTicketPdf/*",
                             "/part/addPart",
