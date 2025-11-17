@@ -29,6 +29,11 @@ const EditPartModal = ({
     const [customerLastName, setCustomerLastName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
+    const [customerId, setCustomerId] = useState(null);
+    const [lookupModalOpen, setLookupModalOpen] = useState(false);
+    const [lookupResult, setLookupResult] = useState(null);
+    const [lookupError, setLookupError] = useState(null);
+    const [isLookingUp, setIsLookingUp] = useState(false);
 
     // Initialize state when editPart changes
     useEffect(() => {
@@ -45,6 +50,7 @@ const EditPartModal = ({
             setCustomerLastName(editPart.customerLastName || (editPart.customer ? editPart.customer.lastName : '') || '');
             setCustomerPhone(editPart.customerPhone || (editPart.customer ? editPart.customer.phone : '') || '');
             setCustomerEmail(editPart.customerEmail || (editPart.customer ? editPart.customer.email : '') || '');
+            setCustomerId(editPart.customerId || null);
         }
     }, [editPart]);
 
@@ -183,9 +189,89 @@ const EditPartModal = ({
     };
 
     const handleLookupCustomer = () => {
-        if (fetchCustomer) {
-            fetchCustomer({ phone: customerPhone, email: customerEmail });
+        const emailToLookup = customerEmail && customerEmail.trim();
+        if (!emailToLookup) {
+            setLookupError('Please enter an email to lookup');
+            setLookupModalOpen(true);
+            setLookupResult(null);
+            return;
         }
+        setIsLookingUp(true);
+        setLookupError(null);
+        const token = localStorage.getItem('authToken');
+        const base = window.__API_BASE__ || '';
+        const url = `${base.replace(/\/$/, '')}/user/findByEmail?email=${encodeURIComponent(emailToLookup)}`;
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+        })
+            .then(async res => {
+                setIsLookingUp(false);
+                const contentType = res.headers.get('content-type') || '';
+                if (res.ok) {
+                    if (!contentType.includes('application/json')) {
+                        setLookupResult(null);
+                        setLookupError('Unexpected response format');
+                        setLookupModalOpen(true);
+                        return;
+                    }
+                    const data = await res.json();
+                    setLookupResult(data);
+                    setLookupModalOpen(true);
+                } else if (res.status === 404) {
+                    setLookupResult(null);
+                    setLookupError('Customer Not Found');
+                    setLookupModalOpen(true);
+                } else {
+                    let bodyText = '';
+                    try {
+                        bodyText = contentType.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+                    } catch (e) {
+                        bodyText = 'Unable to read error body';
+                    }
+                    setLookupResult(null);
+                    setLookupError(`Lookup failed (status ${res.status}): ${bodyText}`);
+                    setLookupModalOpen(true);
+                }
+            })
+            .catch(err => {
+                setIsLookingUp(false);
+                setLookupResult(null);
+                setLookupError('Lookup failed: ' + err.message);
+                setLookupModalOpen(true);
+            });
+    };
+
+    const handleUseCustomerInfo = () => {
+        if (!lookupResult) return;
+        const fn = lookupResult.firstName || '';
+        const ln = lookupResult.lastName || '';
+        const ph = lookupResult.phoneNumber || lookupResult.phone || '';
+        const em = lookupResult.email || '';
+        const id = lookupResult.userId || null;
+
+        setCustomerFirstName(fn);
+        setCustomerLastName(ln);
+        setCustomerPhone(ph);
+        setCustomerEmail(em);
+        setCustomerId(id);
+
+        onInputChange({ target: { name: 'customerFirstName', value: fn } });
+        onInputChange({ target: { name: 'customerLastName', value: ln } });
+        onInputChange({ target: { name: 'customerPhone', value: ph } });
+        onInputChange({ target: { name: 'customerEmail', value: em } });
+        if (id !== null) {
+            onInputChange({ target: { name: 'customerId', value: id } });
+        }
+        setLookupModalOpen(false);
+    };
+
+    const handleCloseLookupModal = () => {
+        setLookupModalOpen(false);
+        setLookupError(null);
+        setLookupResult(null);
     };
 
     if (!isOpen || !editPart) return null;
@@ -488,34 +574,45 @@ const EditPartModal = ({
                                         type="button"
                                         onClick={handleLookupCustomer}
                                         className="px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300"
-                                        disabled={!fetchCustomer || fetchingCustomer}
+                                        disabled={isLookingUp}
                                     >
-                                        {fetchingCustomer ? 'Looking up...' : 'Lookup Customer'}
+                                        {isLookingUp ? 'Looking up...' : 'Lookup Customer'}
                                     </button>
-                                    <div className="text-xs text-gray-500">Use phone or email to find existing customer records</div>
+                                    <div className="text-xs text-gray-500">Use email to find existing customer records</div>
                                 </div>
 
-                                {/* If fetchedCustomer exists, show it in a small table */}
-                                {fetchedCustomer && (
-                                    <div className="mt-4 overflow-x-auto">
-                                        <table className="w-full text-sm text-left border-collapse">
-                                            <thead>
-                                            <tr>
-                                                <th className="px-2 py-1 border-b text-gray-600">First Name</th>
-                                                <th className="px-2 py-1 border-b text-gray-600">Last Name</th>
-                                                <th className="px-2 py-1 border-b text-gray-600">Phone</th>
-                                                <th className="px-2 py-1 border-b text-gray-600">Email</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            <tr className="bg-white">
-                                                <td className="px-2 py-1 border-b">{fetchedCustomer.firstName || '-'}</td>
-                                                <td className="px-2 py-1 border-b">{fetchedCustomer.lastName || '-'}</td>
-                                                <td className="px-2 py-1 border-b">{fetchedCustomer.phone || '-'}</td>
-                                                <td className="px-2 py-1 border-b">{fetchedCustomer.email || '-'}</td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
+                                {lookupModalOpen && (
+                                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-black opacity-40" onClick={handleCloseLookupModal}></div>
+                                        <div className="bg-white p-4 rounded-md z-10 w-96">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h3 className="text-sm font-medium">Customer Lookup</h3>
+                                                <button onClick={handleCloseLookupModal} className="text-gray-500">X</button>
+                                            </div>
+                                            {lookupError && (
+                                                <div className="mb-2 text-sm text-gray-700">{lookupError}</div>
+                                            )}
+                                            {lookupResult && (
+                                                <div>
+                                                    <div className="text-sm text-gray-700 mb-2">Customer Found</div>
+                                                    <table className="w-full text-sm text-left mb-3">
+                                                        <tbody>
+                                                        <tr><td className="font-medium">First Name</td><td>{lookupResult.firstName || '-'}</td></tr>
+                                                        <tr><td className="font-medium">Last Name</td><td>{lookupResult.lastName || '-'}</td></tr>
+                                                        <tr><td className="font-medium">Phone</td><td>{lookupResult.phoneNumber || lookupResult.phone || '-'}</td></tr>
+                                                        <tr><td className="font-medium">Email</td><td>{lookupResult.email || '-'}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                    <div className="flex justify-end space-x-2">
+                                                        <button onClick={handleCloseLookupModal} className="px-3 py-1 border rounded">Cancel</button>
+                                                        <button onClick={handleUseCustomerInfo} className="px-3 py-1 bg-blue-600 text-white rounded">Use Customer Info</button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {!lookupResult && !lookupError && (
+                                                <div className="text-sm text-gray-700">No data</div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
