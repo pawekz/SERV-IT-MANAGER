@@ -32,14 +32,21 @@ function getUserInfoFromToken() {
 
 // Utility: status style mapping similar style approach to other tabs
 const statusChipClasses = (statusRaw) => {
-    const status = (statusRaw || '').toUpperCase();
+    const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
-        COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        COMPLETE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
-        PROCESSING: 'bg-blue-50 text-blue-700 border-blue-200',
-        PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-        AWAITING_PARTS: 'bg-amber-50 text-amber-700 border-amber-200',
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        IN_PROGRESS: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        PROCESSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        COMPLETE: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        PENDING: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         CANCELLED: 'bg-red-50 text-red-700 border-red-200',
         CANCELED: 'bg-red-50 text-red-700 border-red-200',
         FAILED: 'bg-red-50 text-red-700 border-red-200',
@@ -74,36 +81,36 @@ const HistoryPage = () => {
         setError(null);
         try {
             {
-                 const searchTerm = search.trim() || '';
-                 const res = await api.get('/repairTicket/searchRepairTickets', {
-                     params: {
-                         searchTerm,
-                         page,
-                         size: pageSize
-                     }
-                 });
-                 const newTickets = res.data.content || [];
-                 const totalPagesCount = res.data.totalPages ?? 0;
-                 // Try to extract total elements (common in Spring Data responses)
-                 const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
-                 setTickets(newTickets);
-                 setCurrentPage(page);
-                 // ensure we always have at least 1 page so pagination UI renders consistently
-                 setTotalPages(Math.max(1, totalPagesCount));
-                 // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
-                 if (typeof totalElements === 'number') {
-                     setTotalEntries(totalElements);
-                 } else {
-                     // if server didn't provide total, estimate conservatively
-                     const estimate = (newTickets.length || 0) + (page * pageSize || 0);
-                     setTotalEntries(estimate || 0);
-                 }
+                const searchTerm = search.trim() || '';
+                const res = await api.get('/repairTicket/searchRepairTickets', {
+                    params: {
+                        searchTerm,
+                        page,
+                        size: pageSize
+                    }
+                });
+                const newTickets = res.data.content || [];
+                const totalPagesCount = res.data.totalPages ?? 0;
+                // Try to extract total elements (common in Spring Data responses)
+                const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
+                setTickets(newTickets);
+                setCurrentPage(page);
+                // ensure we always have at least 1 page so pagination UI renders consistently
+                setTotalPages(Math.max(1, totalPagesCount));
+                // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
+                if (typeof totalElements === 'number') {
+                    setTotalEntries(totalElements);
+                } else {
+                    // if server didn't provide total, estimate conservatively
+                    const estimate = (newTickets.length || 0) + (page * pageSize || 0);
+                    setTotalEntries(estimate || 0);
+                }
             }
-         } catch (err) {
-             setError(err.response?.data?.message || err.message || 'Unknown error');
-         } finally {
-             setLoading(false);
-         }
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Unknown error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // refetch on role/email/pageSize/search changes (for non-customer) or pageSize change (for customer)
@@ -186,7 +193,7 @@ const HistoryPage = () => {
         }
         // eslint-disable-next-line
     }, [clientFilteredTickets.length, pageSize, role]);
-    
+
     // Keep totalEntries in sync for CUSTOMER when filters change
     useEffect(() => {
         if (role === 'CUSTOMER') {
@@ -205,50 +212,50 @@ const HistoryPage = () => {
                 <div className="overflow-x-auto mb-2">
                     <table className="min-w-full text-sm text-gray-700">
                         <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-600 border-b border-gray-200">
-                            <tr>
-                                <th className="px-5 py-3 text-left font-semibold">Ticket #</th>
-                                <th className="px-5 py-3 text-left font-semibold">First Name</th>
-                                <th className="px-5 py-3 text-left font-semibold">Last Name</th>
-                                <th className="px-5 py-3 text-left font-semibold">Device</th>
-                                <th className="px-5 py-3 text-left font-semibold">Status</th>
-                                <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Check-In Date</th>
-                                <th className="px-5 py-3 text-left font-semibold">Actions</th>
-                            </tr>
+                        <tr>
+                            <th className="px-5 py-3 text-left font-semibold">Ticket #</th>
+                            <th className="px-5 py-3 text-left font-semibold">First Name</th>
+                            <th className="px-5 py-3 text-left font-semibold">Last Name</th>
+                            <th className="px-5 py-3 text-left font-semibold">Device</th>
+                            <th className="px-5 py-3 text-left font-semibold">Status</th>
+                            <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Check-In Date</th>
+                            <th className="px-5 py-3 text-left font-semibold">Actions</th>
+                        </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {displayedTickets.map(ticket => {
-                                const statusVal = ticket.status || ticket.repairStatus || 'N/A';
-                                const first = ticket.customerFirstName || '';
-                                const last = ticket.customerLastName || '';
-                                return (
-                                    <tr key={ticket.ticketNumber}
-                                        className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"
-                                        onClick={() => setSelectedTicket(ticket)}
-                                        tabIndex={0}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') setSelectedTicket(ticket); }}
-                                        aria-label={`View details for ticket ${ticket.ticketNumber}`}
-                                    >
-                                        <td className="px-5 py-3 font-medium text-gray-900">{ticket.ticketNumber}</td>
-                                        <td className="px-5 py-3 whitespace-nowrap">{first || '—'}</td>
-                                        <td className="px-5 py-3 whitespace-nowrap">{last || '—'}</td>
-                                        <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
-                                        <td className="px-5 py-3">
+                        {displayedTickets.map(ticket => {
+                            const statusVal = ticket.status || ticket.repairStatus || 'N/A';
+                            const first = ticket.customerFirstName || '';
+                            const last = ticket.customerLastName || '';
+                            return (
+                                <tr key={ticket.ticketNumber}
+                                    className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"
+                                    onClick={() => setSelectedTicket(ticket)}
+                                    tabIndex={0}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') setSelectedTicket(ticket); }}
+                                    aria-label={`View details for ticket ${ticket.ticketNumber}`}
+                                >
+                                    <td className="px-5 py-3 font-medium text-gray-900">{ticket.ticketNumber}</td>
+                                    <td className="px-5 py-3 whitespace-nowrap">{first || '—'}</td>
+                                    <td className="px-5 py-3 whitespace-nowrap">{last || '—'}</td>
+                                    <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
+                                    <td className="px-5 py-3">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>
                                                 {statusVal}
                                             </span>
-                                        </td>
-                                        <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
-                                        <td className="px-5 py-3">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
-                                            >
-                                                View
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                    </td>
+                                    <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
+                                    <td className="px-5 py-3">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}
+                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                        >
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                         </tbody>
                     </table>
                 </div>
