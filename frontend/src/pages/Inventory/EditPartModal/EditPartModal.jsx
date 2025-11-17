@@ -13,10 +13,7 @@ const EditPartModal = ({
                            loading,
                            success,
                            error,
-                           // new props for fetching/displaying customer
-                           fetchCustomer, // function({ phone, email }) => void
                            fetchedCustomer, // object returned from fetch
-                           fetchingCustomer // optional boolean
                        }) => {
     const [showPurchaseDateCalendar, setShowPurchaseDateCalendar] = useState(false);
     const [showWarrantyExpirationCalendar, setShowWarrantyExpirationCalendar] = useState(false);
@@ -54,7 +51,7 @@ const EditPartModal = ({
     // Initialize state when editPart changes
     useEffect(() => {
         if (editPart) {
-            setIsCustomerPurchased(editPart.isCustomerPurchased || editPart.datePurchasedByCustomer ? true : false);
+            setIsCustomerPurchased(!!(editPart.isCustomerPurchased || editPart.datePurchasedByCustomer));
             // Only set initial warranty type if it hasn't been set yet
             if (!warrantyType) {
                 setWarrantyType('7_DAYS');
@@ -186,8 +183,7 @@ const EditPartModal = ({
         const expiration = new Date(editPart.warrantyExpiration);
         const today = new Date();
         const diffTime = expiration - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
     // Customer input handlers that update local state and parent editPart
@@ -249,7 +245,7 @@ const EditPartModal = ({
                     setLookupError('Customer Not Found');
                     setLookupModalOpen(true);
                 } else {
-                    let bodyText = '';
+                    let bodyText;
                     try {
                         bodyText = contentType.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
                     } catch (e) {
