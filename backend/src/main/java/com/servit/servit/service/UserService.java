@@ -413,7 +413,8 @@ public class UserService {
         try {
             logger.info("Forgot password request for email: {}", req.getEmail());
 
-            UserEntity user = userRepo.findByEmail(req.getEmail())
+            // Verify user exists before sending OTP
+            userRepo.findByEmail(req.getEmail())
                     .orElseThrow(() -> {
                         logger.error("User not found for email: {}", req.getEmail());
                         return new IllegalArgumentException("User not found");
@@ -695,7 +696,8 @@ public class UserService {
         try {
             logger.info("User deletion request for user ID: {}", userId);
 
-            UserEntity user = userRepo.findById(userId)
+            // Verify user exists before soft delete
+            userRepo.findById(userId)
                     .orElseThrow(() -> {
                         logger.error("User not found for ID: {}", userId);
                         return new IllegalArgumentException("User not found");
