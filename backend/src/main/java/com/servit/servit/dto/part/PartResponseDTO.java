@@ -45,8 +45,6 @@ public class PartResponseDTO {
     private String brand;
     private String model;
 
-    // Customer snapshot included in response
-    private Integer customerId;
     private String customerFirstName;
     private String customerLastName;
     private String customerPhone;

@@ -21,8 +21,7 @@ public class UpdatePartRequestDTO {
     private LocalDateTime warrantyExpiration;
     private String addedBy;
     private String modifiedBy;
-    // Customer info fields (optional) - saved on part when part is customer purchased
-    private Integer customerId;
+
     private String customerFirstName;
     private String customerLastName;
     private String customerPhone;

@@ -115,10 +115,6 @@ public class PartEntity {
     @Column(name = "part_photo_url", length = 1024)
     private String partPhotoUrl;
 
-    // Customer information: reference to existing user (if customer exists) and snapshot fields
-    @Column(name = "customer_id")
-    private Integer customerId;
-
     @Column(name = "customer_first_name")
     private String customerFirstName;
 
