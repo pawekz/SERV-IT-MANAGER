@@ -48,10 +48,17 @@ async function fetchPresignedPhotoUrl(photoUrl) {
     return res.data;
 }
 
-function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
+function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
+    // Description expansion state for the Ticket Information description block
+    const [descExpanded, setDescExpanded] = useState(false);
+
+    // Reset expanded state whenever a new ticket is shown or modal opens
+    useEffect(() => {
+        setDescExpanded(false);
+    }, [ticket?.ticketNumber, isOpen]);
 
     if (!isOpen || !ticket) return null;
 
@@ -62,6 +69,11 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     const last = ticket.customerLastName || '';
     // Technician name (fall back to a few common ticket properties)
     const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
+
+    // Description: primary is reported_issue (or reportedIssue), then fallback to other common fields
+    const description = (ticket.reported_issue || ticket.reportedIssue || ticket.description || ticket.problemDescription || ticket.repairNotes || ticket.issueDescription || '').trim();
+    // If description is long we show truncated view by default and allow expansion
+    const needsToggle = description && description.length > 240;
 
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
@@ -130,6 +142,44 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                                     <div>
                                         <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12}/> Check-In Date</dt>
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
+                                    </div>
+                                    {/* Description field: truncated by default, expandable */}
+                                    <div className="sm:col-span-2">
+                                        <dt className="text-gray-500">Reported Issue</dt>
+                                        <dd className="font-medium text-gray-800">
+                                            {description ? (
+                                                <div className="relative">
+                                                    <div
+                                                        className="text-[13px] text-gray-800"
+                                                        style={{
+                                                            maxHeight: descExpanded ? '480px' : '72px',
+                                                            overflow: 'hidden',
+                                                            transition: 'max-height 260ms ease',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word'
+                                                        }}
+                                                        aria-live="polite"
+                                                    >
+                                                        {description}
+                                                    </div>
+                                                    {!descExpanded && needsToggle && (
+                                                        <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/90 to-transparent" />
+                                                    )}
+                                                    {needsToggle && (
+                                                        <button
+                                                            type="button"
+                                                            className="mt-2 text-xs text-blue-600 hover:underline"
+                                                            onClick={() => setDescExpanded(prev => !prev)}
+                                                            aria-expanded={descExpanded}
+                                                        >
+                                                            {descExpanded ? 'Show less' : 'Show more'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-[13px]">—</span>
+                                            )}
+                                        </dd>
                                     </div>
                                     <div className="sm:col-span-2">
                                         <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12}/> Device</dt>
@@ -240,7 +290,7 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
             )}
         </>
     );
-};
+}
 
 // Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
@@ -264,4 +314,4 @@ const TicketImageThumb = ({ path, alt }) => {
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
 
-export default TicketDetailsModal;
+export default TicketDetailsModal
