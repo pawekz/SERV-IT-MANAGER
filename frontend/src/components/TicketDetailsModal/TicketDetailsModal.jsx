@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 // statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
@@ -149,31 +149,35 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                         <dd className="font-medium text-gray-800">
                                             {description ? (
                                                 <div className="relative">
+                                                    {/* clickable header/field that toggles expansion; keyboard accessible */}
                                                     <div
-                                                        className="text-[13px] text-gray-800"
-                                                        style={{
-                                                            maxHeight: descExpanded ? '480px' : '72px',
-                                                            overflow: 'hidden',
-                                                            transition: 'max-height 260ms ease',
-                                                            whiteSpace: 'pre-wrap',
-                                                            wordBreak: 'break-word'
-                                                        }}
-                                                        aria-live="polite"
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => needsToggle && setDescExpanded(prev => !prev)}
+                                                        onKeyDown={(e) => { if (needsToggle && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setDescExpanded(prev => !prev); } }}
+                                                        aria-expanded={descExpanded}
+                                                        className={`flex items-start justify-between gap-3 ${needsToggle ? 'cursor-pointer' : ''}`}
                                                     >
-                                                        {description}
+                                                        <div
+                                                            className="text-[13px] text-gray-800 flex-1"
+                                                            style={{
+                                                                maxHeight: descExpanded ? '480px' : '72px',
+                                                                overflow: 'hidden',
+                                                                transition: 'max-height 260ms ease',
+                                                                whiteSpace: 'pre-wrap',
+                                                                wordBreak: 'break-word'
+                                                            }}
+                                                            aria-live="polite"
+                                                        >
+                                                            {description}
+                                                        </div>
+                                                        {needsToggle && (
+                                                            <ChevronDown size={16} className={`shrink-0 mt-1 text-gray-500 transition-transform ${descExpanded ? 'rotate-180' : ''}`} />
+                                                        )}
                                                     </div>
+                                                    {/* gradient overlay when collapsed to hint there's more */}
                                                     {!descExpanded && needsToggle && (
                                                         <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/90 to-transparent" />
-                                                    )}
-                                                    {needsToggle && (
-                                                        <button
-                                                            type="button"
-                                                            className="mt-2 text-xs text-blue-600 hover:underline"
-                                                            onClick={() => setDescExpanded(prev => !prev)}
-                                                            aria-expanded={descExpanded}
-                                                        >
-                                                            {descExpanded ? 'Show less' : 'Show more'}
-                                                        </button>
                                                     )}
                                                 </div>
                                             ) : (
