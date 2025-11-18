@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import api from '../../config/ApiConfig';
 import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
-// statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
     const s = (statusRaw || '').toUpperCase();
     const base = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border';
@@ -20,42 +19,36 @@ const statusStyles = (statusRaw) => {
     return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
 };
 
-function TicketImage({ path, alt, className }) {
-    const [src, setSrc] = useState(null);
-    useEffect(() => {
-        let url;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => {
-                    url = presignedUrl;
-                    setSrc(presignedUrl);
-                })
-                .catch(err => {
-                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
-                });
-        }
-        return () => { if (url) URL.revokeObjectURL(url); };
-    }, [path]);
-    if (!src) {
-        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
-    }
-    return <img src={src} alt={alt} className={className} />;
-}
-
 async function fetchPresignedPhotoUrl(photoUrl) {
     if (!photoUrl) return null;
     const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
     return res.data;
 }
 
+function TicketImage({ path, alt, className }) {
+    const [src, setSrc] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        if (path) {
+            fetchPresignedPhotoUrl(path)
+                .then(presignedUrl => { if (mounted) setSrc(presignedUrl); })
+                .catch(() => { if (mounted) setSrc(null); });
+        }
+        return () => { mounted = false; };
+    }, [path]);
+
+    if (!src) {
+        return <div className={`${className || ''} bg-gray-100 flex items-center justify-center text-sm text-gray-400`}>Loading...</div>;
+    }
+    return <img src={src} alt={alt} className={className} />;
+}
+
 function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
-    // Description expansion state for the Ticket Information description block
     const [descExpanded, setDescExpanded] = useState(false);
 
-    // Reset expanded state whenever a new ticket is shown or modal opens
     useEffect(() => {
         setDescExpanded(false);
     }, [ticket?.ticketNumber, isOpen]);
@@ -64,15 +57,11 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
 
     const images = ticket.repairPhotosUrls || [];
     const statusVal = ticket.status || ticket.repairStatus || 'N/A';
-    // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
     const last = ticket.customerLastName || '';
-    // Technician name (fall back to a few common ticket properties)
     const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
 
-    // Description: primary is reported_issue (or reportedIssue), then fallback to other common fields
     const description = (ticket.reported_issue || ticket.reportedIssue || ticket.description || ticket.problemDescription || ticket.repairNotes || ticket.issueDescription || '').trim();
-    // If description is long we show truncated view by default and allow expansion
     const needsToggle = description && description.length > 240;
 
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
@@ -80,7 +69,6 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? images.length - 1 : prev - 1)); };
     const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1)); };
 
-    // Download PDF handler
     const handleDownloadPdf = async () => {
         setDownloading(true);
         try {
@@ -91,7 +79,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
             link.setAttribute('download', `${ticket.ticketNumber}.pdf`);
             document.body.appendChild(link);
             link.click();
-            link.parentNode.removeChild(link);
+            link.remove();
             setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         } catch (err) {
             window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Failed to download PDF.', severity: 'error' } }));
@@ -149,7 +137,6 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                         <dd className="font-medium text-gray-800">
                                             {description ? (
                                                 <div className="relative">
-                                                    {/* clickable header/field that toggles expansion; keyboard accessible */}
                                                     <div
                                                         role="button"
                                                         tabIndex={0}
@@ -175,7 +162,6 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                                             <ChevronDown size={16} className={`shrink-0 mt-1 text-gray-500 transition-transform ${descExpanded ? 'rotate-180' : ''}`} />
                                                         )}
                                                     </div>
-                                                    {/* gradient overlay when collapsed to hint there's more */}
                                                     {!descExpanded && needsToggle && (
                                                         <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/90 to-transparent" />
                                                     )}
@@ -296,21 +282,20 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     );
 }
 
-// Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
     const [src, setSrc] = useState(null);
     const [loading, setLoading] = useState(!!path);
     useEffect(() => {
-        let urlRef;
+        let mounted = true;
         if (path) {
             fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => { urlRef = presignedUrl; setSrc(presignedUrl); })
+                .then(presignedUrl => { if (mounted) { setSrc(presignedUrl); } })
                 .catch(() => setSrc(null))
-                .finally(() => setLoading(false));
+                .finally(() => { if (mounted) setLoading(false); });
         } else {
             setLoading(false);
         }
-        return () => { if (urlRef) URL.revokeObjectURL(urlRef); };
+        return () => { mounted = false; };
     }, [path]);
 
     if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;

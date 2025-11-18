@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import api from '../../config/ApiConfig';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Fetch a pre-signed S3 URL for a repair photo
 async function fetchPresignedPhotoUrl(photoUrl) {
     if (!photoUrl) return null;
     const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
@@ -13,11 +12,9 @@ function TicketImage({ path, alt }) {
     const [src, setSrc] = useState(null);
     const [loading, setLoading] = useState(!!path);
     useEffect(() => {
-        let url;
         if (path) {
             fetchPresignedPhotoUrl(path)
                 .then(presignedUrl => {
-                    url = presignedUrl;
                     setSrc(presignedUrl);
                 })
                 .catch(() => {
@@ -27,7 +24,7 @@ function TicketImage({ path, alt }) {
         } else {
             setLoading(false);
         }
-        return () => { if (url) URL.revokeObjectURL(url); };
+        return undefined;
     }, [path]);
     if (loading) {
         return <div className="w-full h-40 md:h-44 bg-gray-100 animate-pulse rounded-t-lg" />;
