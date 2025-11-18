@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import api from '../../config/ApiConfig';
+import LoadingModal from '../../components/LoadingModal/LoadingModal.jsx';
 
 const InitialSetupPage = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const InitialSetupPage = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [error, setError] = useState('');
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
   const phoneNumberRegex = /^9\d{9}$/;
@@ -51,11 +53,17 @@ const InitialSetupPage = () => {
     setLoading(true);
     try {
       await api.patch('/user/register/onboard', formData);
-      // Success – redirect to login page
-      navigate('/login');
+      // Success – show a full-screen loading modal then redirect to staff login
+      setLoading(false);
+      setShowLoadingModal(true);
+      // small delay so user sees the modal before redirect
+      setTimeout(() => {
+        navigate('/login/staff');
+      }, 1200);
     } catch (err) {
       setError(err.response?.data || err.message || 'Onboarding failed.');
     } finally {
+      // keep modal visible until redirect; stop form loading
       setLoading(false);
     }
   };
@@ -187,6 +195,7 @@ const InitialSetupPage = () => {
           </button>
         </form>
       </div>
+      <LoadingModal show={showLoadingModal} title="Finishing setup" message="Finalizing initial setup, redirecting to staff login..." />
     </div>
   );
 };
