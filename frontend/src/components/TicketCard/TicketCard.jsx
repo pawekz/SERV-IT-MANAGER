@@ -2,6 +2,30 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRepairPhoto } from '../../hooks/useRepairPhoto';
 
+const statusChipClasses = (statusRaw) => {
+    const status = (statusRaw || '').toString().trim().toUpperCase();
+    const map = {
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        IN_PROGRESS: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        PROCESSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        COMPLETE: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        PENDING: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        CANCELLED: 'bg-red-50 text-red-700 border-red-200',
+        CANCELED: 'bg-red-50 text-red-700 border-red-200',
+        FAILED: 'bg-red-50 text-red-700 border-red-200',
+        CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
+    };
+    return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+};
+
 function TicketImage({ path, alt }) {
     const { data: src, isLoading } = useRepairPhoto(path);
 
@@ -98,7 +122,7 @@ const TicketCard = ({ ticket, onClick, renderStatusControl }) => {
                     </>
                 )}
                 <div className="absolute top-2 left-2">
-                    <span className={statusStyles(displayStatus)}>{displayStatus}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusChipClasses(displayStatus)}`}>{displayStatus}</span>
                 </div>
             </div>
             <div className="flex flex-col gap-3 px-4 py-4">

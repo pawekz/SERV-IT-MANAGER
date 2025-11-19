@@ -5,22 +5,28 @@ import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, M
 import { useQueryClient } from '@tanstack/react-query';
 import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
-// statusStyles helper placed before usage
-const statusStyles = (statusRaw) => {
-    const s = (statusRaw || '').toUpperCase();
-    const base = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border';
+const statusChipClasses = (statusRaw) => {
+    const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
-        COMPLETED: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        COMPLETE: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        IN_PROGRESS: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PROCESSING: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PENDING: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        AWAITING_PARTS: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        CANCELLED: `${base} bg-red-50 text-red-600 border-red-200`,
-        CANCELED: `${base} bg-red-50 text-red-600 border-red-200`,
-        FAILED: `${base} bg-red-50 text-red-600 border-red-200`,
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        IN_PROGRESS: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        PROCESSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        COMPLETE: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+        PENDING: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        CANCELLED: 'bg-red-50 text-red-700 border-red-200',
+        CANCELED: 'bg-red-50 text-red-700 border-red-200',
+        FAILED: 'bg-red-50 text-red-700 border-red-200',
+        CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
     };
-    return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
+    return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
 function TicketImage({ path, alt, className }) {
@@ -157,8 +163,9 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 flex-wrap">
                                 <h2 className="text-xl font-semibold tracking-tight text-gray-900">Ticket #{ticket.ticketNumber}</h2>
-                                <span className={statusStyles(statusVal)}>{statusVal}</span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{statusVal}</span>
                             </div>
+
                             <p className="text-xs text-gray-500">Detailed repair ticket overview</p>
                         </div>
                         <button
