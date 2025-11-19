@@ -1,4 +1,4 @@
-import {BrowserRouter as Router, Routes, Route, Navigate, useLocation} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "./pages/LandingPage/LandingPage";
 import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LoginPage from "./pages/LoginPage/LoginPage";
@@ -12,7 +12,7 @@ import BackupPage from "./pages/BackupPage/BackupPage.jsx";
 import WarrantyRequestPage from "./pages/WarrantyRequestPage/WarrantyRequestPage.jsx";
 import InventoryAssignmentPanel from "./pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx";
 import RepairQueue from "./pages/RepairQueue/RepairQueue.jsx";
-import ResolvedRepairs   from "./pages/ResolvedRepairs/ResolvedRepairs.jsx";
+import ResolvedRepairs from "./pages/ResolvedRepairs/ResolvedRepairs.jsx";
 import Inventory from "./pages/Inventory/Inventory.jsx";
 import Feedbackform from "./pages/FeedbackForm/FeedbackForm.jsx";
 import RealTimeStatus from "./pages/RealTimeStatus/RealTimeStatus.jsx"
@@ -104,6 +104,24 @@ function AppContent() {
         // Only check user count once on initial app mount
         checkUserCount();
     }, []); // Empty dependency array - runs only once on mount
+
+    // Global event listener for token expiration
+    useEffect(() => {
+        const handleTokenExpired = () => {
+            // Clear all auth data and application state
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // Force redirect to login
+            window.location.href = '/login';
+        };
+
+        window.addEventListener('tokenExpired', handleTokenExpired);
+
+        return () => {
+            window.removeEventListener('tokenExpired', handleTokenExpired);
+        };
+    }, []);
 
     if (needsSetup === null && location.pathname === "/") {
         // Still checking the server – show spinner

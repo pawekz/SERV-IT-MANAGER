@@ -56,9 +56,8 @@ const Navbar = () => {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userRole');
-        sessionStorage.removeItem('userData');
+        localStorage.clear();
+        sessionStorage.clear();
         window.location.href = '/';
     };
 

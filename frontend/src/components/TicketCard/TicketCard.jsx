@@ -1,32 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../config/ApiConfig';
+import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
-async function fetchPresignedPhotoUrl(photoUrl) {
-    if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
-}
+import { useRepairPhoto } from '../../hooks/useRepairPhoto';
 
 function TicketImage({ path, alt }) {
-    const [src, setSrc] = useState(null);
-    const [loading, setLoading] = useState(!!path);
-    useEffect(() => {
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => {
-                    setSrc(presignedUrl);
-                })
-                .catch(() => {
-                    setSrc(null);
-                })
-                .finally(() => setLoading(false));
-        } else {
-            setLoading(false);
-        }
-        return undefined;
-    }, [path]);
-    if (loading) {
+    const { data: src, isLoading } = useRepairPhoto(path);
+
+    if (isLoading) {
         return <div className="w-full h-40 md:h-44 bg-gray-100 animate-pulse rounded-t-lg" />;
     }
     if (!src) {

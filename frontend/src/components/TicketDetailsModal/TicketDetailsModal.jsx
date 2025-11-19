@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import api from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api, { parseJwt } from '../../config/ApiConfig';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { PHOTO_CACHE_TTL_MS, useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
+// statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
     const s = (statusRaw || '').toUpperCase();
     const base = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border';
@@ -19,56 +23,83 @@ const statusStyles = (statusRaw) => {
     return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
 };
 
-async function fetchPresignedPhotoUrl(photoUrl) {
-    if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
-}
-
 function TicketImage({ path, alt, className }) {
-    const [src, setSrc] = useState(null);
-    useEffect(() => {
-        let mounted = true;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => { if (mounted) setSrc(presignedUrl); })
-                .catch(() => { if (mounted) setSrc(null); });
-        }
-        return () => { mounted = false; };
-    }, [path]);
-
+    const { data: src, isLoading } = useRepairPhoto(path);
+    if (isLoading) {
+        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
+    }
     if (!src) {
-        return <div className={`${className || ''} bg-gray-100 flex items-center justify-center text-sm text-gray-400`}>Loading...</div>;
+        return <div className={className + ' bg-gray-100 flex items-center justify-center text-xs text-gray-400'}>No Image</div>;
     }
     return <img src={src} alt={alt} className={className} />;
 }
 
-function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
+function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
-    const [descExpanded, setDescExpanded] = useState(false);
+    const [hasFeedback, setHasFeedback] = useState(false);
+    const [checkingFeedback, setCheckingFeedback] = useState(false);
+    const [userRole, setUserRole] = useState(null);
+    const navigate = useNavigate();
+
+    const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
+    const ticketId = ticket?.repairTicketId || ticket?.id;
+    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket]);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
-        setDescExpanded(false);
-    }, [ticket?.ticketNumber, isOpen]);
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            const payload = parseJwt(token);
+            if (payload && payload.role) {
+                setUserRole(payload.role);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
+            setCheckingFeedback(true);
+            api.get(`/feedback/check/${ticketId}`)
+                .then(res => {
+                    setHasFeedback(res.data);
+                })
+                .catch(err => {
+                    console.error('Error checking feedback status:', err);
+                    // Default to false so user can try, worst case backend blocks it
+                    setHasFeedback(false);
+                })
+                .finally(() => {
+                    setCheckingFeedback(false);
+                });
+        } else {
+            setHasFeedback(false);
+            setCheckingFeedback(false);
+        }
+    }, [isOpen, ticket, statusVal, ticketId]);
+
+    useEffect(() => {
+        if (!isOpen || !images.length) return;
+        images.forEach((url) => {
+            prefetchRepairPhoto(queryClient, url);
+        });
+    }, [images, isOpen, queryClient]);
 
     if (!isOpen || !ticket) return null;
 
-    const images = ticket.repairPhotosUrls || [];
-    const statusVal = ticket.status || ticket.repairStatus || 'N/A';
+    // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
     const last = ticket.customerLastName || '';
+    // Technician name (fall back to a few common ticket properties)
     const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
-
-    const description = (ticket.reported_issue || ticket.reportedIssue || ticket.description || ticket.problemDescription || ticket.repairNotes || ticket.issueDescription || '').trim();
-    const needsToggle = description && description.length > 240;
 
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
     const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? images.length - 1 : prev - 1)); };
     const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1)); };
 
+    // Download PDF handler
     const handleDownloadPdf = async () => {
         setDownloading(true);
         try {
@@ -79,7 +110,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
             link.setAttribute('download', `${ticket.ticketNumber}.pdf`);
             document.body.appendChild(link);
             link.click();
-            link.remove();
+            link.parentNode.removeChild(link);
             setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         } catch (err) {
             window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Failed to download PDF.', severity: 'error' } }));
@@ -113,7 +144,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                         {/* Left: Primary info */}
                         <div className="lg:col-span-2 space-y-6">
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
-                                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400"/> Ticket Information</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400" /> Ticket Information</h3>
                                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-[13px]">
                                     <div>
                                         <dt className="text-gray-500">First Name</dt>
@@ -128,51 +159,11 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                         <dd className="font-medium text-gray-800">{techName || 'Unassigned'}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12}/> Check-In Date</dt>
+                                        <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12} /> Check-In Date</dt>
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
                                     </div>
-                                    {/* Description field: truncated by default, expandable */}
                                     <div className="sm:col-span-2">
-                                        <dt className="text-gray-500">Reported Issue</dt>
-                                        <dd className="font-medium text-gray-800">
-                                            {description ? (
-                                                <div className="relative">
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => needsToggle && setDescExpanded(prev => !prev)}
-                                                        onKeyDown={(e) => { if (needsToggle && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setDescExpanded(prev => !prev); } }}
-                                                        aria-expanded={descExpanded}
-                                                        className={`flex items-start justify-between gap-3 ${needsToggle ? 'cursor-pointer' : ''}`}
-                                                    >
-                                                        <div
-                                                            className="text-[13px] text-gray-800 flex-1"
-                                                            style={{
-                                                                maxHeight: descExpanded ? '480px' : '72px',
-                                                                overflow: 'hidden',
-                                                                transition: 'max-height 260ms ease',
-                                                                whiteSpace: 'pre-wrap',
-                                                                wordBreak: 'break-word'
-                                                            }}
-                                                            aria-live="polite"
-                                                        >
-                                                            {description}
-                                                        </div>
-                                                        {needsToggle && (
-                                                            <ChevronDown size={16} className={`shrink-0 mt-1 text-gray-500 transition-transform ${descExpanded ? 'rotate-180' : ''}`} />
-                                                        )}
-                                                    </div>
-                                                    {!descExpanded && needsToggle && (
-                                                        <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/90 to-transparent" />
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400 text-[13px]">—</span>
-                                            )}
-                                        </dd>
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12}/> Device</dt>
+                                        <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12} /> Device</dt>
                                         <dd className="font-medium text-gray-800">{ticket.deviceBrand} {ticket.deviceModel}</dd>
                                     </div>
                                 </dl>
@@ -180,16 +171,16 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
 
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400"/> Repair Photos</h3>
+                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400" /> Repair Photos</h3>
                                     {images.length > 0 && (
-                                        <span className="text-[11px] text-gray-500">{images.length} photo{images.length>1?'s':''}</span>
+                                        <span className="text-[11px] text-gray-500">{images.length} photo{images.length > 1 ? 's' : ''}</span>
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     {images.length > 0 ? images.map((url, idx) => (
                                         <button key={idx} type="button" onClick={() => openImageModal(idx)} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40">
-                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx+1}`} />
-                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"/>
+                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx + 1}`} />
+                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                         </button>
                                     )) : (
                                         <span className="text-xs text-gray-400">No photos</span>
@@ -211,12 +202,20 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
+                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && !hasFeedback && !checkingFeedback && userRole === 'CUSTOMER' && (
+                                        <button
+                                            onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
+                                            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+                                        >
+                                            <MessageSquare size={14} /> Give Feedback
+                                        </button>
+                                    )}
                                     <button
                                         onClick={handleDownloadPdf}
                                         className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:opacity-60"
                                         disabled={downloading}
                                     >
-                                        <Download size={14}/> {downloading ? 'Downloading...' : 'Download PDF'}
+                                        <Download size={14} /> {downloading ? 'Downloading...' : 'Download PDF'}
                                     </button>
                                     <button
                                         onClick={onClose}
@@ -280,27 +279,15 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
             )}
         </>
     );
-}
+};
 
+// Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
-    const [src, setSrc] = useState(null);
-    const [loading, setLoading] = useState(!!path);
-    useEffect(() => {
-        let mounted = true;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => { if (mounted) { setSrc(presignedUrl); } })
-                .catch(() => setSrc(null))
-                .finally(() => { if (mounted) setLoading(false); });
-        } else {
-            setLoading(false);
-        }
-        return () => { mounted = false; };
-    }, [path]);
+    const { data: src, isLoading } = useRepairPhoto(path);
 
-    if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
+    if (isLoading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
     if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
 
-export default TicketDetailsModal
+export default TicketDetailsModal;
