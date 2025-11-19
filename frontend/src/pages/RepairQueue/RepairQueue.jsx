@@ -278,18 +278,22 @@ const RepairQueue = () => {
 
                                         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                                             {ticketRequests
-                                                .filter(request => request.status !== "COMPLETED" || request.status !== "READY_FOR_PICKUP" )
+                                                .filter((request) => {
+                                                    const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+                                                    // exclude resolved statuses
+                                                    return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP';
+                                                })
                                                 .map((request) => {
-                                                    const ticketKey = resolveTicketKey(request);
-                                                    return (
-                                                        <TicketCard
-                                                            key={ticketKey}
-                                                            ticket={request}
-                                                            onClick={() => handleCardClick(request)}
-                                                            renderStatusControl={renderStatusControl}
-                                                        />
-                                                    );
-                                                })}
+                                                     const ticketKey = resolveTicketKey(request);
+                                                     return (
+                                                         <TicketCard
+                                                             key={ticketKey}
+                                                             ticket={request}
+                                                             onClick={() => handleCardClick(request)}
+                                                             renderStatusControl={renderStatusControl}
+                                                         />
+                                                     );
+                                                 })}
                                         </div>
                                     )}
                                     <TicketDetailsModal

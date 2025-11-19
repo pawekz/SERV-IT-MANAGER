@@ -265,19 +265,22 @@ const ResolvedRepairs = () => {
                                             </div>
                                         </div>
                                      </div>
-                                    {ticketRequests.filter(request => request.status === "READY_FOR_PICKUP" ).length === 0 ? (
-                                        <p className="text-center text-gray-600">
-                                            No repair requests have been is resolved.
-                                        </p>
+                                    {/* normalize statuses and include both READY_FOR_PICKUP and COMPLETED */}
+                                    {(() => {
+                                        const resolvedList = ticketRequests.filter((request) => {
+                                            const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+                                            return s === 'READY_FOR_PICKUP' || s === 'COMPLETED' || s === 'COMPLETE';
+                                        });
 
-                                    ) : (
+                                        if (resolvedList.length === 0) {
+                                            return (
+                                                <p className="text-center text-gray-600">No resolved repair requests found.</p>
+                                            );
+                                        }
 
-                                        // Resolved Repairs
-
-                                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                                            {ticketRequests
-                                                .filter(request => request.status === "READY_FOR_PICKUP" )
-                                                .map((request) => (
+                                        return (
+                                            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+                                                {resolvedList.map((request) => (
                                                     <TicketCard
                                                         key={resolveTicketKey(request)}
                                                         ticket={request}
@@ -285,8 +288,9 @@ const ResolvedRepairs = () => {
                                                         renderStatusControl={renderStatusControl}
                                                     />
                                                 ))}
-                                        </div>
-                                    )}
+                                            </div>
+                                        );
+                                    })()}
                                     <TicketDetailsModal
                                         isOpen={modalOpen}
                                         onClose={() => setModalOpen(false)}
