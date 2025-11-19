@@ -46,6 +46,17 @@ const RepairQueue = () => {
     // derive status options for the filter: ALL + unique statuses from current list excluding resolved ones
     const availableStatuses = ['ALL', ...Array.from(new Set(ticketRequests.map(t => (t.status || t.repairStatus || '').toString().trim().toUpperCase()).filter(Boolean))).filter(s => s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP' && s !== 'COMPLETED' && s !== 'COMPLETE')];
 
+    // compute counts for pending vs resolved to show accurate numbers in the UI
+    const pendingCount = ticketRequests.filter((request) => {
+        const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+        return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP';
+    }).length;
+
+    const resolvedCount = ticketRequests.filter((request) => {
+        const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+        return s === 'READY_FOR_PICKUP' || s === 'COMPLETED' || s === 'COMPLETE' || s === 'READY FOR PICKUP';
+    }).length;
+
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
@@ -446,8 +457,8 @@ const RepairQueue = () => {
                                     <div className="px-6 py-4 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                         <div className="flex flex-col gap-1">
                                             <h2 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                                                Pending Repair Tickets
-                                                <span className="text-sm font-normal text-gray-500">({ticketRequests.length})</span>
+                                                Repair Queue
+                                                <span className="text-sm font-normal text-gray-500">({pendingCount})</span>
                                             </h2>
                                         </div>
 

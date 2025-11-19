@@ -330,6 +330,13 @@ const ResolvedRepairs = () => {
     // derive available statuses for filter (only resolved ones)
     const availableStatuses = ['ALL', 'READY_FOR_PICKUP', 'COMPLETED'];
 
+    // compute counts: resolved vs pending (to display accurate counts)
+
+    const resolvedCount = ticketRequests.filter((request) => {
+        const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+        return s === 'READY_FOR_PICKUP' || s === 'COMPLETED' || s === 'COMPLETE' || s === 'READY FOR PICKUP';
+    }).length;
+
     // renderStatusControl: provides a gray-styled button with dropdown menu for status options
     const renderStatusControl = (request) => {
         const ticketKey = resolveTicketKey(request);
@@ -446,8 +453,8 @@ const ResolvedRepairs = () => {
                                     <div className="px-6 py-4 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                         <div className="flex flex-col gap-1">
                                             <h2 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                                                Resolved Repair Tickets
-                                                <span className="text-sm font-normal text-gray-500">({ticketRequests.length})</span>
+                                                Resolved Repairs
+                                                <span className="text-sm font-normal text-gray-500">({resolvedCount})</span>
                                             </h2>
                                         </div>
 
