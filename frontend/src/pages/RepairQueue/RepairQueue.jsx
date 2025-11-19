@@ -229,7 +229,7 @@ const RepairQueue = () => {
                             )}
                         </div>
                     </div>
-                    <div className="px-10 py-8">
+                    <div className="px-10 py-4">
                         {loading ? (
                             <div className="text-center py-8">
                                 <p>Loading Repair tickets...</p>
