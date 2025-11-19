@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { parseJwt } from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
@@ -42,8 +42,14 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [checkingFeedback, setCheckingFeedback] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [issueExpanded, setIssueExpanded] = useState(false);
-    const ISSUE_PREVIEW_CHARS = 180; // number of characters to show before truncating
+    // Remove char-count style truncation constant; we will measure lines instead
+    // const ISSUE_PREVIEW_CHARS = 180; // number of characters to show before truncating
     const navigate = useNavigate();
+
+    // new refs and state for measuring and transitions
+    const issueRef = useRef(null);
+    const [twoLineHeight, setTwoLineHeight] = useState(0);
+    const [isOverflowing, setIsOverflowing] = useState(false);
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
     const ticketId = ticket?.repairTicketId || ticket?.id;
@@ -54,6 +60,24 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     useEffect(() => {
         setIssueExpanded(false);
     }, [ticket?.repairTicketId || ticket?.id || ticket?.ticketNumber]);
+
+    // Measure two-line height and detect overflow whenever the reportedIssue changes or when modal opens
+    useEffect(() => {
+        if (!issueRef.current) return;
+        const el = issueRef.current;
+        // Compute line height from computed styles
+        const computed = window.getComputedStyle(el);
+        let lineHeight = parseFloat(computed.lineHeight);
+        if (Number.isNaN(lineHeight) || lineHeight === 0) {
+            // fallback to font-size * 1.2 if line-height is 'normal'
+            const fontSize = parseFloat(computed.fontSize) || 13;
+            lineHeight = Math.round(fontSize * 1.2);
+        }
+        const twoH = lineHeight * 2;
+        setTwoLineHeight(twoH);
+        // scrollHeight reports full content height regardless of maxHeight, so good for detecting overflow
+        setIsOverflowing(el.scrollHeight > twoH + 1);
+    }, [ticket?.reportedIssue, isOpen]);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -127,7 +151,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     return (
         <>
             <div className="fixed inset-0 z-40 flex items-start justify-center px-4 py-10 sm:py-16 overflow-y-auto backdrop-blur-sm bg-black/40" role="dialog" aria-modal="true">
-                <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-[fadeIn_.25s_ease]">
+                <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
                     {/* Header */}
                     <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white">
                         <div className="space-y-2">
@@ -170,23 +194,35 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
                                     </div>
                                     {/* Reported Issue: truncated by default with expand/collapse */}
-                                    <div className="sm:col-span-2">
+                                    <div className="sm:col-span-2 relative">
                                         <dt className="text-gray-500">Reported Issue</dt>
-                                        <dd className="font-medium text-gray-800">
+                                        <dd className="font-medium text-gray-800 relative">
                                             {ticket.reportedIssue ? (
-                                                <div>
-                                                    <p className="text-[13px] text-gray-800 break-words whitespace-pre-wrap">
-                                                        {issueExpanded || ticket.reportedIssue.length <= ISSUE_PREVIEW_CHARS
-                                                            ? ticket.reportedIssue
-                                                            : `${ticket.reportedIssue.slice(0, ISSUE_PREVIEW_CHARS).trim()}…`}
-                                                    </p>
-                                                    {ticket.reportedIssue.length > ISSUE_PREVIEW_CHARS && (
+                                                <div className="relative">
+                                                    {/* The content wrapper - animate max-height for smooth expand/collapse */}
+                                                    <div
+                                                        ref={issueRef}
+                                                        className="text-[13px] text-gray-800 break-words whitespace-pre-wrap overflow-hidden pr-8"
+                                                        style={{ maxHeight: issueExpanded ? undefined : `${twoLineHeight}px` }}
+                                                        aria-expanded={issueExpanded}
+                                                    >
+                                                        {ticket.reportedIssue}
+                                                    </div>
+
+                                                    {/* Fade overlay shown when collapsed and overflowing */}
+                                                    {isOverflowing && !issueExpanded && (
+                                                        <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/95 to-transparent" />
+                                                    )}
+
+                                                    {/* Toggle button aligned to right of the text */}
+                                                    {isOverflowing && (
                                                         <button
                                                             type="button"
-                                                            className="mt-2 text-xs text-blue-600 hover:underline"
+                                                            aria-label={issueExpanded ? 'Collapse reported issue' : 'Expand reported issue'}
                                                             onClick={() => setIssueExpanded(prev => !prev)}
+                                                            className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 p-1 focus:outline-none"
                                                         >
-                                                            {issueExpanded ? 'Show less' : 'Show more'}
+                                                            {issueExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                                         </button>
                                                     )}
                                                 </div>
