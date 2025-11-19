@@ -57,8 +57,7 @@ const RepairQueue = () => {
 
         setStatusDropdownOpen(null); // Close the dropdown
 
-        // Here you would normally update the database
-        console.log(`Status for request ${ticketId} changed to ${newStatus}`);
+        // Intentionally left without console.debug; backend update should be performed here
     };
 
     useEffect(() => {

@@ -19,10 +19,8 @@ function getUserInfoFromToken() {
         if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             email = userData.email ? userData.email.replace(/\n/g, '').trim() : '';
-            console.log('[HistoryPage] UserData from sessionStorage:', userData);
         }
 
-        console.log('[HistoryPage] Extracted email:', email, 'role:', role);
         return { email, role };
     } catch (e) {
         console.error('[HistoryPage] Error parsing token or userData:', e);
@@ -73,31 +71,29 @@ const HistoryPage = () => {
         }
         setError(null);
         try {
-            {
-                const searchTerm = search.trim() || '';
-                const res = await api.get('/repairTicket/searchRepairTickets', {
-                    params: {
-                        searchTerm,
-                        page,
-                        size: pageSize
-                    }
-                });
-                const newTickets = res.data.content || [];
-                const totalPagesCount = res.data.totalPages ?? 0;
-                // Try to extract total elements (common in Spring Data responses)
-                const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
-                setTickets(newTickets);
-                setCurrentPage(page);
-                // ensure we always have at least 1 page so pagination UI renders consistently
-                setTotalPages(Math.max(1, totalPagesCount));
-                // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
-                if (typeof totalElements === 'number') {
-                    setTotalEntries(totalElements);
-                } else {
-                    // if server didn't provide total, estimate conservatively
-                    const estimate = (newTickets.length || 0) + (page * pageSize || 0);
-                    setTotalEntries(estimate || 0);
+            const searchTerm = search.trim() || '';
+            const res = await api.get('/repairTicket/searchRepairTickets', {
+                params: {
+                    searchTerm,
+                    page,
+                    size: pageSize
                 }
+            });
+            const newTickets = res.data.content || [];
+            const totalPagesCount = res.data.totalPages ?? 0;
+            // Try to extract total elements (common in Spring Data responses)
+            const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
+            setTickets(newTickets);
+            setCurrentPage(page);
+            // ensure we always have at least 1 page so pagination UI renders consistently
+            setTotalPages(Math.max(1, totalPagesCount));
+            // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
+            if (typeof totalElements === 'number') {
+                setTotalEntries(totalElements);
+            } else {
+                // if server didn't provide total, estimate conservatively
+                const estimate = (newTickets.length || 0) + (page * pageSize || 0);
+                setTotalEntries(estimate || 0);
             }
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Unknown error');
@@ -173,7 +169,7 @@ const HistoryPage = () => {
         return filtered;
     };
 
-    const clientFilteredTickets = role === 'CUSTOMER' ? applyFilters(tickets) : applyFilters(tickets); // same call for clarity
+    const clientFilteredTickets = applyFilters(tickets); // simplified redundant ternary
 
     // compute total pages for client side
     useEffect(() => {
@@ -184,7 +180,7 @@ const HistoryPage = () => {
                 setCurrentPage(0);
             }
         }
-        // eslint-disable-next-line
+        // removed eslint-disable-next-line comment
     }, [clientFilteredTickets.length, pageSize, role]);
 
     // Keep totalEntries in sync for CUSTOMER when filters change

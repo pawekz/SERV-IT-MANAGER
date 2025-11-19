@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Plus, ChevronUp } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import api, { parseJwt } from "../../config/ApiConfig.jsx";
+import api, { parseJwt } from "../../config/ApiConfig";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import TicketCard from '../../components/TicketCard/TicketCard';
 
@@ -52,8 +52,7 @@ const ResolvedRepairs = () => {
 
         setStatusDropdownOpen(null); // Close the dropdown
 
-        // Here you would normally update the database
-        console.log(`Status for request ${requestId} changed to ${newStatus}`);
+        // Intentionally left without console.debug; backend update should be performed here
     };
 
 
@@ -69,7 +68,7 @@ const ResolvedRepairs = () => {
 
 
                     const response = await api.get(`/repairTicket/getAllRepairTickets`, {
-                        params: { status, page: 0, size: 20 },
+                        params: { page: 0, size: 20 },
                     });
                     const content = response.data?.content || [];
                     allResults.push(...content);
