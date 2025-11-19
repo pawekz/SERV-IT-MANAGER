@@ -284,7 +284,7 @@ const ResolvedRepairs = () => {
                                                         key={resolveTicketKey(request)}
                                                         ticket={request}
                                                         onClick={() => handleCardClick(request)}
-                                                        renderStatusControl={renderStatusControl}
+                                                        {...(role !== 'customer' ? { renderStatusControl } : {})}
                                                     />
                                                 ))}
                                             </div>

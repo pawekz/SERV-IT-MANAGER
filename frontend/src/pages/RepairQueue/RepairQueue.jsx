@@ -291,7 +291,7 @@ const RepairQueue = () => {
                                                              key={ticketKey}
                                                              ticket={request}
                                                              onClick={() => handleCardClick(request)}
-                                                             renderStatusControl={renderStatusControl}
+                                                            {...(role !== 'customer' ? { renderStatusControl } : {})}
                                                          />
                                                      );
                                                  })}
@@ -328,4 +328,3 @@ const RepairQueue = () => {
 };
 
 export default RepairQueue;
-
