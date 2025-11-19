@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from 'react-calendar';
 import TimePicker from 'react-time-picker';
-import { Clock, Calendar as CalendarIcon, Save, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, Save, Trash2, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 
 import api from '../../config/ApiConfig';
 
@@ -16,12 +16,13 @@ const BackupScheduleTab = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedDays, setSelectedDays] = useState([1]); // Monday = 1, Sunday = 0
     const [customCron, setCustomCron] = useState('');
-    
+
     const [currentSchedule, setCurrentSchedule] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
+    const [showNotes, setShowNotes] = useState(false);
 
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -37,7 +38,7 @@ const BackupScheduleTab = () => {
             const response = await api.get('/api/backup/schedule');
             const { cronExpression, enabled, isScheduled } = response.data;
             setCurrentSchedule({ cronExpression, enabled, isScheduled });
-            
+
             if (cronExpression === 'DISABLED' || !enabled) {
                 setScheduleType('disabled');
             } else {
@@ -98,7 +99,7 @@ const BackupScheduleTab = () => {
 
     const generateCronExpression = () => {
         const [hour, minute] = selectedTime.split(':');
-        
+
         switch (scheduleType) {
             case 'disabled':
                 return 'DISABLED';
@@ -119,7 +120,7 @@ const BackupScheduleTab = () => {
 
     const validateSchedule = () => {
         if (scheduleType === 'disabled') return true;
-        
+
         if (scheduleType === 'custom') {
             if (!customCron.trim()) {
                 setError('Custom CRON expression is required');
@@ -145,12 +146,12 @@ const BackupScheduleTab = () => {
         try {
             const cronExpression = generateCronExpression();
             await api.post('/api/backup/schedule', { cronExpression });
-            
-            setMessage(scheduleType === 'disabled' ? 
-                'Backup schedule disabled successfully' : 
+
+            setMessage(scheduleType === 'disabled' ?
+                'Backup schedule disabled successfully' :
                 'Backup schedule updated successfully'
             );
-            
+
             await fetchCurrentSchedule(); // Refresh current schedule
         } catch (err) {
             setError('Failed to update schedule: ' + (err.response?.data || err.message));
@@ -191,7 +192,31 @@ const BackupScheduleTab = () => {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-700">Backup Schedule</h3>
+                <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold text-gray-700">Backup Schedule</h3>
+                    <div className="relative">
+                        <button
+                            onMouseEnter={() => setShowNotes(true)}
+                            onMouseLeave={() => setShowNotes(false)}
+                            className="text-blue-500 hover:text-blue-600 focus:outline-none transition-colors"
+                            aria-label="Important Notes"
+                        >
+                            <HelpCircle size={20} />
+                        </button>
+                        {showNotes && (
+                            <div className="absolute left-full top-0 ml-2 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-xl z-50 text-sm text-gray-600">
+                                <h4 className="font-semibold mb-2 text-gray-800">Important Notes:</h4>
+                                <ul className="list-disc list-inside space-y-1">
+                                    <li>Minimum backup interval is 5 minutes</li>
+                                    <li>Scheduled backups will create automatic database snapshots</li>
+                                    <li>Manual backups can still be performed regardless of schedule</li>
+                                    <li>Schedule changes take effect immediately</li>
+                                    <li>Server timezone is used for scheduling</li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
                 {currentSchedule && (
                     <div className="text-sm text-gray-500">
                         Status: <span className={`font-medium ${currentSchedule.enabled ? 'text-green-600' : 'text-red-600'}`}>
@@ -273,11 +298,10 @@ const BackupScheduleTab = () => {
                                         key={day}
                                         type="button"
                                         onClick={() => toggleDay(dayValue)}
-                                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                                            selectedDays.includes(dayValue)
+                                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedDays.includes(dayValue)
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         {day.slice(0, 3)}
                                     </button>
@@ -324,7 +348,7 @@ const BackupScheduleTab = () => {
                         <p className="text-xs text-gray-500 mt-1">
                             Format: "second minute hour day month day-of-week".
                             <a href="https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions"
-                               target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                                target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
                                 Learn more about CRON expressions
                             </a>
                         </p>
@@ -373,17 +397,6 @@ const BackupScheduleTab = () => {
                         Disable Schedule
                     </button>
                 )}
-            </div>
-
-            <div className="text-sm text-gray-500 space-y-1">
-                <p><strong>Important Notes:</strong></p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Minimum backup interval is 5 minutes</li>
-                    <li>Scheduled backups will create automatic database snapshots</li>
-                    <li>Manual backups can still be performed regardless of schedule</li>
-                    <li>Schedule changes take effect immediately</li>
-                    <li>Server timezone is used for scheduling</li>
-                </ul>
             </div>
         </div>
     );
