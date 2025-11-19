@@ -6,6 +6,21 @@ import api, { parseJwt } from "../../config/ApiConfig";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import TicketCard from '../../components/TicketCard/TicketCard';
 
+const statusChipClasses = (statusRaw) => {
+    const status = (statusRaw || '').toString().trim().toUpperCase();
+    const map = {
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+    };
+    return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+};
+
 const ResolvedRepairs = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
@@ -149,7 +164,6 @@ const ResolvedRepairs = () => {
         }
     }, [role, email]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
             setStatusDropdownOpen(null);
@@ -161,12 +175,10 @@ const ResolvedRepairs = () => {
         };
     }, []);
 
-    // Filter logic - only include resolved statuses when filtering by status
     const resolvedStatusSet = new Set(['READY_FOR_PICKUP', 'READY FOR PICKUP', 'COMPLETED', 'COMPLETE']);
 
     const applyFilters = (list) => {
         let filtered = list.slice();
-        // Only consider resolved statuses by default when showing resolved repairs
         filtered = filtered.filter(t => resolvedStatusSet.has(((t.status || t.repairStatus) || '').toString().trim().toUpperCase()));
 
         if (search.trim()) {
@@ -198,7 +210,6 @@ const ResolvedRepairs = () => {
 
     const clientFilteredTickets = applyFilters(ticketRequests);
 
-    // pagination client-side
     useEffect(() => {
         const tp = Math.max(1, Math.ceil(clientFilteredTickets.length / pageSize));
         setTotalPages(tp);
@@ -208,7 +219,6 @@ const ResolvedRepairs = () => {
 
     const displayedTickets = clientFilteredTickets.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
-    // render table view (same layout as HistoryPage)
     const renderTable = () => {
         return (
             <>
@@ -243,7 +253,7 @@ const ResolvedRepairs = () => {
                                     <td className="px-5 py-3 whitespace-nowrap">{last || '—'}</td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                     <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200`}>
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>
                                                 {statusVal}
                                             </span>
                                     </td>

@@ -9,11 +9,9 @@ function getUserInfoFromToken() {
     if (!token) return {};
 
     try {
-        // Get role from JWT token
         const payload = JSON.parse(atob(token.split('.')[1]));
         const role = payload.role;
 
-        // Get email from sessionStorage userData
         const userDataStr = sessionStorage.getItem('userData');
         let email = '';
         if (userDataStr) {
@@ -28,7 +26,6 @@ function getUserInfoFromToken() {
     }
 }
 
-// Local status -> color mapping used by ticket badges (kept consistent with other components)
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
@@ -37,7 +34,6 @@ const statusChipClasses = (statusRaw) => {
         'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
-        'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
         READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
         'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
         COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',

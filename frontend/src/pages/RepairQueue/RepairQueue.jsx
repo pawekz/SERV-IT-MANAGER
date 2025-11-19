@@ -6,6 +6,21 @@ import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetail
 import api, { parseJwt } from '../../config/ApiConfig';
 import TicketCard from '../../components/TicketCard/TicketCard';
 
+const statusChipClasses = (statusRaw) => {
+    const status = (statusRaw || '').toString().trim().toUpperCase();
+    const map = {
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
+    };
+    return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+};
+
 const RepairQueue = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
@@ -43,10 +58,8 @@ const RepairQueue = () => {
         "COMPLETED"
     ];
 
-    // derive status options for the filter: ALL + unique statuses from current list excluding resolved ones
     const availableStatuses = ['ALL', ...Array.from(new Set(ticketRequests.map(t => (t.status || t.repairStatus || '').toString().trim().toUpperCase()).filter(Boolean))).filter(s => s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP' && s !== 'COMPLETED' && s !== 'COMPLETE')];
 
-    // compute counts for pending vs resolved to show accurate numbers in the UI
     const pendingCount = ticketRequests.filter((request) => {
         const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
         return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP';
@@ -63,12 +76,12 @@ const RepairQueue = () => {
     };
 
     const handleStatusClick = (e, ticketId) => {
-        e.stopPropagation(); // Prevent triggering the card click
+        e.stopPropagation();
         setStatusDropdownOpen(prev => (prev === ticketId ? null : ticketId));
     };
 
     const promptStatusChange = (e, ticketId, newStatus, request) => {
-        e.stopPropagation(); // Prevent triggering the card click
+        e.stopPropagation();
         if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
             e.nativeEvent.stopImmediatePropagation();
         }
@@ -92,7 +105,6 @@ const RepairQueue = () => {
             try {
                 let res;
                 if (role === "admin") {
-                    // ADMIN: Fetch all repair tickets across multiple statuses
                     const allResults = [];
 
 
@@ -135,7 +147,6 @@ const RepairQueue = () => {
                     setTicketRequests(uniqueTickets);
 
                 } else if (role === "customer") {
-                    // CUSTOMER: Fetch tickets linked to the customer's email
                     if (!email) {
                         console.warn("No customer email found in sessionStorage");
                         return;
@@ -165,7 +176,6 @@ const RepairQueue = () => {
         }
     }, [role, email]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
             setStatusDropdownOpen(null);
@@ -177,7 +187,6 @@ const RepairQueue = () => {
         };
     }, []);
 
-    // filter logic similar to HistoryPage
     const applyFilters = (list) => {
         let filtered = list.slice();
         if (search.trim()) {
@@ -209,7 +218,6 @@ const RepairQueue = () => {
 
     const clientFilteredTickets = applyFilters(ticketRequests);
 
-    // pagination client-side
     useEffect(() => {
         const tp = Math.max(1, Math.ceil(clientFilteredTickets.length / pageSize));
         setTotalPages(tp);
@@ -219,7 +227,6 @@ const RepairQueue = () => {
 
     const displayedTickets = clientFilteredTickets.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
-    // render table view
     const renderTable = () => {
         return (
             <>
@@ -254,7 +261,7 @@ const RepairQueue = () => {
                                     <td className="px-5 py-3 whitespace-nowrap">{last || '—'}</td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                     <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200`}>
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>
                                                 {statusVal}
                                             </span>
                                     </td>
