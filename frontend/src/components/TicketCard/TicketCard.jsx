@@ -36,7 +36,7 @@ const statusStyles = (statusRaw) => {
     return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
 };
 
-const TicketCard = ({ ticket, onClick }) => {
+const TicketCard = ({ ticket, onClick, renderStatusControl }) => {
     // derive unified status (backend uses repairStatus)
     const displayStatus = ticket.status || ticket.repairStatus || 'N/A';
 
@@ -60,7 +60,7 @@ const TicketCard = ({ ticket, onClick }) => {
 
     return (
         <div
-            className="group relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col overflow-hidden"
+            className="group relative bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col overflow-visible"
             onClick={onClick}
             role="button"
             tabIndex={0}
@@ -113,6 +113,13 @@ const TicketCard = ({ ticket, onClick }) => {
                     <div className="flex justify-between"><span className="text-gray-500">Check-In</span><span className="font-medium text-gray-800 text-right">{ticket.checkInDate || '—'}</span></div>
                 </div>
                 <div className="pt-2">
+                    {/* Render a custom status control if provided by the parent page (eg. a gray button + dropdown). */}
+                    {renderStatusControl && (
+                        <div className="mb-2">
+                            {renderStatusControl(ticket)}
+                        </div>
+                    )}
+
                     <button
                         onClick={(e) => { e.stopPropagation(); onClick(); }}
                         className="inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400/40 focus:outline-none rounded-lg transition-colors"

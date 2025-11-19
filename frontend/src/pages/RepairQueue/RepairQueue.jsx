@@ -1,37 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Plus, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronUp } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
-
-function TicketImage({ path, alt, className }) {
-    const [src, setSrc] = useState(null);
-    useEffect(() => {
-        let url;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => {
-                    url = presignedUrl;
-                    setSrc(presignedUrl);
-                })
-                .catch(err => {
-                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
-                });
-        }
-        return () => { if (url) URL.revokeObjectURL(url); };
-    }, [path]);
-    if (!src) {
-        return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
-    }
-    return <img src={src || "/placeholder.svg"} alt={alt} className={className} />;
-}
-
-async function fetchPresignedPhotoUrl(photoUrl) {
-    if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
-}
+import TicketCard from '../../components/TicketCard/TicketCard';
 
 const RepairQueue = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
@@ -47,7 +20,6 @@ const RepairQueue = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
-    const [carouselIndices, setCarouselIndices] = useState({});
 
     // Resolve a stable key for each request so dropdown state is tied to a single card
     const resolveTicketKey = (request) => {
@@ -62,22 +34,6 @@ const RepairQueue = () => {
         "Ready for Pickup",
         "Completed"
     ];
-
-    const handleCarouselNext = (e, ticketKey, totalImages) => {
-        e.stopPropagation();
-        setCarouselIndices(prev => ({
-            ...prev,
-            [ticketKey]: (prev[ticketKey] ?? 0) + 1 >= totalImages ? 0 : (prev[ticketKey] ?? 0) + 1
-        }));
-    };
-
-    const handleCarouselPrev = (e, ticketKey, totalImages) => {
-        e.stopPropagation();
-        setCarouselIndices(prev => ({
-            ...prev,
-            [ticketKey]: (prev[ticketKey] ?? 0) - 1 < 0 ? totalImages - 1 : (prev[ticketKey] ?? 0) - 1
-        }));
-    };
 
     const handleCardClick = (request) => {
         setSelectedRequest(request);
@@ -95,7 +51,7 @@ const RepairQueue = () => {
         // Update the status in state
         setTicketRequests(prevRequests =>
             prevRequests.map(request =>
-                (resolveTicketKey(request) === ticketId ? { ...request, status: newStatus } : request)
+                (resolveTicketKey(request) === ticketId ? { ...request, status: newStatus, repairStatus: newStatus } : request)
             )
         );
 
@@ -197,23 +153,44 @@ const RepairQueue = () => {
         };
     }, []);
 
-    const getStatusColor = (status) => {
-        switch(status) {
-            case "Received":
-                return "text-blue-600";
-            case "Diagnosed":
-                return "text-purple-600";
-            case "Awaiting Parts":
-                return "text-orange-600";
-            case "Repairing":
-                return "text-yellow-600";
-            case "Ready for Pickup":
-                return "text-green-600";
-            case "Completed":
-                return "text-gray-600";
-            default:
-                return "text-yellow-600";
-        }
+    // renderStatusControl: provides a gray-styled button with dropdown menu for status options
+    const renderStatusControl = (request) => {
+        const ticketKey = resolveTicketKey(request);
+        const currentStatus = request.status || request.repairStatus || 'Unknown';
+
+        return (
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleStatusClick(e, ticketKey); }}
+                    aria-haspopup="menu"
+                    aria-expanded={statusDropdownOpen === ticketKey}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-gray-100 text-gray-700 text-sm border border-gray-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+                >
+                    <span className="truncate">{currentStatus}</span>
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                </button>
+
+                {statusDropdownOpen === ticketKey && (
+                    <div
+                        role="menu"
+                        aria-label="Status options"
+                        className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20"
+                    >
+                        {statusOptions.map((status) => (
+                            <button
+                                key={status}
+                                role="menuitem"
+                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${request.status === status || request.repairStatus === status ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
+                                onClick={(e) => { e.stopPropagation(); changeStatus(e, ticketKey, status); }}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -299,94 +276,18 @@ const RepairQueue = () => {
 
                                         // Pending Repairs
 
-                                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                                             {ticketRequests
                                                 .filter(request => request.status !== "COMPLETED" || request.status !== "READY_FOR_PICKUP" )
                                                 .map((request) => {
                                                     const ticketKey = resolveTicketKey(request);
                                                     return (
-                                                        <div
+                                                        <TicketCard
                                                             key={ticketKey}
+                                                            ticket={request}
                                                             onClick={() => handleCardClick(request)}
-                                                            className="cursor-pointer flex-row bg-[rgba(37,99,235,0.05)] border border-[#2563eb] rounded-lg p-4 shadow-sm hover:shadow-md transition"
-                                                        >
-                                                            <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-3 shadow-sm mb-3">
-                                                                {request.repairPhotosUrls?.length > 0 ? (
-                                                                    <div className="relative">
-                                                                        {/* Carousel Display */}
-                                                                        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200">
-                                                                            <TicketImage
-                                                                                path={request.repairPhotosUrls[carouselIndices[ticketKey] ?? 0]}
-                                                                                alt={`Repair Photo ${(carouselIndices[ticketKey] ?? 0) + 1}`}
-                                                                                className="object-cover w-full h-full"
-                                                                            />
-                                                                        </div>
-
-                                                                        {/* Navigation Buttons */}
-                                                                        {request.repairPhotosUrls.length > 1 && (
-                                                                            <>
-                                                                                <button
-                                                                                    onClick={(e) => handleCarouselPrev(e, ticketKey, request.repairPhotosUrls.length)}
-                                                                                    className="absolute left-1 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full transition"
-                                                                                >
-                                                                                    <ChevronLeft className="w-4 h-4" />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={(e) => handleCarouselNext(e, ticketKey, request.repairPhotosUrls.length)}
-                                                                                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full transition"
-                                                                                >
-                                                                                    <ChevronRight className="w-4 h-4" />
-                                                                                </button>
-                                                                            </>
-                                                                        )}
-
-                                                                        {/* Image Counter */}
-                                                                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                                                                            {(carouselIndices[ticketKey] ?? 0) + 1} / {request.repairPhotosUrls.length}
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="w-full h-40 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
-                                                                        <span className="text-xs text-gray-400">No photos</span>
-                                                                    </div>
-                                                                )}
-                                                            </section>
-
-                                                            <p className="text-[12px] mt-[5px]">Ticket Number# {request.ticketNumber}</p>
-                                                            <div className="my-2 h-px bg-[#2563eb]"></div>
-
-                                                            <div>
-                                                                <h2 className="text-[16px] font-semibold text-gray-800 mb-1">{request.deviceType}</h2>
-                                                                <p className="text-[14px] text-gray-600">Issue: {request.reportedIssue}</p>
-                                                                <div className="mt-[5px]"></div>
-                                                                <p className="text-sm text-gray-600">Serial Number: {request.deviceSerialNumber}</p>
-
-                                                                <div className="relative">
-                                                                    <p
-                                                                        onClick={(e) => handleStatusClick(e, ticketKey)}
-                                                                        className={`text-sm font-medium mt-1 text-right ${getStatusColor(request.status)} cursor-pointer hover:underline flex items-center justify-end`}
-                                                                    >
-                                                                        <ChevronUp className="ml-1 w-4 h-4" /> Status: {request.repairStatus}
-                                                                    </p>
-
-                                                                    {statusDropdownOpen === ticketKey && (
-                                                                        <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
-                                                                            {statusOptions.map((status) => (
-                                                                                <button
-                                                                                    key={status}
-                                                                                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                                                        request.status === status ? 'font-bold' : ''
-                                                                                    }`}
-                                                                                    onClick={(e) => changeStatus(e, ticketKey, status)}
-                                                                                >
-                                                                                    {status}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                            renderStatusControl={renderStatusControl}
+                                                        />
                                                     );
                                                 })}
                                         </div>
