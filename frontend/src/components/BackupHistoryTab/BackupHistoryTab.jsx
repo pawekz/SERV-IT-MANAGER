@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { RotateCcw, Trash2, AlertCircle, CheckCircle2, History, Calendar, Clock } from "lucide-react";
+import { DateRange } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+import { RotateCcw, Trash2, AlertCircle, CheckCircle2, History, Calendar as CalendarIcon, Clock, HelpCircle } from "lucide-react";
 import api from '../../config/ApiConfig';
 import Toast from "../Toast/Toast";
 
@@ -10,7 +13,7 @@ function getUserRole() {
         if (!token) return null;
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         return JSON.parse(jsonPayload).role;
@@ -56,6 +59,7 @@ const BackupHistoryTab = () => {
     const [actionError, setActionError] = useState(null);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
+    const [showNotes, setShowNotes] = useState(false);
 
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -63,8 +67,14 @@ const BackupHistoryTab = () => {
 
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterDateFrom, setFilterDateFrom] = useState("");
-    const [filterDateTo, setFilterDateTo] = useState("");
+    const [dateRange, setDateRange] = useState([
+        {
+            startDate: null,
+            endDate: null,
+            key: 'selection'
+        }
+    ]);
+    const [showCalendar, setShowCalendar] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
 
@@ -73,12 +83,12 @@ const BackupHistoryTab = () => {
 
     useEffect(() => {
         fetchBackupList();
-        
+
         // Refresh list every 5 minutes
         const interval = setInterval(() => {
             fetchBackupList();
         }, 300000); // 5 minutes
-        
+
         return () => clearInterval(interval);
     }, []);
 
@@ -189,11 +199,16 @@ const BackupHistoryTab = () => {
         const matchesSearch = fileName.toLowerCase().includes(searchQuery.toLowerCase());
         // Filter by date range
         let matchesDate = true;
-        if (filterDateFrom) {
-            matchesDate = matchesDate && new Date(backupDate) >= new Date(filterDateFrom);
+        const { startDate, endDate } = dateRange[0];
+
+        if (startDate) {
+            matchesDate = matchesDate && new Date(backupDate) >= startDate;
         }
-        if (filterDateTo) {
-            matchesDate = matchesDate && new Date(backupDate) <= new Date(filterDateTo);
+        if (endDate) {
+            // Set end date to end of day
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+            matchesDate = matchesDate && new Date(backupDate) <= endDateTime;
         }
         return matchesSearch && matchesDate;
     });
@@ -231,9 +246,30 @@ const BackupHistoryTab = () => {
             )}
 
             <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                    <History size={20} className="mr-2 text-blue-600" />
+                <div className="flex items-center gap-2">
                     <h3 className="text-xl font-semibold text-gray-700">Backup History</h3>
+                    <div className="relative">
+                        <button
+                            onMouseEnter={() => setShowNotes(true)}
+                            onMouseLeave={() => setShowNotes(false)}
+                            className="text-blue-500 hover:text-blue-600 focus:outline-none transition-colors"
+                            aria-label="Backup Management Notes"
+                        >
+                            <HelpCircle size={20} />
+                        </button>
+                        {showNotes && (
+                            <div className="absolute left-full top-0 ml-2 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-xl z-50 text-sm text-gray-600">
+                                <h4 className="font-semibold mb-2 text-gray-800">Backup Management:</h4>
+                                <ul className="list-disc list-inside space-y-1">
+                                    <li>Backups are listed in descending order (newest first)</li>
+                                    <li>Restore operations will replace all current data</li>
+                                    <li>Only administrators can delete backup files</li>
+                                    <li>Restore operations require a sign-out and sign-in</li>
+                                    <li>List refreshes automatically every 5 minutes</li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <button
                     onClick={handleRefresh}
@@ -291,20 +327,55 @@ const BackupHistoryTab = () => {
                                     onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                                     className="border rounded px-2 py-1 text-sm"
                                 />
-                                <input
-                                    type="date"
-                                    value={filterDateFrom}
-                                    onChange={e => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
-                                    className="border rounded px-2 py-1 text-sm"
-                                    title="Filter from date"
-                                />
-                                <input
-                                    type="date"
-                                    value={filterDateTo}
-                                    onChange={e => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
-                                    className="border rounded px-2 py-1 text-sm"
-                                    title="Filter to date"
-                                />
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowCalendar(!showCalendar)}
+                                        className="flex items-center border rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 text-gray-700"
+                                    >
+                                        <CalendarIcon size={14} className="mr-2" />
+                                        {dateRange[0].startDate && dateRange[0].endDate
+                                            ? `${dateRange[0].startDate.toLocaleDateString()} - ${dateRange[0].endDate.toLocaleDateString()}`
+                                            : dateRange[0].startDate
+                                                ? `${dateRange[0].startDate.toLocaleDateString()} - ...`
+                                                : "Filter by Date"}
+                                    </button>
+                                    {showCalendar && (
+                                        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-2 w-auto">
+                                            <DateRange
+                                                editableDateInputs={true}
+                                                onChange={item => {
+                                                    setDateRange([item.selection]);
+                                                    setCurrentPage(1);
+                                                }}
+                                                moveRangeOnFirstSelection={false}
+                                                ranges={dateRange}
+                                                rangeColors={['#3b82f6']} // Tailwind blue-500
+                                            />
+                                            <div className="flex justify-end mt-2 gap-2 border-t pt-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setDateRange([{
+                                                            startDate: null,
+                                                            endDate: null,
+                                                            key: 'selection'
+                                                        }]);
+                                                        setShowCalendar(false);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className="text-xs text-red-600 hover:underline"
+                                                >
+                                                    Clear
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowCalendar(false)}
+                                                    className="text-xs text-blue-600 hover:underline"
+                                                >
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <select
                                     value={pageSize}
                                     onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
@@ -327,7 +398,7 @@ const BackupHistoryTab = () => {
                                         <h5 className="font-medium text-gray-900 truncate">{fileName}</h5>
                                         <div className="flex items-center mt-1 text-sm text-gray-500 space-x-4">
                                             <span className="flex items-center">
-                                                <Calendar size={14} className="mr-1" />
+                                                <CalendarIcon size={14} className="mr-1" />
                                                 <span>{formatToLocal(backupDate)}</span>
                                             </span>
                                             <span className="flex items-center">
@@ -391,16 +462,7 @@ const BackupHistoryTab = () => {
                 </div>
             )}
 
-            <div className="text-sm text-gray-500 space-y-1">
-                <p><strong>Backup Management:</strong></p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Backups are listed in descending order (newest first)</li>
-                    <li>Restore operations will replace all current data</li>
-                    <li>Only administrators can delete backup files</li>
-                    <li>Restore operations require a sign-out and sign-in</li>
-                    <li>List refreshes automatically every 5 minutes</li>
-                </ul>
-            </div>
+
         </div>
     );
 };
