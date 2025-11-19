@@ -33,6 +33,12 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbackList);
     }
 
+    @GetMapping("/check/{ticketId}")
+    public ResponseEntity<Boolean> checkFeedback(@PathVariable Long ticketId) {
+        boolean exists = feedbackService.hasFeedback(ticketId);
+        return ResponseEntity.ok(exists);
+    }
+
     @PostMapping("/submitFeedback")
     public ResponseEntity<?> submitFeedback(@RequestBody FeedbackRequestDTO feedbackRequestDTO) {
         try {

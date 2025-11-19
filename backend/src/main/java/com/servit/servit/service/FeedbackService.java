@@ -25,6 +25,10 @@ public class FeedbackService {
         return feedbackRepository.findAll();
     }
 
+    public boolean hasFeedback(Long ticketId) {
+        return feedbackRepository.findByRepairTicketId(ticketId).isPresent();
+    }
+
     public Map<Integer, Long> getAllRatings() {
         List<FeedbackEntity> allFeedback = feedbackRepository.findAll();
         return allFeedback.stream()

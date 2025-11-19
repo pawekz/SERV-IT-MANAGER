@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 
 // statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
@@ -52,11 +53,38 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
+    const [hasFeedback, setHasFeedback] = useState(false);
+    const [checkingFeedback, setCheckingFeedback] = useState(false);
+    const navigate = useNavigate();
+
+    const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
+    const ticketId = ticket?.repairTicketId || ticket?.id;
+
+    useEffect(() => {
+        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
+            setCheckingFeedback(true);
+            api.get(`/feedback/check/${ticketId}`)
+                .then(res => {
+                    setHasFeedback(res.data);
+                })
+                .catch(err => {
+                    console.error('Error checking feedback status:', err);
+                    // Default to false so user can try, worst case backend blocks it
+                    setHasFeedback(false);
+                })
+                .finally(() => {
+                    setCheckingFeedback(false);
+                });
+        } else {
+            setHasFeedback(false);
+            setCheckingFeedback(false);
+        }
+    }, [isOpen, ticket, statusVal, ticketId]);
 
     if (!isOpen || !ticket) return null;
 
     const images = ticket.repairPhotosUrls || [];
-    const statusVal = ticket.status || ticket.repairStatus || 'N/A';
+
     // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
     const last = ticket.customerLastName || '';
@@ -113,7 +141,7 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                         {/* Left: Primary info */}
                         <div className="lg:col-span-2 space-y-6">
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
-                                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400"/> Ticket Information</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Tag size={14} className="text-gray-400" /> Ticket Information</h3>
                                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-[13px]">
                                     <div>
                                         <dt className="text-gray-500">First Name</dt>
@@ -128,11 +156,11 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                                         <dd className="font-medium text-gray-800">{techName || 'Unassigned'}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12}/> Check-In Date</dt>
+                                        <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12} /> Check-In Date</dt>
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
                                     </div>
                                     <div className="sm:col-span-2">
-                                        <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12}/> Device</dt>
+                                        <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12} /> Device</dt>
                                         <dd className="font-medium text-gray-800">{ticket.deviceBrand} {ticket.deviceModel}</dd>
                                     </div>
                                 </dl>
@@ -140,16 +168,16 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
 
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400"/> Repair Photos</h3>
+                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400" /> Repair Photos</h3>
                                     {images.length > 0 && (
-                                        <span className="text-[11px] text-gray-500">{images.length} photo{images.length>1?'s':''}</span>
+                                        <span className="text-[11px] text-gray-500">{images.length} photo{images.length > 1 ? 's' : ''}</span>
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     {images.length > 0 ? images.map((url, idx) => (
                                         <button key={idx} type="button" onClick={() => openImageModal(idx)} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40">
-                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx+1}`} />
-                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"/>
+                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx + 1}`} />
+                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                         </button>
                                     )) : (
                                         <span className="text-xs text-gray-400">No photos</span>
@@ -171,12 +199,20 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
+                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && !hasFeedback && !checkingFeedback && (
+                                        <button
+                                            onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
+                                            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+                                        >
+                                            <MessageSquare size={14} /> Give Feedback
+                                        </button>
+                                    )}
                                     <button
                                         onClick={handleDownloadPdf}
                                         className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:opacity-60"
                                         disabled={downloading}
                                     >
-                                        <Download size={14}/> {downloading ? 'Downloading...' : 'Download PDF'}
+                                        <Download size={14} /> {downloading ? 'Downloading...' : 'Download PDF'}
                                     </button>
                                     <button
                                         onClick={onClose}
