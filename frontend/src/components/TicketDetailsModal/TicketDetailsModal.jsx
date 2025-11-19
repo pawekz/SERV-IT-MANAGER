@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api, { parseJwt } from '../../config/ApiConfig';
 import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { PHOTO_CACHE_TTL_MS, useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
+import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
 // statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
@@ -34,19 +34,26 @@ function TicketImage({ path, alt, className }) {
     return <img src={src} alt={alt} className={className} />;
 }
 
-function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
+function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
     const [hasFeedback, setHasFeedback] = useState(false);
     const [checkingFeedback, setCheckingFeedback] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [issueExpanded, setIssueExpanded] = useState(false);
+    const ISSUE_PREVIEW_CHARS = 180; // number of characters to show before truncating
     const navigate = useNavigate();
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
     const ticketId = ticket?.repairTicketId || ticket?.id;
-    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket]);
+    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket?.repairPhotosUrls]);
     const queryClient = useQueryClient();
+
+    // Reset issue expansion when the ticket changes
+    useEffect(() => {
+        setIssueExpanded(false);
+    }, [ticket?.repairTicketId || ticket?.id || ticket?.ticketNumber]);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -161,6 +168,32 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                                     <div>
                                         <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12} /> Check-In Date</dt>
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
+                                    </div>
+                                    {/* Reported Issue: truncated by default with expand/collapse */}
+                                    <div className="sm:col-span-2">
+                                        <dt className="text-gray-500">Reported Issue</dt>
+                                        <dd className="font-medium text-gray-800">
+                                            {ticket.reportedIssue ? (
+                                                <div>
+                                                    <p className="text-[13px] text-gray-800 break-words whitespace-pre-wrap">
+                                                        {issueExpanded || ticket.reportedIssue.length <= ISSUE_PREVIEW_CHARS
+                                                            ? ticket.reportedIssue
+                                                            : `${ticket.reportedIssue.slice(0, ISSUE_PREVIEW_CHARS).trim()}…`}
+                                                    </p>
+                                                    {ticket.reportedIssue.length > ISSUE_PREVIEW_CHARS && (
+                                                        <button
+                                                            type="button"
+                                                            className="mt-2 text-xs text-blue-600 hover:underline"
+                                                            onClick={() => setIssueExpanded(prev => !prev)}
+                                                        >
+                                                            {issueExpanded ? 'Show less' : 'Show more'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                '—'
+                                            )}
+                                        </dd>
                                     </div>
                                     <div className="sm:col-span-2">
                                         <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12} /> Device</dt>
@@ -279,7 +312,7 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
             )}
         </>
     );
-};
+}
 
 // Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
@@ -288,6 +321,6 @@ const TicketImageThumb = ({ path, alt }) => {
     if (isLoading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
     if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
-};
+}
 
 export default TicketDetailsModal;
