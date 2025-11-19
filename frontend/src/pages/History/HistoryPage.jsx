@@ -30,7 +30,7 @@ function getUserInfoFromToken() {
     }
 }
 
-// Utility: status style mapping similar style approach to other tabs
+// Local status -> color mapping used by ticket badges (kept consistent with other components)
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
@@ -40,20 +40,13 @@ const statusChipClasses = (statusRaw) => {
         AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
         'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
-        IN_PROGRESS: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
-        PROCESSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
         READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
         'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
         COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
-        COMPLETE: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
-        PENDING: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
-        CANCELLED: 'bg-red-50 text-red-700 border-red-200',
-        CANCELED: 'bg-red-50 text-red-700 border-red-200',
-        FAILED: 'bg-red-50 text-red-700 border-red-200',
-        CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
     };
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
+
 
 const HistoryPage = () => {
     const [tickets, setTickets] = useState([]);
