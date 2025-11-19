@@ -9,7 +9,6 @@ import TicketCard from '../../components/TicketCard/TicketCard';
 const RepairQueue = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
 
-    // Determine user role from JWT token (stored in localStorage as 'authToken')
     const token = localStorage.getItem('authToken');
     const decoded = parseJwt(token);
     const role = decoded?.role?.toLowerCase();
@@ -20,8 +19,8 @@ const RepairQueue = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
+    const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
-    // Resolve a stable key for each request so dropdown state is tied to a single card
     const resolveTicketKey = (request) => {
         return request?.ticketId ?? request?.id ?? request?.ticketNumber ?? request?.deviceSerialNumber ?? null;
     };
@@ -45,19 +44,22 @@ const RepairQueue = () => {
         setStatusDropdownOpen(prev => (prev === ticketId ? null : ticketId));
     };
 
-    const changeStatus = (e, ticketId, newStatus) => {
+    const promptStatusChange = (e, ticketId, newStatus, request) => {
         e.stopPropagation(); // Prevent triggering the card click
+        if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+        setStatusDropdownOpen(null);
+        setPendingStatusChange({ ticketKey: ticketId, newStatus, request });
+    };
 
-        // Update the status in state
+    const applyStatusChange = (ticketKey, newStatus) => {
         setTicketRequests(prevRequests =>
             prevRequests.map(request =>
-                (resolveTicketKey(request) === ticketId ? { ...request, status: newStatus, repairStatus: newStatus } : request)
+                (resolveTicketKey(request) === ticketKey ? { ...request, status: newStatus, repairStatus: newStatus } : request)
             )
         );
-
-        setStatusDropdownOpen(null); // Close the dropdown
-
-        // Intentionally left without console.debug; backend update should be performed here
+        setPendingStatusChange(null);
     };
 
     useEffect(() => {
@@ -181,7 +183,7 @@ const RepairQueue = () => {
                                 key={status}
                                 role="menuitem"
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${request.status === status || request.repairStatus === status ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
-                                onClick={(e) => { e.stopPropagation(); changeStatus(e, ticketKey, status); }}
+                                onClick={(e) => { promptStatusChange(e, ticketKey, status, request); }}
                             >
                                 {status}
                             </button>
@@ -301,6 +303,18 @@ const RepairQueue = () => {
                                         data={selectedRequest}
                                         readonly={true}
                                     />
+                                    {pendingStatusChange && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                                                <h3 className="text-lg font-semibold mb-2">Confirm Update Status?</h3>
+                                                <p className="text-sm text-gray-600 mb-4">Are you sure you want to change the status to <span className="font-medium">{pendingStatusChange.newStatus}</span> for ticket <span className="font-medium">{pendingStatusChange.ticketKey}</span>?</p>
+                                                <div className="flex justify-end gap-3">
+                                                    <button onClick={() => setPendingStatusChange(null)} className="px-3 py-2 rounded bg-gray-100 text-gray-700">Cancel</button>
+                                                    <button onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} className="px-3 py-2 rounded bg-blue-600 text-white">Confirm</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         )}
@@ -314,3 +328,4 @@ const RepairQueue = () => {
 };
 
 export default RepairQueue;
+

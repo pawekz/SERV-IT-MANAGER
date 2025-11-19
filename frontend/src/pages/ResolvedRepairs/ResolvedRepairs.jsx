@@ -20,6 +20,7 @@ const ResolvedRepairs = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
+    const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
     const statusOptions = [
         "RECEIVED",
@@ -36,25 +37,27 @@ const ResolvedRepairs = () => {
     };
 
     const handleStatusClick = (e, requestId) => {
-        e.stopPropagation(); // Prevent triggering the card click
+        e.stopPropagation();
         setStatusDropdownOpen(statusDropdownOpen === requestId ? null : requestId);
     };
 
-    const changeStatus = (e, requestId, newStatus) => {
-        e.stopPropagation(); // Prevent triggering the card click
-
-        // Update the status in state
-        setTicketRequests(prevRequests =>
-            prevRequests.map(request =>
-                request.id === requestId ? { ...request, status: newStatus, repairStatus: newStatus } : request
-            )
-        );
-
-        setStatusDropdownOpen(null); // Close the dropdown
-
-        // Intentionally left without console.debug; backend update should be performed here
+    const promptStatusChange = (e, ticketKey, newStatus, request) => {
+        e.stopPropagation();
+        if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+        setStatusDropdownOpen(null);
+        setPendingStatusChange({ ticketKey, newStatus, request });
     };
 
+    const applyStatusChange = (ticketKey, newStatus) => {
+        setTicketRequests(prevRequests =>
+            prevRequests.map(request =>
+                (request?.ticketId === ticketKey || request?.id === ticketKey || request?.ticketNumber === ticketKey) ? { ...request, status: newStatus, repairStatus: newStatus } : request
+            )
+        );
+        setPendingStatusChange(null);
+    };
 
     useEffect(() => {
         const fetchTickets = async () => {
@@ -63,7 +66,6 @@ const ResolvedRepairs = () => {
             try {
                 let res;
                 if (role === "admin") {
-                    // ADMIN: Fetch all repair tickets across multiple statuses
                     const allResults = [];
 
 
@@ -73,14 +75,12 @@ const ResolvedRepairs = () => {
                     const content = response.data?.content || [];
                     allResults.push(...content);
 
-                    // Remove duplicates based on ticketNumber
                     const uniqueTickets = Array.from(
                         new Map(allResults.map(ticket => [ticket.ticketNumber, ticket])).values()
                     );
                     setTicketRequests(uniqueTickets);
 
                 } else if (role === "technician") {
-                    // TECHNICIAN: Fetch tickets assigned to the logged-in technician
                     if (!email) {
                         console.warn("No technician email found in sessionStorage");
                         return;
@@ -182,16 +182,16 @@ const ResolvedRepairs = () => {
                                 key={status}
                                 role="menuitem"
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${request.status === status || request.repairStatus === status ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
-                                onClick={(e) => { e.stopPropagation(); changeStatus(e, request.id, status); }}
+                                onClick={(e) => { promptStatusChange(e, resolveTicketKey(request), status, request); }}
                             >
                                 {status}
                             </button>
                         ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
+                     </div>
+                 )}
+             </div>
+         );
+     };
 
     return (
         <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
@@ -296,9 +296,21 @@ const ResolvedRepairs = () => {
                                         data={selectedRequest}
                                         readonly={true}
                                     />
-                                </div>
-                            </section>
-                        )}
+                                    {pendingStatusChange && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                                                <h3 className="text-lg font-semibold mb-2">Confirm Status Change</h3>
+                                                <p className="text-sm text-gray-600 mb-4">Change status to <span className="font-medium">{pendingStatusChange.newStatus}</span> for ticket <span className="font-medium">{pendingStatusChange.ticketKey}</span>?</p>
+                                                <div className="flex justify-end gap-3">
+                                                    <button onClick={() => setPendingStatusChange(null)} className="px-3 py-2 rounded bg-gray-100 text-gray-700">Cancel</button>
+                                                    <button onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} className="px-3 py-2 rounded bg-blue-600 text-white">Confirm</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                 </div>
+                             </section>
+                         )}
                     </div>
                 </div>
             </div>
