@@ -42,24 +42,6 @@ function TicketImage({ path, alt }) {
     return <img className="rounded-t-lg w-full h-40 md:h-44 object-cover" src={src} alt={alt || 'Repair photo'} loading="lazy" />;
 }
 
-// Status chip styling helper
-const statusStyles = (statusRaw) => {
-    const s = (statusRaw || '').toUpperCase();
-    const base = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border';
-    const map = {
-        COMPLETED: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        COMPLETE: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        IN_PROGRESS: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PROCESSING: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PENDING: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        AWAITING_PARTS: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        CANCELLED: `${base} bg-red-50 text-red-600 border-red-200`,
-        CANCELED: `${base} bg-red-50 text-red-600 border-red-200`,
-        FAILED: `${base} bg-red-50 text-red-600 border-red-200`,
-    };
-    return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
-};
-
 const TicketCard = ({ ticket, onClick, renderStatusControl }) => {
     // derive unified status (backend uses repairStatus)
     const displayStatus = ticket.status || ticket.repairStatus || 'N/A';

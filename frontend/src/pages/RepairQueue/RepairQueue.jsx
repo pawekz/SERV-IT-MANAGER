@@ -27,12 +27,12 @@ const RepairQueue = () => {
     };
 
     const statusOptions = [
-        "Received",
-        "Diagnosed",
-        "Awaiting Parts",
-        "Repairing",
-        "Ready for Pickup",
-        "Completed"
+        "RECEIVED",
+        "DIAGNOSED",
+        "AWAITING PARTS",
+        "REPAIRING",
+        "READY FOR PICKUP",
+        "COMPLETED"
     ];
 
     const handleCardClick = (request) => {
