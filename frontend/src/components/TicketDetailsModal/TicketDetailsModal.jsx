@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../config/ApiConfig';
+import api, { parseJwt } from '../../config/ApiConfig';
 import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { PHOTO_CACHE_TTL_MS, useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
 // statusStyles helper placed before usage
 const statusStyles = (statusRaw) => {
@@ -22,31 +24,14 @@ const statusStyles = (statusRaw) => {
 };
 
 function TicketImage({ path, alt, className }) {
-    const [src, setSrc] = useState(null);
-    useEffect(() => {
-        let url;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => {
-                    url = presignedUrl;
-                    setSrc(presignedUrl);
-                })
-                .catch(err => {
-                    console.error('[TicketDetailsModal] Error loading presigned image:', err);
-                });
-        }
-        return () => { if (url) URL.revokeObjectURL(url); };
-    }, [path]);
-    if (!src) {
+    const { data: src, isLoading } = useRepairPhoto(path);
+    if (isLoading) {
         return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
     }
+    if (!src) {
+        return <div className={className + ' bg-gray-100 flex items-center justify-center text-xs text-gray-400'}>No Image</div>;
+    }
     return <img src={src} alt={alt} className={className} />;
-}
-
-async function fetchPresignedPhotoUrl(photoUrl) {
-    if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
 }
 
 function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
@@ -55,10 +40,23 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     const [downloading, setDownloading] = useState(false);
     const [hasFeedback, setHasFeedback] = useState(false);
     const [checkingFeedback, setCheckingFeedback] = useState(false);
+    const [userRole, setUserRole] = useState(null);
     const navigate = useNavigate();
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
     const ticketId = ticket?.repairTicketId || ticket?.id;
+    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket]);
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            const payload = parseJwt(token);
+            if (payload && payload.role) {
+                setUserRole(payload.role);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
@@ -81,9 +79,14 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
         }
     }, [isOpen, ticket, statusVal, ticketId]);
 
-    if (!isOpen || !ticket) return null;
+    useEffect(() => {
+        if (!isOpen || !images.length) return;
+        images.forEach((url) => {
+            prefetchRepairPhoto(queryClient, url);
+        });
+    }, [images, isOpen, queryClient]);
 
-    const images = ticket.repairPhotosUrls || [];
+    if (!isOpen || !ticket) return null;
 
     // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
@@ -199,7 +202,7 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
-                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && !hasFeedback && !checkingFeedback && (
+                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && !hasFeedback && !checkingFeedback && userRole === 'CUSTOMER' && (
                                         <button
                                             onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
                                             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
@@ -280,22 +283,9 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
 
 // Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
-    const [src, setSrc] = useState(null);
-    const [loading, setLoading] = useState(!!path);
-    useEffect(() => {
-        let urlRef;
-        if (path) {
-            fetchPresignedPhotoUrl(path)
-                .then(presignedUrl => { urlRef = presignedUrl; setSrc(presignedUrl); })
-                .catch(() => setSrc(null))
-                .finally(() => setLoading(false));
-        } else {
-            setLoading(false);
-        }
-        return () => { if (urlRef) URL.revokeObjectURL(urlRef); };
-    }, [path]);
+    const { data: src, isLoading } = useRepairPhoto(path);
 
-    if (loading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
+    if (isLoading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
     if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 };
