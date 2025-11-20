@@ -19,7 +19,7 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
   const openModal = async (action) => {
     setActiveAction(action);
     setModalOpen(true);
-    setSelectedPartId(action.quotation.technicianRecommendedPartId || null);
+    setSelectedPartId(action.quotation.recommendedPart || null);
     try {
       setModalLoading(true);
       const ids = Array.from(new Set(action.quotation.partIds || []));
@@ -139,8 +139,8 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
             ) : (
               <>
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  {renderOption('Option A – Recommended', activeAction.quotation.technicianRecommendedPartId)}
-                  {renderOption('Option B – Alternative', activeAction.quotation.technicianAlternativePartId)}
+                  {renderOption('Option A – Recommended', activeAction.quotation.recommendedPart)}
+                  {renderOption('Option B – Alternative', activeAction.quotation.alternativePart)}
                 </div>
                 <p className="text-xs text-gray-600 mb-4">
                   Need help deciding? Call us at <strong>(02) 8700 1234</strong> and mention ticket{' '}

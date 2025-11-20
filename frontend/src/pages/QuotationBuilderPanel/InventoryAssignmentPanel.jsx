@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Wrench, User, Package, ChevronLeft, ChevronRight, X,  CuboidIcon as Cube } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import RepairTicketCard from "./RepairTicketCard";
 import AvailableInventory from "./AvailableInventory";
@@ -32,7 +31,6 @@ const InventoryAssignmentPanel = () => {
     const [reminderHours, setReminderHours] = useState(24);
     const [processing, setProcessing] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
-    const [technicianIdentity, setTechnicianIdentity] = useState("Technician");
     const [showOverrideModal, setShowOverrideModal] = useState(false);
     const [overrideParts, setOverrideParts] = useState([]);
     const [overrideSelection, setOverrideSelection] = useState(null);
@@ -63,9 +61,6 @@ const InventoryAssignmentPanel = () => {
                     throw new Error("Invalid token. Please log in again.");
                 }
                 const fullName = [decodedToken.firstName, decodedToken.lastName].filter(Boolean).join(" ").trim();
-                if (fullName) {
-                    setTechnicianIdentity(fullName);
-                }
                 setLoading(false);
             } catch (err) {
                 console.error("Authentication error:", err);
@@ -200,8 +195,8 @@ const InventoryAssignmentPanel = () => {
                         partIds: partIds,
                         laborCost: parseFloat(laborCost) || 0,
                         totalCost: partsTotal + (parseFloat(laborCost) || 0),
-                        technicianRecommendedPartId: preferredPart?.id || null,
-                        technicianAlternativePartId: alternativePart?.id || null,
+                        recommendedPart: preferredPart?.id || null,
+                        alternativePart: alternativePart?.id || null,
                         reminderDelayHours: reminderHours,
                         expiryAt: expiryDate.toISOString(),
                     });
@@ -213,8 +208,8 @@ const InventoryAssignmentPanel = () => {
                         laborCost: parseFloat(laborCost) || 0,
                         expiryAt: expiryDate.toISOString(),
                         reminderDelayHours: reminderHours,
-                        technicianRecommendedPartId: preferredPart?.id || null,
-                        technicianAlternativePartId: alternativePart?.id || null,
+                        recommendedPart: preferredPart?.id || null,
+                        alternativePart: alternativePart?.id || null,
                     });
                     setToast({ show: true, message: "Quotation sent to customer", type: "success" });
                 }
@@ -299,7 +294,6 @@ const InventoryAssignmentPanel = () => {
             await api.patch(`/quotation/overrideSelection/${existingQuotation.quotationId}`, null, {
                 params: {
                     partId: overrideSelection.id,
-                    technicianName: technicianIdentity,
                     notes: overrideNotes,
                 },
             });
@@ -419,7 +413,7 @@ const InventoryAssignmentPanel = () => {
                                     )}
                                     {overrideParts.map((part) => {
                                         const label =
-                                            part.id === existingQuotation?.technicianRecommendedPartId
+                                            part.id === existingQuotation?.recommendedPart
                                                 ? "Option A – Recommended"
                                                 : "Option B – Alternative";
                                         const isSelected = overrideSelection?.id === part.id;

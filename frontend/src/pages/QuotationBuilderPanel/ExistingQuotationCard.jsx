@@ -34,7 +34,7 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const ids = [quotation?.technicianRecommendedPartId, quotation?.technicianAlternativePartId].filter(Boolean);
+        const ids = [quotation?.recommendedPart, quotation?.alternativePart].filter(Boolean);
         if (ids.length === 0) {
           setOptionParts({});
           return;
@@ -51,7 +51,7 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
       }
     };
     loadOptions();
-  }, [quotation?.technicianRecommendedPartId, quotation?.technicianAlternativePartId]);
+  }, [quotation?.recommendedPart, quotation?.alternativePart]);
 
   const statusColor = () => {
     switch ((quotation.status || "").toUpperCase()) {
@@ -148,14 +148,13 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {renderOptionCard("Option A – Recommended", quotation.technicianRecommendedPartId, optionParts, quotation.laborCost)}
-            {renderOptionCard("Option B – Alternative", quotation.technicianAlternativePartId, optionParts, quotation.laborCost)}
+            {renderOptionCard("Option A – Recommended", quotation.recommendedPart, optionParts, quotation.laborCost)}
+            {renderOptionCard("Option B – Alternative", quotation.alternativePart, optionParts, quotation.laborCost)}
           </div>
 
           {quotation.technicianOverride && (
             <div className="mt-4 text-xs text-gray-600">
-              Overridden by {quotation.overrideTechnicianName || "Technician"} on{" "}
-              {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}
+              Override logged on {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}
               {quotation.overrideNotes && <span className="block italic mt-1">“{quotation.overrideNotes}”</span>}
             </div>
           )}

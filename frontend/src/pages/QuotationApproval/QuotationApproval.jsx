@@ -89,9 +89,9 @@ const QuotationApproval = () => {
   let recommendedPart = null;
   let alternativeParts = [];
   if (parts.length > 0) {
-    if (quotation?.technicianRecommendedPartId) {
-      recommendedPart = parts.find(p => p.id === parseInt(quotation.technicianRecommendedPartId));
-      alternativeParts = parts.filter(p => p.id !== parseInt(quotation.technicianRecommendedPartId));
+    if (quotation?.recommendedPart) {
+      recommendedPart = parts.find(p => p.id === parseInt(quotation.recommendedPart));
+      alternativeParts = parts.filter(p => p.id !== parseInt(quotation.recommendedPart));
     } else {
       recommendedPart = parts[0];
       alternativeParts = parts.slice(1);
@@ -185,8 +185,9 @@ const QuotationApproval = () => {
 
         {quotation?.technicianOverride && (
           <div className="mb-4 p-3 rounded-md bg-purple-50 border border-purple-200 text-sm text-purple-700">
-            Technician override documented by {quotation.overrideTechnicianName || "Technician"} on{" "}
+            Technician override documented on{" "}
             {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}.
+            {quotation.overrideNotes && <> Notes: {quotation.overrideNotes}</>}
           </div>
         )}
 
