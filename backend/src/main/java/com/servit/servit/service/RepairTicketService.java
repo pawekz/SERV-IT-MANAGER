@@ -464,7 +464,11 @@ public class RepairTicketService {
         }
 
         if (previousStatus != newStatus && newStatus == RepairStatusEnum.AWAITING_PARTS) {
-            quotationService.publishAwaitingApprovalEmail(request.getTicketNumber());
+            try {
+                quotationService.publishAwaitingApprovalEmail(request.getTicketNumber());
+            } catch (IllegalArgumentException ex) {
+                logger.info("Skipping awaiting-parts notification for ticket {}: {}", request.getTicketNumber(), ex.getMessage());
+            }
         }
 
         if (newStatus.ordinal() >= RepairStatusEnum.REPAIRING.ordinal()) {
