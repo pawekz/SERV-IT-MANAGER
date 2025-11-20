@@ -23,11 +23,11 @@ public class QuotationEntity {
     @ElementCollection
     private List<Long> partIds;
 
-    @Column(name = "technician_recommended_part_id")
-    private Long technicianRecommendedPartId;
+    @Column(name = "recommended_part_id")
+    private Long recommendedPart;
 
-    @Column(name = "technician_alternative_part_id")
-    private Long technicianAlternativePartId;
+    @Column(name = "alternative_part_id")
+    private Long alternativePart;
 
     @Column(name = "labor_cost", nullable = false)
     private Double laborCost;
@@ -68,9 +68,6 @@ public class QuotationEntity {
 
     @Column(name = "technician_override")
     private Boolean technicianOverride = Boolean.FALSE;
-
-    @Column(name = "override_technician_name")
-    private String overrideTechnicianName;
 
     @Column(name = "override_timestamp")
     private LocalDateTime overrideTimestamp;

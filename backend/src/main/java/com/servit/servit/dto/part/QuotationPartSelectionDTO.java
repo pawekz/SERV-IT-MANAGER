@@ -7,7 +7,7 @@ import java.util.List;
 @Data
 public class QuotationPartSelectionDTO {
     private String repairTicketId;
-    private String technicianRecommendedPartId;
+    private String recommendedPart;
     private List<AlternativePartDTO> alternativeParts;
     private String selectionReason; // TECHNICIAN_RECOMMENDED, CUSTOMER_UPGRADE, COST_EFFECTIVE, etc.
     private String quotationId;

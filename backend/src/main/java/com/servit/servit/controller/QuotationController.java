@@ -122,10 +122,9 @@ public class QuotationController {
     @PatchMapping("/overrideSelection/{quotationId}")
     public QuotationDTO overrideSelection(@PathVariable Long quotationId,
                                           @RequestParam Long partId,
-                                          @RequestParam(required = false) String technicianName,
                                           @RequestParam(required = false) String notes) {
         try {
-            return quotationService.overrideCustomerSelection(quotationId, partId, technicianName, notes);
+            return quotationService.overrideCustomerSelection(quotationId, partId, notes);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         } catch (Exception e) {

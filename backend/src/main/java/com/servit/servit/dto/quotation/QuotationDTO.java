@@ -9,8 +9,8 @@ public class QuotationDTO {
     private Long quotationId;
     private String repairTicketNumber;
     private List<Long> partIds;
-    private Long technicianRecommendedPartId;
-    private Long technicianAlternativePartId;
+    private Long recommendedPart;
+    private Long alternativePart;
     private Double laborCost;
     private Double totalCost;
     private String status;
@@ -30,7 +30,6 @@ public class QuotationDTO {
 
     // Override logging
     private Boolean technicianOverride;
-    private String overrideTechnicianName;
     private LocalDateTime overrideTimestamp;
     private String overrideNotes;
 }

@@ -97,19 +97,19 @@ public class QuotationService {
             entity.setRepairTicketNumber(dto.getRepairTicketNumber());
             entity.setPartIds(dto.getPartIds());
 
-            final Long recommendedPartId = (dto.getTechnicianRecommendedPartId() != null)
-                    ? dto.getTechnicianRecommendedPartId()
+            final Long recommendedPartId = (dto.getRecommendedPart() != null)
+                    ? dto.getRecommendedPart()
                     : (!dto.getPartIds().isEmpty() ? dto.getPartIds().get(0) : null);
-            entity.setTechnicianRecommendedPartId(recommendedPartId);
+            entity.setRecommendedPart(recommendedPartId);
 
-            Long alternativePartId = dto.getTechnicianAlternativePartId();
+            Long alternativePartId = dto.getAlternativePart();
             if (alternativePartId == null) {
                 alternativePartId = dto.getPartIds().stream()
                         .filter(id -> recommendedPartId == null || !id.equals(recommendedPartId))
                         .findFirst()
                         .orElse(null);
             }
-            entity.setTechnicianAlternativePartId(alternativePartId);
+            entity.setAlternativePart(alternativePartId);
 
             Double labor = dto.getLaborCost() != null ? dto.getLaborCost() : 0.0;
             Double total = dto.getTotalCost() != null ? dto.getTotalCost() : labor;
@@ -119,7 +119,6 @@ public class QuotationService {
             entity.setCreatedAt(LocalDateTime.now());
             entity.setCustomerSelection(null);
             entity.setTechnicianOverride(Boolean.FALSE);
-            entity.setOverrideTechnicianName(null);
             entity.setOverrideTimestamp(null);
             entity.setOverrideNotes(null);
 
@@ -162,7 +161,7 @@ public class QuotationService {
     }
 
     @Transactional
-    public QuotationDTO overrideCustomerSelection(Long quotationId, Long partId, String technicianName, String notes) {
+    public QuotationDTO overrideCustomerSelection(Long quotationId, Long partId, String notes) {
         if (partId == null) {
             throw new IllegalArgumentException("partId is required for technician override");
         }
@@ -170,7 +169,6 @@ public class QuotationService {
             QuotationEntity entity = quotationRepository.findById(quotationId)
                     .orElseThrow(() -> new IllegalArgumentException("Quotation not found"));
             entity.setTechnicianOverride(Boolean.TRUE);
-            entity.setOverrideTechnicianName(technicianName);
             entity.setOverrideTimestamp(LocalDateTime.now());
             entity.setOverrideNotes(notes);
             return finalizeApproval(entity, String.valueOf(partId));
@@ -279,8 +277,8 @@ public class QuotationService {
         RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(ticketNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Repair ticket not found: " + ticketNumber));
         try {
-            EmailService.QuotationOption recommended = buildOption(quotation.getTechnicianRecommendedPartId(), "Option A – Recommended", quotation.getLaborCost());
-            EmailService.QuotationOption alternative = buildOption(quotation.getTechnicianAlternativePartId(), "Option B – Alternative", quotation.getLaborCost());
+            EmailService.QuotationOption recommended = buildOption(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
+            EmailService.QuotationOption alternative = buildOption(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
             String reminderCopy = buildReminderCopy(quotation);
             emailService.sendQuotationWaitingForApprovalEmail(
                     ticket.getCustomerEmail(),
@@ -314,8 +312,8 @@ public class QuotationService {
             return;
         }
         try {
-            EmailService.QuotationOption recommended = buildOption(quotation.getTechnicianRecommendedPartId(), "Option A – Recommended", quotation.getLaborCost());
-            EmailService.QuotationOption alternative = buildOption(quotation.getTechnicianAlternativePartId(), "Option B – Alternative", quotation.getLaborCost());
+            EmailService.QuotationOption recommended = buildOption(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
+            EmailService.QuotationOption alternative = buildOption(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
             String reminderCopy = buildReminderCopy(quotation);
             emailService.sendQuotationReminderEmail(
                     ticket.getCustomerEmail(),
@@ -430,8 +428,8 @@ public class QuotationService {
             if (dto.getTotalCost() != null) entity.setTotalCost(dto.getTotalCost());
             if (dto.getExpiryAt() != null) entity.setExpiryAt(dto.getExpiryAt());
             if (dto.getReminderDelayHours() != null) entity.setReminderDelayHours(dto.getReminderDelayHours());
-            if (dto.getTechnicianRecommendedPartId() != null) entity.setTechnicianRecommendedPartId(dto.getTechnicianRecommendedPartId());
-            if (dto.getTechnicianAlternativePartId() != null) entity.setTechnicianAlternativePartId(dto.getTechnicianAlternativePartId());
+            if (dto.getRecommendedPart() != null) entity.setRecommendedPart(dto.getRecommendedPart());
+            if (dto.getAlternativePart() != null) entity.setAlternativePart(dto.getAlternativePart());
             if (dto.getNextReminderAt() != null) entity.setNextReminderAt(dto.getNextReminderAt());
             if (dto.getLastReminderSentAt() != null) entity.setLastReminderSentAt(dto.getLastReminderSentAt());
 
@@ -559,15 +557,14 @@ public class QuotationService {
         dto.setCustomerSelection(entity.getCustomerSelection());
         dto.setExpiryAt(entity.getExpiryAt());
         dto.setReminderDelayHours(entity.getReminderDelayHours());
-        dto.setTechnicianRecommendedPartId(entity.getTechnicianRecommendedPartId());
-        dto.setTechnicianAlternativePartId(entity.getTechnicianAlternativePartId());
+        dto.setRecommendedPart(entity.getRecommendedPart());
+        dto.setAlternativePart(entity.getAlternativePart());
         dto.setNextReminderAt(entity.getNextReminderAt());
         dto.setLastReminderSentAt(entity.getLastReminderSentAt());
         dto.setReminderSendCount(entity.getReminderSendCount());
         dto.setApprovalSummarySentAt(entity.getApprovalSummarySentAt());
         dto.setTechnicianOverride(entity.getTechnicianOverride());
         dto.setOverrideNotes(entity.getOverrideNotes());
-        dto.setOverrideTechnicianName(entity.getOverrideTechnicianName());
         dto.setOverrideTimestamp(entity.getOverrideTimestamp());
         return dto;
     }
