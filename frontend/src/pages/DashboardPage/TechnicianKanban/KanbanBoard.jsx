@@ -147,7 +147,7 @@ const KanbanBoard = () => {
                 }
 
                 if (data?.newStatus === "AWAITING_PARTS") {
-                    showToast("Ticket moved to Awaiting Parts. Open the Quotation Builder to send Option A & B.", "success")
+                    showToast("Ticket moved to Awaiting Parts", "success")
                 } else {
                     showToast(data?.message || "Status updated successfully")
                 }
