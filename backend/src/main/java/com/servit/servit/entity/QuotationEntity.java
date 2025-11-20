@@ -23,6 +23,12 @@ public class QuotationEntity {
     @ElementCollection
     private List<Long> partIds;
 
+    @Column(name = "technician_recommended_part_id")
+    private Long technicianRecommendedPartId;
+
+    @Column(name = "technician_alternative_part_id")
+    private Long technicianAlternativePartId;
+
     @Column(name = "labor_cost", nullable = false)
     private Double laborCost;
 
@@ -47,4 +53,28 @@ public class QuotationEntity {
 
     @Column(name = "reminder_delay_hours")
     private Integer reminderDelayHours;
+
+    @Column(name = "next_reminder_at")
+    private LocalDateTime nextReminderAt;
+
+    @Column(name = "last_reminder_sent_at")
+    private LocalDateTime lastReminderSentAt;
+
+    @Column(name = "reminder_send_count")
+    private Integer reminderSendCount;
+
+    @Column(name = "approval_summary_sent_at")
+    private LocalDateTime approvalSummarySentAt;
+
+    @Column(name = "technician_override")
+    private Boolean technicianOverride = Boolean.FALSE;
+
+    @Column(name = "override_technician_name")
+    private String overrideTechnicianName;
+
+    @Column(name = "override_timestamp")
+    private LocalDateTime overrideTimestamp;
+
+    @Column(name = "override_notes", columnDefinition = "TEXT")
+    private String overrideNotes;
 }

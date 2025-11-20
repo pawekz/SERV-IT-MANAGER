@@ -61,6 +61,9 @@ public class RepairTicketService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private QuotationService quotationService;
+
     private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
 
     public RepairTicketService(RepairTicketRepository repairTicketRepository, UserRepository userRepository) {
@@ -398,6 +401,7 @@ public class RepairTicketService {
                     return new EntityNotFoundException("Repair ticket not found");
                 });
 
+        RepairStatusEnum previousStatus = repairTicket.getRepairStatus();
         RepairStatusEnum newStatus;
 
         try {
@@ -405,6 +409,10 @@ public class RepairTicketService {
         } catch (IllegalArgumentException ex) {
             logger.error("Invalid repair status: {}", request.getRepairStatus(), ex);
             throw new IllegalArgumentException("Invalid repair status: " + request.getRepairStatus(), ex);
+        }
+
+        if (newStatus == RepairStatusEnum.AWAITING_PARTS) {
+            quotationService.requirePendingQuotation(request.getTicketNumber());
         }
 
         repairTicket.setRepairStatus(newStatus);
@@ -449,6 +457,14 @@ public class RepairTicketService {
         } catch (Exception e) {
             logger.error("Failed to broadcast repair ticket update: {}", e.getMessage(), e);
             // Don't throw exception here as the main operation succeeded
+        }
+
+        if (previousStatus != newStatus && newStatus == RepairStatusEnum.AWAITING_PARTS) {
+            quotationService.publishAwaitingApprovalEmail(request.getTicketNumber());
+        }
+
+        if (newStatus.ordinal() >= RepairStatusEnum.REPAIRING.ordinal()) {
+            quotationService.sendApprovalSummaryIfNeeded(request.getTicketNumber());
         }
 
         logger.info("Repair status updated to {} for ticket: {}", newStatus, request.getTicketNumber());

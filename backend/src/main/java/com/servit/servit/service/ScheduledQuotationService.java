@@ -1,6 +1,5 @@
 package com.servit.servit.service;
 
-import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.entity.QuotationEntity;
 import com.servit.servit.repository.QuotationRepository;
 import org.slf4j.Logger;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 
@@ -24,7 +22,7 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
 
     private final QuotationRepository quotationRepository;
     private final ConfigurationService configurationService;
-    private final NotificationService notificationService;
+    private final QuotationService quotationService;
 
     private ScheduledTaskRegistrar taskRegistrar;
     private ScheduledFuture<?> scheduledTask;
@@ -32,10 +30,10 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
     @Autowired
     public ScheduledQuotationService(QuotationRepository quotationRepository,
                                      ConfigurationService configurationService,
-                                     NotificationService notificationService) {
+                                     QuotationService quotationService) {
         this.quotationRepository = quotationRepository;
         this.configurationService = configurationService;
-        this.notificationService = notificationService;
+        this.quotationService = quotationService;
     }
 
     @Override
@@ -61,43 +59,15 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
         try {
             logger.debug("Running quotation monitor at {}", LocalDateTime.now());
             List<QuotationEntity> pending = quotationRepository.findByStatus("PENDING");
-            int defaultReminderHours = Integer.parseInt(configurationService.getConfigurationValue("quotation.reminder.delay.hours", "24"));
             for (QuotationEntity q : pending) {
                 LocalDateTime now = LocalDateTime.now();
-                // Reminder
-                int reminderDelay = q.getReminderDelayHours() != null ? q.getReminderDelayHours() : defaultReminderHours;
-                if (q.getCreatedAt() != null && q.getRespondedAt() == null) {
-                    long hrs = ChronoUnit.HOURS.between(q.getCreatedAt(), now);
-                    if (hrs >= reminderDelay) {
-                        // Send reminder notification
-                        try {
-                            NotificationDTO dto = new NotificationDTO();
-                            dto.setTicketNumber(q.getRepairTicketNumber());
-                            dto.setStatus("QUOTATION_REMINDER");
-                            dto.setMessage("You have a pending quotation to review.");
-                            dto.setRecipientEmail("TODO");
-                            notificationService.sendNotification(dto);
-                        } catch (Exception e) {
-                            logger.warn("Failed to send reminder for quotation {}", q.getQuotationId());
-                        }
-                    }
+                if (q.getNextReminderAt() != null && (q.getLastReminderSentAt() == null || now.isAfter(q.getNextReminderAt()))) {
+                    quotationService.sendReminder(q.getQuotationId());
                 }
-                // Expiry check
                 LocalDateTime expiry = q.getExpiryAt();
                 if (expiry != null && now.isAfter(expiry)) {
                     q.setStatus("EXPIRED");
                     quotationRepository.save(q);
-                    // Notify expiry
-                    try {
-                        NotificationDTO dto = new NotificationDTO();
-                        dto.setTicketNumber(q.getRepairTicketNumber());
-                        dto.setStatus("QUOTATION_EXPIRED");
-                        dto.setMessage("Quotation has expired.");
-                        dto.setRecipientEmail("TODO");
-                        notificationService.sendNotification(dto);
-                    } catch (Exception e) {
-                        logger.warn("Failed to send expiry notification for quotation {}", q.getQuotationId());
-                    }
                     logger.info("Quotation {} expired", q.getQuotationId());
                 }
             }

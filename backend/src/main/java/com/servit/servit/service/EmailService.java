@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Service
 public class EmailService {
@@ -225,6 +227,126 @@ public class EmailService {
         }
     }
 
+    public void sendQuotationWaitingForApprovalEmail(String to,
+                                                     String customerName,
+                                                     String ticketNumber,
+                                                     QuotationOption recommended,
+                                                     QuotationOption alternative,
+                                                     String reminderCopy,
+                                                     String supportNumber) throws MessagingException {
+        String subject = "Waiting for Customer Approval - Ticket " + ticketNumber;
+        String intro = "Our technician finished diagnosing your device and prepared two compatible component options. Please review Option A and Option B, then log in to choose the part you prefer.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Waiting for Customer Approval",
+                customerName,
+                ticketNumber,
+                intro,
+                reminderCopy,
+                supportNumber,
+                recommended,
+                alternative);
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    public void sendQuotationReminderEmail(String to,
+                                           String customerName,
+                                           String ticketNumber,
+                                           QuotationOption recommended,
+                                           QuotationOption alternative,
+                                           String reminderCopy,
+                                           String supportNumber) throws MessagingException {
+        String subject = "Reminder: Quotation Pending Approval - Ticket " + ticketNumber;
+        String intro = "This is a friendly reminder that your repair quotation is still waiting for your approval. Please compare the options below and respond so we can continue the repair.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Friendly Reminder: Action Required",
+                customerName,
+                ticketNumber,
+                intro,
+                reminderCopy,
+                supportNumber,
+                recommended,
+                alternative);
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    public void sendQuotationApprovedSummaryEmail(String to,
+                                                  String customerName,
+                                                  String ticketNumber,
+                                                  QuotationOption approvedOption,
+                                                  String supportNumber) throws MessagingException {
+        String subject = "Quotation Approved Summary - Ticket " + ticketNumber;
+        String intro = "Thanks for approving the quotation. Here's a quick summary of the part we will install, including the detailed pricing.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Quotation Approved",
+                customerName,
+                ticketNumber,
+                intro,
+                "We'll notify you when the repair progresses to the next stage.",
+                supportNumber,
+                approvedOption,
+                null);
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    private String buildQuotationEmailTemplate(String heading,
+                                               String customerName,
+                                               String ticketNumber,
+                                               String intro,
+                                               String reminderCopy,
+                                               String supportNumber,
+                                               QuotationOption primary,
+                                               QuotationOption secondary) {
+        String customer = customerName == null ? "Customer" : customerName;
+        return "<html><head><style>" +
+                "body{font-family:'Poppins',Arial,sans-serif;background:#f6f7fb;margin:0;padding:0;}" +
+                ".wrapper{max-width:640px;margin:20px auto;background:#ffffff;border-radius:16px;box-shadow:0 12px 30px rgba(15,23,42,0.12);overflow:hidden;}" +
+                ".header{background:#0f172a;color:#ffffff;padding:28px;text-align:center;font-size:22px;font-weight:600;letter-spacing:0.5px;}" +
+                ".section{padding:24px 28px;color:#0f172a;}" +
+                ".pill{display:inline-block;background:#e0f2fe;color:#0369a1;font-weight:600;padding:6px 14px;border-radius:999px;font-size:12px;margin-bottom:16px;}" +
+                ".options{display:flex;flex-direction:column;gap:16px;}" +
+                ".card{border:1px solid #e2e8f0;border-radius:12px;padding:20px;background:#f8fafc;}" +
+                ".card h3{margin:0 0 8px;font-size:16px;color:#0f172a;}" +
+                ".card p{margin:4px 0;color:#475569;font-size:14px;}" +
+                ".amounts{display:flex;gap:24px;margin-top:12px;font-size:14px;color:#0f172a;}" +
+                ".amounts span{display:block;font-weight:600;color:#0f172a;}" +
+                ".footer{background:#0f172a;color:#cbd5f5;padding:20px;text-align:center;font-size:12px;}" +
+                "</style></head><body>" +
+                "<div class='wrapper'>" +
+                "<div class='header'>" + heading + "</div>" +
+                "<div class='section'>" +
+                "<span class='pill'>Ticket " + ticketNumber + "</span>" +
+                "<h2 style='margin:0 0 10px;'>Hi " + customer + ",</h2>" +
+                "<p style='margin:0 0 18px;line-height:1.55;'>" + intro + "</p>" +
+                renderOptionCard(primary) +
+                renderOptionCard(secondary) +
+                "<p style='margin:18px 0 0;font-size:13px;color:#0f172a;font-weight:600;'>" + reminderCopy + "</p>" +
+                "<p style='margin:6px 0 0;font-size:13px;color:#475569;'>Need help deciding? Call us at <strong>" + supportNumber + "</strong> and reference ticket <strong>" + ticketNumber + "</strong>.</p>" +
+                "</div>" +
+                "<div class='footer'>© 2025 IOCONNECT • All rights reserved</div>" +
+                "</div></body></html>";
+    }
+
+    private String renderOptionCard(QuotationOption option) {
+        if (option == null) {
+            return "";
+        }
+        return "<div class='card'>" +
+                "<h3>" + option.getLabel() + "</h3>" +
+                "<p><strong>Part:</strong> " + option.getPartName() + " (SKU: " + option.getSku() + ")</p>" +
+                (option.getDescription() != null ? "<p style='font-size:13px;color:#64748b;'>" + option.getDescription() + "</p>" : "") +
+                "<div class='amounts'>" +
+                "<div><span>Part Cost</span>" + formatCurrency(option.getPartCost()) + "</div>" +
+                "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
+                "<div><span>Total</span>" + formatCurrency(option.getTotalCost()) + "</div>" +
+                "</div>" +
+                "</div>";
+    }
+
+    private String formatCurrency(double amount) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
+        return formatter.format(amount);
+    }
+
     public void sendEmployeeOnboardingEmail(String to, String firstName, String onboardingCode) throws MessagingException {
         String subject = "IOCONNECT Employee Onboarding Instructions";
         String htmlContent = "<html>" +
@@ -272,5 +394,51 @@ public class EmailService {
         int idx = s3Url.indexOf(".amazonaws.com/");
         if (idx == -1) return s3Url;
         return s3Url.substring(idx + ".amazonaws.com/".length());
+    }
+
+    public static class QuotationOption {
+        private final String label;
+        private final String partName;
+        private final String sku;
+        private final String description;
+        private final double partCost;
+        private final double laborCost;
+
+        public QuotationOption(String label, String partName, String sku, String description, double partCost, double laborCost) {
+            this.label = label;
+            this.partName = partName;
+            this.sku = sku;
+            this.description = description;
+            this.partCost = partCost;
+            this.laborCost = laborCost;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getPartName() {
+            return partName;
+        }
+
+        public String getSku() {
+            return sku;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public double getPartCost() {
+            return partCost;
+        }
+
+        public double getLaborCost() {
+            return laborCost;
+        }
+
+        public double getTotalCost() {
+            return partCost + laborCost;
+        }
     }
 }

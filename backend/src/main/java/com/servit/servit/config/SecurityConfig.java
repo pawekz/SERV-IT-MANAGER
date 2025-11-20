@@ -131,6 +131,7 @@ public class SecurityConfig {
                             "/repairTicket/getRepairStatusHistory/**",
                             "/quotation/addQuotation",
                             "/quotation/editQuotation/*",
+                            "/quotation/overrideSelection/*",
                             "/quotation/deleteQuotation/*",
                             "/quotation/getAllQuotation",
                             "/quotation/getAllQuotationPaginated",
