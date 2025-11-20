@@ -1,26 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { parseJwt } from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { PHOTO_CACHE_TTL_MS, useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
+import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
-// statusStyles helper placed before usage
-const statusStyles = (statusRaw) => {
-    const s = (statusRaw || '').toUpperCase();
-    const base = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border';
+const statusChipClasses = (statusRaw) => {
+    const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
-        COMPLETED: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        COMPLETE: `${base} bg-emerald-50 text-emerald-700 border-emerald-200`,
-        IN_PROGRESS: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PROCESSING: `${base} bg-amber-50 text-amber-700 border-amber-200`,
-        PENDING: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        AWAITING_PARTS: `${base} bg-gray-50 text-gray-600 border-gray-200`,
-        CANCELLED: `${base} bg-red-50 text-red-600 border-red-200`,
-        CANCELED: `${base} bg-red-50 text-red-600 border-red-200`,
-        FAILED: `${base} bg-red-50 text-red-600 border-red-200`,
+        RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
+        DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
+        AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
+        REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
+        READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
+        COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
     };
-    return map[s] || `${base} bg-gray-50 text-gray-600 border-gray-200`;
+    return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
 function TicketImage({ path, alt, className }) {
@@ -29,24 +24,59 @@ function TicketImage({ path, alt, className }) {
         return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
     }
     if (!src) {
-        return <div className={className + ' bg-gray-100 flex items-center justify-center text-xs text-gray-400'}>No Image</div>;
+        return (
+            <div className={className + ' bg-gray-100 flex items-center justify-center'} aria-hidden>
+                <Camera size={48} className="text-gray-300" />
+            </div>
+        );
     }
     return <img src={src} alt={alt} className={className} />;
 }
 
-function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
+function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [currentImageIdx, setCurrentImageIdx] = useState(0);
     const [downloading, setDownloading] = useState(false);
     const [hasFeedback, setHasFeedback] = useState(false);
     const [checkingFeedback, setCheckingFeedback] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [issueExpanded, setIssueExpanded] = useState(false);
+    // Remove char-count style truncation constant; we will measure lines instead
+    // const ISSUE_PREVIEW_CHARS = 180; // number of characters to show before truncating
     const navigate = useNavigate();
+
+    // new refs and state for measuring and transitions
+    const issueRef = useRef(null);
+    const [twoLineHeight, setTwoLineHeight] = useState(0);
+    const [isOverflowing, setIsOverflowing] = useState(false);
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
     const ticketId = ticket?.repairTicketId || ticket?.id;
-    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket]);
+    const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket?.repairPhotosUrls]);
     const queryClient = useQueryClient();
+
+    // Reset issue expansion when the ticket changes
+    useEffect(() => {
+        setIssueExpanded(false);
+    }, [ticket?.repairTicketId || ticket?.id || ticket?.ticketNumber]);
+
+    // Measure two-line height and detect overflow whenever the reportedIssue changes or when modal opens
+    useEffect(() => {
+        if (!issueRef.current) return;
+        const el = issueRef.current;
+        // Compute line height from computed styles
+        const computed = window.getComputedStyle(el);
+        let lineHeight = parseFloat(computed.lineHeight);
+        if (Number.isNaN(lineHeight) || lineHeight === 0) {
+            // fallback to font-size * 1.2 if line-height is 'normal'
+            const fontSize = parseFloat(computed.fontSize) || 13;
+            lineHeight = Math.round(fontSize * 1.2);
+        }
+        const twoH = lineHeight * 2;
+        setTwoLineHeight(twoH);
+        // scrollHeight reports full content height regardless of maxHeight, so good for detecting overflow
+        setIsOverflowing(el.scrollHeight > twoH + 1);
+    }, [ticket?.reportedIssue, isOpen]);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -120,14 +150,15 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
     return (
         <>
             <div className="fixed inset-0 z-40 flex items-start justify-center px-4 py-10 sm:py-16 overflow-y-auto backdrop-blur-sm bg-black/40" role="dialog" aria-modal="true">
-                <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-[fadeIn_.25s_ease]">
+                <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
                     {/* Header */}
                     <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white">
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 flex-wrap">
                                 <h2 className="text-xl font-semibold tracking-tight text-gray-900">Ticket #{ticket.ticketNumber}</h2>
-                                <span className={statusStyles(statusVal)}>{statusVal}</span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{statusVal}</span>
                             </div>
+
                             <p className="text-xs text-gray-500">Detailed repair ticket overview</p>
                         </div>
                         <button
@@ -161,6 +192,44 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
                                     <div>
                                         <dt className="text-gray-500 flex items-center gap-1"><Calendar size={12} /> Check-In Date</dt>
                                         <dd className="font-medium text-gray-800">{ticket.checkInDate || '—'}</dd>
+                                    </div>
+                                    {/* Reported Issue: truncated by default with expand/collapse */}
+                                    <div className="sm:col-span-2 relative">
+                                        <dt className="text-gray-500">Reported Issue</dt>
+                                        <dd className="font-medium text-gray-800 relative">
+                                            {ticket.reportedIssue ? (
+                                                <div className="relative">
+                                                    {/* The content wrapper - animate max-height for smooth expand/collapse */}
+                                                    <div
+                                                        ref={issueRef}
+                                                        className="text-[13px] text-gray-800 break-words whitespace-pre-wrap overflow-hidden pr-8"
+                                                        style={{ maxHeight: issueExpanded ? undefined : `${twoLineHeight}px` }}
+                                                        aria-expanded={issueExpanded}
+                                                    >
+                                                        {ticket.reportedIssue}
+                                                    </div>
+
+                                                    {/* Fade overlay shown when collapsed and overflowing */}
+                                                    {isOverflowing && !issueExpanded && (
+                                                        <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-8 bg-gradient-to-t from-white/95 to-transparent" />
+                                                    )}
+
+                                                    {/* Toggle button aligned to right of the text */}
+                                                    {isOverflowing && (
+                                                        <button
+                                                            type="button"
+                                                            aria-label={issueExpanded ? 'Collapse reported issue' : 'Expand reported issue'}
+                                                            onClick={() => setIssueExpanded(prev => !prev)}
+                                                            className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 p-1 focus:outline-none"
+                                                        >
+                                                            {issueExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                '—'
+                                            )}
+                                        </dd>
                                     </div>
                                     <div className="sm:col-span-2">
                                         <dt className="text-gray-500 flex items-center gap-1"><Monitor size={12} /> Device</dt>
@@ -279,15 +348,19 @@ function TicketDetailsModal({ data: ticket, onClose, readonly, isOpen }) {
             )}
         </>
     );
-};
+}
 
 // Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
     const { data: src, isLoading } = useRepairPhoto(path);
 
     if (isLoading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
-    if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
+    if (!src) return (
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center" aria-hidden>
+            <Camera size={20} className="text-gray-300" />
+        </div>
+    );
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
-};
+}
 
 export default TicketDetailsModal;

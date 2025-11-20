@@ -9,20 +9,16 @@ function getUserInfoFromToken() {
     if (!token) return {};
 
     try {
-        // Get role from JWT token
         const payload = JSON.parse(atob(token.split('.')[1]));
         const role = payload.role;
 
-        // Get email from sessionStorage userData
         const userDataStr = sessionStorage.getItem('userData');
         let email = '';
         if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             email = userData.email ? userData.email.replace(/\n/g, '').trim() : '';
-            console.log('[HistoryPage] UserData from sessionStorage:', userData);
         }
 
-        console.log('[HistoryPage] Extracted email:', email, 'role:', role);
         return { email, role };
     } catch (e) {
         console.error('[HistoryPage] Error parsing token or userData:', e);
@@ -30,30 +26,19 @@ function getUserInfoFromToken() {
     }
 }
 
-// Utility: status style mapping similar style approach to other tabs
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
     const map = {
         RECEIVED: 'bg-gray-100 text-[#6B7280] border-gray-300',
         DIAGNOSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
-        'AWAITING PARTS': 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         AWAITING_PARTS: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
         REPAIRING: 'bg-[#FFE7D6] text-[#C2410C] border-[#FDBA74]',
-        'IN PROGRESS': 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
-        IN_PROGRESS: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
-        PROCESSING: 'bg-[#E0ECFF] text-[#3B82F6] border-[#BFD4FF]',
         READY_FOR_PICKUP: 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
-        'READY FOR PICKUP': 'bg-[#D9F3F0] text-[#0F766E] border-[#99E0D8]',
         COMPLETED: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
-        COMPLETE: 'bg-[#E2F7E7] text-[#15803D] border-[#A7E3B9]',
-        PENDING: 'bg-[#FFF4D6] text-[#B45309] border-[#FCD34D]',
-        CANCELLED: 'bg-red-50 text-red-700 border-red-200',
-        CANCELED: 'bg-red-50 text-red-700 border-red-200',
-        FAILED: 'bg-red-50 text-red-700 border-red-200',
-        CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
     };
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
+
 
 const HistoryPage = () => {
     const [tickets, setTickets] = useState([]);
@@ -80,31 +65,29 @@ const HistoryPage = () => {
         }
         setError(null);
         try {
-            {
-                const searchTerm = search.trim() || '';
-                const res = await api.get('/repairTicket/searchRepairTickets', {
-                    params: {
-                        searchTerm,
-                        page,
-                        size: pageSize
-                    }
-                });
-                const newTickets = res.data.content || [];
-                const totalPagesCount = res.data.totalPages ?? 0;
-                // Try to extract total elements (common in Spring Data responses)
-                const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
-                setTickets(newTickets);
-                setCurrentPage(page);
-                // ensure we always have at least 1 page so pagination UI renders consistently
-                setTotalPages(Math.max(1, totalPagesCount));
-                // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
-                if (typeof totalElements === 'number') {
-                    setTotalEntries(totalElements);
-                } else {
-                    // if server didn't provide total, estimate conservatively
-                    const estimate = (newTickets.length || 0) + (page * pageSize || 0);
-                    setTotalEntries(estimate || 0);
+            const searchTerm = search.trim() || '';
+            const res = await api.get('/repairTicket/searchRepairTickets', {
+                params: {
+                    searchTerm,
+                    page,
+                    size: pageSize
                 }
+            });
+            const newTickets = res.data.content || [];
+            const totalPagesCount = res.data.totalPages ?? 0;
+            // Try to extract total elements (common in Spring Data responses)
+            const totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : (typeof res.data.total === 'number' ? res.data.total : null);
+            setTickets(newTickets);
+            setCurrentPage(page);
+            // ensure we always have at least 1 page so pagination UI renders consistently
+            setTotalPages(Math.max(1, totalPagesCount));
+            // robust fallback for total entries: prefer server-provided total, otherwise estimate or use 0
+            if (typeof totalElements === 'number') {
+                setTotalEntries(totalElements);
+            } else {
+                // if server didn't provide total, estimate conservatively
+                const estimate = (newTickets.length || 0) + (page * pageSize || 0);
+                setTotalEntries(estimate || 0);
             }
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Unknown error');
@@ -180,7 +163,7 @@ const HistoryPage = () => {
         return filtered;
     };
 
-    const clientFilteredTickets = role === 'CUSTOMER' ? applyFilters(tickets) : applyFilters(tickets); // same call for clarity
+    const clientFilteredTickets = applyFilters(tickets); // simplified redundant ternary
 
     // compute total pages for client side
     useEffect(() => {
@@ -191,7 +174,7 @@ const HistoryPage = () => {
                 setCurrentPage(0);
             }
         }
-        // eslint-disable-next-line
+        // removed eslint-disable-next-line comment
     }, [clientFilteredTickets.length, pageSize, role]);
 
     // Keep totalEntries in sync for CUSTOMER when filters change
