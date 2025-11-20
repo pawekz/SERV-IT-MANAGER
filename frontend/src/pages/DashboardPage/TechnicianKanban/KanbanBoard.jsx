@@ -146,28 +146,22 @@ const KanbanBoard = () => {
                     )
                 }
 
-                // If ticket moved to AWAITING_PARTS, create a draft quotation (if not exists)
                 if (data?.newStatus === "AWAITING_PARTS") {
-                    try {
-                        await api.post("/quotation/addQuotation", {
-                            repairTicketNumber: task.ticketId,
-                            partIds: [],
-                            laborCost: 0,
-                            totalCost: 0,
-                        })
-                    } catch (qErr) {
-                        // Silently ignore if quotation already exists or fails
-                        console.warn("Failed to create quotation draft", qErr)
-                    }
+                    showToast("Ticket moved to Awaiting Parts. Open the Quotation Builder to send Option A & B.", "success")
+                } else {
+                    showToast(data?.message || "Status updated successfully")
                 }
-
-                showToast(data?.message || "Status updated successfully")
             }
         } catch (error) {
             console.error("Failed to update repair status", error)
             // Revert UI on failure
             setTasks((prev) => prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: pendingChange.prevStatus } : t)))
-            alert("Failed to update status. Please try again.")
+            const apiMessage = error?.response?.data?.message || "Failed to update status. Please try again."
+            if (apiMessage.toLowerCase().includes("quotation")) {
+                showToast("Send a quotation with Option A & Option B before moving this ticket to Awaiting Parts.", "error")
+            } else {
+                showToast(apiMessage, "error")
+            }
         } finally {
             setIsUpdating(false)
             setPendingChange(null)

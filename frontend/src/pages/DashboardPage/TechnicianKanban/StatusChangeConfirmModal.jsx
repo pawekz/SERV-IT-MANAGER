@@ -36,6 +36,11 @@ const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onC
           <span className="font-semibold mx-1">{fromStatus}</span> to
           <span className="font-semibold mx-1">{toStatus}</span>?
         </p>
+        {toStatus === "AWAITING_PARTS" && (
+          <p className="mb-4 text-xs text-amber-600">
+            Reminder: prepare a quotation with Option A (Recommended) and Option B (Alternative) immediately after this move so the customer can approve it.
+          </p>
+        )}
 
         {requirePhotos && (
           <>

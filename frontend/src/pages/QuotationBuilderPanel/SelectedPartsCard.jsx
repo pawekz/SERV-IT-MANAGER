@@ -5,6 +5,18 @@ import Spinner from "../../components/Spinner/Spinner.jsx";
 const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryModal, laborCost, setLaborCost, expiryDate, setExpiryDate, reminderHours, setReminderHours, editing, onCancelEditing, processing=false }) => {
   const preferredPart = selectedParts[0] || null;
   const alternativeParts = selectedParts.slice(1);
+  const laborValue = parseFloat(laborCost || 0);
+  const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+  const renderPartSummary = (part) => {
+    if (!part) return null;
+    return (
+      <div className="text-xs text-gray-600 mt-1">
+        <div>Part Cost: {formatCurrency(part.price)}</div>
+        <div>Labor: {formatCurrency(laborValue)}</div>
+        <div className="font-semibold text-gray-800">Total: {formatCurrency(part.price + laborValue)}</div>
+      </div>
+    );
+  };
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       <div className="p-5 border-b border-gray-100">
@@ -22,7 +34,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
           {/* Preferred Component */}
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-gray-700">Preferred Component</h3>
+              <h3 className="font-medium text-gray-700">Option A – Recommended</h3>
               <button onClick={openInventoryModal} className="text-gray-500 hover:text-green-600">
                 <Plus size={18} />
               </button>
@@ -32,6 +44,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
                 <div>
                   <div className="text-sm font-medium text-gray-900">{preferredPart.name}</div>
                   <div className="text-xs text-gray-500">SKU: {preferredPart.sku}</div>
+                  {renderPartSummary(preferredPart)}
                 </div>
                 <button
                   onClick={() => togglePartSelection(preferredPart)}
@@ -48,7 +61,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
           {/* Alternative Components */}
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-gray-700">Alternative Components</h3>
+              <h3 className="font-medium text-gray-700">Option B – Alternative</h3>
               <button onClick={openInventoryModal} className="text-gray-500 hover:text-green-600">
                 <Plus size={18} />
               </button>
@@ -62,6 +75,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
                   <div>
                     <div className="text-sm font-medium text-gray-900">{part.name}</div>
                     <div className="text-xs text-gray-500">SKU: {part.sku}</div>
+                    {renderPartSummary(part)}
                   </div>
                   <button
                     onClick={() => togglePartSelection(part)}
@@ -105,6 +119,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
               <label className="block text-sm font-medium text-gray-700 mb-2">Reminder (hrs)</label>
               <input type="number" min="1" value={reminderHours} onChange={e=>setReminderHours(e.target.value)}
                 className="w-full md:w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+              <p className="text-xs text-gray-500 mt-1">Customers will receive automated follow-ups every {reminderHours} hour(s).</p>
             </div>
           </div>
         )}

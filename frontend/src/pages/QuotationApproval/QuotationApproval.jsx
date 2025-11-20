@@ -98,7 +98,9 @@ const QuotationApproval = () => {
     }
   }
   const selectedPart = parts.find((p) => p.id === selectedPartId) || null;
-  const totalPrice = (selectedPart?.unitCost || 0) + (quotation?.laborCost || 0);
+  const laborValue = quotation?.laborCost || 0;
+  const totalPrice = (selectedPart?.unitCost || 0) + laborValue;
+  const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
 
   // Handle approve/reject click
   const handleActionClick = (type) => {
@@ -148,6 +150,12 @@ const QuotationApproval = () => {
         <div>
           <div className="text-sm font-medium text-gray-900">{part.name}</div>
           <div className="text-xs text-gray-500">SKU: {part.partNumber}</div>
+          <div className="text-xs text-gray-500 mt-1">
+            Part: {formatCurrency(part.unitCost)} • Labor: {formatCurrency(laborValue)}
+          </div>
+          <div className="text-xs font-semibold text-gray-800">
+            Total: {formatCurrency((part.unitCost || 0) + laborValue)}
+          </div>
         </div>
         <span className="text-sm font-semibold text-gray-800">₱{part.unitCost?.toFixed(2)}</span>
       </button>
@@ -174,6 +182,13 @@ const QuotationApproval = () => {
             </div>
           </div>
         </div>
+
+        {quotation?.technicianOverride && (
+          <div className="mb-4 p-3 rounded-md bg-purple-50 border border-purple-200 text-sm text-purple-700">
+            Technician override documented by {quotation.overrideTechnicianName || "Technician"} on{" "}
+            {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}.
+          </div>
+        )}
 
         {/* Ticket summary card */}
         {ticket && (
@@ -214,10 +229,10 @@ const QuotationApproval = () => {
           <div className="flex justify-end mt-6 text-sm">
             <div>
               <div>
-                Labor Cost: <span className="font-medium">₱{quotation.laborCost.toFixed(2)}</span>
+                Labor Cost: <span className="font-medium">{formatCurrency(quotation.laborCost)}</span>
               </div>
               <div className="font-semibold text-lg">
-                Total: ₱{totalPrice.toFixed(2)}
+                Total: {formatCurrency(totalPrice)}
               </div>
             </div>
           </div>

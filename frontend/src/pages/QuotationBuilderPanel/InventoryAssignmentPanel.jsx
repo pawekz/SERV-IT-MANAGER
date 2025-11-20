@@ -32,6 +32,12 @@ const InventoryAssignmentPanel = () => {
     const [reminderHours, setReminderHours] = useState(24);
     const [processing, setProcessing] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [technicianIdentity, setTechnicianIdentity] = useState("Technician");
+    const [showOverrideModal, setShowOverrideModal] = useState(false);
+    const [overrideParts, setOverrideParts] = useState([]);
+    const [overrideSelection, setOverrideSelection] = useState(null);
+    const [overrideNotes, setOverrideNotes] = useState("");
+    const [overrideLoading, setOverrideLoading] = useState(false);
 
     // Function to decode JWT token - needed for sidebar functionality
     const parseJwt = (token) => {
@@ -56,7 +62,10 @@ const InventoryAssignmentPanel = () => {
                 if (!decodedToken) {
                     throw new Error("Invalid token. Please log in again.");
                 }
-                
+                const fullName = [decodedToken.firstName, decodedToken.lastName].filter(Boolean).join(" ").trim();
+                if (fullName) {
+                    setTechnicianIdentity(fullName);
+                }
                 setLoading(false);
             } catch (err) {
                 console.error("Authentication error:", err);
@@ -69,24 +78,24 @@ const InventoryAssignmentPanel = () => {
     }, []);
 
     // Fetch existing quotation for this ticket (if any)
-    useEffect(() => {
+    const refreshQuotation = async () => {
         if (!ticketParam) return;
-        const fetchQuotation = async () => {
-            try {
-                const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticketParam}`);
-                if (data && data.length > 0) {
-                    // sort latest first
-                    data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                    setExistingQuotation(data[0]);
-                } else {
-                    setExistingQuotation(null);
-                }
-            } catch (err) {
-                console.error("Failed to fetch existing quotation", err);
+        try {
+            const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticketParam}`);
+            if (data && data.length > 0) {
+                data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setExistingQuotation(data[0]);
+            } else {
                 setExistingQuotation(null);
             }
-        };
-        fetchQuotation();
+        } catch (err) {
+            console.error("Failed to fetch existing quotation", err);
+            setExistingQuotation(null);
+        }
+    };
+
+    useEffect(() => {
+        refreshQuotation();
     }, [ticketParam]);
 
     // Sample data
@@ -182,6 +191,8 @@ const InventoryAssignmentPanel = () => {
                 const token = localStorage.getItem("authToken");
                 if (!token) throw new Error("Auth required");
                 const partIds = selectedParts.map((p) => p.id);
+                const preferredPart = selectedParts[0] || null;
+                const alternativePart = selectedParts[1] || null;
 
                 if (editing && existingQuotation) {
                     // Update existing quotation
@@ -189,6 +200,10 @@ const InventoryAssignmentPanel = () => {
                         partIds: partIds,
                         laborCost: parseFloat(laborCost) || 0,
                         totalCost: partsTotal + (parseFloat(laborCost) || 0),
+                        technicianRecommendedPartId: preferredPart?.id || null,
+                        technicianAlternativePartId: alternativePart?.id || null,
+                        reminderDelayHours: reminderHours,
+                        expiryAt: expiryDate.toISOString(),
                     });
                     setToast({ show: true, message: "Quotation updated", type: "success" });
                 } else {
@@ -198,6 +213,8 @@ const InventoryAssignmentPanel = () => {
                         laborCost: parseFloat(laborCost) || 0,
                         expiryAt: expiryDate.toISOString(),
                         reminderDelayHours: reminderHours,
+                        technicianRecommendedPartId: preferredPart?.id || null,
+                        technicianAlternativePartId: alternativePart?.id || null,
                     });
                     setToast({ show: true, message: "Quotation sent to customer", type: "success" });
                 }
@@ -205,11 +222,7 @@ const InventoryAssignmentPanel = () => {
                 // Refresh quotation state
                 setEditing(false);
                 setSelectedParts([]);
-                const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticketParam}`);
-                if (data && data.length > 0) {
-                    data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                    setExistingQuotation(data[0]);
-                }
+                await refreshQuotation();
             } catch (err) {
                 console.error("Failed to send/update quotation", err);
                 setToast({ show: true, message: "Failed to process quotation", type: "error" });
@@ -252,13 +265,53 @@ const InventoryAssignmentPanel = () => {
         setSelectedParts([]);
         setLaborCost(0);
         try {
-            const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticketParam}`);
-            if (data && data.length > 0) {
-                data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setExistingQuotation(data[0]);
-            }
+            await refreshQuotation();
         } catch (err) {
             console.error("Failed to refresh quotation", err);
+        }
+    };
+
+    const openOverrideModal = async () => {
+        if (!existingQuotation) return;
+        setShowOverrideModal(true);
+        setOverrideSelection(null);
+        setOverrideLoading(true);
+        try {
+            const uniqueIds = Array.from(new Set(existingQuotation.partIds || []));
+            if (uniqueIds.length === 0) {
+                setOverrideParts([]);
+            } else {
+                const responses = await Promise.all(uniqueIds.map((id) => api.get(`/part/getPartById/${id}`)));
+                setOverrideParts(responses.map((res) => res.data));
+            }
+        } catch (err) {
+            console.error("Failed to load parts for override", err);
+            setToast({ show: true, message: "Failed to load parts for override", type: "error" });
+        } finally {
+            setOverrideLoading(false);
+        }
+    };
+
+    const handleOverrideSubmit = async () => {
+        if (!existingQuotation || !overrideSelection) return;
+        try {
+            setOverrideLoading(true);
+            await api.patch(`/quotation/overrideSelection/${existingQuotation.quotationId}`, null, {
+                params: {
+                    partId: overrideSelection.id,
+                    technicianName: technicianIdentity,
+                    notes: overrideNotes,
+                },
+            });
+            setToast({ show: true, message: "Override recorded and quotation approved", type: "success" });
+            setShowOverrideModal(false);
+            setOverrideNotes("");
+            await refreshQuotation();
+        } catch (err) {
+            console.error("Failed to override quotation", err);
+            setToast({ show: true, message: "Failed to override quotation", type: "error" });
+        } finally {
+            setOverrideLoading(false);
         }
     };
 
@@ -284,6 +337,7 @@ const InventoryAssignmentPanel = () => {
                             quotation={existingQuotation}
                             onEdit={handleEditQuotation}
                             onDelete={handleDeleteQuotation}
+                            onOverride={openOverrideModal}
                         />
                     ) : (
                         <>
@@ -337,11 +391,85 @@ const InventoryAssignmentPanel = () => {
                                 onCancelEditing={handleCancelEditing}
                                 processing={processing}
                             />
-                            <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
                         </>
                     )}
                 </div>
             </div>
+            {showOverrideModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-800">Override Customer Selection</h3>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowOverrideModal(false)}>
+                                ×
+                            </button>
+                        </div>
+                        {overrideLoading ? (
+                            <div className="py-10 flex justify-center">
+                                <Spinner size="large" />
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    Choose the part you will proceed with. This will immediately approve the quotation on behalf of the customer.
+                                </p>
+                                <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
+                                    {overrideParts.length === 0 && (
+                                        <div className="text-sm text-gray-500">No parts found for this quotation.</div>
+                                    )}
+                                    {overrideParts.map((part) => {
+                                        const label =
+                                            part.id === existingQuotation?.technicianRecommendedPartId
+                                                ? "Option A – Recommended"
+                                                : "Option B – Alternative";
+                                        const isSelected = overrideSelection?.id === part.id;
+                                        return (
+                                            <button
+                                                key={part.id}
+                                                onClick={() => setOverrideSelection(part)}
+                                                className={`w-full text-left border rounded-lg p-3 transition ${
+                                                    isSelected ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-green-400"
+                                                }`}
+                                            >
+                                                <div className="text-xs text-green-700 font-semibold mb-1">{label}</div>
+                                                <div className="text-sm font-medium text-gray-800">{part.name}</div>
+                                                <div className="text-xs text-gray-500">SKU: {part.partNumber}</div>
+                                                <div className="text-xs text-gray-500">Price: ₱{(part.unitCost || 0).toFixed(2)}</div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                                <textarea
+                                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500"
+                                    rows={3}
+                                    value={overrideNotes}
+                                    onChange={(e) => setOverrideNotes(e.target.value)}
+                                    placeholder="Document why you overrode the customer decision."
+                                />
+                                <div className="mt-5 flex justify-end gap-3">
+                                    <button
+                                        className="px-4 py-2 rounded-md border text-gray-700"
+                                        onClick={() => setShowOverrideModal(false)}
+                                        disabled={overrideLoading}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="px-4 py-2 rounded-md bg-green-600 text-white flex items-center gap-2 disabled:opacity-60"
+                                        onClick={handleOverrideSubmit}
+                                        disabled={!overrideSelection || overrideLoading}
+                                    >
+                                        {overrideLoading && <Spinner size="small" />}
+                                        Confirm Override
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+            <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
         </div>
     );
 };

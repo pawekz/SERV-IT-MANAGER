@@ -45,12 +45,12 @@ const KanbanCard = ({ task }) => {
           <div className="font-medium text-sm">{task.title}</div>
           <div className="text-xs text-gray-500">{task.ticketId}</div>
           <div className="text-xs mt-1">{task.customer}</div>
-          {task.status === "AWAITING_PARTS" && (
+          {(task.status === "AWAITING_PARTS" || task.status === "DIAGNOSING") && (
             <Link
               to={`/quotation-builder/${encodeURIComponent(task.ticketId)}`}
               className="inline-block mt-1 text-xs text-green-600 hover:underline"
             >
-              Build Quotation
+              {task.status === "DIAGNOSING" ? "Prepare Quotation" : "Build Quotation"}
             </Link>
           )}
           {task.status === "REPAIRING" && (

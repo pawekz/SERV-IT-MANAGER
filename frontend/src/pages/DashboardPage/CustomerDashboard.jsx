@@ -52,6 +52,8 @@ const CustomerDashboard = () => {
     const [itemsPerPage] = useState(5);
 
     const [profileUrl, setProfileUrl] = useState(null);
+    const [pendingQuotations, setPendingQuotations] = useState([]);
+    const [pendingLoading, setPendingLoading] = useState(false);
 
     // Modal state for Terms & Conditions
     const [showTermsModal, setShowTermsModal] = useState(false);
@@ -194,6 +196,43 @@ const CustomerDashboard = () => {
         fetchRepairHistory();
     }, []);
 
+    const fetchPendingQuotations = async () => {
+        if (!userData.email) return;
+        try {
+            setPendingLoading(true);
+            const { data } = await api.get("/repairTicket/getAllRepairTicketsByCustomer", { params: { email: userData.email } });
+            const tickets = data || [];
+            const pending = [];
+            await Promise.all(
+                tickets.map(async (ticket) => {
+                    try {
+                        const { data: quotations } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticket.ticketNumber}`);
+                        if (quotations && quotations.length) {
+                            const pendingQuote = quotations.find((q) => q.status === "PENDING");
+                            if (pendingQuote) {
+                                pending.push({ ticket, quotation: pendingQuote });
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Failed to load quotation for ticket", ticket.ticketNumber, err);
+                    }
+                })
+            );
+            setPendingQuotations(pending);
+        } catch (err) {
+            console.error("Failed to load pending quotations", err);
+        } finally {
+            setPendingLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (userData.email) {
+            fetchPendingQuotations();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userData.email]);
+
     useEffect(() => {
         const ensureUserWithPicture = async () => {
             try {
@@ -291,7 +330,11 @@ const CustomerDashboard = () => {
                     {/* Updates and Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <RecentUpdatesCard />
-                        <RequiredActionsCard />
+                        <RequiredActionsCard
+                            pendingQuotations={pendingQuotations}
+                            loading={pendingLoading}
+                            onDecisionComplete={fetchPendingQuotations}
+                        />
                     </div>
 
                     {/* Others */}

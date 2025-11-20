@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Trash, Pencil, Eye } from "lucide-react";
+import { FileText, Trash, Pencil, Eye, Shield } from "lucide-react";
 import api from '../../config/ApiConfig';
 
-const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
+const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () => {} }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [selectionName, setSelectionName] = useState(null);
+  const [optionParts, setOptionParts] = useState({});
 
   // Fetch part name for customer selection, if numeric
   useEffect(() => {
@@ -30,6 +31,28 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
     loadPartName();
   }, [quotation?.customerSelection]);
 
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const ids = [quotation?.technicianRecommendedPartId, quotation?.technicianAlternativePartId].filter(Boolean);
+        if (ids.length === 0) {
+          setOptionParts({});
+          return;
+        }
+        const responses = await Promise.all(ids.map((id) => api.get(`/part/getPartById/${id}`)));
+        const mapped = {};
+        responses.forEach((res) => {
+          if (res?.data?.id) mapped[res.data.id] = res.data;
+        });
+        setOptionParts(mapped);
+      } catch (err) {
+        console.warn("Unable to load option parts", err);
+        setOptionParts({});
+      }
+    };
+    loadOptions();
+  }, [quotation?.technicianRecommendedPartId, quotation?.technicianAlternativePartId]);
+
   const statusColor = () => {
     switch ((quotation.status || "").toUpperCase()) {
       case "APPROVED":
@@ -54,6 +77,11 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor()}`}>
             {quotation.status}
           </span>
+          {quotation.technicianOverride && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-600 flex items-center gap-1">
+              <Shield size={12} /> Override Logged
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -69,6 +97,14 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
               className="px-2 py-1 text-xs rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center gap-1"
             >
               <Pencil size={14} /> Edit
+            </button>
+          )}
+          {quotation.status === "PENDING" && (
+            <button
+              onClick={onOverride}
+              className="px-2 py-1 text-xs rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 flex items-center gap-1"
+            >
+              <Shield size={14} /> Override
             </button>
           )}
           <button
@@ -110,8 +146,44 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
             <div className="text-gray-500">Customer Selection:</div>
             <div className="font-medium">{selectionName || quotation.customerSelection || "-"}</div>
           </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {renderOptionCard("Option A – Recommended", quotation.technicianRecommendedPartId, optionParts, quotation.laborCost)}
+            {renderOptionCard("Option B – Alternative", quotation.technicianAlternativePartId, optionParts, quotation.laborCost)}
+          </div>
+
+          {quotation.technicianOverride && (
+            <div className="mt-4 text-xs text-gray-600">
+              Overridden by {quotation.overrideTechnicianName || "Technician"} on{" "}
+              {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}
+              {quotation.overrideNotes && <span className="block italic mt-1">“{quotation.overrideNotes}”</span>}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+};
+
+const renderOptionCard = (label, partId, optionParts, laborCost = 0) => {
+  if (!partId) {
+    return (
+      <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+        {label}: Not provided
+      </div>
+    );
+  }
+  const part = optionParts[partId];
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+      <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>
+      <div className="text-sm font-semibold text-gray-900">{part?.name || "Part #" + partId}</div>
+      <div className="text-xs text-gray-500 mb-2">SKU: {part?.partNumber || "—"}</div>
+      <div className="text-xs text-gray-600">Part Cost: ₱{(part?.unitCost || 0).toFixed(2)}</div>
+      <div className="text-xs text-gray-600">Labor: ₱{(laborCost || 0).toFixed(2)}</div>
+      <div className="text-sm font-semibold text-gray-800 mt-1">
+        Total: ₱{((part?.unitCost || 0) + (laborCost || 0)).toFixed(2)}
+      </div>
     </div>
   );
 };
