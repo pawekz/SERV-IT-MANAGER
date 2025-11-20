@@ -63,11 +63,6 @@ const RepairQueue = () => {
         return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP';
     }).length;
 
-    const resolvedCount = ticketRequests.filter((request) => {
-        const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
-        return s === 'READY_FOR_PICKUP' || s === 'COMPLETED' || s === 'COMPLETE' || s === 'READY FOR PICKUP';
-    }).length;
-
     const handleCardClick = (request) => {
         setSelectedRequest(request);
         setModalOpen(true);
