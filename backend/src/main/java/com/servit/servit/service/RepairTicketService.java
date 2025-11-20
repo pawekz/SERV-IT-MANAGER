@@ -411,9 +411,6 @@ public class RepairTicketService {
             throw new IllegalArgumentException("Invalid repair status: " + request.getRepairStatus(), ex);
         }
 
-        if (newStatus == RepairStatusEnum.AWAITING_PARTS) {
-            quotationService.requirePendingQuotation(request.getTicketNumber());
-        }
         if (newStatus == RepairStatusEnum.REPAIRING) {
             boolean approved = quotationService.hasApprovedSelection(request.getTicketNumber());
             if (!approved) {
