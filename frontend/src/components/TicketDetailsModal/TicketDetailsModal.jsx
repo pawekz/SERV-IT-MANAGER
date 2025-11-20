@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { parseJwt } from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
@@ -24,7 +24,11 @@ function TicketImage({ path, alt, className }) {
         return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
     }
     if (!src) {
-        return <div className={className + ' bg-gray-100 flex items-center justify-center text-xs text-gray-400'}>No Image</div>;
+        return (
+            <div className={className + ' bg-gray-100 flex items-center justify-center'} aria-hidden>
+                <Camera size={48} className="text-gray-300" />
+            </div>
+        );
     }
     return <img src={src} alt={alt} className={className} />;
 }
@@ -351,7 +355,11 @@ const TicketImageThumb = ({ path, alt }) => {
     const { data: src, isLoading } = useRepairPhoto(path);
 
     if (isLoading) return <div className="w-full h-full bg-gray-100 animate-pulse" />;
-    if (!src) return <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">No Image</div>;
+    if (!src) return (
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center" aria-hidden>
+            <Camera size={20} className="text-gray-300" />
+        </div>
+    );
     return <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />;
 }
 
