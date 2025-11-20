@@ -11,7 +11,10 @@ import Toast from "../../components/Toast/Toast.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
 
 const InventoryAssignmentPanel = () => {
-    const [selectedParts, setSelectedParts] = useState([]);
+    const [optionA, setOptionA] = useState(null);
+    const [optionB, setOptionB] = useState(null);
+    const [inventorySlotTarget, setInventorySlotTarget] = useState("A");
+    const selectedParts = [optionA, optionB].filter(Boolean);
     const [existingQuotation, setExistingQuotation] = useState(null);
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -150,11 +153,26 @@ const InventoryAssignmentPanel = () => {
     }, []);
 
     // Handle part selection
-    const togglePartSelection = (item) => {
-        if (selectedParts.some(part => part.id === item.id)) {
-            setSelectedParts(selectedParts.filter(part => part.id !== item.id));
+    const togglePartSelection = (item, slot = inventorySlotTarget) => {
+        if (slot === "B") {
+            if (optionB?.id === item.id) {
+                setOptionB(null);
+            } else {
+                if (optionA?.id === item.id) {
+                    setOptionA(null);
+                }
+                setOptionB(item);
+            }
+            return;
+        }
+
+        if (optionA?.id === item.id) {
+            setOptionA(null);
         } else {
-            setSelectedParts([...selectedParts, item]);
+            if (optionB?.id === item.id) {
+                setOptionB(null);
+            }
+            setOptionA(item);
         }
     };
 
@@ -216,7 +234,8 @@ const InventoryAssignmentPanel = () => {
 
                 // Refresh quotation state
                 setEditing(false);
-                setSelectedParts([]);
+                setOptionA(null);
+                setOptionB(null);
                 await refreshQuotation();
             } catch (err) {
                 console.error("Failed to send/update quotation", err);
@@ -227,7 +246,7 @@ const InventoryAssignmentPanel = () => {
         };
         window.addEventListener("send-quotation", handler);
         return () => window.removeEventListener("send-quotation", handler);
-    }, [selectedParts, laborCost, expiryDate, reminderHours, repairInfo.ticketId, editing, existingQuotation, partsTotal, ticketParam]);
+    }, [optionA, optionB, laborCost, expiryDate, reminderHours, repairInfo.ticketId, editing, existingQuotation, partsTotal, ticketParam]);
 
     // Helper: delete quotation
     const handleDeleteQuotation = async () => {
@@ -238,7 +257,8 @@ const InventoryAssignmentPanel = () => {
             alert("Quotation deleted");
             setExistingQuotation(null);
             setEditing(false);
-            setSelectedParts([]);
+            setOptionA(null);
+            setOptionB(null);
         } catch (err) {
             console.error("Failed to delete quotation", err);
             alert("Failed to delete quotation");
@@ -250,14 +270,16 @@ const InventoryAssignmentPanel = () => {
         if (!existingQuotation) return;
         // Map partIds to inventory items (after inventory fetch)
         const toSelect = inventoryItems.filter((item) => existingQuotation.partIds.includes(item.id));
-        setSelectedParts(toSelect);
+        setOptionA(toSelect[0] || null);
+        setOptionB(toSelect[1] || null);
         setLaborCost(existingQuotation.laborCost || 0);
         setEditing(true);
     };
 
     const handleCancelEditing = async () => {
         setEditing(false);
-        setSelectedParts([]);
+        setOptionA(null);
+        setOptionB(null);
         setLaborCost(0);
         try {
             await refreshQuotation();
@@ -352,10 +374,9 @@ const InventoryAssignmentPanel = () => {
                                             <AvailableInventory
                                                 inventoryItems={inventoryItems}
                                                 selectedParts={selectedParts}
-                                                togglePartSelection={(item) => {
-                                                    togglePartSelection(item);
-                                                    // Close modal after selecting if preferred part still empty or want to just close? We'll close if preferred not selected
-                                                }}
+                                togglePartSelection={(item) => {
+                                    togglePartSelection(item, inventorySlotTarget);
+                                }}
                                                 getStatusColor={getStatusColor}
                                             />
                                         </div>
@@ -374,7 +395,10 @@ const InventoryAssignmentPanel = () => {
                             <SelectedPartsCard
                                 selectedParts={selectedParts}
                                 togglePartSelection={togglePartSelection}
-                                openInventoryModal={() => setShowInventoryModal(true)}
+                                openInventoryModal={(slot) => {
+                                    setInventorySlotTarget(slot || "A");
+                                    setShowInventoryModal(true);
+                                }}
                                 laborCost={laborCost}
                                 setLaborCost={setLaborCost}
                                 expiryDate={expiryDate}

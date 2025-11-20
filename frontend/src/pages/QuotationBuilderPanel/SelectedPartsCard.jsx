@@ -35,7 +35,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-gray-700">Option A – Recommended</h3>
-              <button onClick={openInventoryModal} className="text-gray-500 hover:text-green-600">
+              <button onClick={() => openInventoryModal("A")} className="text-gray-500 hover:text-green-600">
                 <Plus size={18} />
               </button>
             </div>
@@ -47,7 +47,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
                   {renderPartSummary(preferredPart)}
                 </div>
                 <button
-                  onClick={() => togglePartSelection(preferredPart)}
+                  onClick={() => togglePartSelection(preferredPart, "A")}
                   className="text-gray-400 hover:text-red-500"
                 >
                   <X size={16} />
@@ -62,7 +62,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-gray-700">Option B – Alternative</h3>
-              <button onClick={openInventoryModal} className="text-gray-500 hover:text-green-600">
+              <button onClick={() => openInventoryModal("B")} className="text-gray-500 hover:text-green-600">
                 <Plus size={18} />
               </button>
             </div>
@@ -78,7 +78,7 @@ const SelectedPartsCard = ({ selectedParts, togglePartSelection, openInventoryMo
                     {renderPartSummary(part)}
                   </div>
                   <button
-                    onClick={() => togglePartSelection(part)}
+                    onClick={() => togglePartSelection(part, "B")}
                     className="text-gray-400 hover:text-red-500"
                   >
                     <X size={16} />
