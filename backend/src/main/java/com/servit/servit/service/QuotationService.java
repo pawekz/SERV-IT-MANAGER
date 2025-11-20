@@ -402,6 +402,19 @@ public class QuotationService {
         return configurationService.getConfigurationValue("business.support.phone", "(02) 8700 1234");
     }
 
+    public boolean hasApprovedSelection(String ticketNumber) {
+        Optional<QuotationEntity> latest = quotationRepository.findTopByRepairTicketNumberOrderByCreatedAtDesc(ticketNumber);
+        if (latest.isEmpty()) {
+            return false;
+        }
+        QuotationEntity quotation = latest.get();
+        if (!"APPROVED".equalsIgnoreCase(quotation.getStatus())) {
+            return false;
+        }
+        String selection = quotation.getCustomerSelection();
+        return selection != null && !selection.trim().isEmpty();
+    }
+
     private Long safeParseLong(String value) {
         if (value == null) return null;
         try {

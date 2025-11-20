@@ -414,6 +414,13 @@ public class RepairTicketService {
         if (newStatus == RepairStatusEnum.AWAITING_PARTS) {
             quotationService.requirePendingQuotation(request.getTicketNumber());
         }
+        if (newStatus == RepairStatusEnum.REPAIRING) {
+            boolean approved = quotationService.hasApprovedSelection(request.getTicketNumber());
+            if (!approved) {
+                logger.warn("Attempted to move ticket {} to REPAIRING without an approved or overridden quotation", request.getTicketNumber());
+                throw new IllegalArgumentException("Cannot move ticket to REPAIRING until the quotation is approved or overridden with a selected part.");
+            }
+        }
 
         repairTicket.setRepairStatus(newStatus);
 
