@@ -12,9 +12,11 @@ import Spinner from "../../components/Spinner/Spinner.jsx";
 
 const InventoryAssignmentPanel = () => {
     const [optionA, setOptionA] = useState(null);
-    const [optionB, setOptionB] = useState(null);
+    // optionB holds one or more alternative parts
+    const [optionB, setOptionB] = useState([]);
     const [inventorySlotTarget, setInventorySlotTarget] = useState("A");
-    const selectedParts = [optionA, optionB].filter(Boolean);
+    // selectedParts is a flat array: preferred (optionA) followed by all alternatives (optionB)
+    const selectedParts = [optionA, ...optionB].filter(Boolean);
     const [existingQuotation, setExistingQuotation] = useState(null);
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -155,22 +157,30 @@ const InventoryAssignmentPanel = () => {
     // Handle part selection
     const togglePartSelection = (item, slot = inventorySlotTarget) => {
         if (slot === "B") {
-            if (optionB?.id === item.id) {
-                setOptionB(null);
-            } else {
-                if (optionA?.id === item.id) {
-                    setOptionA(null);
-                }
-                setOptionB(item);
+            // If item is already an alternative, remove it
+            const existsInB = optionB.some((p) => p.id === item.id);
+            if (existsInB) {
+                setOptionB((prev) => prev.filter((p) => p.id !== item.id));
+                return;
             }
+
+            // Remove from optionA if it was selected there
+            if (optionA?.id === item.id) {
+                setOptionA(null);
+            }
+
+            // Add to alternatives
+            setOptionB((prev) => [...prev, item]);
             return;
         }
 
+        // Slot A behavior: single preferred part
         if (optionA?.id === item.id) {
             setOptionA(null);
         } else {
-            if (optionB?.id === item.id) {
-                setOptionB(null);
+            // If this item exists among alternatives, remove it from optionB
+            if (optionB.some((p) => p.id === item.id)) {
+                setOptionB((prev) => prev.filter((p) => p.id !== item.id));
             }
             setOptionA(item);
         }
@@ -204,38 +214,39 @@ const InventoryAssignmentPanel = () => {
                 const token = localStorage.getItem("authToken");
                 if (!token) throw new Error("Auth required");
                 const partIds = selectedParts.map((p) => p.id);
-                const preferredPart = selectedParts[0] || null;
-                const alternativePart = selectedParts[1] || null;
+                // preferred is optionA, alternatives are optionB; fall back to selectedParts ordering
+                const preferredPart = optionA || selectedParts[0] || null;
+                const alternativePart = optionB.length > 0 ? optionB[0] : (selectedParts[1] || null);
 
                 if (editing && existingQuotation) {
                     // Update existing quotation
                     await api.patch(`/quotation/editQuotation/${ticketParam}`, {
-                        partIds: partIds,
-                        laborCost: parseFloat(laborCost) || 0,
-                        totalCost: partsTotal + (parseFloat(laborCost) || 0),
+                         partIds: partIds,
+                         laborCost: parseFloat(laborCost) || 0,
+                         totalCost: partsTotal + (parseFloat(laborCost) || 0),
                         recommendedPart: preferredPart?.id || null,
                         alternativePart: alternativePart?.id || null,
-                        reminderDelayHours: reminderHours,
-                        expiryAt: expiryDate.toISOString(),
-                    });
+                         reminderDelayHours: reminderHours,
+                         expiryAt: expiryDate.toISOString(),
+                     });
                     setToast({ show: true, message: "Quotation updated", type: "success" });
                 } else {
                     await api.post("/quotation/addQuotation", {
-                        repairTicketNumber: repairInfo.ticketId.replace('#', ''),
-                        partIds: partIds,
-                        laborCost: parseFloat(laborCost) || 0,
-                        expiryAt: expiryDate.toISOString(),
-                        reminderDelayHours: reminderHours,
-                        recommendedPart: preferredPart?.id || null,
-                        alternativePart: alternativePart?.id || null,
-                    });
+                         repairTicketNumber: repairInfo.ticketId.replace('#', ''),
+                         partIds: partIds,
+                         laborCost: parseFloat(laborCost) || 0,
+                         expiryAt: expiryDate.toISOString(),
+                         reminderDelayHours: reminderHours,
+                         recommendedPart: preferredPart?.id || null,
+                         alternativePart: alternativePart?.id || null,
+                     });
                     setToast({ show: true, message: "Quotation sent to customer", type: "success" });
                 }
 
                 // Refresh quotation state
                 setEditing(false);
                 setOptionA(null);
-                setOptionB(null);
+                setOptionB([]);
                 await refreshQuotation();
             } catch (err) {
                 console.error("Failed to send/update quotation", err);
@@ -250,43 +261,43 @@ const InventoryAssignmentPanel = () => {
 
     // Helper: delete quotation
     const handleDeleteQuotation = async () => {
-        if (!existingQuotation) return;
-        if (!window.confirm("Are you sure you want to delete this quotation?")) return;
-        try {
-            await api.delete(`/quotation/deleteQuotation/${existingQuotation.quotationId}`);
-            alert("Quotation deleted");
-            setExistingQuotation(null);
-            setEditing(false);
-            setOptionA(null);
-            setOptionB(null);
-        } catch (err) {
-            console.error("Failed to delete quotation", err);
-            alert("Failed to delete quotation");
-        }
-    };
+         if (!existingQuotation) return;
+         if (!window.confirm("Are you sure you want to delete this quotation?")) return;
+         try {
+             await api.delete(`/quotation/deleteQuotation/${existingQuotation.quotationId}`);
+             alert("Quotation deleted");
+             setExistingQuotation(null);
+             setEditing(false);
+             setOptionA(null);
+             setOptionB([]);
+         } catch (err) {
+             console.error("Failed to delete quotation", err);
+             alert("Failed to delete quotation");
+         }
+     };
 
     // Helper: edit quotation (prefill builder)
     const handleEditQuotation = () => {
-        if (!existingQuotation) return;
-        // Map partIds to inventory items (after inventory fetch)
+         if (!existingQuotation) return;
+         // Map partIds to inventory items (after inventory fetch)
         const toSelect = inventoryItems.filter((item) => existingQuotation.partIds.includes(item.id));
         setOptionA(toSelect[0] || null);
-        setOptionB(toSelect[1] || null);
-        setLaborCost(existingQuotation.laborCost || 0);
-        setEditing(true);
-    };
+        setOptionB(toSelect.slice(1) || []);
+         setLaborCost(existingQuotation.laborCost || 0);
+         setEditing(true);
+     };
 
-    const handleCancelEditing = async () => {
-        setEditing(false);
-        setOptionA(null);
-        setOptionB(null);
-        setLaborCost(0);
-        try {
-            await refreshQuotation();
-        } catch (err) {
-            console.error("Failed to refresh quotation", err);
-        }
-    };
+     const handleCancelEditing = async () => {
+         setEditing(false);
+         setOptionA(null);
+         setOptionB([]);
+         setLaborCost(0);
+         try {
+             await refreshQuotation();
+         } catch (err) {
+             console.error("Failed to refresh quotation", err);
+         }
+     };
 
     const openOverrideModal = async () => {
         if (!existingQuotation) return;
@@ -374,11 +385,11 @@ const InventoryAssignmentPanel = () => {
                                             <AvailableInventory
                                                 inventoryItems={inventoryItems}
                                                 selectedParts={selectedParts}
-                                togglePartSelection={(item) => {
-                                    togglePartSelection(item, inventorySlotTarget);
-                                }}
-                                                getStatusColor={getStatusColor}
-                                            />
+                                                togglePartSelection={(item) => {
+                                                    togglePartSelection(item, inventorySlotTarget);
+                                                }}
+                                                 getStatusColor={getStatusColor}
+                                             />
                                         </div>
                                         <div className="p-4 border-t border-gray-200 flex justify-end">
                                             <button
@@ -395,20 +406,20 @@ const InventoryAssignmentPanel = () => {
                             <SelectedPartsCard
                                 selectedParts={selectedParts}
                                 togglePartSelection={togglePartSelection}
-                                openInventoryModal={(slot) => {
-                                    setInventorySlotTarget(slot || "A");
-                                    setShowInventoryModal(true);
-                                }}
-                                laborCost={laborCost}
-                                setLaborCost={setLaborCost}
-                                expiryDate={expiryDate}
-                                setExpiryDate={setExpiryDate}
-                                reminderHours={reminderHours}
-                                setReminderHours={setReminderHours}
-                                editing={editing}
-                                onCancelEditing={handleCancelEditing}
-                                processing={processing}
-                            />
+                                 openInventoryModal={(slot) => {
+                                     setInventorySlotTarget(slot || "A");
+                                     setShowInventoryModal(true);
+                                 }}
+                                 laborCost={laborCost}
+                                 setLaborCost={setLaborCost}
+                                 expiryDate={expiryDate}
+                                 setExpiryDate={setExpiryDate}
+                                 reminderHours={reminderHours}
+                                 setReminderHours={setReminderHours}
+                                 editing={editing}
+                                 onCancelEditing={handleCancelEditing}
+                                 processing={processing}
+                             />
                         </>
                     )}
                 </div>
