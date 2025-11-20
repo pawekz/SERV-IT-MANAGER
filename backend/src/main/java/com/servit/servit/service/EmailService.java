@@ -234,8 +234,9 @@ public class EmailService {
                                                      QuotationOption alternative,
                                                      String reminderCopy,
                                                      String supportNumber) throws MessagingException {
+
         String subject = "Waiting for Customer Approval - Ticket " + ticketNumber;
-        String intro = "Our technician finished diagnosing your device and prepared two compatible component options. Please review Option A and Option B, then log in to choose the part you prefer.";
+        String intro = "Our technician has finished diagnosing your device and prepared two compatible component options. Please review Option A and Option B, then log in to choose your preferred part.";
         String htmlContent = buildQuotationEmailTemplate(
                 "Waiting for Customer Approval",
                 customerName,
@@ -245,6 +246,7 @@ public class EmailService {
                 supportNumber,
                 recommended,
                 alternative);
+
         emailUtil.sendEmail(to, subject, htmlContent);
     }
 
@@ -255,6 +257,7 @@ public class EmailService {
                                            QuotationOption alternative,
                                            String reminderCopy,
                                            String supportNumber) throws MessagingException {
+
         String subject = "Reminder: Quotation Pending Approval - Ticket " + ticketNumber;
         String intro = "This is a friendly reminder that your repair quotation is still waiting for your approval. Please compare the options below and respond so we can continue the repair.";
         String htmlContent = buildQuotationEmailTemplate(
@@ -266,6 +269,7 @@ public class EmailService {
                 supportNumber,
                 recommended,
                 alternative);
+
         emailUtil.sendEmail(to, subject, htmlContent);
     }
 
@@ -274,8 +278,9 @@ public class EmailService {
                                                   String ticketNumber,
                                                   QuotationOption approvedOption,
                                                   String supportNumber) throws MessagingException {
+
         String subject = "Quotation Approved Summary - Ticket " + ticketNumber;
-        String intro = "Thanks for approving the quotation. Here's a quick summary of the part we will install, including the detailed pricing.";
+        String intro = "Thanks for approving the quotation. Here's a quick summary of the part we will install, including detailed pricing.";
         String htmlContent = buildQuotationEmailTemplate(
                 "Quotation Approved",
                 customerName,
@@ -285,8 +290,10 @@ public class EmailService {
                 supportNumber,
                 approvedOption,
                 null);
+
         emailUtil.sendEmail(to, subject, htmlContent);
     }
+
 
     private String buildQuotationEmailTemplate(String heading,
                                                String customerName,
@@ -296,41 +303,50 @@ public class EmailService {
                                                String supportNumber,
                                                QuotationOption primary,
                                                QuotationOption secondary) {
+
         String customer = customerName == null ? "Customer" : customerName;
-        return "<html><head><style>" +
-                "body{font-family:'Poppins',Arial,sans-serif;background:#f4f4f4;margin:0;padding:24px;}" +
-                ".email-container{max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.08);overflow:hidden;}" +
-                ".header{background:#33e407;color:#ffffff;padding:28px 20px;text-align:center;font-size:22px;font-weight:600;letter-spacing:0.3px;}" +
-                ".content{padding:24px 28px;color:#1f2937;}" +
-                ".ticket-pill{display:inline-block;padding:6px 14px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:12px;font-weight:600;margin-bottom:16px;}" +
-                ".card{border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:14px;background:#f9fafb;}" +
-                ".card h3{margin:0 0 8px;font-size:15px;color:#065f46;text-transform:uppercase;letter-spacing:0.5px;}" +
-                ".card p{margin:4px 0;color:#4b5563;font-size:14px;}" +
-                ".amounts{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;}" +
-                ".amounts div{font-size:13px;color:#111827;font-weight:600;}" +
-                ".amounts span{display:block;color:#6b7280;font-weight:500;font-size:12px;}" +
-                ".footer{background:#111827;color:#d1d5db;padding:18px;text-align:center;font-size:12px;}" +
-                "</style></head><body>" +
+
+        return "<html>" +
+                "<head>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }" +
+                ".email-container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); overflow: hidden; }" +
+                ".header { background-color: #33e407; color: #ffffff; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }" +
+                ".content { padding: 20px; color: #333333; background-color: #fcfcfc; }" +
+                ".content h1 { font-size: 20px; margin-bottom: 10px; }" +
+                ".content p { font-size: 16px; line-height: 1.5; margin-bottom: 20px; }" +
+                ".ticket-box { display: inline-block; padding: 10px 20px; font-size: 18px; font-weight: bold; color: #ffffff; background-color: #33e407; border-radius: 4px; margin: 10px 0; }" +
+                ".option-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 14px; background: #f9f9f9; }" +
+                ".option-card h3 { margin: 0 0 8px; font-size: 16px; color: #065f46; }" +
+                ".option-card p { margin: 4px 0; color: #4b5563; font-size: 14px; }" +
+                ".amounts { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; font-weight: 600; }" +
+                ".amounts div { display: flex; flex-direction: column; }" +
+                ".amounts span { font-weight: 500; font-size: 12px; color: #6b7280; }" +
+                ".footer { text-align: center; padding: 12px; font-size: 12px; color: #888888; background-color: #f4f4f9; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
                 "<div class='email-container'>" +
                 "<div class='header'>" + heading + "</div>" +
                 "<div class='content'>" +
-                "<div class='ticket-pill'>Ticket " + ticketNumber + "</div>" +
-                "<h2 style='margin:0 0 10px;'>Hi " + customer + ",</h2>" +
-                "<p style='margin:0 0 18px;line-height:1.6;'>" + intro + "</p>" +
+                "<h1>Hello " + customer + ",</h1>" +
+                "<p>" + intro + "</p>" +
+                "<div class='ticket-box'>Ticket " + ticketNumber + "</div>" +
                 renderOptionCard(primary) +
                 renderOptionCard(secondary) +
-                (reminderCopy != null ? "<p style='margin:18px 0 0;font-size:13px;color:#065f46;font-weight:600;'>" + reminderCopy + "</p>" : "") +
-                "<p style='margin:6px 0 0;font-size:13px;color:#4b5563;'>Need help deciding? Call us at <strong>" + supportNumber + "</strong> and reference ticket <strong>" + ticketNumber + "</strong>.</p>" +
+                (reminderCopy != null ? "<p style='font-weight:600;color:#065f46;'>" + reminderCopy + "</p>" : "") +
+                "<p style='margin-top:16px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
                 "</div>" +
-                "<div class='footer'>© 2025 IOCONNECT • All rights reserved</div>" +
-                "</div></body></html>";
+                "<div class='footer'>© 2025 IOCONNECT. All rights reserved.</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
     }
 
+
     private String renderOptionCard(QuotationOption option) {
-        if (option == null) {
-            return "";
-        }
-        return "<div class='card'>" +
+        if (option == null) return "";
+        return "<div class='option-card'>" +
                 "<h3>" + option.getLabel() + "</h3>" +
                 "<p><strong>Part:</strong> " + option.getPartName() + " (SKU: " + option.getSku() + ")</p>" +
                 (option.getDescription() != null ? "<p style='font-size:13px;color:#6b7280;'>" + option.getDescription() + "</p>" : "") +
@@ -341,6 +357,7 @@ public class EmailService {
                 "</div>" +
                 "</div>";
     }
+
 
     private String formatCurrency(double amount) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
