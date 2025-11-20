@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import api from '../../config/ApiConfig';
@@ -6,6 +6,7 @@ import LoadingModal from '../../components/LoadingModal/LoadingModal.jsx';
 
 const InitialSetupPage = () => {
   const navigate = useNavigate();
+  const timeoutRef = useRef(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -19,6 +20,14 @@ const InitialSetupPage = () => {
   const [error, setError] = useState('');
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+])[A-Za-z\d@$!%*?&#^_+]{8,}$/;
   const phoneNumberRegex = /^9\d{9}$/;
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -50,20 +59,22 @@ const InitialSetupPage = () => {
       return;
     }
 
+    // Show modal immediately and disable inputs
     setLoading(true);
+    setShowLoadingModal(true);
+
     try {
       await api.patch('/user/register/onboard', formData);
-      // Success – show a full-screen loading modal then redirect to staff login
-      setLoading(false);
-      setShowLoadingModal(true);
-      // small delay so user sees the modal before redirect
-      setTimeout(() => {
+      // Success – keep modal visible briefly then redirect to staff login
+      timeoutRef.current = setTimeout(() => {
+        setShowLoadingModal(false);
         navigate('/login/staff');
-      }, 1200);
+      }, 900);
     } catch (err) {
+      // Hide modal and show error on failure
+      setShowLoadingModal(false);
       setError(err.response?.data || err.message || 'Onboarding failed.');
     } finally {
-      // keep modal visible until redirect; stop form loading
       setLoading(false);
     }
   };
@@ -101,6 +112,7 @@ const InitialSetupPage = () => {
                 id="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
+                disabled={loading}
                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                 placeholder="First name"
                 required
@@ -113,6 +125,7 @@ const InitialSetupPage = () => {
                 id="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
+                disabled={loading}
                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
                 placeholder="Last name"
                 required
@@ -128,6 +141,7 @@ const InitialSetupPage = () => {
               id="username"
               value={formData.username}
               onChange={handleChange}
+              disabled={loading}
               className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
               placeholder="Enter your username"
               required
@@ -142,6 +156,7 @@ const InitialSetupPage = () => {
               id="email"
               value={formData.email}
               onChange={handleChange}
+              disabled={loading}
               className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
               placeholder="Enter your email"
               required
@@ -161,6 +176,7 @@ const InitialSetupPage = () => {
                 id="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
+                disabled={loading}
                 className="flex-1 px-4 py-3 text-sm border-none focus:outline-none"
                 placeholder="905 123 4567"
                 required
@@ -180,6 +196,7 @@ const InitialSetupPage = () => {
               id="password"
               value={formData.password}
               onChange={handleChange}
+              disabled={loading}
               className="w-full px-4 py-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#25D482] focus:ring-1 focus:ring-[#25D482] transition-colors"
               placeholder="Create a password"
               required
