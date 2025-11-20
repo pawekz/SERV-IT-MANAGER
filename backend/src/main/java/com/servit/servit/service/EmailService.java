@@ -127,8 +127,7 @@ public class EmailService {
         if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
             // Download ang file sa AWS S3 and attach sa email as bytes
             String s3Key = extractS3KeyFromUrl(pdfPath);
-            try {
-                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+            try (S3Object s3Object = fileUtil.downloadFileFromS3(s3Key)) {
                 byte[] fileBytes;
                 try (java.io.InputStream is = s3Object.getObjectContent()) {
                     fileBytes = is.readAllBytes();
@@ -212,8 +211,7 @@ public class EmailService {
         String attachmentName = String.format("%s-warranty.pdf", WarrantyNumber);
         if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
             String s3Key = extractS3KeyFromUrl(pdfPath);
-            try {
-                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+            try (S3Object s3Object = fileUtil.downloadFileFromS3(s3Key)) {
                 byte[] fileBytes;
                 try (java.io.InputStream is = s3Object.getObjectContent()) {
                     fileBytes = is.readAllBytes();
@@ -245,7 +243,8 @@ public class EmailService {
                 reminderCopy,
                 supportNumber,
                 recommended,
-                alternative);
+                alternative,
+                false);
 
         emailUtil.sendEmail(to, subject, htmlContent);
     }
@@ -268,7 +267,8 @@ public class EmailService {
                 reminderCopy,
                 supportNumber,
                 recommended,
-                alternative);
+                alternative,
+                false);
 
         emailUtil.sendEmail(to, subject, htmlContent);
     }
@@ -289,7 +289,8 @@ public class EmailService {
                 "We'll notify you when the repair progresses to the next stage.",
                 supportNumber,
                 approvedOption,
-                null);
+                null,
+                true);
 
         emailUtil.sendEmail(to, subject, htmlContent);
     }
@@ -302,27 +303,46 @@ public class EmailService {
                                                String reminderCopy,
                                                String supportNumber,
                                                QuotationOption primary,
-                                               QuotationOption secondary) {
+                                               QuotationOption secondary,
+                                               boolean isApprovedSummary) {
 
         String customer = customerName == null ? "Customer" : customerName;
+        String primaryCard = renderOptionCard(primary);
+        String secondaryCard = renderOptionCard(secondary);
+
+        String ctaButton = "<div style='text-align:center;margin-top:18px;'><a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;'>View Quotation</a></div>";
+
+        String pricingTable = "";
+        if (isApprovedSummary && primary != null) {
+            // Build a clearer table for approved quotation showing breakdown
+            pricingTable = "<div style='margin-top:18px;'>" +
+                    "<table role='table' style='width:100%;border-collapse:collapse;font-size:14px;'>" +
+                    "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>Amount</th></tr></thead>" +
+                    "<tbody>" +
+                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: " + escape(primary.getPartName()) + " (SKU: " + escape(primary.getSku()) + ")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getPartCost()) + "</td></tr>" +
+                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
+                    "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
+                    "</tbody></table></div>";
+        }
 
         return "<html>" +
                 "<head>" +
                 "<style>" +
-                "body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }" +
-                ".email-container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); overflow: hidden; }" +
-                ".header { background-color: #33e407; color: #ffffff; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }" +
-                ".content { padding: 20px; color: #333333; background-color: #fcfcfc; }" +
-                ".content h1 { font-size: 20px; margin-bottom: 10px; }" +
-                ".content p { font-size: 16px; line-height: 1.5; margin-bottom: 20px; }" +
-                ".ticket-box { display: inline-block; padding: 10px 20px; font-size: 18px; font-weight: bold; color: #ffffff; background-color: #33e407; border-radius: 4px; margin: 10px 0; }" +
-                ".option-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 14px; background: #f9f9f9; }" +
-                ".option-card h3 { margin: 0 0 8px; font-size: 16px; color: #065f46; }" +
-                ".option-card p { margin: 4px 0; color: #4b5563; font-size: 14px; }" +
-                ".amounts { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; font-weight: 600; }" +
+                "body { font-family: Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 0; }" +
+                ".email-container { max-width: 640px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); overflow: hidden; }" +
+                ".header { background-color: #33e407; color: #ffffff; padding: 22px; text-align: center; font-size: 24px; font-weight: 700; }" +
+                ".content { padding: 24px; color: #1f2937; background-color: #ffffff; }" +
+                ".content h1 { font-size: 20px; margin-bottom: 8px; }" +
+                ".content p { font-size: 15px; line-height: 1.6; margin-bottom: 14px; }" +
+                ".ticket-box { display: inline-block; padding: 8px 14px; font-size: 15px; font-weight: 700; color: #ffffff; background-color: #33e407; border-radius: 6px; margin: 12px 0; }" +
+                ".option-card { border: 1px solid #e6f3ea; border-radius: 8px; padding: 14px; margin-bottom: 12px; background: #fbfffb; }" +
+                ".option-card h3 { margin: 0 0 6px; font-size: 16px; color: #064e3b; }" +
+                ".option-card p { margin: 4px 0; color: #374151; font-size: 14px; }" +
+                ".amounts { display: flex; gap: 12px; margin-top: 10px; font-size: 13px; font-weight: 600; }" +
                 ".amounts div { display: flex; flex-direction: column; }" +
                 ".amounts span { font-weight: 500; font-size: 12px; color: #6b7280; }" +
-                ".footer { text-align: center; padding: 12px; font-size: 12px; color: #888888; background-color: #f4f4f9; }" +
+                ".footer { text-align: center; padding: 14px; font-size: 12px; color: #6b7280; background-color: #f3f6f5; }" +
+                "a.cta { display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;margin-top:10px; }" +
                 "</style>" +
                 "</head>" +
                 "<body>" +
@@ -332,10 +352,10 @@ public class EmailService {
                 "<h1>Hello " + customer + ",</h1>" +
                 "<p>" + intro + "</p>" +
                 "<div class='ticket-box'>Ticket " + ticketNumber + "</div>" +
-                renderOptionCard(primary) +
-                renderOptionCard(secondary) +
-                (reminderCopy != null ? "<p style='font-weight:600;color:#065f46;'>" + reminderCopy + "</p>" : "") +
-                "<p style='margin-top:16px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
+                (isApprovedSummary ? pricingTable : primaryCard + secondaryCard) +
+                (reminderCopy != null ? "<p style='font-weight:700;color:#064e3b;margin-top:12px;'>" + reminderCopy + "</p>" : "") +
+                ctaButton +
+                "<p style='margin-top:18px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
                 "</div>" +
                 "<div class='footer'>© 2025 IOCONNECT. All rights reserved.</div>" +
                 "</div>" +
@@ -347,9 +367,9 @@ public class EmailService {
     private String renderOptionCard(QuotationOption option) {
         if (option == null) return "";
         return "<div class='option-card'>" +
-                "<h3>" + option.getLabel() + "</h3>" +
-                "<p><strong>Part:</strong> " + option.getPartName() + " (SKU: " + option.getSku() + ")</p>" +
-                (option.getDescription() != null ? "<p style='font-size:13px;color:#6b7280;'>" + option.getDescription() + "</p>" : "") +
+                "<h3>" + escape(option.getLabel()) + "</h3>" +
+                "<p><strong>Part:</strong> " + escape(option.getPartName()) + " (SKU: " + escape(option.getSku()) + ")</p>" +
+                (option.getDescription() != null ? "<p style='font-size:13px;color:#6b7280;'>" + escape(option.getDescription()) + "</p>" : "") +
                 "<div class='amounts'>" +
                 "<div><span>Part</span>" + formatCurrency(option.getPartCost()) + "</div>" +
                 "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
@@ -358,10 +378,19 @@ public class EmailService {
                 "</div>";
     }
 
-
     private String formatCurrency(double amount) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
         return formatter.format(amount);
+    }
+
+    // HTML-escape helper for safe email rendering
+    private String escape(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     public void sendEmployeeOnboardingEmail(String to, String firstName, String onboardingCode) throws MessagingException {
@@ -459,3 +488,4 @@ public class EmailService {
         }
     }
 }
+
