@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api from '../../config/ApiConfig';
 import Spinner from "../../components/Spinner/Spinner.jsx";
@@ -7,6 +7,9 @@ import { Package } from "lucide-react";
 
 const QuotationViewer = () => {
   const { ticketNumber } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const repairStatusContext = (searchParams.get("repairStatus") || "").toUpperCase();
   const [quotation, setQuotation] = useState(null);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,15 @@ const QuotationViewer = () => {
     );
   }
 
+  const selectionId = quotation?.customerSelection ? Number(quotation.customerSelection) : null;
+  const selectedPart = selectionId !== null && !Number.isNaN(selectionId)
+    ? parts.find((p) => p.id === selectionId)
+    : null;
+  const showSelectionOnly = repairStatusContext === "REPAIRING" && !!selectedPart;
+  const displayParts = showSelectionOnly ? [selectedPart] : parts;
+  const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+  const selectedTotal = (selectedPart?.unitCost || 0) + (quotation?.laborCost || 0);
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
       <Sidebar />
@@ -81,9 +93,15 @@ const QuotationViewer = () => {
           )}
         </div>
 
+        {showSelectionOnly && (
+          <div className="mb-4 text-sm text-blue-600 bg-blue-50 border border-blue-100 rounded-md px-4 py-2">
+            Ticket is already in the Repairing stage. Displaying only the approved option and pricing summary.
+          </div>
+        )}
+
         {/* Parts List */}
         <div className="space-y-4">
-          {parts.map(p => (
+          {displayParts.map(p => (
             <div key={p.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex items-center gap-4">
               <div className="p-2 bg-blue-50 rounded-md">
                 <Package size={20} className="text-blue-500" />
@@ -103,7 +121,7 @@ const QuotationViewer = () => {
                 </div>
                 <div>
                   <div className="text-gray-500">Price</div>
-                  <div className="font-medium text-gray-800">₱{p.unitCost?.toFixed(2) || "-"}</div>
+                  <div className="font-medium text-gray-800">{formatCurrency(p.unitCost)}</div>
                 </div>
               </div>
             </div>
@@ -111,11 +129,11 @@ const QuotationViewer = () => {
         </div>
 
         {/* Description Section */}
-        {parts.some(p => p.description) && (
+        {displayParts.some(p => p.description) && (
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Part Descriptions</h2>
             <div className="space-y-3">
-              {parts.map(p => (
+              {displayParts.map(p => (
                 <div key={p.id} className="bg-white border border-gray-200 rounded-md p-3">
                   <div className="font-medium text-gray-700 mb-1">{p.name}</div>
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{p.description || "No description provided."}</p>
@@ -127,8 +145,15 @@ const QuotationViewer = () => {
 
         {/* Cost Summary */}
         <div className="mt-10 flex flex-col items-end text-sm">
-          <div className="font-medium text-gray-700">Labor Cost: ₱{quotation?.laborCost?.toFixed(2)}</div>
-          <div className="font-bold text-lg text-gray-900">Total: ₱{quotation?.totalCost?.toFixed(2)}</div>
+          <div className="font-medium text-gray-700">Labor Cost: {formatCurrency(quotation?.laborCost)}</div>
+          {showSelectionOnly && selectedPart ? (
+            <>
+              <div className="font-medium text-gray-700">Part Cost: {formatCurrency(selectedPart.unitCost)}</div>
+              <div className="font-bold text-lg text-gray-900">Total: {formatCurrency(selectedTotal)}</div>
+            </>
+          ) : (
+            <div className="font-bold text-lg text-gray-900">Total: {formatCurrency(quotation?.totalCost)}</div>
+          )}
         </div>
       </div>
     </div>
