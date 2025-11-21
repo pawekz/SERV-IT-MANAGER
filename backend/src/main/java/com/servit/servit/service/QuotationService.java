@@ -57,7 +57,6 @@ public class QuotationService {
                 throw new IllegalArgumentException("partIds must not be empty");
             }
 
-            // Fetch parts and validate conditions
             List<PartEntity> parts = partRepository.findAllById(dto.getPartIds());
             if (parts.size() != dto.getPartIds().size()) {
                 throw new IllegalArgumentException("One or more parts not found");
@@ -84,7 +83,6 @@ public class QuotationService {
                 }
             }
 
-            // Archive existing quotations to preserve audit trail
             List<QuotationEntity> existingForTicket = quotationRepository.findByRepairTicketNumber(dto.getRepairTicketNumber());
             for (QuotationEntity prior : existingForTicket) {
                 if (!"ARCHIVED".equalsIgnoreCase(prior.getStatus())) {
@@ -122,7 +120,6 @@ public class QuotationService {
             entity.setOverrideTimestamp(null);
             entity.setOverrideNotes(null);
 
-            // Handle expiry & reminder – defaults via configuration
             Integer defaultExpiryDays = Integer.parseInt(configurationService.getConfigurationValue("quotation.expiry.days", "7"));
             Integer defaultReminderHours = Integer.parseInt(configurationService.getConfigurationValue("quotation.reminder.delay.hours", "24"));
 
@@ -135,9 +132,14 @@ public class QuotationService {
 
             QuotationEntity saved = quotationRepository.save(entity);
             logger.info("Quotation created id {} for ticket {}", saved.getQuotationId(), saved.getRepairTicketNumber());
+            try {
+                publishAwaitingApprovalEmail(saved.getRepairTicketNumber());
+            } catch (Exception e) {
+                logger.error("Failed to publish awaiting approval email for quotation {}: {}", saved.getQuotationId(), e.getMessage(), e);
+            }
             return toDTO(saved);
         } catch (IllegalArgumentException ex) {
-            throw ex; // will be handled by controller layer
+            throw ex;
         } catch (Exception e) {
             logger.error("Error adding quotation: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to add quotation", e);
