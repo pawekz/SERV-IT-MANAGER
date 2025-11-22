@@ -86,14 +86,20 @@ const QuotationApproval = () => {
   }
 
   // Helpers for UI
-  let recommendedPart = null;
+  let recommendedParts = [];
   let alternativeParts = [];
   if (parts.length > 0) {
-    if (quotation?.recommendedPart) {
-      recommendedPart = parts.find(p => p.id === parseInt(quotation.recommendedPart));
-      alternativeParts = parts.filter(p => p.id !== parseInt(quotation.recommendedPart));
-    } else {
-      recommendedPart = parts[0];
+    const recommendedIds = Array.isArray(quotation?.recommendedPart) 
+      ? quotation.recommendedPart.map(id => parseInt(id))
+      : (quotation?.recommendedPart ? [parseInt(quotation.recommendedPart)] : []);
+    const alternativeIds = Array.isArray(quotation?.alternativePart) 
+      ? quotation.alternativePart.map(id => parseInt(id))
+      : (quotation?.alternativePart ? [parseInt(quotation.alternativePart)] : []);
+    recommendedParts = parts.filter(p => recommendedIds.includes(p.id));
+    alternativeParts = parts.filter(p => alternativeIds.includes(p.id));
+    // Fallback to first part if no recommended parts specified
+    if (recommendedParts.length === 0 && parts.length > 0) {
+      recommendedParts = [parts[0]];
       alternativeParts = parts.slice(1);
     }
   }
@@ -119,7 +125,7 @@ const QuotationApproval = () => {
           return;
         }
         await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, { params: { customerSelection: selectedPartId } });
-        setToast({ show: true, message: "Quotation approved successfully", type: "success" });
+        setToast({ show: true, message: "Quotation approved successfully. Ticket status updated to REPAIRING.", type: "success" });
         setQuotation(prev => ({ ...prev, status: "APPROVED", customerSelection: selectedPartId }));
       } else if (actionType === "reject") {
         await api.patch(`/quotation/denyQuotation/${quotation.quotationId}`);
@@ -204,22 +210,22 @@ const QuotationApproval = () => {
             {/* Recommended Component */}
             <div className="bg-gray-50 p-4 rounded-md">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                Recommended by Tech
+                Recommended by Tech {recommendedParts.length > 1 && `(${recommendedParts.length} parts)`}
               </h3>
-              {recommendedPart ? (
-                renderPartRow(recommendedPart)
+              {recommendedParts.length > 0 ? (
+                recommendedParts.map(part => renderPartRow(part))
               ) : (
-                <div className="text-sm text-gray-500">No recommended part.</div>
+                <div className="text-sm text-gray-500">No recommended parts.</div>
               )}
             </div>
 
             {/* Alternative Components */}
             <div className="bg-gray-50 p-4 rounded-md">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                Alternative Option{alternativeParts.length !== 1 ? "s" : ""}
+                Alternative Option{alternativeParts.length !== 1 ? "s" : ""} {alternativeParts.length > 1 && `(${alternativeParts.length} parts)`}
               </h3>
               {alternativeParts.length > 0 ? (
-                alternativeParts.map(renderPartRow)
+                alternativeParts.map(part => renderPartRow(part))
               ) : (
                 <div className="text-sm text-gray-500">No alternative parts.</div>
               )}

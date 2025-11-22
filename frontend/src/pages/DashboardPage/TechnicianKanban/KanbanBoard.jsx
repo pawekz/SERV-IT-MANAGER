@@ -156,9 +156,15 @@ const KanbanBoard = () => {
             console.error("Failed to update repair status", error)
             // Revert UI on failure
             setTasks((prev) => prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: pendingChange.prevStatus } : t)))
-            const apiMessage = error?.response?.data?.message || "Failed to update status. Please try again."
-            if (apiMessage.toLowerCase().includes("quotation")) {
-                showToast("Send a quotation with Option A & Option B before moving this ticket to Awaiting Parts.", "error")
+            const apiMessage = error?.response?.data?.message || error?.message || "Failed to update status. Please try again."
+            if (apiMessage.toLowerCase().includes("quotation") || apiMessage.toLowerCase().includes("approved")) {
+                if (pendingChange.newStatus === "AWAITING_PARTS") {
+                    showToast("Please create a quotation with Option A (Recommended) and Option B (Alternative) parts before moving to Awaiting Parts.", "error")
+                } else if (pendingChange.newStatus === "REPAIRING") {
+                    showToast("Cannot move to Repairing. The quotation must be approved by the customer or overridden by a technician with notes.", "error")
+                } else {
+                    showToast(apiMessage, "error")
+                }
             } else {
                 showToast(apiMessage, "error")
             }

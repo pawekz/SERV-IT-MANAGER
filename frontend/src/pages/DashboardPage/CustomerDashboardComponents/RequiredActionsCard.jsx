@@ -46,7 +46,7 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
       await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
         params: { customerSelection: selectedPartId },
       });
-      setToast({ show: true, message: 'Quotation approved successfully.', type: 'success' });
+      setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
       setModalOpen(false);
       onDecisionComplete();
     } catch (err) {
@@ -57,33 +57,41 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
     }
   };
 
-  const renderOption = (label, partId) => {
-    if (!partId) {
+  const renderOption = (label, partIds) => {
+    const ids = Array.isArray(partIds) ? partIds : (partIds ? [partIds] : []);
+    if (ids.length === 0) {
       return (
         <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
           {label}: Not provided.
         </div>
       );
     }
-    const part = getPart(partId);
     const labor = activeAction?.quotation?.laborCost || 0;
     return (
-      <button
-        type="button"
-        onClick={() => setSelectedPartId(partId)}
-        className={`w-full border rounded-lg p-4 text-left transition ${
-          selectedPartId === partId ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-400'
-        }`}
-      >
-        <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>
-        <div className="text-sm font-semibold text-gray-900">{part?.name || `Part #${partId}`}</div>
-        <div className="text-xs text-gray-500">SKU: {part?.partNumber || '—'}</div>
-        <div className="text-xs text-gray-600 mt-1">Part: {formatCurrency(part?.unitCost)}</div>
-        <div className="text-xs text-gray-600">Labor: {formatCurrency(labor)}</div>
-        <div className="text-sm font-semibold text-gray-800">
-          Total: {formatCurrency((part?.unitCost || 0) + labor)}
-        </div>
-      </button>
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-green-700 mb-2">{label} {ids.length > 1 && `(${ids.length} parts)`}</div>
+        {ids.map((partId) => {
+          const part = getPart(partId);
+          return (
+            <button
+              key={partId}
+              type="button"
+              onClick={() => setSelectedPartId(partId)}
+              className={`w-full border rounded-lg p-3 text-left transition ${
+                selectedPartId === partId ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-400'
+              }`}
+            >
+              <div className="text-sm font-semibold text-gray-900">{part?.name || `Part #${partId}`}</div>
+              <div className="text-xs text-gray-500">SKU: {part?.partNumber || '—'}</div>
+              <div className="text-xs text-gray-600 mt-1">Part: {formatCurrency(part?.unitCost)}</div>
+              <div className="text-xs text-gray-600">Labor: {formatCurrency(labor)}</div>
+              <div className="text-sm font-semibold text-gray-800">
+                Total: {formatCurrency((part?.unitCost || 0) + labor)}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     );
   };
 
@@ -139,8 +147,8 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
             ) : (
               <>
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  {renderOption('Option A – Recommended', activeAction.quotation.recommendedPart)}
-                  {renderOption('Option B – Alternative', activeAction.quotation.alternativePart)}
+                  {renderOption('Option A – Recommended', activeAction.quotation.recommendedPart || [])}
+                  {renderOption('Option B – Alternative', activeAction.quotation.alternativePart || [])}
                 </div>
                 <p className="text-xs text-gray-600 mb-4">
                   Need help deciding? Call us at <strong>(02) 8700 1234</strong> and mention ticket{' '}

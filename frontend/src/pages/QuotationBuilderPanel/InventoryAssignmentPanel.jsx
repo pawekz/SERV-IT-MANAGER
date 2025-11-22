@@ -11,12 +11,14 @@ import Toast from "../../components/Toast/Toast.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
 
 const InventoryAssignmentPanel = () => {
-    const [optionA, setOptionA] = useState(null);
-    // optionB holds one or more alternative parts
+    // Both Option A and Option B now support multiple parts
+    const [optionA, setOptionA] = useState([]);
     const [optionB, setOptionB] = useState([]);
     const [inventorySlotTarget, setInventorySlotTarget] = useState("A");
-    // selectedParts is a flat array: preferred (optionA) followed by all alternatives (optionB)
-    const selectedParts = [optionA, ...optionB].filter(Boolean);
+    // Track parts selected in the modal for the current slot
+    const [modalSelectedParts, setModalSelectedParts] = useState([]);
+    // Combined for display purposes
+    const selectedParts = [...optionA, ...optionB];
     const [existingQuotation, setExistingQuotation] = useState(null);
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -41,6 +43,7 @@ const InventoryAssignmentPanel = () => {
     const [overrideSelection, setOverrideSelection] = useState(null);
     const [overrideNotes, setOverrideNotes] = useState("");
     const [overrideLoading, setOverrideLoading] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Function to decode JWT token - needed for sidebar functionality
     const parseJwt = (token) => {
@@ -154,36 +157,47 @@ const InventoryAssignmentPanel = () => {
         fetchParts();
     }, []);
 
-    // Handle part selection
-    const togglePartSelection = (item, slot = inventorySlotTarget) => {
-        if (slot === "B") {
-            // If item is already an alternative, remove it
-            const existsInB = optionB.some((p) => p.id === item.id);
-            if (existsInB) {
-                setOptionB((prev) => prev.filter((p) => p.id !== item.id));
-                return;
+    // Handle part selection in the modal (temporary selection before clicking Done)
+    const toggleModalPartSelection = (item) => {
+        setModalSelectedParts((prev) => {
+            const exists = prev.some((p) => p.id === item.id);
+            if (exists) {
+                return prev.filter((p) => p.id !== item.id);
+            } else {
+                return [...prev, item];
             }
+        });
+    };
 
-            // Remove from optionA if it was selected there
-            if (optionA?.id === item.id) {
-                setOptionA(null);
-            }
-
-            // Add to alternatives
-            setOptionB((prev) => [...prev, item]);
-            return;
+    // Handle part removal from Option A or B (after they're assigned)
+    const removePartFromSlot = (item, slot) => {
+        if (slot === "A") {
+            setOptionA((prev) => prev.filter((p) => p.id !== item.id));
+        } else if (slot === "B") {
+            setOptionB((prev) => prev.filter((p) => p.id !== item.id));
         }
+    };
 
-        // Slot A behavior: single preferred part
-        if (optionA?.id === item.id) {
-            setOptionA(null);
-        } else {
-            // If this item exists among alternatives, remove it from optionB
-            if (optionB.some((p) => p.id === item.id)) {
-                setOptionB((prev) => prev.filter((p) => p.id !== item.id));
-            }
-            setOptionA(item);
+    // Apply modal selections to the target slot when Done is clicked
+    const applyModalSelections = () => {
+        if (inventorySlotTarget === "A") {
+            // Add modal selections to Option A, avoiding duplicates
+            setOptionA((prev) => {
+                const existingIds = new Set(prev.map(p => p.id));
+                const newParts = modalSelectedParts.filter(p => !existingIds.has(p.id));
+                return [...prev, ...newParts];
+            });
+        } else if (inventorySlotTarget === "B") {
+            // Add modal selections to Option B, avoiding duplicates
+            setOptionB((prev) => {
+                const existingIds = new Set(prev.map(p => p.id));
+                const newParts = modalSelectedParts.filter(p => !existingIds.has(p.id));
+                return [...prev, ...newParts];
+            });
         }
+        // Clear modal selections and close modal
+        setModalSelectedParts([]);
+        setShowInventoryModal(false);
     };
 
     // partsTotal optional if you want to display summary in the future
@@ -208,15 +222,15 @@ const InventoryAssignmentPanel = () => {
     // Send or update quotation when event dispatched from child
     useEffect(() => {
         const handler = async () => {
-            if (selectedParts.length === 0) return;
+            if (optionA.length === 0 && optionB.length === 0) return;
             try {
                 setProcessing(true);
                 const token = localStorage.getItem("authToken");
                 if (!token) throw new Error("Auth required");
                 const partIds = selectedParts.map((p) => p.id);
-                // preferred is optionA, alternatives are optionB; fall back to selectedParts ordering
-                const preferredPart = optionA || selectedParts[0] || null;
-                const alternativePart = optionB.length > 0 ? optionB[0] : (selectedParts[1] || null);
+                // Both options are now arrays
+                const recommendedParts = optionA.map(p => p.id);
+                const alternativeParts = optionB.map(p => p.id);
 
                 if (editing && existingQuotation) {
                     // Update existing quotation
@@ -224,8 +238,8 @@ const InventoryAssignmentPanel = () => {
                          partIds: partIds,
                          laborCost: parseFloat(laborCost) || 0,
                          totalCost: partsTotal + (parseFloat(laborCost) || 0),
-                        recommendedPart: preferredPart?.id || null,
-                        alternativePart: alternativePart?.id || null,
+                        recommendedPart: recommendedParts,
+                        alternativePart: alternativeParts,
                          reminderDelayHours: reminderHours,
                          expiryAt: expiryDate.toISOString(),
                      });
@@ -237,20 +251,21 @@ const InventoryAssignmentPanel = () => {
                          laborCost: parseFloat(laborCost) || 0,
                          expiryAt: expiryDate.toISOString(),
                          reminderDelayHours: reminderHours,
-                         recommendedPart: preferredPart?.id || null,
-                         alternativePart: alternativePart?.id || null,
+                         recommendedPart: recommendedParts,
+                         alternativePart: alternativeParts,
                      });
                     setToast({ show: true, message: "Quotation sent to customer", type: "success" });
                 }
 
                 // Refresh quotation state
                 setEditing(false);
-                setOptionA(null);
+                setOptionA([]);
                 setOptionB([]);
                 await refreshQuotation();
             } catch (err) {
                 console.error("Failed to send/update quotation", err);
-                setToast({ show: true, message: "Failed to process quotation", type: "error" });
+                const errorMsg = err?.response?.data?.message || err?.message || "Failed to process quotation";
+                setToast({ show: true, message: errorMsg, type: "error" });
             } finally {
                 setProcessing(false);
             }
@@ -262,17 +277,21 @@ const InventoryAssignmentPanel = () => {
     // Helper: delete quotation
     const handleDeleteQuotation = async () => {
          if (!existingQuotation) return;
-         if (!window.confirm("Are you sure you want to delete this quotation?")) return;
+         setShowDeleteConfirm(true);
+     };
+     const confirmDeleteQuotation = async () => {
+         if (!existingQuotation) return;
          try {
              await api.delete(`/quotation/deleteQuotation/${existingQuotation.quotationId}`);
-             alert("Quotation deleted");
+             setToast({ show: true, message: "Quotation deleted successfully", type: "success" });
              setExistingQuotation(null);
              setEditing(false);
-             setOptionA(null);
+             setOptionA([]);
              setOptionB([]);
+             setShowDeleteConfirm(false);
          } catch (err) {
              console.error("Failed to delete quotation", err);
-             alert("Failed to delete quotation");
+             setToast({ show: true, message: "Failed to delete quotation. Please try again.", type: "error" });
          }
      };
 
@@ -281,15 +300,25 @@ const InventoryAssignmentPanel = () => {
          if (!existingQuotation) return;
          // Map partIds to inventory items (after inventory fetch)
         const toSelect = inventoryItems.filter((item) => existingQuotation.partIds.includes(item.id));
-        setOptionA(toSelect[0] || null);
-        setOptionB(toSelect.slice(1) || []);
+        // Handle recommendedPart as list
+        const recommendedIds = Array.isArray(existingQuotation.recommendedPart) 
+          ? existingQuotation.recommendedPart 
+          : (existingQuotation.recommendedPart ? [existingQuotation.recommendedPart] : []);
+        const recommendedItems = toSelect.filter(item => recommendedIds.includes(item.id));
+        setOptionA(recommendedItems || []);
+        // Handle alternativePart as list
+        const alternativeIds = Array.isArray(existingQuotation.alternativePart) 
+          ? existingQuotation.alternativePart 
+          : (existingQuotation.alternativePart ? [existingQuotation.alternativePart] : []);
+        const alternativeItems = toSelect.filter(item => alternativeIds.includes(item.id));
+        setOptionB(alternativeItems || []);
          setLaborCost(existingQuotation.laborCost || 0);
          setEditing(true);
      };
 
      const handleCancelEditing = async () => {
          setEditing(false);
-         setOptionA(null);
+         setOptionA([]);
          setOptionB([]);
          setLaborCost(0);
          try {
@@ -322,21 +351,26 @@ const InventoryAssignmentPanel = () => {
 
     const handleOverrideSubmit = async () => {
         if (!existingQuotation || !overrideSelection) return;
+        if (!overrideNotes || overrideNotes.trim().length === 0) {
+            setToast({ show: true, message: "Notes are required for technician override", type: "error" });
+            return;
+        }
         try {
             setOverrideLoading(true);
             await api.patch(`/quotation/overrideSelection/${existingQuotation.quotationId}`, null, {
                 params: {
                     partId: overrideSelection.id,
-                    notes: overrideNotes,
+                    notes: overrideNotes.trim(),
                 },
             });
-            setToast({ show: true, message: "Override recorded and quotation approved", type: "success" });
+            setToast({ show: true, message: "Override recorded and quotation approved. Ticket status updated to REPAIRING.", type: "success" });
             setShowOverrideModal(false);
             setOverrideNotes("");
             await refreshQuotation();
         } catch (err) {
             console.error("Failed to override quotation", err);
-            setToast({ show: true, message: "Failed to override quotation", type: "error" });
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to override quotation";
+            setToast({ show: true, message: errorMsg, type: "error" });
         } finally {
             setOverrideLoading(false);
         }
@@ -373,9 +407,14 @@ const InventoryAssignmentPanel = () => {
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-4">
                                     <div className="bg-white rounded-lg shadow-xl max-h-[90vh] w-full max-w-4xl overflow-hidden flex flex-col">
                                         <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                                            <h2 className="text-lg font-semibold text-gray-800">Select Parts from Inventory</h2>
+                                            <h2 className="text-lg font-semibold text-gray-800">
+                                                Select Parts for Option {inventorySlotTarget === "A" ? "A – Recommended" : "B – Alternative"}
+                                            </h2>
                                             <button
-                                                onClick={() => setShowInventoryModal(false)}
+                                                onClick={() => {
+                                                    setModalSelectedParts([]);
+                                                    setShowInventoryModal(false);
+                                                }}
                                                 className="text-gray-500 hover:text-gray-700"
                                             >
                                                 ✕
@@ -383,17 +422,29 @@ const InventoryAssignmentPanel = () => {
                                         </div>
                                         <div className="flex-1 overflow-y-auto p-4">
                                             <AvailableInventory
-                                                inventoryItems={inventoryItems}
-                                                selectedParts={selectedParts}
-                                                togglePartSelection={(item) => {
-                                                    togglePartSelection(item, inventorySlotTarget);
-                                                }}
-                                                 getStatusColor={getStatusColor}
+                                                inventoryItems={(() => {
+                                                    // Filter out parts that are already in the other option
+                                                    if (inventorySlotTarget === "A") {
+                                                        // When selecting for Option A, exclude parts already in Option B
+                                                        const optionBIds = new Set(optionB.map(p => p.id));
+                                                        return inventoryItems.filter(item => !optionBIds.has(item.id));
+                                                    } else {
+                                                        // When selecting for Option B, exclude parts already in Option A
+                                                        const optionAIds = new Set(optionA.map(p => p.id));
+                                                        return inventoryItems.filter(item => !optionAIds.has(item.id));
+                                                    }
+                                                })()}
+                                                selectedParts={modalSelectedParts}
+                                                togglePartSelection={toggleModalPartSelection}
+                                                getStatusColor={getStatusColor}
                                              />
                                         </div>
-                                        <div className="p-4 border-t border-gray-200 flex justify-end">
+                                        <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+                                            <div className="text-sm text-gray-600">
+                                                {modalSelectedParts.length} part{modalSelectedParts.length !== 1 ? 's' : ''} selected
+                                            </div>
                                             <button
-                                                onClick={() => setShowInventoryModal(false)}
+                                                onClick={applyModalSelections}
                                                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                                             >
                                                 Done
@@ -404,10 +455,17 @@ const InventoryAssignmentPanel = () => {
                             )}
 
                             <SelectedPartsCard
-                                selectedParts={selectedParts}
-                                togglePartSelection={togglePartSelection}
+                                optionA={optionA}
+                                optionB={optionB}
+                                removePartFromSlot={removePartFromSlot}
                                  openInventoryModal={(slot) => {
                                      setInventorySlotTarget(slot || "A");
+                                     // Initialize modal with parts already in the target slot
+                                     if (slot === "A") {
+                                         setModalSelectedParts([...optionA]);
+                                     } else {
+                                         setModalSelectedParts([...optionB]);
+                                     }
                                      setShowInventoryModal(true);
                                  }}
                                  laborCost={laborCost}
@@ -447,8 +505,10 @@ const InventoryAssignmentPanel = () => {
                                         <div className="text-sm text-gray-500">No parts found for this quotation.</div>
                                     )}
                                     {overrideParts.map((part) => {
-                                        const label =
-                                            part.id === existingQuotation?.recommendedPart
+                                        const isRecommended = existingQuotation?.recommendedPart?.includes?.(part.id) || 
+                                                              (Array.isArray(existingQuotation?.recommendedPart) && existingQuotation.recommendedPart.includes(part.id)) ||
+                                                              (typeof existingQuotation?.recommendedPart === 'number' && existingQuotation.recommendedPart === part.id);
+                                        const label = isRecommended
                                                 ? "Option A – Recommended"
                                                 : "Option B – Alternative";
                                         const isSelected = overrideSelection?.id === part.id;
@@ -468,18 +528,22 @@ const InventoryAssignmentPanel = () => {
                                         );
                                     })}
                                 </div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes <span className="text-red-600">*</span></label>
                                 <textarea
                                     className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500"
                                     rows={3}
                                     value={overrideNotes}
                                     onChange={(e) => setOverrideNotes(e.target.value)}
-                                    placeholder="Document why you overrode the customer decision."
+                                    placeholder="Document why you overrode the customer decision (required)."
+                                    required
                                 />
                                 <div className="mt-5 flex justify-end gap-3">
                                     <button
                                         className="px-4 py-2 rounded-md border text-gray-700"
-                                        onClick={() => setShowOverrideModal(false)}
+                                        onClick={() => {
+                                            setShowOverrideModal(false);
+                                            setOverrideNotes("");
+                                        }}
                                         disabled={overrideLoading}
                                     >
                                         Cancel
@@ -487,7 +551,7 @@ const InventoryAssignmentPanel = () => {
                                     <button
                                         className="px-4 py-2 rounded-md bg-green-600 text-white flex items-center gap-2 disabled:opacity-60"
                                         onClick={handleOverrideSubmit}
-                                        disabled={!overrideSelection || overrideLoading}
+                                        disabled={!overrideSelection || !overrideNotes?.trim() || overrideLoading}
                                     >
                                         {overrideLoading && <Spinner size="small" />}
                                         Confirm Override
@@ -495,6 +559,31 @@ const InventoryAssignmentPanel = () => {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm Deletion</h3>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Are you sure you want to delete this quotation? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                className="px-4 py-2 rounded-md border text-gray-700"
+                                onClick={() => setShowDeleteConfirm(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 rounded-md bg-red-600 text-white"
+                                onClick={confirmDeleteQuotation}
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
