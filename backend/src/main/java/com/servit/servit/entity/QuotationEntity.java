@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "quotation")
@@ -23,11 +24,23 @@ public class QuotationEntity {
     @ElementCollection
     private List<Long> partIds;
 
-    @Column(name = "recommended_part_id")
-    private Long recommendedPart;
+    @ManyToMany
+    @JoinTable(
+        name = "quotation_recommended_parts",
+        joinColumns = @JoinColumn(name = "quotation_id"),
+        inverseJoinColumns = @JoinColumn(name = "part_id")
+    )
+    @JsonManagedReference
+    private List<PartEntity> recommendedPart;
 
-    @Column(name = "alternative_part_id")
-    private Long alternativePart;
+    @ManyToMany
+    @JoinTable(
+        name = "quotation_alternative_parts",
+        joinColumns = @JoinColumn(name = "quotation_id"),
+        inverseJoinColumns = @JoinColumn(name = "part_id")
+    )
+    @JsonManagedReference
+    private List<PartEntity> alternativePart;
 
     @Column(name = "labor_cost", nullable = false)
     private Double laborCost;

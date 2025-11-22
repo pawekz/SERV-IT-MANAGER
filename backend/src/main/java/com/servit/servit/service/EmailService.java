@@ -313,13 +313,20 @@ public class EmailService {
         String ctaButton = "<div style='text-align:center;margin-top:18px;'><a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;'>View Quotation</a></div>";
 
         String pricingTable = "";
-        if (isApprovedSummary && primary != null) {
-            // Build a clearer table for approved quotation showing breakdown
+        if (isApprovedSummary && primary != null && !primary.getParts().isEmpty()) {
+            // Build a clearer table for approved quotation showing breakdown with all parts
+            StringBuilder tableRows = new StringBuilder();
+            for (PartInfo part : primary.getParts()) {
+                tableRows.append("<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: ")
+                        .append(escape(part.getPartName())).append(" (SKU: ").append(escape(part.getSku()))
+                        .append(")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>")
+                        .append(formatCurrency(part.getPartCost())).append("</td></tr>");
+            }
             pricingTable = "<div style='margin-top:18px;'>" +
                     "<table role='table' style='width:100%;border-collapse:collapse;font-size:14px;'>" +
                     "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>Amount</th></tr></thead>" +
                     "<tbody>" +
-                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: " + escape(primary.getPartName()) + " (SKU: " + escape(primary.getSku()) + ")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getPartCost()) + "</td></tr>" +
+                    tableRows.toString() +
                     "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
                     "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
                     "</tbody></table></div>";
@@ -365,13 +372,24 @@ public class EmailService {
 
 
     private String renderOptionCard(QuotationOption option) {
-        if (option == null) return "";
+        if (option == null || option.getParts().isEmpty()) return "";
+        
+        StringBuilder partsHtml = new StringBuilder();
+        for (PartInfo part : option.getParts()) {
+            partsHtml.append("<p><strong>Part:</strong> ").append(escape(part.getPartName()))
+                    .append(" (SKU: ").append(escape(part.getSku())).append(")</p>");
+            if (part.getDescription() != null && !part.getDescription().trim().isEmpty()) {
+                partsHtml.append("<p style='font-size:13px;color:#6b7280;'>").append(escape(part.getDescription())).append("</p>");
+            }
+        }
+        
         return "<div class='option-card'>" +
-                "<h3>" + escape(option.getLabel()) + "</h3>" +
-                "<p><strong>Part:</strong> " + escape(option.getPartName()) + " (SKU: " + escape(option.getSku()) + ")</p>" +
-                (option.getDescription() != null ? "<p style='font-size:13px;color:#6b7280;'>" + escape(option.getDescription()) + "</p>" : "") +
+                "<h3>" + escape(option.getLabel()) + 
+                (option.getParts().size() > 1 ? " (" + option.getParts().size() + " parts)" : "") + 
+                "</h3>" +
+                partsHtml.toString() +
                 "<div class='amounts'>" +
-                "<div><span>Part</span>" + formatCurrency(option.getPartCost()) + "</div>" +
+                "<div><span>Parts Total</span>" + formatCurrency(option.getPartCost()) + "</div>" +
                 "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
                 "<div><span>Total</span>" + formatCurrency(option.getTotalCost()) + "</div>" +
                 "</div>" +
@@ -442,25 +460,17 @@ public class EmailService {
         return s3Url.substring(idx + ".amazonaws.com/".length());
     }
 
-    public static class QuotationOption {
-        private final String label;
+    public static class PartInfo {
         private final String partName;
         private final String sku;
         private final String description;
         private final double partCost;
-        private final double laborCost;
 
-        public QuotationOption(String label, String partName, String sku, String description, double partCost, double laborCost) {
-            this.label = label;
+        public PartInfo(String partName, String sku, String description, double partCost) {
             this.partName = partName;
             this.sku = sku;
             this.description = description;
             this.partCost = partCost;
-            this.laborCost = laborCost;
-        }
-
-        public String getLabel() {
-            return label;
         }
 
         public String getPartName() {
@@ -478,13 +488,58 @@ public class EmailService {
         public double getPartCost() {
             return partCost;
         }
+    }
+
+    public static class QuotationOption {
+        private final String label;
+        private final java.util.List<PartInfo> parts;
+        private final double laborCost;
+
+        // Constructor for single part (backward compatibility)
+        public QuotationOption(String label, String partName, String sku, String description, double partCost, double laborCost) {
+            this.label = label;
+            this.parts = java.util.Collections.singletonList(new PartInfo(partName, sku, description, partCost));
+            this.laborCost = laborCost;
+        }
+
+        // Constructor for multiple parts
+        public QuotationOption(String label, java.util.List<PartInfo> parts, double laborCost) {
+            this.label = label;
+            this.parts = parts != null ? parts : java.util.Collections.emptyList();
+            this.laborCost = laborCost;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public java.util.List<PartInfo> getParts() {
+            return parts;
+        }
 
         public double getLaborCost() {
             return laborCost;
         }
 
+        // Backward compatibility methods (use first part)
+        public String getPartName() {
+            return parts.isEmpty() ? "" : parts.get(0).getPartName();
+        }
+
+        public String getSku() {
+            return parts.isEmpty() ? "" : parts.get(0).getSku();
+        }
+
+        public String getDescription() {
+            return parts.isEmpty() ? null : parts.get(0).getDescription();
+        }
+
+        public double getPartCost() {
+            return parts.stream().mapToDouble(PartInfo::getPartCost).sum();
+        }
+
         public double getTotalCost() {
-            return partCost + laborCost;
+            return getPartCost() + laborCost;
         }
     }
 }

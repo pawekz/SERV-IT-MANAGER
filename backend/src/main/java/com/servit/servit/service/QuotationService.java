@@ -17,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.repository.WarrantyRepository;
 import com.servit.servit.entity.WarrantyEntity;
+import com.servit.servit.dto.repairticket.UpdateRepairStatusRequestDTO;
+import com.servit.servit.enumeration.RepairStatusEnum;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -50,6 +53,10 @@ public class QuotationService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    @Lazy
+    private RepairTicketService repairTicketService;
 
     public QuotationDTO addQuotation(QuotationDTO dto) {
         try {
@@ -95,19 +102,48 @@ public class QuotationService {
             entity.setRepairTicketNumber(dto.getRepairTicketNumber());
             entity.setPartIds(dto.getPartIds());
 
-            final Long recommendedPartId = (dto.getRecommendedPart() != null)
-                    ? dto.getRecommendedPart()
-                    : (!dto.getPartIds().isEmpty() ? dto.getPartIds().get(0) : null);
-            entity.setRecommendedPart(recommendedPartId);
-
-            Long alternativePartId = dto.getAlternativePart();
-            if (alternativePartId == null) {
-                alternativePartId = dto.getPartIds().stream()
-                        .filter(id -> recommendedPartId == null || !id.equals(recommendedPartId))
-                        .findFirst()
+            // Handle recommendedPart as list of PartEntity
+            if (dto.getRecommendedPart() != null) {
+                if (!dto.getRecommendedPart().isEmpty()) {
+                    List<PartEntity> recommendedParts = partRepository.findAllById(dto.getRecommendedPart());
+                    entity.setRecommendedPart(recommendedParts);
+                } else {
+                    // Explicitly empty array from frontend - respect it
+                    entity.setRecommendedPart(new java.util.ArrayList<>());
+                }
+            } else if (!dto.getPartIds().isEmpty()) {
+                // Fallback: if not provided, use first partId as recommended
+                PartEntity firstPart = partRepository.findById(dto.getPartIds().get(0))
                         .orElse(null);
+                entity.setRecommendedPart(firstPart != null ? java.util.Collections.singletonList(firstPart) : new java.util.ArrayList<>());
+            } else {
+                entity.setRecommendedPart(new java.util.ArrayList<>());
             }
-            entity.setAlternativePart(alternativePartId);
+
+            // Handle alternativePart as list of PartEntity
+            if (dto.getAlternativePart() != null) {
+                if (!dto.getAlternativePart().isEmpty()) {
+                    List<PartEntity> alternativeParts = partRepository.findAllById(dto.getAlternativePart());
+                    entity.setAlternativePart(alternativeParts);
+                } else {
+                    // Explicitly empty array from frontend - respect it
+                    entity.setAlternativePart(new java.util.ArrayList<>());
+                }
+            } else {
+                // Fallback: use remaining partIds that aren't in recommended
+                List<Long> recommendedIds = entity.getRecommendedPart().stream()
+                        .map(PartEntity::getPartId)
+                        .collect(Collectors.toList());
+                List<Long> alternativeIds = dto.getPartIds().stream()
+                        .filter(id -> recommendedIds == null || recommendedIds.isEmpty() || !recommendedIds.contains(id))
+                        .collect(Collectors.toList());
+                if (!alternativeIds.isEmpty()) {
+                    List<PartEntity> alternativeParts = partRepository.findAllById(alternativeIds);
+                    entity.setAlternativePart(alternativeParts);
+                } else {
+                    entity.setAlternativePart(new java.util.ArrayList<>());
+                }
+            }
 
             Double labor = dto.getLaborCost() != null ? dto.getLaborCost() : 0.0;
             Double total = dto.getTotalCost() != null ? dto.getTotalCost() : labor;
@@ -167,12 +203,15 @@ public class QuotationService {
         if (partId == null) {
             throw new IllegalArgumentException("partId is required for technician override");
         }
+        if (notes == null || notes.trim().isEmpty()) {
+            throw new IllegalArgumentException("Notes are required for technician override");
+        }
         try {
             QuotationEntity entity = quotationRepository.findById(quotationId)
                     .orElseThrow(() -> new IllegalArgumentException("Quotation not found"));
             entity.setTechnicianOverride(Boolean.TRUE);
             entity.setOverrideTimestamp(LocalDateTime.now());
-            entity.setOverrideNotes(notes);
+            entity.setOverrideNotes(notes.trim());
             return finalizeApproval(entity, String.valueOf(partId));
         } catch (Exception e) {
             logger.error("Error overriding quotation {}: {}", quotationId, e.getMessage(), e);
@@ -279,8 +318,8 @@ public class QuotationService {
         RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(ticketNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Repair ticket not found: " + ticketNumber));
         try {
-            EmailService.QuotationOption recommended = buildOption(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
-            EmailService.QuotationOption alternative = buildOption(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
+            EmailService.QuotationOption recommended = buildOptionFromPartList(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
+            EmailService.QuotationOption alternative = buildOptionFromPartList(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
             String reminderCopy = buildReminderCopy(quotation);
             emailService.sendQuotationWaitingForApprovalEmail(
                     ticket.getCustomerEmail(),
@@ -314,8 +353,8 @@ public class QuotationService {
             return;
         }
         try {
-            EmailService.QuotationOption recommended = buildOption(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
-            EmailService.QuotationOption alternative = buildOption(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
+            EmailService.QuotationOption recommended = buildOptionFromPartList(quotation.getRecommendedPart(), "Option A – Recommended", quotation.getLaborCost());
+            EmailService.QuotationOption alternative = buildOptionFromPartList(quotation.getAlternativePart(), "Option B – Alternative", quotation.getLaborCost());
             String reminderCopy = buildReminderCopy(quotation);
             emailService.sendQuotationReminderEmail(
                     ticket.getCustomerEmail(),
@@ -394,6 +433,31 @@ public class QuotationService {
                 .orElse(null);
     }
 
+    private EmailService.QuotationOption buildOptionFromPartList(List<PartEntity> parts, String label, Double laborCost) {
+        if (parts == null || parts.isEmpty()) {
+            return null;
+        }
+        // Build list of PartInfo for all parts
+        List<EmailService.PartInfo> partInfos = parts.stream()
+                .filter(part -> part != null)
+                .map(part -> {
+                    double unitCost = part.getUnitCost() != null ? part.getUnitCost().doubleValue() : 0.0;
+                    return new EmailService.PartInfo(
+                            part.getName(),
+                            part.getPartNumber(),
+                            part.getDescription(),
+                            unitCost);
+                })
+                .collect(Collectors.toList());
+        
+        if (partInfos.isEmpty()) {
+            return null;
+        }
+        
+        double labor = laborCost != null ? laborCost : 0.0;
+        return new EmailService.QuotationOption(label, partInfos, labor);
+    }
+
     private String buildReminderCopy(QuotationEntity quotation) {
         Integer reminderHours = Optional.ofNullable(quotation.getReminderDelayHours())
                 .orElse(Integer.parseInt(configurationService.getConfigurationValue("quotation.reminder.delay.hours", "24")));
@@ -443,8 +507,24 @@ public class QuotationService {
             if (dto.getTotalCost() != null) entity.setTotalCost(dto.getTotalCost());
             if (dto.getExpiryAt() != null) entity.setExpiryAt(dto.getExpiryAt());
             if (dto.getReminderDelayHours() != null) entity.setReminderDelayHours(dto.getReminderDelayHours());
-            if (dto.getRecommendedPart() != null) entity.setRecommendedPart(dto.getRecommendedPart());
-            if (dto.getAlternativePart() != null) entity.setAlternativePart(dto.getAlternativePart());
+            if (dto.getRecommendedPart() != null) {
+                if (!dto.getRecommendedPart().isEmpty()) {
+                    List<PartEntity> recommendedParts = partRepository.findAllById(dto.getRecommendedPart());
+                    entity.setRecommendedPart(recommendedParts);
+                } else {
+                    // Explicitly empty array - clear recommended parts
+                    entity.setRecommendedPart(new java.util.ArrayList<>());
+                }
+            }
+            if (dto.getAlternativePart() != null) {
+                if (!dto.getAlternativePart().isEmpty()) {
+                    List<PartEntity> alternativeParts = partRepository.findAllById(dto.getAlternativePart());
+                    entity.setAlternativePart(alternativeParts);
+                } else {
+                    // Explicitly empty array - clear alternative parts
+                    entity.setAlternativePart(new java.util.ArrayList<>());
+                }
+            }
             if (dto.getNextReminderAt() != null) entity.setNextReminderAt(dto.getNextReminderAt());
             if (dto.getLastReminderSentAt() != null) entity.setLastReminderSentAt(dto.getLastReminderSentAt());
 
@@ -484,6 +564,23 @@ public class QuotationService {
         QuotationEntity saved = quotationRepository.save(entity);
         notifyTechnicianOfApproval(saved);
         logger.info("Quotation approved: {}", saved.getQuotationId());
+        
+        // Auto-update ticket status from AWAITING_PARTS to REPAIRING
+        try {
+            RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(saved.getRepairTicketNumber())
+                    .orElse(null);
+            if (ticket != null && ticket.getRepairStatus() == RepairStatusEnum.AWAITING_PARTS) {
+                UpdateRepairStatusRequestDTO statusUpdate = new UpdateRepairStatusRequestDTO();
+                statusUpdate.setTicketNumber(ticket.getTicketNumber());
+                statusUpdate.setRepairStatus(RepairStatusEnum.REPAIRING.name());
+                repairTicketService.updateRepairStatus(statusUpdate);
+                logger.info("Automatically updated ticket {} status from AWAITING_PARTS to REPAIRING after quotation approval", ticket.getTicketNumber());
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to auto-update ticket status after quotation approval: {}", e.getMessage(), e);
+            // Don't fail the approval if status update fails
+        }
+        
         return toDTO(saved);
     }
 
@@ -572,8 +669,12 @@ public class QuotationService {
         dto.setCustomerSelection(entity.getCustomerSelection());
         dto.setExpiryAt(entity.getExpiryAt());
         dto.setReminderDelayHours(entity.getReminderDelayHours());
-        dto.setRecommendedPart(entity.getRecommendedPart());
-        dto.setAlternativePart(entity.getAlternativePart());
+        dto.setRecommendedPart(entity.getRecommendedPart() != null 
+            ? entity.getRecommendedPart().stream().map(PartEntity::getPartId).collect(Collectors.toList())
+            : new java.util.ArrayList<>());
+        dto.setAlternativePart(entity.getAlternativePart() != null 
+            ? entity.getAlternativePart().stream().map(PartEntity::getPartId).collect(Collectors.toList())
+            : new java.util.ArrayList<>());
         dto.setNextReminderAt(entity.getNextReminderAt());
         dto.setLastReminderSentAt(entity.getLastReminderSentAt());
         dto.setReminderSendCount(entity.getReminderSendCount());

@@ -120,9 +120,7 @@ public class QuotationController {
     }
 
     @PatchMapping("/overrideSelection/{quotationId}")
-    public QuotationDTO overrideSelection(@PathVariable Long quotationId,
-                                          @RequestParam Long partId,
-                                          @RequestParam(required = false) String notes) {
+    public QuotationDTO overrideSelection(@PathVariable Long quotationId, @RequestParam Long partId, @RequestParam String notes) {
         try {
             return quotationService.overrideCustomerSelection(quotationId, partId, notes);
         } catch (IllegalArgumentException e) {

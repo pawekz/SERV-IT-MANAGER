@@ -9,8 +9,8 @@ public class QuotationDTO {
     private Long quotationId;
     private String repairTicketNumber;
     private List<Long> partIds;
-    private Long recommendedPart;
-    private Long alternativePart;
+    private List<Long> recommendedPart;
+    private List<Long> alternativePart;
     private Double laborCost;
     private Double totalCost;
     private String status;
