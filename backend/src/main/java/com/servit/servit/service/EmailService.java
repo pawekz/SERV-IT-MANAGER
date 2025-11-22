@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Service
 public class EmailService {
@@ -125,8 +127,7 @@ public class EmailService {
         if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
             // Download ang file sa AWS S3 and attach sa email as bytes
             String s3Key = extractS3KeyFromUrl(pdfPath);
-            try {
-                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+            try (S3Object s3Object = fileUtil.downloadFileFromS3(s3Key)) {
                 byte[] fileBytes;
                 try (java.io.InputStream is = s3Object.getObjectContent()) {
                     fileBytes = is.readAllBytes();
@@ -210,8 +211,7 @@ public class EmailService {
         String attachmentName = String.format("%s-warranty.pdf", WarrantyNumber);
         if (pdfPath != null && pdfPath.contains("amazonaws.com/")) {
             String s3Key = extractS3KeyFromUrl(pdfPath);
-            try {
-                S3Object s3Object = fileUtil.downloadFileFromS3(s3Key);
+            try (S3Object s3Object = fileUtil.downloadFileFromS3(s3Key)) {
                 byte[] fileBytes;
                 try (java.io.InputStream is = s3Object.getObjectContent()) {
                     fileBytes = is.readAllBytes();
@@ -223,6 +223,192 @@ public class EmailService {
         } else {
             emailUtil.sendEmailWithAttachment(to, subject, htmlContent, pdfPath, attachmentName);
         }
+    }
+
+    public void sendQuotationWaitingForApprovalEmail(String to,
+                                                     String customerName,
+                                                     String ticketNumber,
+                                                     QuotationOption recommended,
+                                                     QuotationOption alternative,
+                                                     String reminderCopy,
+                                                     String supportNumber) throws MessagingException {
+
+        String subject = "Waiting for Customer Approval - Ticket " + ticketNumber;
+        String intro = "Our technician has finished diagnosing your device and prepared two compatible component options. Please review Option A and Option B, then log in to choose your preferred part.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Waiting for Customer Approval",
+                customerName,
+                ticketNumber,
+                intro,
+                reminderCopy,
+                supportNumber,
+                recommended,
+                alternative,
+                false);
+
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    public void sendQuotationReminderEmail(String to,
+                                           String customerName,
+                                           String ticketNumber,
+                                           QuotationOption recommended,
+                                           QuotationOption alternative,
+                                           String reminderCopy,
+                                           String supportNumber) throws MessagingException {
+
+        String subject = "Reminder: Quotation Pending Approval - Ticket " + ticketNumber;
+        String intro = "This is a friendly reminder that your repair quotation is still waiting for your approval. Please compare the options below and respond so we can continue the repair.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Friendly Reminder: Action Required",
+                customerName,
+                ticketNumber,
+                intro,
+                reminderCopy,
+                supportNumber,
+                recommended,
+                alternative,
+                false);
+
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+    public void sendQuotationApprovedSummaryEmail(String to,
+                                                  String customerName,
+                                                  String ticketNumber,
+                                                  QuotationOption approvedOption,
+                                                  String supportNumber) throws MessagingException {
+
+        String subject = "Quotation Approved Summary - Ticket " + ticketNumber;
+        String intro = "Thanks for approving the quotation. Here's a quick summary of the part we will install, including detailed pricing.";
+        String htmlContent = buildQuotationEmailTemplate(
+                "Quotation Approved",
+                customerName,
+                ticketNumber,
+                intro,
+                "We'll notify you when the repair progresses to the next stage.",
+                supportNumber,
+                approvedOption,
+                null,
+                true);
+
+        emailUtil.sendEmail(to, subject, htmlContent);
+    }
+
+
+    private String buildQuotationEmailTemplate(String heading,
+                                               String customerName,
+                                               String ticketNumber,
+                                               String intro,
+                                               String reminderCopy,
+                                               String supportNumber,
+                                               QuotationOption primary,
+                                               QuotationOption secondary,
+                                               boolean isApprovedSummary) {
+
+        String customer = customerName == null ? "Customer" : customerName;
+        String primaryCard = renderOptionCard(primary);
+        String secondaryCard = renderOptionCard(secondary);
+
+        String ctaButton = "<div style='text-align:center;margin-top:18px;'><a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;'>View Quotation</a></div>";
+
+        String pricingTable = "";
+        if (isApprovedSummary && primary != null && !primary.getParts().isEmpty()) {
+            // Build a clearer table for approved quotation showing breakdown with all parts
+            StringBuilder tableRows = new StringBuilder();
+            for (PartInfo part : primary.getParts()) {
+                tableRows.append("<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: ")
+                        .append(escape(part.getPartName())).append(" (SKU: ").append(escape(part.getSku()))
+                        .append(")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>")
+                        .append(formatCurrency(part.getPartCost())).append("</td></tr>");
+            }
+            pricingTable = "<div style='margin-top:18px;'>" +
+                    "<table role='table' style='width:100%;border-collapse:collapse;font-size:14px;'>" +
+                    "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>Amount</th></tr></thead>" +
+                    "<tbody>" +
+                    tableRows.toString() +
+                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
+                    "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
+                    "</tbody></table></div>";
+        }
+
+        return "<html>" +
+                "<head>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 0; }" +
+                ".email-container { max-width: 640px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); overflow: hidden; }" +
+                ".header { background-color: #33e407; color: #ffffff; padding: 22px; text-align: center; font-size: 24px; font-weight: 700; }" +
+                ".content { padding: 24px; color: #1f2937; background-color: #ffffff; }" +
+                ".content h1 { font-size: 20px; margin-bottom: 8px; }" +
+                ".content p { font-size: 15px; line-height: 1.6; margin-bottom: 14px; }" +
+                ".ticket-box { display: inline-block; padding: 8px 14px; font-size: 15px; font-weight: 700; color: #ffffff; background-color: #33e407; border-radius: 6px; margin: 12px 0; }" +
+                ".option-card { border: 1px solid #e6f3ea; border-radius: 8px; padding: 14px; margin-bottom: 12px; background: #fbfffb; }" +
+                ".option-card h3 { margin: 0 0 6px; font-size: 16px; color: #064e3b; }" +
+                ".option-card p { margin: 4px 0; color: #374151; font-size: 14px; }" +
+                ".amounts { display: flex; gap: 12px; margin-top: 10px; font-size: 13px; font-weight: 600; }" +
+                ".amounts div { display: flex; flex-direction: column; }" +
+                ".amounts span { font-weight: 500; font-size: 12px; color: #6b7280; }" +
+                ".footer { text-align: center; padding: 14px; font-size: 12px; color: #6b7280; background-color: #f3f6f5; }" +
+                "a.cta { display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;margin-top:10px; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='email-container'>" +
+                "<div class='header'>" + heading + "</div>" +
+                "<div class='content'>" +
+                "<h1>Hello " + customer + ",</h1>" +
+                "<p>" + intro + "</p>" +
+                "<div class='ticket-box'>Ticket " + ticketNumber + "</div>" +
+                (isApprovedSummary ? pricingTable : primaryCard + secondaryCard) +
+                (reminderCopy != null ? "<p style='font-weight:700;color:#064e3b;margin-top:12px;'>" + reminderCopy + "</p>" : "") +
+                ctaButton +
+                "<p style='margin-top:18px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
+                "</div>" +
+                "<div class='footer'>© 2025 IOCONNECT. All rights reserved.</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+    }
+
+
+    private String renderOptionCard(QuotationOption option) {
+        if (option == null || option.getParts().isEmpty()) return "";
+        
+        StringBuilder partsHtml = new StringBuilder();
+        for (PartInfo part : option.getParts()) {
+            partsHtml.append("<p><strong>Part:</strong> ").append(escape(part.getPartName()))
+                    .append(" (SKU: ").append(escape(part.getSku())).append(")</p>");
+            if (part.getDescription() != null && !part.getDescription().trim().isEmpty()) {
+                partsHtml.append("<p style='font-size:13px;color:#6b7280;'>").append(escape(part.getDescription())).append("</p>");
+            }
+        }
+        
+        return "<div class='option-card'>" +
+                "<h3>" + escape(option.getLabel()) + 
+                (option.getParts().size() > 1 ? " (" + option.getParts().size() + " parts)" : "") + 
+                "</h3>" +
+                partsHtml.toString() +
+                "<div class='amounts'>" +
+                "<div><span>Parts Total</span>" + formatCurrency(option.getPartCost()) + "</div>" +
+                "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
+                "<div><span>Total</span>" + formatCurrency(option.getTotalCost()) + "</div>" +
+                "</div>" +
+                "</div>";
+    }
+
+    private String formatCurrency(double amount) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
+        return formatter.format(amount);
+    }
+
+    // HTML-escape helper for safe email rendering
+    private String escape(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     public void sendEmployeeOnboardingEmail(String to, String firstName, String onboardingCode) throws MessagingException {
@@ -273,4 +459,88 @@ public class EmailService {
         if (idx == -1) return s3Url;
         return s3Url.substring(idx + ".amazonaws.com/".length());
     }
+
+    public static class PartInfo {
+        private final String partName;
+        private final String sku;
+        private final String description;
+        private final double partCost;
+
+        public PartInfo(String partName, String sku, String description, double partCost) {
+            this.partName = partName;
+            this.sku = sku;
+            this.description = description;
+            this.partCost = partCost;
+        }
+
+        public String getPartName() {
+            return partName;
+        }
+
+        public String getSku() {
+            return sku;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public double getPartCost() {
+            return partCost;
+        }
+    }
+
+    public static class QuotationOption {
+        private final String label;
+        private final java.util.List<PartInfo> parts;
+        private final double laborCost;
+
+        // Constructor for single part (backward compatibility)
+        public QuotationOption(String label, String partName, String sku, String description, double partCost, double laborCost) {
+            this.label = label;
+            this.parts = java.util.Collections.singletonList(new PartInfo(partName, sku, description, partCost));
+            this.laborCost = laborCost;
+        }
+
+        // Constructor for multiple parts
+        public QuotationOption(String label, java.util.List<PartInfo> parts, double laborCost) {
+            this.label = label;
+            this.parts = parts != null ? parts : java.util.Collections.emptyList();
+            this.laborCost = laborCost;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public java.util.List<PartInfo> getParts() {
+            return parts;
+        }
+
+        public double getLaborCost() {
+            return laborCost;
+        }
+
+        // Backward compatibility methods (use first part)
+        public String getPartName() {
+            return parts.isEmpty() ? "" : parts.get(0).getPartName();
+        }
+
+        public String getSku() {
+            return parts.isEmpty() ? "" : parts.get(0).getSku();
+        }
+
+        public String getDescription() {
+            return parts.isEmpty() ? null : parts.get(0).getDescription();
+        }
+
+        public double getPartCost() {
+            return parts.stream().mapToDouble(PartInfo::getPartCost).sum();
+        }
+
+        public double getTotalCost() {
+            return getPartCost() + laborCost;
+        }
+    }
 }
+

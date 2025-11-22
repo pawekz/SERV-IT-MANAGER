@@ -9,6 +9,8 @@ public class QuotationDTO {
     private Long quotationId;
     private String repairTicketNumber;
     private List<Long> partIds;
+    private List<Long> recommendedPart;
+    private List<Long> alternativePart;
     private Double laborCost;
     private Double totalCost;
     private String status;
@@ -19,4 +21,15 @@ public class QuotationDTO {
     // Scheduling helpers
     private LocalDateTime expiryAt;
     private Integer reminderDelayHours;
+
+    // Reminder/audit metadata
+    private LocalDateTime nextReminderAt;
+    private LocalDateTime lastReminderSentAt;
+    private Integer reminderSendCount;
+    private LocalDateTime approvalSummarySentAt;
+
+    // Override logging
+    private Boolean technicianOverride;
+    private LocalDateTime overrideTimestamp;
+    private String overrideNotes;
 }

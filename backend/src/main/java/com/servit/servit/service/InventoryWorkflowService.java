@@ -227,7 +227,7 @@ public class InventoryWorkflowService {
                 .min((p1, p2) -> p1.getUnitCost().compareTo(p2.getUnitCost()))
                 .orElse(compatibleParts.get(0));
         
-        response.setTechnicianRecommendedPartId(recommendedPart.getPartId().toString());
+        response.setRecommendedPart(recommendedPart.getPartId().toString());
 
         // Create alternative parts list sorted by cost
         List<QuotationPartSelectionDTO.AlternativePartDTO> alternatives = compatibleParts.stream()

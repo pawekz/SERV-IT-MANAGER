@@ -55,7 +55,7 @@ const KanbanCard = ({ task }) => {
           )}
           {task.status === "REPAIRING" && (
             <Link
-              to={`/quotationviewer/${encodeURIComponent(task.ticketId)}`}
+              to={`/quotationviewer/${encodeURIComponent(task.ticketId)}?repairStatus=${task.status}`}
               className="inline-block mt-1 text-xs text-blue-600 hover:underline"
             >
               View Quotation

@@ -146,28 +146,28 @@ const KanbanBoard = () => {
                     )
                 }
 
-                // If ticket moved to AWAITING_PARTS, create a draft quotation (if not exists)
                 if (data?.newStatus === "AWAITING_PARTS") {
-                    try {
-                        await api.post("/quotation/addQuotation", {
-                            repairTicketNumber: task.ticketId,
-                            partIds: [],
-                            laborCost: 0,
-                            totalCost: 0,
-                        })
-                    } catch (qErr) {
-                        // Silently ignore if quotation already exists or fails
-                        console.warn("Failed to create quotation draft", qErr)
-                    }
+                    showToast("Ticket moved to Awaiting Parts", "success")
+                } else {
+                    showToast(data?.message || "Status updated successfully")
                 }
-
-                showToast(data?.message || "Status updated successfully")
             }
         } catch (error) {
             console.error("Failed to update repair status", error)
             // Revert UI on failure
             setTasks((prev) => prev.map((t) => (t.id === pendingChange.taskId ? { ...t, status: pendingChange.prevStatus } : t)))
-            alert("Failed to update status. Please try again.")
+            const apiMessage = error?.response?.data?.message || error?.message || "Failed to update status. Please try again."
+            if (apiMessage.toLowerCase().includes("quotation") || apiMessage.toLowerCase().includes("approved")) {
+                if (pendingChange.newStatus === "AWAITING_PARTS") {
+                    showToast("Please create a quotation with Option A (Recommended) and Option B (Alternative) parts before moving to Awaiting Parts.", "error")
+                } else if (pendingChange.newStatus === "REPAIRING") {
+                    showToast("Cannot move to Repairing. The quotation must be approved by the customer or overridden by a technician with notes.", "error")
+                } else {
+                    showToast(apiMessage, "error")
+                }
+            } else {
+                showToast(apiMessage, "error")
+            }
         } finally {
             setIsUpdating(false)
             setPendingChange(null)

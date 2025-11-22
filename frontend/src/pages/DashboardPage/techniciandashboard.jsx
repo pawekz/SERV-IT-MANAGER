@@ -289,8 +289,8 @@ const TechnicianDashboard = () => {
                         <div className="flex bg-white p-6 rounded-lg shadow-sm">
                             <div className="mr-4 pt-2 ">
                             <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24"
-                                 fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round"
+                                 fill="none" stroke="#e4a144" strokeWidth="2" strokeLinecap="round"
+                                 strokeLinejoin="round"
                                  className="lucide lucide-clipboard-clock-icon lucide-clipboard-clock">
                                 <path d="M16 14v2.2l1.6 1"/>
                                 <path d="M16 4h2a2 2 0 0 1 2 2v.832"/>
@@ -307,13 +307,13 @@ const TechnicianDashboard = () => {
                         </div>
                         <div className="flex bg-white p-6 rounded-lg shadow-sm">
                             <div className="mr-4 pt-2 ">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#e4a144" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#e4a144" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
                                 <path d="m7.5 4.27 9 5.15"/>
                                 <polyline points="3.29 7 12 12 20.71 7"/>
                                 <line x1="12" y1="22" x2="12" y2="12"/>
-                                <circle cx="18.5" cy="15.5" r="2.5" stroke-width="1.5"/>
-                                <path d="M18.5 14v1.5l-1.2.6" stroke-width="1.5"/>
+                                <circle cx="18.5" cy="15.5" r="2.5" strokeWidth="1.5"/>
+                                <path d="M18.5 14v1.5l-1.2.6" strokeWidth="1.5"/>
                             </svg>
                             </div>
                             <div>

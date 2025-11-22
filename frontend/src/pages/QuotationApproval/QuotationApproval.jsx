@@ -86,19 +86,27 @@ const QuotationApproval = () => {
   }
 
   // Helpers for UI
-  let recommendedPart = null;
+  let recommendedParts = [];
   let alternativeParts = [];
   if (parts.length > 0) {
-    if (quotation?.technicianRecommendedPartId) {
-      recommendedPart = parts.find(p => p.id === parseInt(quotation.technicianRecommendedPartId));
-      alternativeParts = parts.filter(p => p.id !== parseInt(quotation.technicianRecommendedPartId));
-    } else {
-      recommendedPart = parts[0];
+    const recommendedIds = Array.isArray(quotation?.recommendedPart) 
+      ? quotation.recommendedPart.map(id => parseInt(id))
+      : (quotation?.recommendedPart ? [parseInt(quotation.recommendedPart)] : []);
+    const alternativeIds = Array.isArray(quotation?.alternativePart) 
+      ? quotation.alternativePart.map(id => parseInt(id))
+      : (quotation?.alternativePart ? [parseInt(quotation.alternativePart)] : []);
+    recommendedParts = parts.filter(p => recommendedIds.includes(p.id));
+    alternativeParts = parts.filter(p => alternativeIds.includes(p.id));
+    // Fallback to first part if no recommended parts specified
+    if (recommendedParts.length === 0 && parts.length > 0) {
+      recommendedParts = [parts[0]];
       alternativeParts = parts.slice(1);
     }
   }
   const selectedPart = parts.find((p) => p.id === selectedPartId) || null;
-  const totalPrice = (selectedPart?.unitCost || 0) + (quotation?.laborCost || 0);
+  const laborValue = quotation?.laborCost || 0;
+  const totalPrice = (selectedPart?.unitCost || 0) + laborValue;
+  const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
 
   // Handle approve/reject click
   const handleActionClick = (type) => {
@@ -117,7 +125,7 @@ const QuotationApproval = () => {
           return;
         }
         await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, { params: { customerSelection: selectedPartId } });
-        setToast({ show: true, message: "Quotation approved successfully", type: "success" });
+        setToast({ show: true, message: "Quotation approved successfully. Ticket status updated to REPAIRING.", type: "success" });
         setQuotation(prev => ({ ...prev, status: "APPROVED", customerSelection: selectedPartId }));
       } else if (actionType === "reject") {
         await api.patch(`/quotation/denyQuotation/${quotation.quotationId}`);
@@ -148,6 +156,12 @@ const QuotationApproval = () => {
         <div>
           <div className="text-sm font-medium text-gray-900">{part.name}</div>
           <div className="text-xs text-gray-500">SKU: {part.partNumber}</div>
+          <div className="text-xs text-gray-500 mt-1">
+            Part: {formatCurrency(part.unitCost)} • Labor: {formatCurrency(laborValue)}
+          </div>
+          <div className="text-xs font-semibold text-gray-800">
+            Total: {formatCurrency((part.unitCost || 0) + laborValue)}
+          </div>
         </div>
         <span className="text-sm font-semibold text-gray-800">₱{part.unitCost?.toFixed(2)}</span>
       </button>
@@ -175,6 +189,14 @@ const QuotationApproval = () => {
           </div>
         </div>
 
+        {quotation?.technicianOverride && (
+          <div className="mb-4 p-3 rounded-md bg-purple-50 border border-purple-200 text-sm text-purple-700">
+            Technician override documented on{" "}
+            {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}.
+            {quotation.overrideNotes && <> Notes: {quotation.overrideNotes}</>}
+          </div>
+        )}
+
         {/* Ticket summary card */}
         {ticket && (
           <div className="mb-8">
@@ -188,22 +210,22 @@ const QuotationApproval = () => {
             {/* Recommended Component */}
             <div className="bg-gray-50 p-4 rounded-md">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                Recommended by Tech
+                Recommended by Tech {recommendedParts.length > 1 && `(${recommendedParts.length} parts)`}
               </h3>
-              {recommendedPart ? (
-                renderPartRow(recommendedPart)
+              {recommendedParts.length > 0 ? (
+                recommendedParts.map(part => renderPartRow(part))
               ) : (
-                <div className="text-sm text-gray-500">No recommended part.</div>
+                <div className="text-sm text-gray-500">No recommended parts.</div>
               )}
             </div>
 
             {/* Alternative Components */}
             <div className="bg-gray-50 p-4 rounded-md">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                Alternative Option{alternativeParts.length !== 1 ? "s" : ""}
+                Alternative Option{alternativeParts.length !== 1 ? "s" : ""} {alternativeParts.length > 1 && `(${alternativeParts.length} parts)`}
               </h3>
               {alternativeParts.length > 0 ? (
-                alternativeParts.map(renderPartRow)
+                alternativeParts.map(part => renderPartRow(part))
               ) : (
                 <div className="text-sm text-gray-500">No alternative parts.</div>
               )}
@@ -214,10 +236,10 @@ const QuotationApproval = () => {
           <div className="flex justify-end mt-6 text-sm">
             <div>
               <div>
-                Labor Cost: <span className="font-medium">₱{quotation.laborCost.toFixed(2)}</span>
+                Labor Cost: <span className="font-medium">{formatCurrency(quotation.laborCost)}</span>
               </div>
               <div className="font-semibold text-lg">
-                Total: ₱{totalPrice.toFixed(2)}
+                Total: {formatCurrency(totalPrice)}
               </div>
             </div>
           </div>

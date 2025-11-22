@@ -1,34 +1,72 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Trash, Pencil, Eye } from "lucide-react";
+import { FileText, Trash, Pencil, Eye, Shield } from "lucide-react";
 import api from '../../config/ApiConfig';
 
-const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
+const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () => {} }) => {
   const [showDetails, setShowDetails] = useState(false);
-  const [selectionName, setSelectionName] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [optionParts, setOptionParts] = useState({});
 
-  // Fetch part name for customer selection, if numeric
+  // Determine which option the customer selected
   useEffect(() => {
-    const loadPartName = async () => {
-      if (!quotation?.customerSelection) {
-        setSelectionName(null);
-        return;
-      }
-      const idStr = quotation.customerSelection.toString();
-      if (!/^\d+$/.test(idStr)) {
-        // Not a numeric ID, maybe free-text
-        setSelectionName(idStr);
-        return;
-      }
+    if (!quotation?.customerSelection) {
+      setSelectedOption(null);
+      return;
+    }
+    const idStr = quotation.customerSelection.toString();
+    if (!/^\d+$/.test(idStr)) {
+      // Not a numeric ID, maybe free-text
+      setSelectedOption(null);
+      return;
+    }
+    const selectedPartId = parseInt(idStr, 10);
+    
+    // Check if the selected part ID is in recommendedPart (Option A)
+    const recommendedIds = Array.isArray(quotation?.recommendedPart) 
+      ? quotation.recommendedPart 
+      : (quotation?.recommendedPart ? [quotation.recommendedPart] : []);
+    
+    // Check if the selected part ID is in alternativePart (Option B)
+    const alternativeIds = Array.isArray(quotation?.alternativePart) 
+      ? quotation.alternativePart 
+      : (quotation?.alternativePart ? [quotation.alternativePart] : []);
+    
+    if (recommendedIds.includes(selectedPartId)) {
+      setSelectedOption("Option A – Recommended");
+    } else if (alternativeIds.includes(selectedPartId)) {
+      setSelectedOption("Option B – Alternative");
+    } else {
+      setSelectedOption(null);
+    }
+  }, [quotation?.customerSelection, quotation?.recommendedPart, quotation?.alternativePart]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
       try {
-        const { data } = await api.get(`/part/getPartById/${idStr}`);
-        setSelectionName(data?.name || data?.partNumber || idStr);
+        const recommendedIds = Array.isArray(quotation?.recommendedPart) 
+          ? quotation.recommendedPart 
+          : (quotation?.recommendedPart ? [quotation.recommendedPart] : []);
+        const alternativeIds = Array.isArray(quotation?.alternativePart) 
+          ? quotation.alternativePart 
+          : (quotation?.alternativePart ? [quotation.alternativePart] : []);
+        const allIds = [...recommendedIds, ...alternativeIds].filter(Boolean);
+        if (allIds.length === 0) {
+          setOptionParts({});
+          return;
+        }
+        const responses = await Promise.all(allIds.map((id) => api.get(`/part/getPartById/${id}`)));
+        const mapped = {};
+        responses.forEach((res) => {
+          if (res?.data?.id) mapped[res.data.id] = res.data;
+        });
+        setOptionParts(mapped);
       } catch (err) {
-        console.warn("Unable to fetch part name", err);
-        setSelectionName(idStr);
+        console.warn("Unable to load option parts", err);
+        setOptionParts({});
       }
     };
-    loadPartName();
-  }, [quotation?.customerSelection]);
+    loadOptions();
+  }, [quotation?.recommendedPart, quotation?.alternativePart]);
 
   const statusColor = () => {
     switch ((quotation.status || "").toUpperCase()) {
@@ -54,6 +92,11 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor()}`}>
             {quotation.status}
           </span>
+          {quotation.technicianOverride && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-600 flex items-center gap-1">
+              <Shield size={12} /> Override Logged
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -69,6 +112,14 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
               className="px-2 py-1 text-xs rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center gap-1"
             >
               <Pencil size={14} /> Edit
+            </button>
+          )}
+          {quotation.status === "PENDING" && (
+            <button
+              onClick={onOverride}
+              className="px-2 py-1 text-xs rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 flex items-center gap-1"
+            >
+              <Shield size={14} /> Override
             </button>
           )}
           <button
@@ -108,10 +159,75 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete }) => {
             <div className="font-medium">₱{(quotation.totalCost || 0).toFixed(2)}</div>
 
             <div className="text-gray-500">Customer Selection:</div>
-            <div className="font-medium">{selectionName || quotation.customerSelection || "-"}</div>
+            <div className="font-medium">
+              {selectedOption ? (
+                <span className="text-green-700 font-semibold">{selectedOption}</span>
+              ) : (
+                quotation.customerSelection || "-"
+              )}
+            </div>
           </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {(() => {
+              const recommendedIds = Array.isArray(quotation.recommendedPart) 
+                ? quotation.recommendedPart 
+                : (quotation.recommendedPart ? [quotation.recommendedPart] : []);
+              return recommendedIds.length > 0 ? (
+                <div>
+                  <div className="text-xs font-semibold text-green-700 mb-2">Option A – Recommended ({recommendedIds.length} part{recommendedIds.length !== 1 ? 's' : ''})</div>
+                  {recommendedIds.map((partId) => renderOptionCard("", partId, optionParts, quotation.laborCost))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+                  Option A – Recommended: Not provided
+                </div>
+              );
+            })()}
+            {(() => {
+              const alternativeIds = Array.isArray(quotation.alternativePart) 
+                ? quotation.alternativePart 
+                : (quotation.alternativePart ? [quotation.alternativePart] : []);
+              return alternativeIds.length > 0 ? (
+                <div>
+                  <div className="text-xs font-semibold text-green-700 mb-2">Option B – Alternative ({alternativeIds.length} part{alternativeIds.length !== 1 ? 's' : ''})</div>
+                  {alternativeIds.map((partId) => renderOptionCard("", partId, optionParts, quotation.laborCost))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+                  Option B – Alternative: Not provided
+                </div>
+              );
+            })()}
+          </div>
+
+          {quotation.technicianOverride && (
+            <div className="mt-4 text-xs text-gray-600">
+              Override logged on {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}
+              {quotation.overrideNotes && <span className="block italic mt-1">“{quotation.overrideNotes}”</span>}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+};
+
+const renderOptionCard = (label, partId, optionParts, laborCost = 0) => {
+  if (!partId) {
+    return null;
+  }
+  const part = optionParts[partId];
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-2">
+      {label && <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>}
+      <div className="text-sm font-semibold text-gray-900">{part?.name || "Part #" + partId}</div>
+      <div className="text-xs text-gray-500 mb-2">SKU: {part?.partNumber || "—"}</div>
+      <div className="text-xs text-gray-600">Part Cost: ₱{(part?.unitCost || 0).toFixed(2)}</div>
+      <div className="text-xs text-gray-600">Labor: ₱{(laborCost || 0).toFixed(2)}</div>
+      <div className="text-sm font-semibold text-gray-800 mt-1">
+        Total: ₱{((part?.unitCost || 0) + (laborCost || 0)).toFixed(2)}
+      </div>
     </div>
   );
 };

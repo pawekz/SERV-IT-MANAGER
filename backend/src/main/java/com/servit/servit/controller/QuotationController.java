@@ -118,4 +118,15 @@ public class QuotationController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to edit quotation", e);
         }
     }
+
+    @PatchMapping("/overrideSelection/{quotationId}")
+    public QuotationDTO overrideSelection(@PathVariable Long quotationId, @RequestParam Long partId, @RequestParam String notes) {
+        try {
+            return quotationService.overrideCustomerSelection(quotationId, partId, notes);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to override quotation selection", e);
+        }
+    }
 }
