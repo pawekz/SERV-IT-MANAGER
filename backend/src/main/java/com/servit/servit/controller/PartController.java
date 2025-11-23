@@ -681,6 +681,8 @@ public class PartController {
                 details.put("brand", existingPart.getBrand());
                 details.put("model", existingPart.getModel());
                 details.put("partType", existingPart.getPartType());
+                details.put("partPhotoUrl", existingPart.getPartPhotoUrl());
+                details.put("partId", existingPart.getPartId());
                 details.put("exists", true);
                 details.put("totalParts", parts.size());
                 

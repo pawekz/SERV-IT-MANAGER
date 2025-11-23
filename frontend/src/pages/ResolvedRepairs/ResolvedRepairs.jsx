@@ -177,7 +177,12 @@ const ResolvedRepairs = () => {
 
     const applyFilters = (list) => {
         let filtered = list.slice();
-        filtered = filtered.filter(t => resolvedStatusSet.has(((t.status || t.repairStatus) || '').toString().trim().toUpperCase()));
+        
+        // Only include resolved/completed tickets (this is the Resolved Repairs page)
+        filtered = filtered.filter(t => {
+            const status = ((t.status || t.repairStatus) || '').toString().trim().toUpperCase();
+            return resolvedStatusSet.has(status);
+        });
 
         if (search.trim()) {
             const q = search.toLowerCase();
@@ -200,7 +205,12 @@ const ResolvedRepairs = () => {
         }
 
         if (statusFilter && statusFilter !== 'ALL') {
-            filtered = filtered.filter(t => ((t.status || t.repairStatus) === statusFilter));
+            // Normalize status filter value for comparison
+            const filterStatusUpper = statusFilter.toString().trim().toUpperCase();
+            filtered = filtered.filter(t => {
+                const ticketStatus = ((t.status || t.repairStatus) || '').toString().trim().toUpperCase();
+                return ticketStatus === filterStatusUpper;
+            });
         }
 
         return filtered;

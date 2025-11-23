@@ -89,8 +89,8 @@ public class SecurityConfig {
                             "/images/**",
                             "/quotation/getQuotationByRepairTicketNumber/*",
                             "/notification/**",
-                            "/quotation/approveQuotation/*",
-                            "/quotation/denyQuotation/*",
+                            "/quotation/approveQuotation/**",
+                            "/quotation/denyQuotation/**",
                             "/warranty/getWarrantyPdf/**"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
