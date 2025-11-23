@@ -44,14 +44,18 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
     try {
       setModalLoading(true);
       await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
-        params: { customerSelection: selectedPartId },
+        params: { customerSelection: String(selectedPartId) },
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
       setModalOpen(false);
       onDecisionComplete();
     } catch (err) {
       console.error('Failed to approve quotation', err);
-      setToast({ show: true, message: 'Failed to approve the quotation. Please try again.', type: 'error' });
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+      setToast({ show: true, message: errorMessage, type: 'error' });
     } finally {
       setModalLoading(false);
     }
