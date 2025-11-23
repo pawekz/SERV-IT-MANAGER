@@ -47,6 +47,12 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
 
   const first = ticket.customerFirstName || '';
   const last = ticket.customerLastName || '';
+  
+  // Format status: replace underscores with spaces for display
+  const formatStatus = (status) => {
+    if (!status) return status;
+    return status.replace(/_/g, ' ');
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -113,7 +119,7 @@ const RepairTicketCard = ({ ticketNumber, getStatusColor }) => {
                   ticket.repairStatus
                 )}`}
               >
-                {ticket.repairStatus}
+                {formatStatus(ticket.repairStatus)}
               </span>
             </div>
 
