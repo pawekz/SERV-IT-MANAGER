@@ -91,7 +91,8 @@ public class SecurityConfig {
                             "/notification/**",
                             "/quotation/approveQuotation/**",
                             "/quotation/denyQuotation/**",
-                            "/warranty/getWarrantyPdf/**"
+                            "/warranty/getWarrantyPdf/**",
+                            "/feedback/getByTicketId/*"
                     ).hasAnyRole("CUSTOMER", "ADMIN", "TECHNICIAN")
                     .requestMatchers(
                             "/repairTicket/checkInRepairTicket",

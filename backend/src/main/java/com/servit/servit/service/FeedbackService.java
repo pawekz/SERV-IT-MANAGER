@@ -29,6 +29,10 @@ public class FeedbackService {
         return feedbackRepository.findByRepairTicketId(ticketId).isPresent();
     }
 
+    public FeedbackEntity getFeedbackByTicketId(Long ticketId) {
+        return feedbackRepository.findByRepairTicketId(ticketId).orElse(null);
+    }
+
     public Map<Integer, Long> getAllRatings() {
         List<FeedbackEntity> allFeedback = feedbackRepository.findAll();
         return allFeedback.stream()
