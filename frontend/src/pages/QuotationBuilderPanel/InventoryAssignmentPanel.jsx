@@ -9,6 +9,68 @@ import { useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import Toast from "../../components/Toast/Toast.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
+import { Package } from "lucide-react";
+
+// PartPhoto component for displaying part images
+const PartPhoto = ({ partId, photoUrl }) => {
+    const [src, setSrc] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        const fetchPhoto = async () => {
+            if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+                setLoading(false);
+                setError(true);
+                return;
+            }
+
+            if (photoUrl.includes('amazonaws.com/') && partId) {
+                try {
+                    const response = await api.get(`/part/getPartPhoto/${partId}`);
+                    if (response.data) {
+                        setSrc(response.data);
+                    } else {
+                        setError(true);
+                    }
+                } catch (err) {
+                    console.error('Error fetching presigned photo URL:', err);
+                    setError(true);
+                }
+            } else {
+                setSrc(photoUrl);
+            }
+            setLoading(false);
+        };
+
+        fetchPhoto();
+    }, [partId, photoUrl]);
+
+    if (loading) {
+        return (
+            <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse flex-shrink-0">
+                <span className="text-xs text-gray-400">Loading...</span>
+            </div>
+        );
+    }
+
+    if (error || !src) {
+        return (
+            <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Package size={20} className="text-gray-400" />
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={src} 
+            alt="Part photo"
+            className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+            onError={() => setError(true)}
+        />
+    );
+};
 
 const InventoryAssignmentPanel = () => {
     // Both Option A and Option B now support multiple parts
@@ -358,15 +420,33 @@ const InventoryAssignmentPanel = () => {
         }
         try {
             setOverrideLoading(true);
+            // Get the first part ID from the selected option
+            const recommendedIds = Array.isArray(existingQuotation.recommendedPart) 
+                ? existingQuotation.recommendedPart 
+                : (existingQuotation.recommendedPart ? [existingQuotation.recommendedPart] : []);
+            const alternativeIds = Array.isArray(existingQuotation.alternativePart) 
+                ? existingQuotation.alternativePart 
+                : (existingQuotation.alternativePart ? [existingQuotation.alternativePart] : []);
+            
+            const selectedOptionIds = overrideSelection === 'A' ? recommendedIds : alternativeIds;
+            const partIdToUse = selectedOptionIds.length > 0 ? selectedOptionIds[0] : null;
+            
+            if (!partIdToUse) {
+                setToast({ show: true, message: "No parts found in selected option", type: "error" });
+                setOverrideLoading(false);
+                return;
+            }
+            
             await api.patch(`/quotation/overrideSelection/${existingQuotation.quotationId}`, null, {
                 params: {
-                    partId: overrideSelection.id,
+                    partId: partIdToUse,
                     notes: overrideNotes.trim(),
                 },
             });
             setToast({ show: true, message: "Override recorded and quotation approved. Ticket status updated to REPAIRING.", type: "success" });
             setShowOverrideModal(false);
             setOverrideNotes("");
+            setOverrideSelection(null);
             await refreshQuotation();
         } catch (err) {
             console.error("Failed to override quotation", err);
@@ -485,10 +565,14 @@ const InventoryAssignmentPanel = () => {
             </div>
             {showOverrideModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800">Override Customer Selection</h3>
-                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowOverrideModal(false)}>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => {
+                                setShowOverrideModal(false);
+                                setOverrideSelection(null);
+                                setOverrideNotes("");
+                            }}>
                                 ×
                             </button>
                         </div>
@@ -498,38 +582,144 @@ const InventoryAssignmentPanel = () => {
                             </div>
                         ) : (
                             <>
-                                <p className="text-sm text-gray-600 mb-3">
-                                    Choose the part you will proceed with. This will immediately approve the quotation on behalf of the customer.
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Choose the option you will proceed with. This will immediately approve the quotation on behalf of the customer.
                                 </p>
-                                <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
-                                    {overrideParts.length === 0 && (
-                                        <div className="text-sm text-gray-500">No parts found for this quotation.</div>
-                                    )}
-                                    {overrideParts.map((part) => {
-                                        const isRecommended = existingQuotation?.recommendedPart?.includes?.(part.id) || 
-                                                              (Array.isArray(existingQuotation?.recommendedPart) && existingQuotation.recommendedPart.includes(part.id)) ||
-                                                              (typeof existingQuotation?.recommendedPart === 'number' && existingQuotation.recommendedPart === part.id);
-                                        const label = isRecommended
-                                                ? "Option A – Recommended"
-                                                : "Option B – Alternative";
-                                        const isSelected = overrideSelection?.id === part.id;
+                                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                    {(() => {
+                                        const recommendedIds = Array.isArray(existingQuotation?.recommendedPart) 
+                                            ? existingQuotation.recommendedPart 
+                                            : (existingQuotation?.recommendedPart ? [existingQuotation.recommendedPart] : []);
+                                        const recommendedParts = overrideParts.filter(p => recommendedIds.includes(p.id));
+                                        const isSelected = overrideSelection === 'A';
+                                        const totalPartsCost = recommendedParts.reduce((sum, p) => sum + (Number(p.unitCost) || 0), 0);
+                                        const labor = existingQuotation?.laborCost || 0;
+                                        const grandTotal = totalPartsCost + labor;
+                                        const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+                                        
+                                        if (recommendedParts.length === 0) {
+                                            return (
+                                                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+                                                    Option A – Recommended: Not provided.
+                                                </div>
+                                            );
+                                        }
+                                        
                                         return (
-                                            <button
-                                                key={part.id}
-                                                onClick={() => setOverrideSelection(part)}
-                                                className={`w-full text-left border rounded-lg p-3 transition ${
-                                                    isSelected ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-green-400"
-                                                }`}
-                                            >
-                                                <div className="text-xs text-green-700 font-semibold mb-1">{label}</div>
-                                                <div className="text-sm font-medium text-gray-800">{part.name}</div>
-                                                <div className="text-xs text-gray-500">SKU: {part.partNumber}</div>
-                                                <div className="text-xs text-gray-500">Price: ₱{(part.unitCost || 0).toFixed(2)}</div>
-                                            </button>
+                                            <div className="space-y-2">
+                                                <div className="text-xs font-semibold text-green-700 mb-2">
+                                                    Option A – Recommended {recommendedParts.length > 1 && `(${recommendedParts.length} parts)`}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => recommendedParts.length > 0 && setOverrideSelection('A')}
+                                                    disabled={recommendedParts.length === 0}
+                                                    className={`w-full text-left border rounded-lg p-3 transition ${
+                                                        recommendedParts.length === 0 
+                                                            ? "border-gray-200 bg-gray-100 cursor-not-allowed opacity-50" 
+                                                            : isSelected 
+                                                                ? "border-green-600 bg-green-50" 
+                                                                : "border-gray-200 hover:border-green-400"
+                                                    }`}
+                                                >
+                                                    {recommendedParts.map((part) => (
+                                                        <div key={part.id} className="flex items-start gap-3 mb-3 last:mb-0">
+                                                            <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-semibold text-gray-900">{part.name || `Part #${part.id}`}</div>
+                                                                <div className="text-xs text-gray-500">SKU: {part.partNumber || '—'}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {isSelected && (
+                                                        <div className="border-t border-gray-200 pt-3 mt-3 space-y-1">
+                                                            <div className="flex justify-between text-xs text-gray-600">
+                                                                <span>Part(s) Total:</span>
+                                                                <span>{formatCurrency(totalPartsCost)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-gray-600">
+                                                                <span>Labor:</span>
+                                                                <span>{formatCurrency(labor)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm font-semibold text-gray-800 pt-1 border-t border-gray-200">
+                                                                <span>Total:</span>
+                                                                <span>{formatCurrency(grandTotal)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            </div>
                                         );
-                                    })}
+                                    })()}
+                                    {(() => {
+                                        const alternativeIds = Array.isArray(existingQuotation?.alternativePart) 
+                                            ? existingQuotation.alternativePart 
+                                            : (existingQuotation?.alternativePart ? [existingQuotation.alternativePart] : []);
+                                        const alternativeParts = overrideParts.filter(p => alternativeIds.includes(p.id));
+                                        const isSelected = overrideSelection === 'B';
+                                        const totalPartsCost = alternativeParts.reduce((sum, p) => sum + (Number(p.unitCost) || 0), 0);
+                                        const labor = existingQuotation?.laborCost || 0;
+                                        const grandTotal = totalPartsCost + labor;
+                                        const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+                                        
+                                        if (alternativeParts.length === 0) {
+                                            return (
+                                                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+                                                    Option B – Alternative: Not provided.
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <div className="space-y-2">
+                                                <div className="text-xs font-semibold text-green-700 mb-2">
+                                                    Option B – Alternative {alternativeParts.length > 1 && `(${alternativeParts.length} parts)`}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => alternativeParts.length > 0 && setOverrideSelection('B')}
+                                                    disabled={alternativeParts.length === 0}
+                                                    className={`w-full text-left border rounded-lg p-3 transition ${
+                                                        alternativeParts.length === 0 
+                                                            ? "border-gray-200 bg-gray-100 cursor-not-allowed opacity-50" 
+                                                            : isSelected 
+                                                                ? "border-green-600 bg-green-50" 
+                                                                : "border-gray-200 hover:border-green-400"
+                                                    }`}
+                                                >
+                                                    {alternativeParts.map((part) => (
+                                                        <div key={part.id} className="flex items-start gap-3 mb-3 last:mb-0">
+                                                            <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-semibold text-gray-900">{part.name || `Part #${part.id}`}</div>
+                                                                <div className="text-xs text-gray-500">SKU: {part.partNumber || '—'}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {isSelected && (
+                                                        <div className="border-t border-gray-200 pt-3 mt-3 space-y-1">
+                                                            <div className="flex justify-between text-xs text-gray-600">
+                                                                <span>Part(s) Total:</span>
+                                                                <span>{formatCurrency(totalPartsCost)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-gray-600">
+                                                                <span>Labor:</span>
+                                                                <span>{formatCurrency(labor)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm font-semibold text-gray-800 pt-1 border-t border-gray-200">
+                                                                <span>Total:</span>
+                                                                <span>{formatCurrency(grandTotal)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes <span className="text-red-600">*</span></label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Notes <span className="text-red-600">*</span>
+                                </label>
                                 <textarea
                                     className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500"
                                     rows={3}
@@ -540,9 +730,10 @@ const InventoryAssignmentPanel = () => {
                                 />
                                 <div className="mt-5 flex justify-end gap-3">
                                     <button
-                                        className="px-4 py-2 rounded-md border text-gray-700"
+                                        className="px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-50"
                                         onClick={() => {
                                             setShowOverrideModal(false);
+                                            setOverrideSelection(null);
                                             setOverrideNotes("");
                                         }}
                                         disabled={overrideLoading}
@@ -550,7 +741,7 @@ const InventoryAssignmentPanel = () => {
                                         Cancel
                                     </button>
                                     <button
-                                        className="px-4 py-2 rounded-md bg-green-600 text-white flex items-center gap-2 disabled:opacity-60"
+                                        className="px-4 py-2 rounded-md bg-green-600 text-white flex items-center gap-2 disabled:opacity-60 hover:bg-green-700"
                                         onClick={handleOverrideSubmit}
                                         disabled={!overrideSelection || !overrideNotes?.trim() || overrideLoading}
                                     >
