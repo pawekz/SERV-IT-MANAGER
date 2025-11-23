@@ -1,6 +1,67 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Trash, Pencil, Eye, Shield } from "lucide-react";
+import { FileText, Trash, Pencil, Eye, Shield, Package } from "lucide-react";
 import api from '../../config/ApiConfig';
+
+// PartPhoto component for displaying part images
+const PartPhoto = ({ partId, photoUrl }) => {
+  const [src, setSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchPhoto = async () => {
+      if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+        setLoading(false);
+        setError(true);
+        return;
+      }
+
+      if (photoUrl.includes('amazonaws.com/') && partId) {
+        try {
+          const response = await api.get(`/part/getPartPhoto/${partId}`);
+          if (response.data) {
+            setSrc(response.data);
+          } else {
+            setError(true);
+          }
+        } catch (err) {
+          console.error('Error fetching presigned photo URL:', err);
+          setError(true);
+        }
+      } else {
+        setSrc(photoUrl);
+      }
+      setLoading(false);
+    };
+
+    fetchPhoto();
+  }, [partId, photoUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse flex-shrink-0">
+        <span className="text-xs text-gray-400">Loading...</span>
+      </div>
+    );
+  }
+
+  if (error || !src) {
+    return (
+      <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <Package size={20} className="text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt="Part photo"
+      className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+      onError={() => setError(true)}
+    />
+  );
+};
 
 const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () => {} }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -155,9 +216,6 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
             <div className="text-gray-500">Labor Cost:</div>
             <div className="font-medium">₱{(quotation.laborCost || 0).toFixed(2)}</div>
 
-            <div className="text-gray-500">Total Cost:</div>
-            <div className="font-medium">₱{(quotation.totalCost || 0).toFixed(2)}</div>
-
             <div className="text-gray-500">Customer Selection:</div>
             <div className="font-medium">
               {selectedOption ? (
@@ -176,7 +234,7 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
               return recommendedIds.length > 0 ? (
                 <div>
                   <div className="text-xs font-semibold text-green-700 mb-2">Option A – Recommended ({recommendedIds.length} part{recommendedIds.length !== 1 ? 's' : ''})</div>
-                  {recommendedIds.map((partId) => renderOptionCard("", partId, optionParts, quotation.laborCost))}
+                  {recommendedIds.map((partId) => renderOptionCard("", partId, optionParts))}
                 </div>
               ) : (
                 <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
@@ -191,7 +249,7 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
               return alternativeIds.length > 0 ? (
                 <div>
                   <div className="text-xs font-semibold text-green-700 mb-2">Option B – Alternative ({alternativeIds.length} part{alternativeIds.length !== 1 ? 's' : ''})</div>
-                  {alternativeIds.map((partId) => renderOptionCard("", partId, optionParts, quotation.laborCost))}
+                  {alternativeIds.map((partId) => renderOptionCard("", partId, optionParts))}
                 </div>
               ) : (
                 <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
@@ -201,10 +259,42 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
             })()}
           </div>
 
+          {/* Cost Summary - Bottom Left (only show when approved/overridden) */}
+          {quotation.status === "APPROVED" && (quotation.customerSelection || quotation.technicianOverride) && (() => {
+            const recommendedIds = Array.isArray(quotation.recommendedPart) 
+              ? quotation.recommendedPart 
+              : (quotation.recommendedPart ? [quotation.recommendedPart] : []);
+            const alternativeIds = Array.isArray(quotation.alternativePart) 
+              ? quotation.alternativePart 
+              : (quotation.alternativePart ? [quotation.alternativePart] : []);
+            const allPartIds = [...recommendedIds, ...alternativeIds];
+            const subtotal = allPartIds.reduce((sum, partId) => {
+              const part = optionParts[partId];
+              return sum + (part?.unitCost || 0);
+            }, 0);
+            const laborCost = quotation.laborCost || 0;
+            const grandTotal = subtotal + laborCost;
+            const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+
+            return (
+              <div className="mt-6 text-sm">
+                <div className="text-gray-600">
+                  Parts Subtotal: <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="text-gray-600">
+                  Labor Cost: <span className="font-medium text-gray-900">{formatCurrency(laborCost)}</span>
+                </div>
+                <div className="font-semibold text-lg text-gray-900 mt-1">
+                  Grand Total: {formatCurrency(grandTotal)}
+                </div>
+              </div>
+            );
+          })()}
+
           {quotation.technicianOverride && (
             <div className="mt-4 text-xs text-gray-600">
               Override logged on {quotation.overrideTimestamp ? new Date(quotation.overrideTimestamp).toLocaleString() : "-"}
-              {quotation.overrideNotes && <span className="block italic mt-1">“{quotation.overrideNotes}”</span>}
+                {quotation.overrideNotes && <span className="block">Note: <span className="italic mt-1">“{quotation.overrideNotes}”</span></span>}
             </div>
           )}
         </div>
@@ -213,20 +303,19 @@ const ExistingQuotationCard = ({ quotation, onEdit, onDelete, onOverride = () =>
   );
 };
 
-const renderOptionCard = (label, partId, optionParts, laborCost = 0) => {
+const renderOptionCard = (label, partId, optionParts) => {
   if (!partId) {
     return null;
   }
   const part = optionParts[partId];
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-2">
-      {label && <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>}
-      <div className="text-sm font-semibold text-gray-900">{part?.name || "Part #" + partId}</div>
-      <div className="text-xs text-gray-500 mb-2">SKU: {part?.partNumber || "—"}</div>
-      <div className="text-xs text-gray-600">Part Cost: ₱{(part?.unitCost || 0).toFixed(2)}</div>
-      <div className="text-xs text-gray-600">Labor: ₱{(laborCost || 0).toFixed(2)}</div>
-      <div className="text-sm font-semibold text-gray-800 mt-1">
-        Total: ₱{((part?.unitCost || 0) + (laborCost || 0)).toFixed(2)}
+    <div className="border border-gray-200 rounded-lg p-4 bg-white mb-2 flex items-center gap-3">
+      <PartPhoto partId={partId} photoUrl={part?.partPhotoUrl} />
+      <div className="flex-1 min-w-0">
+        {label && <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>}
+        <div className="text-sm font-semibold text-gray-900">{part?.name || "Part #" + partId}</div>
+        <div className="text-xs text-gray-500 mb-1">SKU: {part?.partNumber || "—"}</div>
+        <div className="text-xs text-gray-600">₱{(part?.unitCost || 0).toFixed(2)}</div>
       </div>
     </div>
   );

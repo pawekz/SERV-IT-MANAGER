@@ -143,6 +143,7 @@ const InventoryAssignmentPanel = () => {
                         sku: p.partNumber,
                         serial: p.serialNumber,
                         image: "", // placeholder
+                        partPhotoUrl: p.partPhotoUrl || "",
                         availability,
                         price: p.unitCost || 0,
                         quantity: 1,
