@@ -4,45 +4,12 @@ import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api from '../../config/ApiConfig';
 import Spinner from "../../components/Spinner/Spinner.jsx";
 import { Package, FileText, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
+import { usePartPhoto } from "../../hooks/usePartPhoto.js";
 
-// Component to handle part photo display with presigned URL fetching
 const PartPhoto = ({ partId, photoUrl }) => {
-  const [src, setSrc] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
 
-  useEffect(() => {
-    const fetchPhoto = async () => {
-      if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
-        setLoading(false);
-        setError(true);
-        return;
-      }
-
-      // Check if it's an S3 URL that needs presigning
-      if (photoUrl.includes('amazonaws.com/') && partId) {
-        try {
-          const response = await api.get(`/part/getPartPhoto/${partId}`);
-          if (response.data) {
-            setSrc(response.data);
-          } else {
-            setError(true);
-          }
-        } catch (err) {
-          console.error('Error fetching presigned photo URL:', err);
-          setError(true);
-        }
-      } else {
-        // Use URL directly if it's not S3
-        setSrc(photoUrl);
-      }
-      setLoading(false);
-    };
-
-    fetchPhoto();
-  }, [partId, photoUrl]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
         <span className="text-xs text-gray-400">Loading...</span>
@@ -50,7 +17,7 @@ const PartPhoto = ({ partId, photoUrl }) => {
     );
   }
 
-  if (error || !src) {
+  if (isError || !src) {
     return (
       <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
         <Package size={32} className="text-gray-400" />
@@ -63,7 +30,7 @@ const PartPhoto = ({ partId, photoUrl }) => {
       src={src} 
       alt="Part photo"
       className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg border border-gray-200"
-      onError={() => setError(true)}
+      onError={() => {}}
     />
   );
 };
@@ -179,7 +146,7 @@ const QuotationViewer = () => {
     <div key={part.id} className={`border rounded-lg p-4 flex gap-4 ${isSelected ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white'}`}>
       {/* Part Image */}
       <div className="flex-shrink-0">
-        <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
+        <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg border border-gray-200" iconSize={32} />
       </div>
       
       {/* Part Details */}

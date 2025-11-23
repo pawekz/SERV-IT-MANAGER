@@ -1,22 +1,45 @@
-import React from "react";
-import { X, Package, Plus } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Plus, Package } from "lucide-react";
 import Spinner from "../../components/Spinner/Spinner.jsx";
+import { usePartPhoto } from "../../hooks/usePartPhoto.js";
+
+const PartPhoto = ({ partId, photoUrl }) => {
+  const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
+
+  if (isLoading) {
+    return (
+      <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse flex-shrink-0">
+        <span className="text-xs text-gray-400">Loading...</span>
+      </div>
+    );
+  }
+
+  if (isError || !src) {
+    return (
+      <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <Package size={20} className="text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt="Part photo"
+      className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+      onError={() => {}}
+    />
+  );
+};
 
 const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, openInventoryModal, laborCost, setLaborCost, expiryDate, setExpiryDate, reminderHours, setReminderHours, editing, onCancelEditing, processing=false }) => {
   const laborValue = parseFloat(laborCost || 0);
   const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
   const totalParts = optionA.length + optionB.length;
   
-  const renderPartSummary = (part) => {
-    if (!part) return null;
-    return (
-      <div className="text-xs text-gray-600 mt-1">
-        <div>Part Cost: {formatCurrency(part.price)}</div>
-        <div>Labor: {formatCurrency(laborValue)}</div>
-        <div className="font-semibold text-gray-800">Total: {formatCurrency(part.price + laborValue)}</div>
-      </div>
-    );
-  };
+  // Calculate subtotal (sum of all parts)
+  const subtotal = [...optionA, ...optionB].reduce((sum, part) => sum + (part.price || 0), 0);
+  const grandTotal = subtotal + laborValue;
   
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -45,15 +68,16 @@ const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, ope
             {optionA.length > 0 ? (
               <div className="space-y-2">
                 {optionA.map((part) => (
-                  <div key={part.id} className="flex items-center justify-between bg-white p-2 rounded">
-                    <div>
+                  <div key={part.id} className="flex items-center gap-3 bg-white p-2 rounded">
+                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl || part.image} />
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900">{part.name}</div>
                       <div className="text-xs text-gray-500">SKU: {part.sku}</div>
-                      {renderPartSummary(part)}
+                      <div className="text-xs text-gray-600 mt-1">₱{(part.price || 0).toFixed(2)}</div>
                     </div>
                     <button
                       onClick={() => removePartFromSlot(part, "A")}
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-gray-400 hover:text-red-500 flex-shrink-0"
                     >
                       <X size={16} />
                     </button>
@@ -78,15 +102,16 @@ const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, ope
             {optionB.length > 0 ? (
               <div className="space-y-2">
                 {optionB.map((part) => (
-                  <div key={part.id} className="flex items-center justify-between mb-2 last:mb-0 bg-white p-2 rounded">
-                    <div>
+                  <div key={part.id} className="flex items-center gap-3 mb-2 last:mb-0 bg-white p-2 rounded">
+                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl || part.image} />
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900">{part.name}</div>
                       <div className="text-xs text-gray-500">SKU: {part.sku}</div>
-                      {renderPartSummary(part)}
+                      <div className="text-xs text-gray-600 mt-1">₱{(part.price || 0).toFixed(2)}</div>
                     </div>
                     <button
                       onClick={() => removePartFromSlot(part, "B")}
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-gray-400 hover:text-red-500 flex-shrink-0"
                     >
                       <X size={16} />
                     </button>

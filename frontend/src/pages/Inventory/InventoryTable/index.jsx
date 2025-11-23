@@ -1,56 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Pen, Trash, Eye, Settings, X, Upload } from 'lucide-react';
 import api from '../../../config/ApiConfig';
+import { usePartPhoto } from '../../../hooks/usePartPhoto.js';
 
 // Component to handle part photo display with presigned URL fetching
 const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
-    const [src, setSrc] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-
-    useEffect(() => {
-        // Reset state when photoUrl or partId changes
-        setLoading(true);
-        setError(false);
-        setSrc(null);
-
-        const fetchPhoto = async () => {
-            if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
-                setLoading(false);
-                setError(true);
-                setSrc(null);
-                return;
-            }
-
-            // Check if it's an S3 URL that needs presigning
-            if (photoUrl.includes('amazonaws.com/') && partId) {
-                try {
-                    // Add timestamp to force refresh of presigned URL
-                    const response = await api.get(`/part/getPartPhoto/${partId}?t=${Date.now()}`);
-                    if (response.data) {
-                        setSrc(response.data);
-                        setError(false);
-                    } else {
-                        setError(true);
-                        setSrc(null);
-                    }
-                } catch (err) {
-                    console.error('Error fetching presigned photo URL:', err);
-                    // Fallback to original URL
-                    setSrc(photoUrl);
-                    setError(false);
-                }
-            } else {
-                // Use URL directly if it's not S3 or no partId
-                // Add timestamp to force refresh
-                setSrc(photoUrl + (photoUrl.includes('?') ? '&' : '?') + 't=' + Date.now());
-                setError(false);
-            }
-            setLoading(false);
-        };
-
-        fetchPhoto();
-    }, [partId, photoUrl]);
+    const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
 
     const sizeClasses = {
         sm: 'w-12 h-12',
@@ -60,7 +15,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
 
     const sizeClass = sizeClasses[size] || sizeClasses.md;
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse`}>
                 <span className="text-xs text-gray-400">Loading...</span>
@@ -68,7 +23,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
         );
     }
 
-    if (error || !src) {
+    if (isError || !src) {
         return (
             <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center`}>
                 <span className="text-xs text-gray-400">No Photo</span>
@@ -81,7 +36,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md', onClick }) => {
             src={src} 
             alt="Part photo"
             className={`${sizeClass} object-cover rounded-lg border border-gray-200 shadow-sm ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-            onError={() => setError(true)}
+            onError={() => {}}
             onClick={onClick ? () => onClick(src) : undefined}
         />
     );

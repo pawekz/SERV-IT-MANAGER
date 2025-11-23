@@ -3,43 +3,12 @@ import { AlertTriangle, Package } from 'lucide-react';
 import api from '../../../config/ApiConfig';
 import Toast from '../../../components/Toast/Toast.jsx';
 import Spinner from '../../../components/Spinner/Spinner.jsx';
+import { usePartPhoto } from '../../../hooks/usePartPhoto.js';
 
 const PartPhoto = ({ partId, photoUrl }) => {
-  const [src, setSrc] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
 
-  useEffect(() => {
-    const fetchPhoto = async () => {
-      if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
-        setLoading(false);
-        setError(true);
-        return;
-      }
-
-      if (photoUrl.includes('amazonaws.com/') && partId) {
-        try {
-          const response = await api.get(`/part/getPartPhoto/${partId}`);
-          if (response.data) {
-            setSrc(response.data);
-          } else {
-            setError(true);
-          }
-        } catch (err) {
-          console.error('Error fetching presigned photo URL:', err);
-          setError(true);
-        }
-      } else {
-        // Use URL directly if it's not S3
-        setSrc(photoUrl);
-      }
-      setLoading(false);
-    };
-
-    fetchPhoto();
-  }, [partId, photoUrl]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
         <span className="text-xs text-gray-400">Loading...</span>
@@ -47,7 +16,7 @@ const PartPhoto = ({ partId, photoUrl }) => {
     );
   }
 
-  if (error || !src) {
+  if (isError || !src) {
     return (
       <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
         <Package size={24} className="text-gray-400" />
@@ -60,7 +29,7 @@ const PartPhoto = ({ partId, photoUrl }) => {
       src={src} 
       alt="Part photo"
       className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-      onError={() => setError(true)}
+      onError={() => {}}
     />
   );
 };

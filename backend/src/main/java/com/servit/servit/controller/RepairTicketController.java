@@ -430,5 +430,21 @@ public class RepairTicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/getRecentUpdates")
+    public ResponseEntity<Page<RecentUpdateDTO>> getRecentUpdates(
+            @RequestParam String email,
+            @PageableDefault(size = 3) Pageable pageable) {
+        try {
+            Page<RecentUpdateDTO> updates = repairTicketService.getRecentUpdatesForCustomer(email, pageable);
+            if (updates.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+            return ResponseEntity.ok(updates);
+        } catch (Exception e) {
+            logger.error("Failed to get recent updates for customer: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
 

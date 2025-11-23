@@ -39,6 +39,15 @@ public class FeedbackController {
         return ResponseEntity.ok(exists);
     }
 
+    @GetMapping("/getByTicketId/{ticketId}")
+    public ResponseEntity<FeedbackEntity> getFeedbackByTicketId(@PathVariable Long ticketId) {
+        FeedbackEntity feedback = feedbackService.getFeedbackByTicketId(ticketId);
+        if (feedback == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(feedback);
+    }
+
     @PostMapping("/submitFeedback")
     public ResponseEntity<?> submitFeedback(@RequestBody FeedbackRequestDTO feedbackRequestDTO) {
         try {

@@ -1,44 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Pen, Trash, Eye, Settings } from 'lucide-react';
 import api from '../../../config/ApiConfig';
+import { usePartPhoto } from '../../../hooks/usePartPhoto.js';
 
 // Component to handle part photo display with presigned URL fetching
 const PartPhoto = ({ partId, photoUrl, size = 'md' }) => {
-    const [src, setSrc] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-
-    useEffect(() => {
-        const fetchPhoto = async () => {
-            if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
-                setLoading(false);
-                setError(true);
-                return;
-            }
-
-            // Check if it's an S3 URL that needs presigning
-            if (photoUrl.includes('amazonaws.com/') && partId) {
-                try {
-                    const response = await api.get(`/part/getPartPhoto/${partId}`);
-                    if (response.data) {
-                        setSrc(response.data);
-                    } else {
-                        setError(true);
-                    }
-                } catch (err) {
-                    console.error('Error fetching presigned photo URL:', err);
-                    // Fallback to original URL
-                    setSrc(photoUrl);
-                }
-            } else {
-                // Use URL directly if it's not S3 or no partId
-                setSrc(photoUrl);
-            }
-            setLoading(false);
-        };
-
-        fetchPhoto();
-    }, [partId, photoUrl]);
+    const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
 
     const sizeClasses = {
         sm: 'w-12 h-12',
@@ -48,7 +15,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md' }) => {
 
     const sizeClass = sizeClasses[size] || sizeClasses.md;
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse`}>
                 <span className="text-xs text-gray-400">Loading...</span>
@@ -56,7 +23,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md' }) => {
         );
     }
 
-    if (error || !src) {
+    if (isError || !src) {
         return (
             <div className={`${sizeClass} bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center`}>
                 <span className="text-xs text-gray-400">No Photo</span>
@@ -69,7 +36,7 @@ const PartPhoto = ({ partId, photoUrl, size = 'md' }) => {
             src={src} 
             alt="Part photo"
             className={`${sizeClass} object-cover rounded-lg border border-gray-200 shadow-sm`}
-            onError={() => setError(true)}
+            onError={() => {}}
         />
     );
 };

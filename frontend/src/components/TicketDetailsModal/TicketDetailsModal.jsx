@@ -91,19 +91,22 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     useEffect(() => {
         if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
             setCheckingFeedback(true);
+            // Check if feedback exists
             api.get(`/feedback/check/${ticketId}`)
                 .then(res => {
-                    setHasFeedback(res.data);
+                    // Explicitly convert to boolean - if res.data is truthy, feedback exists
+                    setHasFeedback(Boolean(res.data));
                 })
                 .catch(err => {
-                    console.error('Error checking feedback status:', err);
-                    // Default to false so user can try, worst case backend blocks it
+                    console.error('Error checking feedback:', err);
+                    // On error, assume no feedback exists so button can show
                     setHasFeedback(false);
                 })
                 .finally(() => {
                     setCheckingFeedback(false);
                 });
         } else {
+            // For non-completed tickets, reset feedback state
             setHasFeedback(false);
             setCheckingFeedback(false);
         }
@@ -268,10 +271,16 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                     <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length}</span></li>
                                 </ul>
                             </div>
+
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
-                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && !hasFeedback && !checkingFeedback && userRole === 'CUSTOMER' && (
+                                    {/* Show Give Feedback button only for customers when ticket is completed and no feedback exists */}
+                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && 
+                                     hasFeedback === false && 
+                                     checkingFeedback === false && 
+                                     userRole && 
+                                     userRole.toUpperCase() === 'CUSTOMER' && (
                                         <button
                                             onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
                                             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
