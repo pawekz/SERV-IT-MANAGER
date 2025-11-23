@@ -36,6 +36,8 @@ import java.util.Map;
 
 import com.servit.servit.dto.repairticket.UpdateRepairStatusWithPhotosRequestDTO;
 import com.servit.servit.entity.AfterRepairPhotoEntity;
+import com.servit.servit.repository.QuotationRepository;
+import com.servit.servit.entity.QuotationEntity;
 
 @Service
 public class RepairTicketService {
@@ -63,6 +65,9 @@ public class RepairTicketService {
 
     @Autowired
     private QuotationService quotationService;
+
+    @Autowired
+    private QuotationRepository quotationRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(RepairTicketService.class);
 
@@ -679,5 +684,123 @@ public class RepairTicketService {
             statusCounts.add(new RepairTicketStatusDistributionDTO.StatusCountDTO(status.name(), count, percentage));
         }
         return new RepairTicketStatusDistributionDTO(statusCounts, totalTickets);
+    }
+
+    public Page<RecentUpdateDTO> getRecentUpdatesForCustomer(String email, Pageable pageable) {
+        logger.info("Fetching recent updates for customer: {}", email);
+        try {
+            List<RecentUpdateDTO> allUpdates = new java.util.ArrayList<>();
+
+            // 1. Get ticket creation events
+            List<RepairTicketEntity> customerTickets = repairTicketRepository.findByCustomerEmail(email);
+            for (RepairTicketEntity ticket : customerTickets) {
+                if (ticket.getCheckInDate() != null) {
+                    RecentUpdateDTO update = new RecentUpdateDTO();
+                    update.setEventType("TICKET_CREATED");
+                    update.setTicketNumber(ticket.getTicketNumber());
+                    update.setMessage("Ticket created");
+                    update.setTimestamp(ticket.getCheckInDate());
+                    update.setStatus(ticket.getRepairStatus() != null ? ticket.getRepairStatus().name() : null);
+                    update.setUpdatedBy(ticket.getTechnicianName());
+                    allUpdates.add(update);
+                }
+            }
+
+            // 2. Get status change events
+            List<RepairStatusHistoryEntity> statusHistory = repairStatusHistoryRepository
+                    .findByRepairTicketCustomerEmailOrderByTimestampDesc(email);
+            for (RepairStatusHistoryEntity history : statusHistory) {
+                RecentUpdateDTO update = new RecentUpdateDTO();
+                update.setEventType("STATUS_CHANGED");
+                update.setTicketNumber(history.getRepairTicket().getTicketNumber());
+                String statusName = history.getRepairStatusEnum() != null ? history.getRepairStatusEnum().name() : "";
+                String message = getStatusChangeMessage(statusName);
+                update.setMessage(message);
+                update.setTimestamp(history.getTimestamp());
+                update.setStatus(statusName);
+                update.setUpdatedBy(history.getRepairTicket().getTechnicianName());
+                allUpdates.add(update);
+            }
+
+            // 3. Get quotation events
+            for (RepairTicketEntity ticket : customerTickets) {
+                List<QuotationEntity> quotations = quotationRepository.findByRepairTicketNumber(ticket.getTicketNumber());
+                for (QuotationEntity quotation : quotations) {
+                    RecentUpdateDTO update = new RecentUpdateDTO();
+                    update.setTicketNumber(ticket.getTicketNumber());
+                    LocalDateTime quoteTimestamp = quotation.getCreatedAt();
+                    
+                    if ("APPROVED".equalsIgnoreCase(quotation.getStatus()) || "DENIED".equalsIgnoreCase(quotation.getStatus())) {
+                        // For approved/denied, use respondedAt if available, otherwise createdAt
+                        if (quotation.getRespondedAt() != null) {
+                            quoteTimestamp = quotation.getRespondedAt();
+                        }
+                    }
+                    
+                    if (quoteTimestamp == null) {
+                        quoteTimestamp = LocalDateTime.now();
+                    }
+                    
+                    if ("PENDING".equalsIgnoreCase(quotation.getStatus())) {
+                        update.setEventType("QUOTATION_CREATED");
+                        update.setMessage("Quotation created");
+                    } else if ("APPROVED".equalsIgnoreCase(quotation.getStatus())) {
+                        update.setEventType("QUOTATION_APPROVED");
+                        update.setMessage("Quotation approved");
+                    } else if ("DENIED".equalsIgnoreCase(quotation.getStatus())) {
+                        update.setEventType("QUOTATION_DENIED");
+                        update.setMessage("Quotation denied");
+                    } else {
+                        update.setEventType("QUOTATION_UPDATED");
+                        update.setMessage("Quotation updated");
+                    }
+                    update.setTimestamp(quoteTimestamp);
+                    update.setStatus(quotation.getStatus());
+                    allUpdates.add(update);
+                }
+            }
+
+            // Sort all updates by timestamp (most recent first)
+            allUpdates.sort((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()));
+
+            // Apply pagination manually
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), allUpdates.size());
+            List<RecentUpdateDTO> pagedUpdates = allUpdates.subList(start, end);
+
+            // Create a Page object
+            Page<RecentUpdateDTO> result = new org.springframework.data.domain.PageImpl<>(
+                    pagedUpdates, 
+                    pageable, 
+                    allUpdates.size()
+            );
+
+            logger.info("Found {} recent updates for customer: {}", allUpdates.size(), email);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error fetching recent updates for customer: {}", email, e);
+            throw new RuntimeException("Failed to fetch recent updates", e);
+        }
+    }
+
+    private String getStatusChangeMessage(String status) {
+        switch (status.toUpperCase()) {
+            case "RECEIVED":
+                return "Ticket received";
+            case "DIAGNOSING":
+            case "DIAGNOSED":
+                return "Diagnosis complete";
+            case "AWAITING_PARTS":
+                return "Awaiting parts";
+            case "REPAIRING":
+                return "Repair in progress";
+            case "READY_FOR_PICKUP":
+                return "Ready for pickup";
+            case "COMPLETED":
+            case "COMPLETE":
+                return "Ticket completed";
+            default:
+                return "Status updated to " + status.replace("_", " ").toLowerCase();
+        }
     }
 }
