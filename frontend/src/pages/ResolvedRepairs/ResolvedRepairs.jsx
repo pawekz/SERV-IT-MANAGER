@@ -94,9 +94,9 @@ const ResolvedRepairs = () => {
                 if (role === "admin") {
                     const allResults = [];
 
-
+                    // Fetch more tickets to ensure we get all resolved ones
                     const response = await api.get(`/repairTicket/getAllRepairTickets`, {
-                        params: { page: 0, size: 20 },
+                        params: { page: 0, size: 100 },
                     });
                     const content = response.data?.content || [];
                     allResults.push(...content);
@@ -112,18 +112,30 @@ const ResolvedRepairs = () => {
                         return;
                     }
 
-                    const statuses = ["READY_FOR_PICKUP"];
+                    // Fetch both READY_FOR_PICKUP and COMPLETED tickets for technicians
+                    const statuses = ["READY_FOR_PICKUP", "COMPLETED"];
                     const allResults = [];
 
                     for (const status of statuses) {
-                        const response = await api.get(
-                            `/repairTicket/getRepairTicketsByStatusPageableAssignedToTech`,
-                            {
-                                params: { status, page: 0, size: 20 },
+                        try {
+                            const response = await api.get(
+                                `/repairTicket/getRepairTicketsByStatusPageableAssignedToTech`,
+                                {
+                                    params: { status, page: 0, size: 100 },
+                                    validateStatus: (status) => status >= 200 && status < 300 || status === 204,
+                                }
+                            );
+                            // Handle 204 No Content response
+                            if (response.status === 204 || !response.data) {
+                                continue;
                             }
-                        );
-                        const content = response.data?.content || [];
-                        allResults.push(...content);
+                            const content = response.data?.content || [];
+                            allResults.push(...content);
+                        } catch (err) {
+                            // If one status fails, continue with the other
+                            console.warn(`Failed to fetch tickets for status ${status}:`, err);
+                            continue;
+                        }
                     }
 
                     const uniqueTickets = Array.from(
