@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { parseJwt } from '../../config/ApiConfig';
-import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp, Camera } from 'lucide-react';
+import { X, Download, Calendar, Monitor, User, Tag, ChevronLeft, ChevronRight, MessageSquare, ChevronDown, ChevronUp, Camera, Star } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRepairPhoto, prefetchRepairPhoto } from '../../hooks/useRepairPhoto';
 
@@ -39,6 +39,8 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [downloading, setDownloading] = useState(false);
     const [hasFeedback, setHasFeedback] = useState(false);
     const [checkingFeedback, setCheckingFeedback] = useState(false);
+    const [feedbackData, setFeedbackData] = useState(null);
+    const [loadingFeedback, setLoadingFeedback] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [issueExpanded, setIssueExpanded] = useState(false);
     // Remove char-count style truncation constant; we will measure lines instead
@@ -91,21 +93,38 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     useEffect(() => {
         if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
             setCheckingFeedback(true);
+            setLoadingFeedback(true);
+            // Check if feedback exists
             api.get(`/feedback/check/${ticketId}`)
                 .then(res => {
                     setHasFeedback(res.data);
+                    // If feedback exists, fetch the full feedback data
+                    if (res.data) {
+                        return api.get(`/feedback/getByTicketId/${ticketId}`);
+                    }
+                    return null;
+                })
+                .then(res => {
+                    if (res && res.data) {
+                        setFeedbackData(res.data);
+                    } else {
+                        setFeedbackData(null);
+                    }
                 })
                 .catch(err => {
-                    console.error('Error checking feedback status:', err);
-                    // Default to false so user can try, worst case backend blocks it
+                    console.error('Error checking/fetching feedback:', err);
                     setHasFeedback(false);
+                    setFeedbackData(null);
                 })
                 .finally(() => {
                     setCheckingFeedback(false);
+                    setLoadingFeedback(false);
                 });
         } else {
             setHasFeedback(false);
+            setFeedbackData(null);
             setCheckingFeedback(false);
+            setLoadingFeedback(false);
         }
     }, [isOpen, ticket, statusVal, ticketId]);
 
@@ -268,6 +287,48 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                     <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length}</span></li>
                                 </ul>
                             </div>
+
+                            {/* Customer Feedback Section - Only show for completed tickets */}
+                            {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && (
+                                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                        <MessageSquare size={14} className="text-gray-400" /> Customer Feedback
+                                    </h4>
+                                    {loadingFeedback ? (
+                                        <div className="text-xs text-gray-500 text-center py-4">Loading feedback...</div>
+                                    ) : feedbackData ? (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <div className="text-xs text-gray-500 mb-1.5">Rating</div>
+                                                <div className="flex items-center gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <Star
+                                                            key={star}
+                                                            size={16}
+                                                            className={star <= feedbackData.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                                                        />
+                                                    ))}
+                                                    <span className="ml-2 text-xs font-medium text-gray-700">{feedbackData.rating}/5</span>
+                                                </div>
+                                            </div>
+                                            {feedbackData.comments && (
+                                                <div>
+                                                    <div className="text-xs text-gray-500 mb-1.5">Comments</div>
+                                                    <p className="text-[13px] text-gray-800 whitespace-pre-wrap break-words bg-gray-50 rounded p-2 border border-gray-200">
+                                                        {feedbackData.comments}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {feedbackData.anonymous && (
+                                                <div className="text-xs text-gray-400 italic">Submitted anonymously</div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-gray-500 text-center py-4">No feedback added</div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
