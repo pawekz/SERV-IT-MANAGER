@@ -1,8 +1,69 @@
-import React, { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Package } from 'lucide-react';
 import api from '../../../config/ApiConfig';
 import Toast from '../../../components/Toast/Toast.jsx';
 import Spinner from '../../../components/Spinner/Spinner.jsx';
+
+const PartPhoto = ({ partId, photoUrl }) => {
+  const [src, setSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchPhoto = async () => {
+      if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+        setLoading(false);
+        setError(true);
+        return;
+      }
+
+      if (photoUrl.includes('amazonaws.com/') && partId) {
+        try {
+          const response = await api.get(`/part/getPartPhoto/${partId}`);
+          if (response.data) {
+            setSrc(response.data);
+          } else {
+            setError(true);
+          }
+        } catch (err) {
+          console.error('Error fetching presigned photo URL:', err);
+          setError(true);
+        }
+      } else {
+        // Use URL directly if it's not S3
+        setSrc(photoUrl);
+      }
+      setLoading(false);
+    };
+
+    fetchPhoto();
+  }, [partId, photoUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
+        <span className="text-xs text-gray-400">Loading...</span>
+      </div>
+    );
+  }
+
+  if (error || !src) {
+    return (
+      <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <Package size={24} className="text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt="Part photo"
+      className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+      onError={() => setError(true)}
+    />
+  );
+};
 
 const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisionComplete = () => {} }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -19,7 +80,10 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
   const openModal = async (action) => {
     setActiveAction(action);
     setModalOpen(true);
-    setSelectedPartId(action.quotation.recommendedPart || null);
+    // Handle both array and single value for initial selection
+    const recommended = action.quotation.recommendedPart;
+    const initialPartId = Array.isArray(recommended) ? (recommended[0] || null) : (recommended || null);
+    setSelectedPartId(initialPartId);
     try {
       setModalLoading(true);
       const ids = Array.from(new Set(action.quotation.partIds || []));
@@ -71,30 +135,57 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
       );
     }
     const labor = activeAction?.quotation?.laborCost || 0;
+    
+    const totalPartsCost = ids.reduce((sum, partId) => {
+      const part = getPart(partId);
+      return sum + (Number(part?.unitCost) || 0);
+    }, 0);
+    
+    const grandTotal = totalPartsCost + labor;
+    
+    const isOptionSelected = ids.some(id => selectedPartId === id);
+    
     return (
       <div className="space-y-2">
         <div className="text-xs font-semibold text-green-700 mb-2">{label} {ids.length > 1 && `(${ids.length} parts)`}</div>
-        {ids.map((partId) => {
-          const part = getPart(partId);
-          return (
-            <button
-              key={partId}
-              type="button"
-              onClick={() => setSelectedPartId(partId)}
-              className={`w-full border rounded-lg p-3 text-left transition ${
-                selectedPartId === partId ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-400'
-              }`}
-            >
-              <div className="text-sm font-semibold text-gray-900">{part?.name || `Part #${partId}`}</div>
-              <div className="text-xs text-gray-500">SKU: {part?.partNumber || '—'}</div>
-              <div className="text-xs text-gray-600 mt-1">Part: {formatCurrency(part?.unitCost)}</div>
-              <div className="text-xs text-gray-600">Labor: {formatCurrency(labor)}</div>
-              <div className="text-sm font-semibold text-gray-800">
-                Total: {formatCurrency((part?.unitCost || 0) + labor)}
-              </div>
-            </button>
-          );
-        })}
+        <div className={`border rounded-lg p-3 ${isOptionSelected ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}>
+          {ids.map((partId) => {
+            const part = getPart(partId);
+            return (
+              <button
+                key={partId}
+                type="button"
+                onClick={() => setSelectedPartId(partId)}
+                className={`w-full text-left transition mb-3 last:mb-0 ${
+                  selectedPartId === partId ? 'opacity-100' : 'opacity-90 hover:opacity-100'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <PartPhoto partId={part?.id || partId} photoUrl={part?.partPhotoUrl} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900">{part?.name || `Part #${partId}`}</div>
+                    <div className="text-xs text-gray-500">SKU: {part?.partNumber || '—'}</div>
+                    <div className="text-xs text-gray-600 mt-1">Part(s): {formatCurrency(part?.unitCost)}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+          <div className="border-t border-gray-200 pt-3 mt-3 space-y-1">
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Part(s) Total:</span>
+              <span>{formatCurrency(totalPartsCost)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Labor:</span>
+              <span>{formatCurrency(labor)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-semibold text-gray-800 pt-1 border-t border-gray-200">
+              <span>Total:</span>
+              <span>{formatCurrency(grandTotal)}</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
