@@ -182,6 +182,13 @@ const RepairQueue = () => {
 
     const applyFilters = (list) => {
         let filtered = list.slice();
+        
+        // Exclude resolved/completed tickets (this is the Pending Repairs page)
+        filtered = filtered.filter((request) => {
+            const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
+            return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP';
+        });
+        
         if (search.trim()) {
             const q = search.toLowerCase();
             filtered = filtered.filter(ticket => {
@@ -540,23 +547,17 @@ const RepairQueue = () => {
                                             ) : (
                                                 <>
                                                     <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                                                        {displayedTickets
-                                                            .filter((request) => {
-                                                                const s = (request.status || request.repairStatus || '').toString().trim().toUpperCase();
-                                                                // exclude resolved statuses
-                                                                return s !== 'COMPLETED' && s !== 'COMPLETE' && s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP';
-                                                            })
-                                                            .map((request) => {
-                                                                 const ticketKey = resolveTicketKey(request);
-                                                                 return (
-                                                                     <TicketCard
-                                                                         key={ticketKey}
-                                                                         ticket={request}
-                                                                         onClick={() => handleCardClick(request)}
-                                                                        {...(role !== 'customer' ? { renderStatusControl } : {})}
-                                                                     />
-                                                                 );
-                                                             })}
+                                                        {displayedTickets.map((request) => {
+                                                            const ticketKey = resolveTicketKey(request);
+                                                            return (
+                                                                <TicketCard
+                                                                    key={ticketKey}
+                                                                    ticket={request}
+                                                                    onClick={() => handleCardClick(request)}
+                                                                    {...(role !== 'customer' ? { renderStatusControl } : {})}
+                                                                />
+                                                            );
+                                                        })}
                                                     </div>
                                                     {renderPagination()}
                                                 </>
