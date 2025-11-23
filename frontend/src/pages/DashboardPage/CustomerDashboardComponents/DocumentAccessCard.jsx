@@ -3,7 +3,7 @@ import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../config/ApiConfig.jsx';
 import TicketDetailsModal from '../../../components/TicketDetailsModal/TicketDetailsModal';
 
-const DocumentAccessCard = () => {
+const DocumentAccessCard = ({ customerEmail }) => {
   const [tickets, setTickets] = useState([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -11,7 +11,19 @@ const DocumentAccessCard = () => {
   const [error, setError] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
 
-  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+  // Get email from prop, or fallback to sessionStorage, or localStorage
+  const userEmail = customerEmail || (typeof window !== 'undefined' ? (() => {
+    try {
+      const userData = sessionStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        return parsed.email;
+      }
+    } catch (e) {
+      console.warn('Failed to parse userData from sessionStorage', e);
+    }
+    return localStorage.getItem('userEmail');
+  })() : null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -124,7 +136,11 @@ const DocumentAccessCard = () => {
 
       {/* Ticket details modal */}
       {selectedTicket && (
-        <TicketDetailsModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
+        <TicketDetailsModal 
+          data={selectedTicket} 
+          isOpen={!!selectedTicket}
+          onClose={() => setSelectedTicket(null)} 
+        />
       )}
     </div>
   );

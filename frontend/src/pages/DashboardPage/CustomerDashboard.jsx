@@ -339,7 +339,7 @@ const CustomerDashboard = () => {
 
                     {/* Others */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <DocumentAccessCard />
+                        <DocumentAccessCard customerEmail={userData.email} />
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Others</h3>
                             <div className="space-y-3">
