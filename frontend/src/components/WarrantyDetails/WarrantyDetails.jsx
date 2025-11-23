@@ -98,6 +98,30 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
                 </div>
             </div>
 
+            {/* Customer Information Section */}
+            <div className="m-6 mb-3">
+                <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
+                    <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-m w-full">
+                    <div>
+                        <strong>Customer Name:</strong><br />
+                        {data.customerName || 
+                         (data.customerFirstName && data.customerLastName 
+                            ? `${data.customerFirstName} ${data.customerLastName}`.trim()
+                            : data.customerFirstName || data.customerLastName || 'N/A')}
+                    </div>
+                    <div>
+                        <strong>Customer Email:</strong><br />
+                        {data.customerEmail || 'N/A'}
+                    </div>
+                    <div>
+                        <strong>Customer Phone Number:</strong><br />
+                        {data.customerPhoneNumber || 'N/A'}
+                    </div>
+                </div>
+            </div>
+
                     {data.warrantyPhotosUrls?.length === 0 && (
                         <div className="col-span-1 flex flex-col items-center">
                             <div className="w-full h-[50px] border border-green-600 border-dashed flex items-center justify-center bg-gray-100 ">
