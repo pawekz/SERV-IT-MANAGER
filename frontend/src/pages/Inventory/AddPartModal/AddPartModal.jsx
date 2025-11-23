@@ -15,7 +15,30 @@ const AddPartModal = ({
     const [partExists, setPartExists] = useState(false);
     const [checkingPart, setCheckingPart] = useState(false);
     const [imagePreview, setImagePreview] = useState(null);
-    const [objectUrl, setObjectUrl] = useState(null); // track generated object URLs
+    const [objectUrl, setObjectUrl] = useState(null);
+    const [imageError, setImageError] = useState(false);
+    const [partId, setPartId] = useState(null);
+
+    const fetchPresignedImageUrl = useCallback(async (id, originalUrl) => {
+        try {
+            console.log('Fetching presigned URL for part ID:', id);
+            const response = await api.get(`/part/getPartPhoto/${id}`);
+            if (response.data) {
+                console.log('Presigned URL received:', response.data);
+                setImagePreview(response.data);
+                setImageError(false);
+            } else {
+                console.warn('No presigned URL returned, using original URL');
+                setImagePreview(originalUrl);
+                setImageError(false);
+            }
+        } catch (err) {
+            console.error('Error fetching presigned photo URL:', err);
+            // Fallback to original URL
+            setImagePreview(originalUrl);
+            setImageError(false);
+        }
+    }, []);
 
     // Function to check if part number exists and auto-fill fields
     const checkPartNumber = useCallback(async (partNumber) => {
@@ -86,8 +109,13 @@ const AddPartModal = ({
                     }
                 });
                 
+                // Store part ID for presigned URL fetching
+                if (details.partId) {
+                    setPartId(details.partId);
+                }
+                
                 // Handle existing image URL if available
-                if (details.partPhotoUrl) {
+                if (details.partPhotoUrl && details.partPhotoUrl !== '0' && details.partPhotoUrl.trim() !== '') {
                     console.log('Part has existing image:', details.partPhotoUrl);
                     // Revoke any previous object URL if we created one
                     if (objectUrl) {
@@ -101,15 +129,26 @@ const AddPartModal = ({
                             value: details.partPhotoUrl
                         }
                     });
-                    // Display the existing image in preview
-                    setImagePreview(details.partPhotoUrl);
+                    
+                    // Check if it's an S3 URL that needs presigning
+                    if (details.partPhotoUrl.includes('amazonaws.com/') && details.partId) {
+                        // Fetch presigned URL
+                        fetchPresignedImageUrl(details.partId, details.partPhotoUrl);
+                    } else {
+                        // Use URL directly if it's not S3
+                        console.log('Setting image preview to:', details.partPhotoUrl);
+                        setImagePreview(details.partPhotoUrl);
+                        setImageError(false);
+                    }
                 } else {
+                    console.log('No valid image URL found. partPhotoUrl:', details.partPhotoUrl);
                     // No existing image, clear preview
                     if (objectUrl) {
                         URL.revokeObjectURL(objectUrl);
                         setObjectUrl(null);
                     }
                     setImagePreview(null);
+                    setImageError(false);
                     onInputChange({
                         target: {
                             name: 'image',
@@ -120,6 +159,7 @@ const AddPartModal = ({
             } else {
                 console.log('Part does not exist');
                 setPartExists(false);
+                setPartId(null);
                 onInputChange({
                     target: {
                         name: 'addToExisting',
@@ -144,6 +184,7 @@ const AddPartModal = ({
                 headers: error.response?.headers
             });
             setPartExists(false);
+            setPartId(null);
             onInputChange({
                 target: {
                     name: 'addToExisting',
@@ -223,6 +264,12 @@ const AddPartModal = ({
     }, [onInputChange, objectUrl, partExists]);
 
     useEffect(() => {
+        // If part exists, don't let this useEffect interfere with the image preview
+        // The image preview is managed directly in checkPartNumber when part exists
+        if (partExists) {
+            return;
+        }
+        
         // If parent passes an image (string URL or File), show preview
         if (newPart && newPart.image) {
             // If the parent provided a File, create an object URL
@@ -233,6 +280,7 @@ const AddPartModal = ({
                     setObjectUrl(null);
                 }
                 setImagePreview(newPart.image);
+                setImageError(false);
             } else if (newPart.image instanceof File) {
                 // Revoke previous if we created one
                 if (objectUrl) {
@@ -241,16 +289,19 @@ const AddPartModal = ({
                 const url = URL.createObjectURL(newPart.image);
                 setImagePreview(url);
                 setObjectUrl(url);
+                setImageError(false);
                 return () => {
                     // cleanup created url when component unmounts or new file arrives
                     if (url) URL.revokeObjectURL(url);
                 };
             }
-        } else {
+        } else if (!newPart?.image) {
+            // Clear preview if no image
             setImagePreview(null);
+            setImageError(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [newPart]);
+    }, [newPart, partExists]);
 
     // Cleanup on unmount: revoke any created object URL
     useEffect(() => {
@@ -443,12 +494,19 @@ const AddPartModal = ({
                         {/* Larger, clearer preview area */}
                         <div className="mt-3">
                             <div className="w-full h-48 md:h-60 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden">
-                                {imagePreview ? (
+                                {imagePreview && !imageError ? (
                                     <img
                                         src={imagePreview}
                                         alt="preview"
                                         className="w-full h-full object-contain"
+                                        onError={() => {
+                                            console.error('Failed to load image:', imagePreview);
+                                            setImageError(true);
+                                        }}
+                                        onLoad={() => setImageError(false)}
                                     />
+                                ) : imageError ? (
+                                    <div className="text-sm text-red-400">Failed to load image</div>
                                 ) : (
                                     <div className="text-sm text-gray-400">No image selected</div>
                                 )}
