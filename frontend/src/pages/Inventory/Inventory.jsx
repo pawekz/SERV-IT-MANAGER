@@ -850,16 +850,16 @@ const Inventory = () => {
                 addToExisting: newPart.addToExisting || false
             };
 
-            // If an image file is present, send multipart/form-data with 'part' JSON and 'file' file
-            if (newPart.image instanceof File) {
+            if (newPart.addToExisting && typeof newPart.image === 'string' && newPart.image) {
+                partData.partPhotoUrl = newPart.image;
+                await api.post('/part/addPart', partData);
+            } else if (newPart.image instanceof File) {
                 const formData = new FormData();
                 formData.append('part', new Blob([JSON.stringify(partData)], { type: 'application/json' }));
                 formData.append('file', newPart.image);
 
                 await api.post('/part/addPart', formData);
             } else {
-                // No file, send JSON as before but using form-data compatibility
-                // Some backends may still accept JSON; use previous endpoint for compatibility
                 await api.post('/part/addPart', partData);
             }
 

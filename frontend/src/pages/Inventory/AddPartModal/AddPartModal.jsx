@@ -85,6 +85,38 @@ const AddPartModal = ({
                         value: true
                     }
                 });
+                
+                // Handle existing image URL if available
+                if (details.partPhotoUrl) {
+                    console.log('Part has existing image:', details.partPhotoUrl);
+                    // Revoke any previous object URL if we created one
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        setObjectUrl(null);
+                    }
+                    // Set the image URL (as string) instead of a File
+                    onInputChange({
+                        target: {
+                            name: 'image',
+                            value: details.partPhotoUrl
+                        }
+                    });
+                    // Display the existing image in preview
+                    setImagePreview(details.partPhotoUrl);
+                } else {
+                    // No existing image, clear preview
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        setObjectUrl(null);
+                    }
+                    setImagePreview(null);
+                    onInputChange({
+                        target: {
+                            name: 'image',
+                            value: null
+                        }
+                    });
+                }
             } else {
                 console.log('Part does not exist');
                 setPartExists(false);
@@ -92,6 +124,14 @@ const AddPartModal = ({
                     target: {
                         name: 'addToExisting',
                         value: false
+                    }
+                });
+                // Clear image preview when part doesn't exist
+                setImagePreview(null);
+                onInputChange({
+                    target: {
+                        name: 'image',
+                        value: null
                     }
                 });
             }
@@ -108,6 +148,14 @@ const AddPartModal = ({
                 target: {
                     name: 'addToExisting',
                     value: false
+                }
+            });
+            // Clear image preview on error
+            setImagePreview(null);
+            onInputChange({
+                target: {
+                    name: 'image',
+                    value: null
                 }
             });
         } finally {
@@ -127,6 +175,11 @@ const AddPartModal = ({
 
     // Handle single image upload and preview
     const handleImageChange = useCallback((e) => {
+        // Don't allow image upload if part exists (use existing image)
+        if (partExists) {
+            return;
+        }
+        
         const file = e.target.files && e.target.files[0];
         // Revoke previous object URL if we created one
         if (objectUrl) {
@@ -147,10 +200,15 @@ const AddPartModal = ({
         } else {
             setImagePreview(null);
         }
-    }, [onInputChange, objectUrl]);
+    }, [onInputChange, objectUrl, partExists]);
 
     // Remove currently selected image
     const handleRemoveImage = useCallback(() => {
+        // Don't allow removing image if part exists (must use existing image)
+        if (partExists) {
+            return;
+        }
+        
         if (objectUrl) {
             URL.revokeObjectURL(objectUrl);
             setObjectUrl(null);
@@ -162,7 +220,7 @@ const AddPartModal = ({
                 value: null
             }
         });
-    }, [onInputChange, objectUrl]);
+    }, [onInputChange, objectUrl, partExists]);
 
     useEffect(() => {
         // If parent passes an image (string URL or File), show preview
@@ -349,22 +407,29 @@ const AddPartModal = ({
                     {/* Upload picture - custom file input and larger preview */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Upload picture
+                            {partExists ? 'Part Image' : 'Upload picture'}
                         </label>
+                        {partExists && (
+                            <p className="text-xs text-gray-500 mb-2">
+                                Using existing part image. Image upload is not required.
+                            </p>
+                        )}
 
                         {/* Hidden native input - we use a label/button so filename won't be displayed */}
                         <div className="flex items-center space-x-3">
-                            <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                Select image
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className="sr-only" // hide from visual flow and screen readers handled by label
-                                />
-                            </label>
+                            {!partExists && (
+                                <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                    Select image
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="sr-only" // hide from visual flow and screen readers handled by label
+                                    />
+                                </label>
+                            )}
 
-                            {imagePreview && (
+                            {imagePreview && !partExists && (
                                 <button
                                     type="button"
                                     onClick={handleRemoveImage}
