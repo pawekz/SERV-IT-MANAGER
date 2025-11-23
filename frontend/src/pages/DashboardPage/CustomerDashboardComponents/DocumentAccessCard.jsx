@@ -99,33 +99,50 @@ const DocumentAccessCard = ({ customerEmail }) => {
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 min-h-[180px]">
         {loading ? (
-          <div className="text-center text-gray-500">Loading documents...</div>
+          <div className="text-center text-gray-500 py-8">Loading documents...</div>
         ) : error ? (
-          <div className="text-center text-red-500">{typeof error === 'string' ? error : 'Failed to load documents'}</div>
+          <div className="text-center text-red-500 py-8">{typeof error === 'string' ? error : 'Failed to load documents'}</div>
         ) : tickets.length === 0 ? (
-          <div className="text-center text-gray-600">No documents available.</div>
+          <div className="text-center text-gray-600 py-8">No documents available.</div>
         ) : (
-          tickets.map((t) => (
-            <div key={t.ticketNumber} className="flex items-center justify-between">
-              <div className="flex items-start">
-                <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
-                  <FileText className="h-4 w-4 text-blue-600" />
+          <>
+            {tickets.map((t) => (
+              <div key={t.ticketNumber} className="flex items-center justify-between min-h-[60px]">
+                <div className="flex items-start">
+                  <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium">Repair Ticket - {t.ticketNumber}</div>
+                    <div className="text-xs text-gray-500">{formatDate(t.checkInDate)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-medium">Repair Ticket - {t.ticketNumber}</div>
-                  <div className="text-xs text-gray-500">{formatDate(t.checkInDate)}</div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedTicket(t); }}
+                  className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded"
+                >
+                  View
+                </button>
+              </div>
+            ))}
+            {/* Fill remaining space to maintain consistent height */}
+            {tickets.length < 3 && Array.from({ length: 3 - tickets.length }).map((_, idx) => (
+              <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 rounded-full mr-3"></div>
+                    <div>
+                      <div className="font-medium">&nbsp;</div>
+                      <div className="text-xs">&nbsp;</div>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1"></div>
                 </div>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); setSelectedTicket(t); }}
-                className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded"
-              >
-                View
-              </button>
-            </div>
-          ))
+            ))}
+          </>
         )}
       </div>
 
