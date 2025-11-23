@@ -189,23 +189,6 @@ const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, ope
           </div>
         )}
 
-        {/* Cost Summary - Bottom Left */}
-        {totalParts > 0 && (
-          <div className="mt-6">
-            <div className="text-sm">
-              <div className="text-gray-600">
-                Subtotal: <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="text-gray-600">
-                Labor Cost: <span className="font-medium text-gray-900">{formatCurrency(laborValue)}</span>
-              </div>
-              <div className="font-semibold text-lg text-gray-900 mt-1">
-                Grand Total: {formatCurrency(grandTotal)}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Action */}
         {totalParts > 0 && (
           <div className="flex justify-end mt-6 space-x-2">
