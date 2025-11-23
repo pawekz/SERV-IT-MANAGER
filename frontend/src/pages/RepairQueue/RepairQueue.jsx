@@ -7,6 +7,36 @@ import api, { parseJwt } from '../../config/ApiConfig';
 import TicketCard from '../../components/TicketCard/TicketCard';
 import Toast from "../../components/Toast/Toast.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
+import { usePartPhoto } from "../../hooks/usePartPhoto.js";
+
+const PartPhoto = ({ partId, photoUrl }) => {
+    const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
+
+    if (isLoading) {
+        return (
+            <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
+                <span className="text-xs text-gray-400">Loading...</span>
+            </div>
+        );
+    }
+
+    if (isError || !src) {
+        return (
+            <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Package size={24} className="text-gray-400" />
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={src} 
+            alt="Part photo"
+            className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+            onError={() => {}}
+        />
+    );
+};
 
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
@@ -139,65 +169,6 @@ const RepairQueue = () => {
     const showToast = (message, type = "success") => setToast({ show: true, message, type });
     const closeToast = () => setToast({ ...toast, show: false });
 
-    // PartPhoto component for quotation modal
-    const PartPhoto = ({ partId, photoUrl }) => {
-        const [src, setSrc] = useState(null);
-        const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(false);
-
-        useEffect(() => {
-            const fetchPhoto = async () => {
-                if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
-                    setLoading(false);
-                    setError(true);
-                    return;
-                }
-
-                if (photoUrl.includes('amazonaws.com/') && partId) {
-                    try {
-                        const response = await api.get(`/part/getPartPhoto/${partId}`);
-                        if (response.data) {
-                            setSrc(response.data);
-                        } else {
-                            setError(true);
-                        }
-                    } catch (err) {
-                        console.error('Error fetching presigned photo URL:', err);
-                        setError(true);
-                    }
-                } else {
-                    setSrc(photoUrl);
-                }
-                setLoading(false);
-            };
-            fetchPhoto();
-        }, [partId, photoUrl]);
-
-        if (loading) {
-            return (
-                <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
-                    <span className="text-xs text-gray-400">Loading...</span>
-                </div>
-            );
-        }
-
-        if (error || !src) {
-            return (
-                <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <Package size={24} className="text-gray-400" />
-                </div>
-            );
-        }
-
-        return (
-            <img 
-                src={src} 
-                alt="Part photo"
-                className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-                onError={() => setError(true)}
-            />
-        );
-    };
 
     // Open quotation approval modal
     const openQuotationModal = async (ticket) => {
