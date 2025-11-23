@@ -31,7 +31,7 @@ function TicketImage({ path, alt }) {
     return <img className="rounded-t-lg w-full h-40 md:h-44 object-cover" src={src} alt={alt || 'Repair photo'} loading="lazy" />;
 }
 
-const TicketCard = ({ ticket, onClick, renderStatusControl }) => {
+const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, customerAction }) => {
     // derive unified status (backend uses repairStatus)
     const displayStatus = ticket.status || ticket.repairStatus || 'N/A';
 
@@ -112,6 +112,20 @@ const TicketCard = ({ ticket, onClick, renderStatusControl }) => {
                     {renderStatusControl && (
                         <div className="mb-2">
                             {renderStatusControl(ticket)}
+                        </div>
+                    )}
+
+                    {/* Action buttons (Build Quotation, View Quotation, etc.) */}
+                    {actionButtons && (
+                        <div className="mb-2 flex flex-col gap-2">
+                            {actionButtons}
+                        </div>
+                    )}
+
+                    {/* Customer action button (Approve Quotation, etc.) */}
+                    {customerAction && (
+                        <div className="mb-2">
+                            {customerAction}
                         </div>
                     )}
 

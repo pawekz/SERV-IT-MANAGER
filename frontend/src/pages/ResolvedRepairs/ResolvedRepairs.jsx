@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Plus, ChevronUp } from "lucide-react";
+import { Plus, ChevronUp, FileText, Eye } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from "../../config/ApiConfig";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import TicketCard from '../../components/TicketCard/TicketCard';
+import Toast from "../../components/Toast/Toast.jsx";
+import Spinner from "../../components/Spinner/Spinner.jsx";
 
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
@@ -34,6 +36,9 @@ const ResolvedRepairs = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
     const [pendingStatusChange, setPendingStatusChange] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [quotations, setQuotations] = useState({}); // Map of ticketNumber -> quotation data
 
     // New UI state (search, filters, pagination, view mode)
     const [search, setSearch] = useState('');
@@ -46,12 +51,21 @@ const ResolvedRepairs = () => {
 
     const statusOptions = [
         "RECEIVED",
-        "DIAGNOSED",
-        "AWAITING PARTS",
+        "DIAGNOSING",
+        "AWAITING_PARTS",
         "REPAIRING",
-        "READY FOR PICKUP",
+        "READY_FOR_PICKUP",
         "COMPLETED"
     ];
+
+    // Helper to normalize status (convert display format to backend format)
+    const normalizeStatus = (status) => {
+        if (!status) return status;
+        return status.toString().trim()
+            .replace(/\s+/g, '_')
+            .toUpperCase()
+            .replace('DIAGNOSED', 'DIAGNOSING');
+    };
 
     const resolveTicketKey = (request) => {
         return request?.ticketId ?? request?.id ?? request?.ticketNumber ?? request?.deviceSerialNumber ?? null;
@@ -73,16 +87,128 @@ const ResolvedRepairs = () => {
             e.nativeEvent.stopImmediatePropagation();
         }
         setStatusDropdownOpen(null);
-        setPendingStatusChange({ ticketKey, newStatus, request });
+        
+        // Normalize status for comparison
+        const normalizedStatus = normalizeStatus(newStatus);
+        
+        // Always allow the status change prompt - validation happens in applyStatusChange
+        setPendingStatusChange({ ticketKey, newStatus: normalizedStatus, request });
     };
 
-    const applyStatusChange = (ticketKey, newStatus) => {
-        setTicketRequests(prevRequests =>
-            prevRequests.map(request =>
-                (request?.ticketId === ticketKey || request?.id === ticketKey || request?.ticketNumber === ticketKey) ? { ...request, status: newStatus, repairStatus: newStatus } : request
-            )
+    // Fetch quotations for tickets
+    useEffect(() => {
+        const fetchQuotations = async () => {
+            const quotationMap = {};
+            const ticketsNeedingQuotation = ticketRequests.filter(t => {
+                const status = (t.status || t.repairStatus || '').toString().trim().toUpperCase();
+                return status === 'AWAITING_PARTS' || status === 'REPAIRING';
+            });
+
+            for (const ticket of ticketsNeedingQuotation) {
+                try {
+                    const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticket.ticketNumber}`);
+                    if (data && data.length > 0) {
+                        quotationMap[ticket.ticketNumber] = data[0];
+                    }
+                } catch (err) {
+                    // No quotation found or error - that's okay
+                    console.debug(`No quotation found for ticket ${ticket.ticketNumber}`);
+                }
+            }
+            setQuotations(quotationMap);
+        };
+
+        if (ticketRequests.length > 0) {
+            fetchQuotations();
+        }
+    }, [ticketRequests]);
+
+    const showToast = (message, type = "success") => setToast({ show: true, message, type });
+    const closeToast = () => setToast({ ...toast, show: false });
+
+    const applyStatusChange = async (ticketKey, newStatus) => {
+        const ticket = ticketRequests.find(t => 
+            (t?.ticketId === ticketKey || t?.id === ticketKey || t?.ticketNumber === ticketKey)
         );
-        setPendingStatusChange(null);
+        if (!ticket) return;
+
+        setIsUpdating(true);
+        try {
+            // Normalize status to backend format
+            const normalizedStatus = normalizeStatus(newStatus);
+            
+            // For READY_FOR_PICKUP, we need photos - handled by modal
+            if (normalizedStatus === "READY_FOR_PICKUP") {
+                // This should be handled by StatusChangeConfirmModal with photos
+                setPendingStatusChange({ ticketKey, newStatus: normalizedStatus, request: ticket });
+                setIsUpdating(false);
+                return;
+            }
+
+            // Check if moving to REPAIRING from AWAITING_PARTS without approved quotation
+            const currentStatus = normalizeStatus(ticket.status || ticket.repairStatus);
+            if (normalizedStatus === "REPAIRING" && currentStatus === "AWAITING_PARTS") {
+                const quotation = quotations[ticket.ticketNumber];
+                if (!quotation || (quotation.status !== "APPROVED" && !quotation.technicianOverride)) {
+                    showToast("Cannot update to Repairing. The quotation must be approved by the customer first. The ticket will automatically update to Repairing once the quotation is approved.", "error");
+                    setIsUpdating(false);
+                    setPendingStatusChange(null);
+                    return;
+                }
+            }
+
+            const { data } = await api.patch("/repairTicket/updateRepairStatus", {
+                ticketNumber: ticket.ticketNumber,
+                repairStatus: normalizedStatus,
+            });
+
+            // Update local state
+            const finalStatus = data?.newStatus || normalizedStatus;
+            setTicketRequests(prevRequests =>
+                prevRequests.map(request =>
+                    (request?.ticketId === ticketKey || request?.id === ticketKey || request?.ticketNumber === ticketKey) 
+                        ? { ...request, status: finalStatus, repairStatus: finalStatus } 
+                        : request
+                )
+            );
+
+            // Refresh quotations if status changed to AWAITING_PARTS or REPAIRING
+            if (normalizedStatus === "AWAITING_PARTS" || normalizedStatus === "REPAIRING") {
+                try {
+                    const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticket.ticketNumber}`);
+                    if (quotationData && quotationData.length > 0) {
+                        setQuotations(prev => ({ ...prev, [ticket.ticketNumber]: quotationData[0] }));
+                    }
+                } catch (err) {
+                    // No quotation found - that's okay
+                    console.debug(`No quotation found for ticket ${ticket.ticketNumber}`);
+                }
+            }
+
+            if (normalizedStatus === "AWAITING_PARTS") {
+                showToast("Ticket moved to Awaiting Parts", "success");
+            } else {
+                showToast(data?.message || "Status updated successfully", "success");
+            }
+            setPendingStatusChange(null);
+        } catch (error) {
+            console.error("Failed to update repair status", error);
+            const apiMessage = error?.response?.data?.message || error?.message || "Failed to update status. Please try again.";
+            if (apiMessage.toLowerCase().includes("quotation") || apiMessage.toLowerCase().includes("approved")) {
+                if (normalizedStatus === "AWAITING_PARTS") {
+                    showToast("Please create a quotation with Option A (Recommended) and Option B (Alternative) parts before moving to Awaiting Parts.", "error");
+                } else if (normalizedStatus === "REPAIRING") {
+                    showToast("Cannot move to Repairing. The quotation must be approved by the customer or overridden by a technician with notes.", "error");
+                } else {
+                    showToast(apiMessage, "error");
+                }
+            } else {
+                showToast(apiMessage, "error");
+            }
+            setPendingStatusChange(null);
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     useEffect(() => {
@@ -279,12 +405,79 @@ const ResolvedRepairs = () => {
                                     </td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
                                     <td className="px-5 py-3">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
-                                        >
-                                            View
-                                        </button>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                            >
+                                                View
+                                            </button>
+                                            {(() => {
+                                                const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+                                                const quotation = quotations[ticket.ticketNumber];
+                                                
+                                                if (role !== 'customer') {
+                                                    if (status === "AWAITING_PARTS") {
+                                                        return (
+                                                            <Link
+                                                                to={`/quotation-builder/${encodeURIComponent(ticket.ticketNumber)}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 flex items-center justify-center gap-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <FileText size={12} />
+                                                                    Build Quotation
+                                                                </button>
+                                                            </Link>
+                                                        );
+                                                    } else if (status === "REPAIRING" && quotation) {
+                                                        return (
+                                                            <Link
+                                                                to={`/quotationviewer/${encodeURIComponent(ticket.ticketNumber)}?repairStatus=${status}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Eye size={12} />
+                                                                    View Quotation
+                                                                </button>
+                                                            </Link>
+                                                        );
+                                                    }
+                                                } else if (role === 'customer' && status === "AWAITING_PARTS") {
+                                                    if (!quotation) {
+                                                        return (
+                                                            <button
+                                                                disabled
+                                                                className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                Creating Quotation
+                                                            </button>
+                                                        );
+                                                    } else if (quotation.status === "PENDING") {
+                                                        return (
+                                                            <Link
+                                                                to={`/quotation-approval/${encodeURIComponent(ticket.ticketNumber)}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    Approve Quotation
+                                                                </button>
+                                                            </Link>
+                                                        );
+                                                    }
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -367,10 +560,18 @@ const ResolvedRepairs = () => {
         return s === 'READY_FOR_PICKUP' || s === 'COMPLETED' || s === 'COMPLETE' || s === 'READY FOR PICKUP';
     }).length;
 
+    // Helper to check if status transition is allowed (for display purposes only)
+    // Note: We don't disable REPAIRING, but show a toast if quotation isn't approved
+    const canTransitionToStatus = (currentStatus, targetStatus, ticketNumber) => {
+        // Always allow transitions - validation happens in applyStatusChange
+        return true;
+    };
+
     // renderStatusControl: provides a gray-styled button with dropdown menu for status options
     const renderStatusControl = (request) => {
         const ticketKey = resolveTicketKey(request);
         const currentStatus = request.status || request.repairStatus || 'Unknown';
+        const displayStatus = normalizeStatus(currentStatus).replace(/_/g, ' ');
 
         return (
             <div className="relative">
@@ -381,7 +582,7 @@ const ResolvedRepairs = () => {
                     aria-expanded={statusDropdownOpen === ticketKey}
                     className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-gray-100 text-gray-700 text-sm border border-gray-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
                 >
-                    <span className="truncate">{currentStatus}</span>
+                    <span className="truncate">{displayStatus}</span>
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                 </button>
 
@@ -391,20 +592,112 @@ const ResolvedRepairs = () => {
                         aria-label="Status options"
                         className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20"
                     >
-                        {statusOptions.map((status) => (
-                            <button
-                                key={status}
-                                role="menuitem"
-                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${request.status === status || request.repairStatus === status ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
-                                onClick={(e) => { promptStatusChange(e, resolveTicketKey(request), status, request); }}
-                            >
-                                {status}
-                            </button>
-                        ))}
+                        {statusOptions.map((status) => {
+                            const normalizedCurrent = normalizeStatus(currentStatus);
+                            const normalizedTarget = normalizeStatus(status);
+                            const isCurrent = normalizedCurrent === normalizedTarget;
+                            return (
+                                <button
+                                    key={status}
+                                    role="menuitem"
+                                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                                        isCurrent
+                                            ? 'font-semibold text-gray-900' 
+                                            : 'text-gray-700'
+                                    }`}
+                                    onClick={(e) => { 
+                                        promptStatusChange(e, resolveTicketKey(request), status, request);
+                                    }}
+                                >
+                                    {status.replace(/_/g, ' ')}
+                                </button>
+                            );
+                        })}
                      </div>
                  )}
              </div>
         );
+    };
+
+    // Render action buttons for technician/admin
+    const renderActionButtons = (ticket) => {
+        if (role === 'customer') return null;
+        
+        const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+        const quotation = quotations[ticket.ticketNumber];
+        
+        return (
+            <div className="flex flex-col gap-2 mt-2">
+                {status === "AWAITING_PARTS" && (
+                    <Link
+                        to={`/quotation-builder/${encodeURIComponent(ticket.ticketNumber)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full"
+                    >
+                        <button
+                            className="w-full px-3 py-2 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 flex items-center justify-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <FileText size={14} />
+                            Build Quotation
+                        </button>
+                    </Link>
+                )}
+                {status === "REPAIRING" && quotation && (
+                    <Link
+                        to={`/quotationviewer/${encodeURIComponent(ticket.ticketNumber)}?repairStatus=${status}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full"
+                    >
+                        <button
+                            className="w-full px-3 py-2 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Eye size={14} />
+                            View Quotation
+                        </button>
+                    </Link>
+                )}
+            </div>
+        );
+    };
+
+    // Render customer action button
+    const renderCustomerAction = (ticket) => {
+        if (role !== 'customer') return null;
+        
+        const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+        const quotation = quotations[ticket.ticketNumber];
+        
+        if (status === "AWAITING_PARTS") {
+            if (!quotation) {
+                return (
+                    <button
+                        disabled
+                        className="w-full px-3 py-2 text-xs font-medium rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        Creating Quotation
+                    </button>
+                );
+            } else if (quotation.status === "PENDING") {
+                return (
+                    <Link
+                        to={`/quotation-approval/${encodeURIComponent(ticket.ticketNumber)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full"
+                    >
+                        <button
+                            className="w-full px-3 py-2 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            Approve Quotation
+                        </button>
+                    </Link>
+                );
+            }
+        }
+        return null;
     };
 
     return (
@@ -567,14 +860,19 @@ const ResolvedRepairs = () => {
                                                 ) : (
                                                     <>
                                                         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                                                            {resolvedList.map((request) => (
-                                                                <TicketCard
-                                                                    key={resolveTicketKey(request)}
-                                                                    ticket={request}
-                                                                    onClick={() => handleCardClick(request)}
-                                                                    {...(role !== 'customer' ? { renderStatusControl } : {})}
-                                                                />
-                                                            ))}
+                                                            {resolvedList.map((request) => {
+                                                                const ticketKey = resolveTicketKey(request);
+                                                                return (
+                                                                    <TicketCard
+                                                                        key={ticketKey}
+                                                                        ticket={request}
+                                                                        onClick={() => handleCardClick(request)}
+                                                                        {...(role !== 'customer' ? { renderStatusControl } : {})}
+                                                                        actionButtons={renderActionButtons(request)}
+                                                                        customerAction={renderCustomerAction(request)}
+                                                                    />
+                                                                );
+                                                            })}
                                                         </div>
                                                         {renderPagination()}
                                                     </>
@@ -595,12 +893,26 @@ const ResolvedRepairs = () => {
                                                 <h3 className="text-lg font-semibold mb-2">Confirm Status Change</h3>
                                                 <p className="text-sm text-gray-600 mb-4">Change status to <span className="font-medium">{pendingStatusChange.newStatus}</span> for ticket <span className="font-medium">{pendingStatusChange.ticketKey}</span>?</p>
                                                 <div className="flex justify-end gap-3">
-                                                    <button onClick={() => setPendingStatusChange(null)} className="px-3 py-2 rounded bg-gray-100 text-gray-700">Cancel</button>
-                                                    <button onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} className="px-3 py-2 rounded bg-blue-600 text-white">Confirm</button>
+                                                    <button 
+                                                        onClick={() => setPendingStatusChange(null)} 
+                                                        className="px-3 py-2 rounded bg-gray-100 text-gray-700"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} 
+                                                        className="px-3 py-2 rounded bg-blue-600 text-white flex items-center gap-2 disabled:opacity-50"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        {isUpdating && <Spinner size="small" />}
+                                                        {isUpdating ? "Updating..." : "Confirm"}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
+                                    <Toast show={toast.show} message={toast.message} type={toast.type} onClose={closeToast} />
                                  </div>
                              </section>
                          )}

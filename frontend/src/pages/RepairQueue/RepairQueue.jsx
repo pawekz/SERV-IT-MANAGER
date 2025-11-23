@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Plus, ChevronUp } from 'lucide-react';
+import { Plus, ChevronUp, FileText, Eye, Package } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import TicketDetailsModal from "../../components/TicketDetailsModal/TicketDetailsModal.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 import TicketCard from '../../components/TicketCard/TicketCard';
+import Toast from "../../components/Toast/Toast.jsx";
+import Spinner from "../../components/Spinner/Spinner.jsx";
 
 const statusChipClasses = (statusRaw) => {
     const status = (statusRaw || '').toString().trim().toUpperCase();
@@ -33,6 +35,16 @@ const RepairQueue = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
     const [pendingStatusChange, setPendingStatusChange] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [quotations, setQuotations] = useState({}); // Map of ticketNumber -> quotation data
+    
+    // Quotation approval modal state (customer side)
+    const [quotationModalOpen, setQuotationModalOpen] = useState(false);
+    const [quotationModalLoading, setQuotationModalLoading] = useState(false);
+    const [selectedQuotationTicket, setSelectedQuotationTicket] = useState(null);
+    const [quotationParts, setQuotationParts] = useState([]);
+    const [selectedPartId, setSelectedPartId] = useState(null);
 
     // New UI state to match HistoryPage
     const [search, setSearch] = useState('');
@@ -49,12 +61,21 @@ const RepairQueue = () => {
 
     const statusOptions = [
         "RECEIVED",
-        "DIAGNOSED",
-        "AWAITING PARTS",
+        "DIAGNOSING",
+        "AWAITING_PARTS",
         "REPAIRING",
-        "READY FOR PICKUP",
+        "READY_FOR_PICKUP",
         "COMPLETED"
     ];
+
+    // Helper to normalize status (convert display format to backend format)
+    const normalizeStatus = (status) => {
+        if (!status) return status;
+        return status.toString().trim()
+            .replace(/\s+/g, '_')
+            .toUpperCase()
+            .replace('DIAGNOSED', 'DIAGNOSING');
+    };
 
     const availableStatuses = ['ALL', ...Array.from(new Set(ticketRequests.map(t => (t.status || t.repairStatus || '').toString().trim().toUpperCase()).filter(Boolean))).filter(s => s !== 'READY_FOR_PICKUP' && s !== 'READY FOR PICKUP' && s !== 'COMPLETED' && s !== 'COMPLETE')];
 
@@ -79,16 +100,322 @@ const RepairQueue = () => {
             e.nativeEvent.stopImmediatePropagation();
         }
         setStatusDropdownOpen(null);
-        setPendingStatusChange({ ticketKey: ticketId, newStatus, request });
+        
+        // Normalize status for comparison
+        const normalizedStatus = normalizeStatus(newStatus);
+        
+        // Always allow the status change prompt - validation happens in applyStatusChange
+        setPendingStatusChange({ ticketKey: ticketId, newStatus: normalizedStatus, request });
     };
 
-    const applyStatusChange = (ticketKey, newStatus) => {
-        setTicketRequests(prevRequests =>
-            prevRequests.map(request =>
-                (resolveTicketKey(request) === ticketKey ? { ...request, status: newStatus, repairStatus: newStatus } : request)
-            )
+    // Fetch quotations for tickets
+    useEffect(() => {
+        const fetchQuotations = async () => {
+            const quotationMap = {};
+            const ticketsNeedingQuotation = ticketRequests.filter(t => {
+                const status = (t.status || t.repairStatus || '').toString().trim().toUpperCase();
+                return status === 'AWAITING_PARTS' || status === 'REPAIRING';
+            });
+
+            for (const ticket of ticketsNeedingQuotation) {
+                try {
+                    const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticket.ticketNumber}`);
+                    if (data && data.length > 0) {
+                        quotationMap[ticket.ticketNumber] = data[0];
+                    }
+                } catch (err) {
+                    // No quotation found or error - that's okay
+                    console.debug(`No quotation found for ticket ${ticket.ticketNumber}`);
+                }
+            }
+            setQuotations(quotationMap);
+        };
+
+        if (ticketRequests.length > 0) {
+            fetchQuotations();
+        }
+    }, [ticketRequests]);
+
+    const showToast = (message, type = "success") => setToast({ show: true, message, type });
+    const closeToast = () => setToast({ ...toast, show: false });
+
+    // PartPhoto component for quotation modal
+    const PartPhoto = ({ partId, photoUrl }) => {
+        const [src, setSrc] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(false);
+
+        useEffect(() => {
+            const fetchPhoto = async () => {
+                if (!photoUrl || photoUrl === '0' || photoUrl.trim() === '') {
+                    setLoading(false);
+                    setError(true);
+                    return;
+                }
+
+                if (photoUrl.includes('amazonaws.com/') && partId) {
+                    try {
+                        const response = await api.get(`/part/getPartPhoto/${partId}`);
+                        if (response.data) {
+                            setSrc(response.data);
+                        } else {
+                            setError(true);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching presigned photo URL:', err);
+                        setError(true);
+                    }
+                } else {
+                    setSrc(photoUrl);
+                }
+                setLoading(false);
+            };
+            fetchPhoto();
+        }, [partId, photoUrl]);
+
+        if (loading) {
+            return (
+                <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center animate-pulse">
+                    <span className="text-xs text-gray-400">Loading...</span>
+                </div>
+            );
+        }
+
+        if (error || !src) {
+            return (
+                <div className="w-16 h-16 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Package size={24} className="text-gray-400" />
+                </div>
+            );
+        }
+
+        return (
+            <img 
+                src={src} 
+                alt="Part photo"
+                className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+                onError={() => setError(true)}
+            />
         );
-        setPendingStatusChange(null);
+    };
+
+    // Open quotation approval modal
+    const openQuotationModal = async (ticket) => {
+        const quotation = quotations[ticket.ticketNumber];
+        if (!quotation) return;
+
+        setSelectedQuotationTicket(ticket);
+        setQuotationModalOpen(true);
+        
+        // Set initial selection to recommended part
+        const recommended = quotation.recommendedPart;
+        const initialPartId = Array.isArray(recommended) ? (recommended[0] || null) : (recommended || null);
+        setSelectedPartId(initialPartId);
+
+        try {
+            setQuotationModalLoading(true);
+            const ids = Array.from(new Set(quotation.partIds || []));
+            if (ids.length === 0) {
+                setQuotationParts([]);
+            } else {
+                const responses = await Promise.all(ids.map((id) => api.get(`/part/getPartById/${id}`)));
+                setQuotationParts(responses.map((res) => res.data));
+            }
+        } catch (err) {
+            console.error('Failed to load quotation parts', err);
+            showToast('Failed to load part details. Please try again.', 'error');
+        } finally {
+            setQuotationModalLoading(false);
+        }
+    };
+
+    // Handle quotation approval
+    const handleQuotationApprove = async () => {
+        if (!selectedQuotationTicket || !selectedPartId) return;
+        const quotation = quotations[selectedQuotationTicket.ticketNumber];
+        if (!quotation) return;
+
+        try {
+            setQuotationModalLoading(true);
+            await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
+                params: { customerSelection: String(selectedPartId) },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
+            setQuotationModalOpen(false);
+            
+            // Refresh quotations and tickets
+            const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
+            if (quotationData && quotationData.length > 0) {
+                setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+            }
+            
+            // Refresh ticket status
+            const { data: ticketData } = await api.get(`/repairTicket/getRepairTicket/${selectedQuotationTicket.ticketNumber}`);
+            setTicketRequests(prevRequests =>
+                prevRequests.map(request =>
+                    request.ticketNumber === selectedQuotationTicket.ticketNumber
+                        ? { ...request, status: ticketData.repairStatus, repairStatus: ticketData.repairStatus }
+                        : request
+                )
+            );
+        } catch (err) {
+            console.error('Failed to approve quotation', err);
+            const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+            showToast(errorMessage, 'error');
+        } finally {
+            setQuotationModalLoading(false);
+        }
+    };
+
+    // Render quotation option (Option A or B)
+    const renderQuotationOption = (label, partIds, quotation) => {
+        const ids = Array.isArray(partIds) ? partIds : (partIds ? [partIds] : []);
+        if (ids.length === 0) {
+            return (
+                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-500">
+                    {label}: Not provided.
+                </div>
+            );
+        }
+        const labor = quotation?.laborCost || 0;
+        const getPart = (id) => quotationParts.find((p) => p.id === id);
+        
+        const totalPartsCost = ids.reduce((sum, partId) => {
+            const part = getPart(partId);
+            return sum + (Number(part?.unitCost) || 0);
+        }, 0);
+        
+        const grandTotal = totalPartsCost + labor;
+        const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+        const isOptionSelected = ids.some(id => selectedPartId === id);
+        
+        return (
+            <div className="space-y-2">
+                <div className="text-xs font-semibold text-green-700 mb-2">{label} {ids.length > 1 && `(${ids.length} parts)`}</div>
+                <div className={`border rounded-lg p-3 ${isOptionSelected ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}>
+                    {ids.map((partId) => {
+                        const part = getPart(partId);
+                        return (
+                            <button
+                                key={partId}
+                                type="button"
+                                onClick={() => setSelectedPartId(partId)}
+                                className={`w-full text-left transition mb-3 last:mb-0 ${
+                                    selectedPartId === partId ? 'opacity-100' : 'opacity-90 hover:opacity-100'
+                                }`}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <PartPhoto partId={part?.id || partId} photoUrl={part?.partPhotoUrl} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-900">{part?.name || `Part #${partId}`}</div>
+                                        <div className="text-xs text-gray-500">SKU: {part?.partNumber || '—'}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Part(s): {formatCurrency(part?.unitCost)}</div>
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                    <div className="border-t border-gray-200 pt-3 mt-3 space-y-1">
+                        <div className="flex justify-between text-xs text-gray-600">
+                            <span>Part(s) Total:</span>
+                            <span>{formatCurrency(totalPartsCost)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                            <span>Labor:</span>
+                            <span>{formatCurrency(labor)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-semibold text-gray-800 pt-1 border-t border-gray-200">
+                            <span>Total:</span>
+                            <span>{formatCurrency(grandTotal)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const applyStatusChange = async (ticketKey, newStatus) => {
+        const ticket = ticketRequests.find(t => resolveTicketKey(t) === ticketKey);
+        if (!ticket) return;
+
+        setIsUpdating(true);
+        try {
+            // Normalize status to backend format
+            const normalizedStatus = normalizeStatus(newStatus);
+            
+            // For READY_FOR_PICKUP, we need photos - handled by modal
+            if (normalizedStatus === "READY_FOR_PICKUP") {
+                // This should be handled by StatusChangeConfirmModal with photos
+                setPendingStatusChange({ ticketKey, newStatus: normalizedStatus, request: ticket });
+                setIsUpdating(false);
+                return;
+            }
+
+            // Check if moving to REPAIRING from AWAITING_PARTS without approved quotation
+            const currentStatus = normalizeStatus(ticket.status || ticket.repairStatus);
+            if (normalizedStatus === "REPAIRING" && currentStatus === "AWAITING_PARTS") {
+                const quotation = quotations[ticket.ticketNumber];
+                if (!quotation || (quotation.status !== "APPROVED" && !quotation.technicianOverride)) {
+                    showToast("Cannot update to Repairing. The quotation must be approved by the customer first. The ticket will automatically update to Repairing once the quotation is approved.", "error");
+                    setIsUpdating(false);
+                    setPendingStatusChange(null);
+                    return;
+                }
+            }
+
+            const { data } = await api.patch("/repairTicket/updateRepairStatus", {
+                ticketNumber: ticket.ticketNumber,
+                repairStatus: normalizedStatus,
+            });
+
+            // Update local state
+            const finalStatus = data?.newStatus || normalizedStatus;
+            setTicketRequests(prevRequests =>
+                prevRequests.map(request =>
+                    (resolveTicketKey(request) === ticketKey ? { ...request, status: finalStatus, repairStatus: finalStatus } : request)
+                )
+            );
+
+            // Refresh quotations if status changed to AWAITING_PARTS or REPAIRING
+            if (normalizedStatus === "AWAITING_PARTS" || normalizedStatus === "REPAIRING") {
+                try {
+                    const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${ticket.ticketNumber}`);
+                    if (quotationData && quotationData.length > 0) {
+                        setQuotations(prev => ({ ...prev, [ticket.ticketNumber]: quotationData[0] }));
+                    }
+                } catch (err) {
+                    // No quotation found - that's okay
+                    console.debug(`No quotation found for ticket ${ticket.ticketNumber}`);
+                }
+            }
+
+            if (normalizedStatus === "AWAITING_PARTS") {
+                showToast("Ticket moved to Awaiting Parts", "success");
+            } else {
+                showToast(data?.message || "Status updated successfully", "success");
+            }
+            setPendingStatusChange(null);
+        } catch (error) {
+            console.error("Failed to update repair status", error);
+            const apiMessage = error?.response?.data?.message || error?.message || "Failed to update status. Please try again.";
+            if (apiMessage.toLowerCase().includes("quotation") || apiMessage.toLowerCase().includes("approved")) {
+                if (normalizedStatus === "AWAITING_PARTS") {
+                    showToast("Please create a quotation with Option A (Recommended) and Option B (Alternative) parts before moving to Awaiting Parts.", "error");
+                } else if (normalizedStatus === "REPAIRING") {
+                    showToast("Cannot move to Repairing. The quotation must be approved by the customer or overridden by a technician with notes.", "error");
+                } else {
+                    showToast(apiMessage, "error");
+                }
+            } else {
+                showToast(apiMessage, "error");
+            }
+            setPendingStatusChange(null);
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     useEffect(() => {
@@ -267,12 +594,77 @@ const RepairQueue = () => {
                                     </td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
                                     <td className="px-5 py-3">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
-                                        >
-                                            View
-                                        </button>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                            >
+                                                View
+                                            </button>
+                                            {(() => {
+                                                const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+                                                const quotation = quotations[ticket.ticketNumber];
+                                                
+                                                if (role !== 'customer') {
+                                                    if (status === "AWAITING_PARTS") {
+                                                        return (
+                                                            <Link
+                                                                to={`/quotation-builder/${encodeURIComponent(ticket.ticketNumber)}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 flex items-center justify-center gap-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <FileText size={12} />
+                                                                    Build Quotation
+                                                                </button>
+                                                            </Link>
+                                                        );
+                                                    } else if (status === "REPAIRING" && quotation) {
+                                                        return (
+                                                            <Link
+                                                                to={`/quotationviewer/${encodeURIComponent(ticket.ticketNumber)}?repairStatus=${status}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Eye size={12} />
+                                                                    View Quotation
+                                                                </button>
+                                                            </Link>
+                                                        );
+                                                    }
+                                                } else if (role === 'customer' && status === "AWAITING_PARTS") {
+                                                    if (!quotation) {
+                                                        return (
+                                                            <button
+                                                                disabled
+                                                                className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                Creating Quotation
+                                                            </button>
+                                                        );
+                                                    } else if (quotation.status === "PENDING") {
+                                                        return (
+                                                            <button
+                                                                className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openQuotationModal(ticket);
+                                                                }}
+                                                            >
+                                                                Approve Quotation
+                                                            </button>
+                                                        );
+                                                    }
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -345,10 +737,18 @@ const RepairQueue = () => {
         );
     };
 
+    // Helper to check if status transition is allowed (for display purposes only)
+    // Note: We don't disable REPAIRING, but show a toast if quotation isn't approved
+    const canTransitionToStatus = (currentStatus, targetStatus, ticketNumber) => {
+        // Always allow transitions - validation happens in applyStatusChange
+        return true;
+    };
+
     // renderStatusControl: provides a gray-styled button with dropdown menu for status options
     const renderStatusControl = (request) => {
         const ticketKey = resolveTicketKey(request);
         const currentStatus = request.status || request.repairStatus || 'Unknown';
+        const displayStatus = normalizeStatus(currentStatus).replace(/_/g, ' ');
 
         return (
             <div className="relative">
@@ -359,7 +759,7 @@ const RepairQueue = () => {
                     aria-expanded={statusDropdownOpen === ticketKey}
                     className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-gray-100 text-gray-700 text-sm border border-gray-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
                 >
-                    <span className="truncate">{currentStatus}</span>
+                    <span className="truncate">{displayStatus}</span>
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                 </button>
 
@@ -369,20 +769,109 @@ const RepairQueue = () => {
                         aria-label="Status options"
                         className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20"
                     >
-                        {statusOptions.map((status) => (
-                            <button
-                                key={status}
-                                role="menuitem"
-                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${request.status === status || request.repairStatus === status ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
-                                onClick={(e) => { promptStatusChange(e, ticketKey, status, request); }}
-                            >
-                                {status}
-                            </button>
-                        ))}
+                        {statusOptions.map((status) => {
+                            const normalizedCurrent = normalizeStatus(currentStatus);
+                            const normalizedTarget = normalizeStatus(status);
+                            const isCurrent = normalizedCurrent === normalizedTarget;
+                            return (
+                                <button
+                                    key={status}
+                                    role="menuitem"
+                                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                                        isCurrent
+                                            ? 'font-semibold text-gray-900' 
+                                            : 'text-gray-700'
+                                    }`}
+                                    onClick={(e) => { 
+                                        promptStatusChange(e, ticketKey, status, request);
+                                    }}
+                                >
+                                    {status.replace(/_/g, ' ')}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>
         );
+    };
+
+    // Render action buttons for technician/admin
+    const renderActionButtons = (ticket) => {
+        if (role === 'customer') return null;
+        
+        const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+        const quotation = quotations[ticket.ticketNumber];
+        
+        return (
+            <div className="flex flex-col gap-2 mt-2">
+                {status === "AWAITING_PARTS" && (
+                    <Link
+                        to={`/quotation-builder/${encodeURIComponent(ticket.ticketNumber)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full"
+                    >
+                        <button
+                            className="w-full px-3 py-2 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 flex items-center justify-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <FileText size={14} />
+                            Build Quotation
+                        </button>
+                    </Link>
+                )}
+                {status === "REPAIRING" && quotation && (
+                    <Link
+                        to={`/quotationviewer/${encodeURIComponent(ticket.ticketNumber)}?repairStatus=${status}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full"
+                    >
+                        <button
+                            className="w-full px-3 py-2 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Eye size={14} />
+                            View Quotation
+                        </button>
+                    </Link>
+                )}
+            </div>
+        );
+    };
+
+    // Render customer action button
+    const renderCustomerAction = (ticket) => {
+        if (role !== 'customer') return null;
+        
+        const status = (ticket.status || ticket.repairStatus || '').toString().trim().toUpperCase();
+        const quotation = quotations[ticket.ticketNumber];
+        
+        if (status === "AWAITING_PARTS") {
+            if (!quotation) {
+                return (
+                    <button
+                        disabled
+                        className="w-full px-3 py-2 text-xs font-medium rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        Creating Quotation
+                    </button>
+                );
+            } else if (quotation.status === "PENDING") {
+                return (
+                    <button
+                        className="w-full px-3 py-2 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openQuotationModal(ticket);
+                        }}
+                    >
+                        Approve Quotation
+                    </button>
+                );
+            }
+        }
+        return null;
     };
 
     return (
@@ -555,6 +1044,8 @@ const RepairQueue = () => {
                                                                     ticket={request}
                                                                     onClick={() => handleCardClick(request)}
                                                                     {...(role !== 'customer' ? { renderStatusControl } : {})}
+                                                                    actionButtons={renderActionButtons(request)}
+                                                                    customerAction={renderCustomerAction(request)}
                                                                 />
                                                             );
                                                         })}
@@ -576,9 +1067,90 @@ const RepairQueue = () => {
                                                 <h3 className="text-lg font-semibold mb-2">Confirm Status Update?</h3>
                                                 <p className="text-sm text-gray-600 mb-4">Are you sure you want to change the status to <span className="font-medium">{pendingStatusChange.newStatus}</span> for ticket <span className="font-medium">{pendingStatusChange.ticketKey}</span>?</p>
                                                 <div className="flex justify-end gap-3">
-                                                    <button onClick={() => setPendingStatusChange(null)} className="px-3 py-2 rounded bg-gray-100 text-gray-700">Cancel</button>
-                                                    <button onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} className="px-3 py-2 rounded bg-blue-600 text-white">Confirm</button>
+                                                    <button 
+                                                        onClick={() => setPendingStatusChange(null)} 
+                                                        className="px-3 py-2 rounded bg-gray-100 text-gray-700"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => applyStatusChange(pendingStatusChange.ticketKey, pendingStatusChange.newStatus)} 
+                                                        className="px-3 py-2 rounded bg-blue-600 text-white flex items-center gap-2 disabled:opacity-50"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        {isUpdating && <Spinner size="small" />}
+                                                        {isUpdating ? "Updating..." : "Confirm"}
+                                                    </button>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <Toast show={toast.show} message={toast.message} type={toast.type} onClose={closeToast} />
+                                    
+                                    {/* Quotation Approval Modal (Customer Side) */}
+                                    {quotationModalOpen && selectedQuotationTicket && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+                                            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="text-lg font-semibold text-gray-800">Choose an option for ticket {selectedQuotationTicket.ticketNumber}</h4>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setQuotationModalOpen(false);
+                                                            setSelectedQuotationTicket(null);
+                                                            setSelectedPartId(null);
+                                                            setQuotationParts([]);
+                                                        }} 
+                                                        className="text-gray-500 hover:text-gray-700"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                                {quotationModalLoading ? (
+                                                    <div className="py-10 flex justify-center">
+                                                        <Spinner size="large" />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {(() => {
+                                                            const quotation = quotations[selectedQuotationTicket.ticketNumber];
+                                                            if (!quotation) return null;
+                                                            return (
+                                                                <>
+                                                                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                                                        {renderQuotationOption('Option A – Recommended', quotation.recommendedPart || [], quotation)}
+                                                                        {renderQuotationOption('Option B – Alternative', quotation.alternativePart || [], quotation)}
+                                                                    </div>
+                                                                    <p className="text-xs text-gray-600 mb-4">
+                                                                        Need help deciding? Call us at <strong>(02) 8700 1234</strong> and mention ticket{' '}
+                                                                        <strong>{selectedQuotationTicket.ticketNumber}</strong>.
+                                                                    </p>
+                                                                    <div className="flex justify-end gap-3">
+                                                                        <button 
+                                                                            className="px-4 py-2 rounded-md border text-gray-700" 
+                                                                            onClick={() => {
+                                                                                setQuotationModalOpen(false);
+                                                                                setSelectedQuotationTicket(null);
+                                                                                setSelectedPartId(null);
+                                                                                setQuotationParts([]);
+                                                                            }}
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                        <button
+                                                                            className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 flex items-center gap-2"
+                                                                            onClick={handleQuotationApprove}
+                                                                            disabled={!selectedPartId || quotationModalLoading}
+                                                                        >
+                                                                            {quotationModalLoading && <Spinner size="small" />}
+                                                                            Approve Selection
+                                                                        </button>
+                                                                    </div>
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     )}
