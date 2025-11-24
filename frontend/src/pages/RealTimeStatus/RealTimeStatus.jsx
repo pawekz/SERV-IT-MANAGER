@@ -265,8 +265,26 @@ const RealTimeStatus = () => {
             <div className="flex-1 ml-[250px] p-6">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Repair Status Dashboard</h1>
-                    <p className="text-gray-600">Track the progress of your repair request in real-time</p>
+                    <div className="flex items-start justify-between mb-2">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Repair Status Dashboard</h1>
+                            <p className="text-gray-600">Track the progress of your repair request in real-time</p>
+                        </div>
+                        {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
+                            <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block animate-fade-in">
+                                <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
+                                    View Quotation / Approve
+                                </button>
+                            </Link>
+                        )}
+                        {normalizeStatus(currentStatus) === "COMPLETED" && (
+                            <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`} className="inline-block animate-fade-in">
+                                <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
+                                    Give Feedback
+                                </button>
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
                 {/* Animated Status Stepper */}
@@ -313,27 +331,6 @@ const RealTimeStatus = () => {
                         })}
                     </ol>
                 </div>
-
-                {/* Action Buttons */}
-                {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
-                    <div className="flex justify-center mb-8 animate-fade-in">
-                        <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block">
-                            <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
-                                View Quotation / Approve
-                            </button>
-                        </Link>
-                    </div>
-                )}
-
-                {normalizeStatus(currentStatus) === "COMPLETED" && (
-                    <div className="flex justify-center mb-8 animate-fade-in">
-                        <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`} className="inline-block">
-                            <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
-                                Give Feedback
-                            </button>
-                        </Link>
-                    </div>
-                )}
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
