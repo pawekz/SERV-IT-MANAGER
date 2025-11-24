@@ -7,7 +7,8 @@ import CreateEmployeeModal from "../../components/CreateEmployeeModal/CreateEmpl
 const UserManagement = () => {
     // Sample users data - in a real app this would come from an API
     const [users, setUsers] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+    const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('All Roles');
     const [selectedStatus, setSelectedStatus] = useState('All Status');
     const [filteredUsers, setFilteredUsers] = useState(users);
@@ -34,7 +35,7 @@ const UserManagement = () => {
     // Derived paging indices (server-side pagination)
     const indexOfFirstUser = (currentPage - 1) * pageSize;
     const currentUsers = filteredUsers || users; // filteredUsers is derived from users (current page)
-    const totalPages = Math.max(1, Math.ceil((filteredUsers || []).length / pageSize));
+    const totalPages = serverTotalPages || 1;
 
     const [selectedUser, setSelectedUser] = useState({
         firstName: '',
@@ -113,8 +114,8 @@ const UserManagement = () => {
         }
 
         // First filter by search term
-        if (searchTerm.trim() !== '') {
-            const q = searchTerm.toLowerCase();
+        if (appliedSearchTerm.trim() !== '') {
+            const q = appliedSearchTerm.toLowerCase();
             filtered = filtered.filter(user =>
                 (user.email || '').toLowerCase().includes(q) ||
                 ((user.firstName || '') + ' ' + (user.lastName || '')).toLowerCase().includes(q)
@@ -132,24 +133,23 @@ const UserManagement = () => {
         }
 
         setFilteredUsers(filtered);
-        // Reset to first page whenever filters/search/pageSize changes
-        setCurrentPage(1);
-    }, [searchTerm, selectedRole, selectedStatus, users]);
+    }, [appliedSearchTerm, selectedRole, selectedStatus, users, currentUserEmail]);
 
     // Handle search input change
     const handleSearchInput = (e) => {
-        setSearchTerm(e.target.value);
+        setSearchInput(e.target.value);
     };
 
     const handleSearch = () => {
-        // Filtering is client-side within the current page; reset to first page of server data
-        setCurrentPage(1);
+        const trimmed = searchInput.trim();
+        setAppliedSearchTerm(trimmed);
         fetchUsers(1);
     };
 
     const handleClearSearch = () => {
-        setSearchTerm('');
-        setCurrentPage(1);
+        setSearchInput('');
+        setAppliedSearchTerm('');
+        fetchUsers(1);
     };
 
     // Handle role selection change
@@ -419,13 +419,13 @@ const UserManagement = () => {
                                         <input
                                             type="text"
                                             placeholder={'Search by email or name...'}
-                                            value={searchTerm}
+                                        value={searchInput}
                                             aria-label="Search users"
                                             onChange={handleSearchInput}
                                             onKeyDown={e => e.key === 'Enter' && handleSearch()}
                                             className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
                                         />
-                                        {searchTerm && (
+                                        {searchInput && (
                                             <button
                                                 onClick={handleClearSearch}
                                                 className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
