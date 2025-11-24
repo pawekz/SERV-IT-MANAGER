@@ -231,9 +231,11 @@ const RealTimeStatus = () => {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <Sidebar />
-                <div className="flex-1 ml-[250px] flex items-center justify-center">
+            <div className="flex min-h-screen flex-col md:flex-row bg-gray-50">
+                <div className="w-full md:w-[250px] h-auto md:h-screen">
+                    <Sidebar />
+                </div>
+                <div className="flex-1 flex items-center justify-center p-4 md:p-6">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
                         <p className="text-gray-600">Loading repair status...</p>
@@ -245,9 +247,11 @@ const RealTimeStatus = () => {
 
     if (!ticketNumberParam) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <Sidebar />
-                <div className="flex-1 ml-[250px] p-6">
+            <div className="flex min-h-screen flex-col md:flex-row bg-gray-50">
+                <div className="w-full md:w-[250px] h-auto md:h-screen">
+                    <Sidebar />
+                </div>
+                <div className="flex-1 p-4 md:p-6">
                     <div className="text-center py-12">
                         <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No Ticket Selected</h3>
@@ -259,37 +263,41 @@ const RealTimeStatus = () => {
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <Sidebar />
+        <div className="flex min-h-screen flex-col md:flex-row bg-gray-50">
+            <div className="w-full md:w-[250px] h-auto md:h-screen">
+                <Sidebar />
+            </div>
 
-            <div className="flex-1 ml-[250px] p-6">
+            <div className="flex-1 p-4 md:p-6">
                 {/* Header */}
-                <div className="mb-8">
-                    <div className="flex items-start justify-between mb-2">
+                <div className="mb-6 md:mb-8">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-2">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Repair Status Dashboard</h1>
-                            <p className="text-gray-600">Track the progress of your repair request in real-time</p>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Repair Status Dashboard</h1>
+                            <p className="text-sm md:text-base text-gray-600">Track the progress of your repair request in real-time</p>
                         </div>
-                        {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
-                            <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block animate-fade-in">
-                                <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
-                                    View Quotation / Approve
-                                </button>
-                            </Link>
-                        )}
-                        {normalizeStatus(currentStatus) === "COMPLETED" && (
-                            <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`} className="inline-block animate-fade-in">
-                                <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105">
-                                    Give Feedback
-                                </button>
-                            </Link>
-                        )}
+                        <div className="flex-shrink-0">
+                            {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
+                                <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block w-full sm:w-auto animate-fade-in">
+                                    <button className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base">
+                                        View Quotation / Approve
+                                    </button>
+                                </Link>
+                            )}
+                            {normalizeStatus(currentStatus) === "COMPLETED" && (
+                                <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`} className="inline-block w-full sm:w-auto animate-fade-in">
+                                    <button className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base">
+                                        Give Feedback
+                                    </button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Animated Status Stepper */}
-                <div className={`flex justify-center mb-8 transition-all duration-500 ${statusTransition ? 'scale-105' : 'scale-100'}`}>
-                    <ol className="flex flex-wrap items-center gap-4 md:gap-6 max-w-full">
+                <div className={`flex justify-center mb-6 md:mb-8 transition-all duration-500 ${statusTransition ? 'scale-105' : 'scale-100'}`}>
+                    <ol className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 md:gap-6 max-w-full px-2">
                         {statusOrder.map((step, idx) => {
                             // Normalize currentStatus for comparison
                             const normalizedStatus = normalizeStatus(currentStatus)
@@ -303,7 +311,7 @@ const RealTimeStatus = () => {
                             return (
                                 <li 
                                     key={step} 
-                                    className={`flex items-center space-x-2.5 transition-all duration-500 ${
+                                    className={`flex items-center space-x-1.5 sm:space-x-2.5 transition-all duration-500 ${
                                         isReached 
                                             ? isCurrent 
                                                 ? "text-green-600 scale-110" 
@@ -311,18 +319,18 @@ const RealTimeStatus = () => {
                                             : "text-gray-400"
                                     }`}
                                 >
-                                    <span className={`flex items-center justify-center w-10 h-10 border-2 rounded-full shrink-0 transition-all duration-500 ${
+                                    <span className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 border-2 rounded-full shrink-0 transition-all duration-500 ${
                                         isReached 
                                             ? isCurrent 
                                                 ? "border-green-600 bg-green-50 shadow-lg" 
                                                 : "border-green-500 bg-green-50" 
                                             : "border-gray-300 bg-white"
                                     }`}>
-                                        {isCurrent && <CheckCircle size={20} className="text-green-600" />}
-                                        {!isCurrent && <span className="text-sm font-semibold">{idx + 1}</span>}
+                                        {isCurrent && <CheckCircle size={18} className="sm:w-5 sm:h-5 text-green-600" />}
+                                        {!isCurrent && <span className="text-xs sm:text-sm font-semibold">{idx + 1}</span>}
                                     </span>
                                     <span className="hidden sm:block">
-                                        <h3 className="font-medium leading-tight capitalize text-sm md:text-base">
+                                        <h3 className="font-medium leading-tight capitalize text-xs sm:text-sm md:text-base">
                                             {step.replace(/_/g, ' ').toLowerCase()}
                                         </h3>
                                     </span>
@@ -333,15 +341,15 @@ const RealTimeStatus = () => {
                 </div>
 
                 {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
                     {/* Left Column - Ticket Info & Diagnostics */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-4 md:space-y-6">
                         {/* Ticket Information Card */}
                         {ticketDetails && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md">
                                 <div className="flex items-center gap-2 mb-4">
                                     <FileText className="text-green-600" size={20} />
-                                    <h2 className="text-xl font-semibold text-gray-900">Ticket Information</h2>
+                                    <h2 className="text-lg md:text-xl font-semibold text-gray-900">Ticket Information</h2>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
@@ -382,10 +390,10 @@ const RealTimeStatus = () => {
 
                         {/* Diagnostics & Observations Card */}
                         {ticketDetails && (ticketDetails.reportedIssue || ticketDetails.observations) && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md">
                                 <div className="flex items-center gap-2 mb-4">
                                     <ClipboardCheck className="text-green-600" size={20} />
-                                    <h2 className="text-xl font-semibold text-gray-900">Diagnostics</h2>
+                                    <h2 className="text-lg md:text-xl font-semibold text-gray-900">Diagnostics</h2>
                                 </div>
                                 {ticketDetails.reportedIssue && (
                                     <div className="mb-4">
@@ -404,10 +412,10 @@ const RealTimeStatus = () => {
 
                         {/* Selected Parts & Quotation Card */}
                         {quotation && (selectedParts.length > 0 || quotation.status === 'PENDING' || quotation.status === 'APPROVED') && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md animate-scale-in">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md animate-scale-in">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Package className="text-purple-600" size={20} />
-                                    <h2 className="text-xl font-semibold text-gray-900">Selected Parts & Options</h2>
+                                    <h2 className="text-lg md:text-xl font-semibold text-gray-900">Selected Parts & Options</h2>
                                     {quotation.status && (
                                         <span className={`ml-auto px-2 py-1 text-xs font-semibold rounded ${
                                             quotation.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
@@ -426,19 +434,19 @@ const RealTimeStatus = () => {
                                             {selectedParts.map((part, idx) => (
                                                 <div 
                                                     key={part.id} 
-                                                    className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-300 hover:bg-gray-100 hover:shadow-sm"
+                                                    className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-300 hover:bg-gray-100 hover:shadow-sm"
                                                     style={{ animationDelay: `${idx * 100}ms` }}
                                                 >
-                                                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="font-semibold text-gray-900">{part.name}</div>
+                                                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-gray-200" />
+                                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                                        <div className="font-semibold text-sm sm:text-base text-gray-900">{part.name}</div>
                                                         <div className="text-xs text-gray-500">SKU: {part.partNumber}</div>
                                                         {part.description && (
-                                                            <div className="text-sm text-gray-600 mt-1 line-clamp-2">{part.description}</div>
+                                                            <div className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{part.description}</div>
                                                         )}
                                                     </div>
-                                                    <div className="text-right">
-                                                        <div className="font-bold text-gray-900">{formatCurrency(part.unitCost || 0)}</div>
+                                                    <div className="text-left sm:text-right w-full sm:w-auto">
+                                                        <div className="font-bold text-sm sm:text-base text-gray-900">{formatCurrency(part.unitCost || 0)}</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -472,10 +480,10 @@ const RealTimeStatus = () => {
 
                         {/* Technician Notes from History */}
                         {history.length > 0 && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md">
                                 <div className="flex items-center gap-2 mb-4">
                                     <User className="text-indigo-600" size={20} />
-                                    <h2 className="text-xl font-semibold text-gray-900">Status History & Notes</h2>
+                                    <h2 className="text-lg md:text-xl font-semibold text-gray-900">Status History & Notes</h2>
                                 </div>
                                 <div className="space-y-4">
                                     {history.map((h, idx) => (
@@ -512,19 +520,19 @@ const RealTimeStatus = () => {
                     </div>
 
                     {/* Right Column - Current Status & Quick Info */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                         {/* Current Status Card */}
-                        <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm border-2 border-green-200 p-6 transition-all duration-500 ${statusTransition ? 'scale-105 shadow-lg' : 'scale-100'}`}>
+                        <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm border-2 border-green-200 p-4 md:p-6 transition-all duration-500 ${statusTransition ? 'scale-105 shadow-lg' : 'scale-100'}`}>
                             <div className="flex items-center gap-2 mb-4">
                                 <Wrench className="text-green-600" size={20} />
-                                <h2 className="text-xl font-semibold text-gray-900">Current Stage</h2>
+                                <h2 className="text-lg md:text-xl font-semibold text-gray-900">Current Stage</h2>
                             </div>
                             <div className="text-center py-4">
-                                <div className={`text-4xl font-bold text-green-600 mb-2 capitalize transition-all duration-500 ${statusTransition ? 'animate-pulse' : ''}`}>
+                                <div className={`text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-2 capitalize transition-all duration-500 ${statusTransition ? 'animate-pulse' : ''}`}>
                                     {currentStatus ? currentStatus.replace(/_/g, ' ').toLowerCase() : 'Unknown'}
                                 </div>
                                 {currentStatus && (
-                                    <div className="text-sm text-gray-600 mt-2">
+                                    <div className="text-xs sm:text-sm text-gray-600 mt-2">
                                         Step {statusOrder.indexOf(currentStatus) + 1} of {statusOrder.length}
                                     </div>
                                 )}
@@ -533,8 +541,8 @@ const RealTimeStatus = () => {
 
                         {/* Quick Info Card */}
                         {ticketDetails && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Information</h3>
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Quick Information</h3>
                                 <div className="space-y-3">
                                     {ticketDetails.customerFirstName && (
                                         <div>
@@ -570,15 +578,15 @@ const RealTimeStatus = () => {
 
                 {/* Photo Evidence Section */}
                 {(ticketDetails && ((ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0) || (ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0))) && (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-6">Photo Evidence</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
+                        <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Photo Evidence</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             {/* Before Photos - repairPhotosUrls (photos taken when device was received) */}
                             {ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0 && (
-                                <div className="border-r-0 md:border-r border-gray-200 pr-0 md:pr-6">
+                                <div className="border-r-0 md:border-r border-gray-200 pr-0 md:pr-6 pb-4 md:pb-0 border-b md:border-b-0">
                                     <div className="mb-4 pb-4 border-b border-gray-200">
-                                        <h3 className="text-lg font-semibold text-green-700 mb-1">Before Photos</h3>
-                                        <p className="text-sm text-gray-600">Device condition when received</p>
+                                        <h3 className="text-base md:text-lg font-semibold text-green-700 mb-1">Before Photos</h3>
+                                        <p className="text-xs md:text-sm text-gray-600">Device condition when received</p>
                                     </div>
                                     <div className="max-w-full">
                                         <BeforePicturesGallery photos={ticketDetails.repairPhotosUrls} />
@@ -589,8 +597,8 @@ const RealTimeStatus = () => {
                             {ticketDetails.afterRepairPhotosUrls && ticketDetails.afterRepairPhotosUrls.length > 0 && (
                                 <div className={ticketDetails.repairPhotosUrls && ticketDetails.repairPhotosUrls.length > 0 ? "pl-0 md:pl-6" : ""}>
                                     <div className="mb-4 pb-4 border-b border-gray-200">
-                                        <h3 className="text-lg font-semibold text-green-700 mb-1">After Photos</h3>
-                                        <p className="text-sm text-gray-600">Device condition after repair</p>
+                                        <h3 className="text-base md:text-lg font-semibold text-green-700 mb-1">After Photos</h3>
+                                        <p className="text-xs md:text-sm text-gray-600">Device condition after repair</p>
                                     </div>
                                     <div className="max-w-full">
                                         <AfterPicturesGallery photos={ticketDetails.afterRepairPhotosUrls} />
