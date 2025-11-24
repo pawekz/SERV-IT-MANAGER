@@ -1,33 +1,135 @@
 import React, {useEffect, useState, useMemo} from "react";
-import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
+import {ChevronLeft, ChevronRight, X, Camera} from "lucide-react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
 import { useWarrantyPhoto } from '../../hooks/useWarrantyPhoto';
 
-function TicketWarrantyImage({ path, alt, className }) {
-    const { data: src, isLoading } = useWarrantyPhoto(path); // custom hook
+// Component to render warranty photos with proper fetching
+function WarrantyPhotoImage({ photoUrl, index, onRemove, canRemove, onClick }) {
+    const { data: presignedUrl, isLoading } = useWarrantyPhoto(photoUrl);
+    
+    // If it's already a base64/blob URL (new uploads), use it directly
+    const imageSrc = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:')) 
+        ? photoUrl 
+        : presignedUrl;
 
     if (isLoading) {
         return (
-            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-                Loading...
+            <div className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center">
+                <span className="text-xs text-gray-500">Loading...</span>
             </div>
         );
     }
 
-    if (!src) {
+    if (!imageSrc) {
         return (
-            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-                <Camera size={40} className="text-gray-300" />
+            <div className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center">
+                <Camera size={24} className="text-gray-300" />
             </div>
         );
     }
 
-    return <img src={src} alt={alt} className={className} />;
+    return (
+        <div
+            className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 cursor-pointer"
+            onClick={onClick}
+        >
+            {canRemove && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(index);
+                    }}
+                    className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 border-none z-10 hover:bg-red-100"
+                    aria-label="Remove photo"
+                >
+                    <X size={16} className="text-gray-500 hover:text-red-500" />
+                </button>
+            )}
+            <img
+                src={imageSrc}
+                alt={`Device condition ${index + 1}`}
+                className="w-full h-full object-contain"
+            />
+        </div>
+    );
 }
 
+// Component for image viewer modal with proper photo fetching
+function ImageViewerModal({ photoUrl, currentIndex, totalImages, onClose, onPrev, onNext }) {
+    const { data: presignedUrl, isLoading } = useWarrantyPhoto(photoUrl);
+    
+    // If it's already a base64/blob URL (new uploads), use it directly
+    const imageSrc = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:')) 
+        ? photoUrl 
+        : presignedUrl;
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+            onClick={onClose}
+        >
+            <div
+                className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
+                style={{ minWidth: 350, minHeight: 350, maxWidth: 500, maxHeight: 500 }}
+                onClick={e => e.stopPropagation()}
+            >
+                <button
+                    type="button"
+                    className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
+                    onClick={onClose}
+                >
+                    <X size={28} />
+                </button>
+                {isLoading ? (
+                    <div className="flex items-center justify-center" style={{ minWidth: 400, minHeight: 400 }}>
+                        <span className="text-gray-500">Loading image...</span>
+                    </div>
+                ) : imageSrc ? (
+                    <img
+                        src={imageSrc}
+                        alt={`Device condition ${currentIndex + 1}`}
+                        style={{
+                            maxWidth: 400,
+                            maxHeight: 400,
+                            objectFit: "contain",
+                            borderRadius: 8,
+                            background: "#f3f4f6"
+                        }}
+                    />
+                ) : (
+                    <div className="flex items-center justify-center" style={{ minWidth: 400, minHeight: 400 }}>
+                        <Camera size={48} className="text-gray-300" />
+                    </div>
+                )}
+                <div className="flex items-center justify-between w-full mt-4">
+                    <button
+                        type="button"
+                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        onClick={onPrev}
+                        disabled={totalImages < 2}
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <span className="text-gray-700 text-sm">
+                        {currentIndex + 1} / {totalImages}
+                    </span>
+                    <button
+                        type="button"
+                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        onClick={onNext}
+                        disabled={totalImages < 2}
+                    >
+                        <ChevronRight size={24} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     if (!data) return null;
@@ -95,46 +197,12 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                 if (prev.warrantyNumber === data.warrantyNumber) return prev;
                 return {
                     ...prev,
-                    ...data
+                    ...data,
+                    warrantyPhotosUrls: data.warrantyPhotosUrls || []
                 };
             });
         }
     }, [data?.warrantyNumber]);
-    
-    // Reset fetched photos when warranty photos URLs change
-    useEffect(() => {
-        setFetchedWarrantyPhotos({});
-    }, [data?.warrantyNumber]);
-
-    // Component to fetch individual warranty photo with caching
-    const WarrantyPhotoFetcher = ({ photoUrl, index }) => {
-        const { data: presignedUrl } = useWarrantyPhoto(photoUrl);
-        
-        useEffect(() => {
-            if (presignedUrl) {
-                setFetchedWarrantyPhotos(prev => ({ ...prev, [index]: presignedUrl }));
-            }
-        }, [presignedUrl, index]);
-        
-        return null;
-    };
-    
-    // State to store fetched warranty photo URLs by index
-    const [fetchedWarrantyPhotos, setFetchedWarrantyPhotos] = useState({});
-    
-    // Extract photo URLs, handling both base64 (new uploads) and presigned URLs
-    const warrantyPhotos = useMemo(() => {
-        if (!data.warrantyPhotosUrls || data.warrantyPhotosUrls.length === 0) return [];
-        
-        return data.warrantyPhotosUrls.map((photoUrl, idx) => {
-            // If it's already a base64 data URL (from new uploads), use it directly
-            if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:'))) {
-                return photoUrl;
-            }
-            // Otherwise, use the cached presigned URL
-            return fetchedWarrantyPhotos[idx] || photoUrl;
-        });
-    }, [data.warrantyPhotosUrls, fetchedWarrantyPhotos]);
 
     const UpdateStatus = async () => {
         try {
@@ -237,13 +305,28 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     };
     const closeImageViewer = () => setImageViewerOpen(false);
 
-    // Unified photo source preference: formData.warrantyPhotosUrls first (new uploads), else warrantyPhotos fallback (cached)
+    // Get displayed photos - prefer formData (new uploads), fallback to data (existing photos)
     const displayedPhotos = useMemo(() => {
         if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
             return formData.warrantyPhotosUrls;
         }
-        return warrantyPhotos;
-    }, [formData.warrantyPhotosUrls, warrantyPhotos]);
+        return data.warrantyPhotosUrls || [];
+    }, [formData.warrantyPhotosUrls, data.warrantyPhotosUrls]);
+
+    const handleRemovePhoto = (index) => {
+        if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+            setFormData(prev => {
+                const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== index);
+                setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== index) : pf));
+                if (updated.length === 0) {
+                    setPhotoError("Please upload at least one photo of the device condition.");
+                } else {
+                    setPhotoError('');
+                }
+                return { ...prev, warrantyPhotosUrls: updated };
+            });
+        }
+    };
 
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
@@ -475,21 +558,6 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         </div>
 
                         {/* Device Condition Section */}
-                        {/* Fetch warranty photos in background */}
-                        {data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0 && data.warrantyPhotosUrls.map((photoUrl, idx) => {
-                            // Only fetch if it's not already a base64/blob URL
-                            if (photoUrl && !photoUrl.startsWith('data:') && !photoUrl.startsWith('blob:')) {
-                                return (
-                                    <WarrantyPhotoFetcher
-                                        key={`warranty-photo-${idx}-${photoUrl}`}
-                                        photoUrl={photoUrl}
-                                        index={idx}
-                                    />
-                                );
-                            }
-                            return null;
-                        })}
-
                         <div className="mb-6 mt-5">
                             {/* Header */}
                             <div className="mb-6">
@@ -499,7 +567,6 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
 
                                 {/* Container */}
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center space-y-3">
-
                                     {/* Upload Button - only if not success AND status is CHECKED_IN */}
                                     {!success && data.status === "CHECKED_IN" && (
                                         <>
@@ -535,115 +602,15 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                     {/* Photo Display */}
                                     {displayedPhotos.length > 0 && (
                                         <div className="flex gap-4 mt-2 justify-center flex-wrap">
-                                            {displayedPhotos.map((src, idx) => (
-                                                <div
+                                            {displayedPhotos.map((photoUrl, idx) => (
+                                                <WarrantyPhotoImage
                                                     key={idx}
-                                                    className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer"
-                                                >
-                                                    Upload Photo(s)
-                                                </label>
-                                            </>
-                                        )}
-                                        <input
-                                            id="photo-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            multiple
-                                            onChange={handlePhotoUpload}
-                                            disabled={success}
-                                            max={3}
-                                        />
-                                        {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
-                                            <p className="text-sm text-gray-600">
-                                                Uploaded Images:
-                                            </p>
-                                        )}
-                                        {photoError && (
-                                            <p className="text-sm text-red-600">
-                                                {photoError instanceof Error ? photoError.message : photoError}
-                                            </p>
-                                        )}
-                                        {displayedPhotos && displayedPhotos.length > 0 && (
-                                            <div className="flex gap-4 mt-2 justify-center">
-                                                {displayedPhotos.map((src, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        style={{
-                                                            width: 96,
-                                                            height: 96,
-                                                            background: "#f3f4f6",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            borderRadius: 8,
-                                                            border: "1px solid #e5e7eb",
-                                                            overflow: "hidden",
-                                                            cursor: "pointer",
-                                                            position: "relative"
-                                                        }}
-                                                    >
-                                                        {!success && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={e => {
-                                                                    e.stopPropagation();
-                                                                    if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
-                                                                        setFormData(prev => {
-                                                                            const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
-                                                                            setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
-                                                                            if (updated.length === 0) {
-                                                                                setPhotoError("Please upload at least one photo of the device condition.");
-                                                                            } else {
-                                                                                setPhotoError('');
-                                                                            }
-                                                                            return { ...prev, warrantyPhotosUrls: updated };
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    top: 4,
-                                                                    right: 4,
-                                                                    background: "rgba(255,255,255,0.8)",
-                                                                    border: "none",
-                                                                    borderRadius: "50%",
-                                                                    width: 24,
-                                                                    height: 24,
-                                                                    display: "flex",
-                                                                    alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                    cursor: "pointer",
-                                                                    zIndex: 2
-                                                                }}
-                                                                aria-label="Remove photo"
-                                                                disabled={success}
-                                                            >
-                                                                <X size={18} className="text-gray-500 hover:text-red-500" />
-                                                            </button>
-                                                        )}
-                                                        <img
-                                                            src={src}
-                                                            alt={`Device condition ${idx + 1}`}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                objectFit: "contain",
-                                                                background: "#f3f4f6"
-                                                            }}
-                                                            className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 border-none z-10 hover:bg-red-100"
-                                                            aria-label="Remove photo"
-                                                        >
-                                                            <X size={16} className="text-gray-500 hover:text-red-500" />
-                                                        </button>
-                                                    )}
-                                                    <img
-                                                        src={src}
-                                                        alt={`Device condition ${idx + 1}`}
-                                                        className="w-full h-full object-contain"
-                                                        onClick={() => openImageViewer(idx)}
-                                                    />
-                                                </div>
+                                                    photoUrl={photoUrl}
+                                                    index={idx}
+                                                    onRemove={handleRemovePhoto}
+                                                    canRemove={!success && data.status === "CHECKED_IN"}
+                                                    onClick={() => openImageViewer(idx)}
+                                                />
                                             ))}
                                         </div>
                                     )}
@@ -692,57 +659,15 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         </div>
 
                         {/* Image Viewer Modal */}
-                        {imageViewerOpen && (
-                            <div
-                                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
-                                onClick={closeImageViewer}
-                            >
-                                <div
-                                    className="relative bg-white rounded-lg shadow-lg p-4 flex flex-col items-center"
-                                    style={{ minWidth: 350, minHeight: 350, maxWidth: 500, maxHeight: 500 }}
-                                    onClick={e => e.stopPropagation()}
-                                >
-                                    <button
-                                        type="button"
-                                        className="absolute top-2 right-2 text-gray-700 hover:text-red-500"
-                                        onClick={closeImageViewer}
-                                    >
-                                        <X size={28} />
-                                    </button>
-                                    <img
-                                        src={displayedPhotos[imageViewerIndex]}
-                                        alt={`Device condition ${imageViewerIndex + 1}`}
-                                        style={{
-                                            maxWidth: 400,
-                                            maxHeight: 400,
-                                            objectFit: "contain",
-                                            borderRadius: 8,
-                                            background: "#f3f4f6"
-                                        }}
-                                    />
-                                    <div className="flex items-center justify-between w-full mt-4">
-                                        <button
-                                            type="button"
-                                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                                            onClick={imageViewerPrevPhoto}
-                                            disabled={displayedPhotos.length < 2}
-                                        >
-                                            <ChevronLeft size={24} />
-                                        </button>
-                                        <span className="text-gray-700 text-sm">
-                                            {imageViewerIndex + 1} / {displayedPhotos.length}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                                            onClick={imageViewerNextPhoto}
-                                            disabled={displayedPhotos.length < 2}
-                                        >
-                                            <ChevronRight size={24} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        {imageViewerOpen && displayedPhotos.length > 0 && (
+                            <ImageViewerModal
+                                photoUrl={displayedPhotos[imageViewerIndex]}
+                                currentIndex={imageViewerIndex}
+                                totalImages={displayedPhotos.length}
+                                onClose={closeImageViewer}
+                                onPrev={imageViewerPrevPhoto}
+                                onNext={imageViewerNextPhoto}
+                            />
                         )}
 
                     </form>

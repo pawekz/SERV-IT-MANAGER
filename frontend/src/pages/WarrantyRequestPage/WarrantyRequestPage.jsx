@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {Package, TabletSmartphone, Computer, Headphones, Archive, Search} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import RequestReturn from "../../components/RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import CheckWarranty from "../../components/CheckWarranty/CheckWarranty.jsx";
 import WarrantyDetails from "../../components/WarrantyDetails/WarrantyDetails.jsx";
-
-
 
 const WarrantyRequestPage = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
