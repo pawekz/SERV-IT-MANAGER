@@ -6,6 +6,29 @@ import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
 import { useWarrantyPhoto } from '../../hooks/useWarrantyPhoto';
 
+function TicketWarrantyImage({ path, alt, className }) {
+    const { data: src, isLoading } = useWarrantyPhoto(path); // custom hook
+
+    if (isLoading) {
+        return (
+            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+                Loading...
+            </div>
+        );
+    }
+
+    if (!src) {
+        return (
+            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+                <Camera size={40} className="text-gray-300" />
+            </div>
+        );
+    }
+
+    return <img src={src} alt={alt} className={className} />;
+}
+
+
 const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     if (!data) return null;
     if (!isOpen) return null;
@@ -26,7 +49,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         password: '' ,
         type: '',
         techObservation: '',
-        warrantyPhotosUrls: data.warrantyPhotosUrls
+        warrantyPhotosUrls: data.warrantyPhotosfs
     }));
     const [reason, setReason] = useState({
         warrantyNumber: data.warrantyNumber,
@@ -298,7 +321,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                             </div>
                             <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
-                                <div><strong>Customer Name:</strong><br />{data.customerName}</div>
+                                <div><strong>Customer Name:</strong><br />{data.customerFirstName} {data.customerLastName}</div>
                                 <div><strong>Customer Email:</strong><br />{data.customerEmail}</div>
                                 <div><strong>Customer Phone Number:</strong><br />{data.customerPhoneNumber}</div>
                             </div>
@@ -468,17 +491,54 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         })}
 
                         <div className="mb-6 mt-5">
+                            {/* Header */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
                                 </div>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                    <div className="space-y-3">
-                                        {!success && data.status === "CHECKED_IN" && (
-                                            <>
-                                                <label
-                                                    htmlFor="photo-upload"
-                                                    className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+
+                                {/* Container */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center space-y-3">
+
+                                    {/* Upload Button - only if not success AND status is CHECKED_IN */}
+                                    {!success && data.status === "CHECKED_IN" && (
+                                        <>
+                                            <label
+                                                htmlFor="photo-upload"
+                                                className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+                                            >
+                                                Upload Photo(s)
+                                            </label>
+                                            <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
+                                        </>
+                                    )}
+
+                                    {/* File Input */}
+                                    <input
+                                        id="photo-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        multiple
+                                        onChange={handlePhotoUpload}
+                                        disabled={success}
+                                        max={3}
+                                    />
+
+                                    {/* Error */}
+                                    {photoError && (
+                                        <p className="text-sm text-red-600">
+                                            {photoError instanceof Error ? photoError.message : photoError}
+                                        </p>
+                                    )}
+
+                                    {/* Photo Display */}
+                                    {displayedPhotos.length > 0 && (
+                                        <div className="flex gap-4 mt-2 justify-center flex-wrap">
+                                            {displayedPhotos.map((src, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer"
                                                 >
                                                     Upload Photo(s)
                                                 </label>
@@ -571,14 +631,31 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                                 objectFit: "contain",
                                                                 background: "#f3f4f6"
                                                             }}
-                                                            onClick={() => openImageViewer(idx)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
-                                    </div>
+                                                            className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 border-none z-10 hover:bg-red-100"
+                                                            aria-label="Remove photo"
+                                                        >
+                                                            <X size={16} className="text-gray-500 hover:text-red-500" />
+                                                        </button>
+                                                    )}
+                                                    <img
+                                                        src={src}
+                                                        alt={`Device condition ${idx + 1}`}
+                                                        className="w-full h-full object-contain"
+                                                        onClick={() => openImageViewer(idx)}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* No Photos Placeholder */}
+                                    {displayedPhotos.length === 0 && (
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            {(!success && data.status === "CHECKED_IN")
+                                                ? "No photos uploaded yet"
+                                                : "No photos available"}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
