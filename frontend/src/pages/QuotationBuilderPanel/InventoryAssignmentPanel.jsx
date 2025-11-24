@@ -427,17 +427,19 @@ const InventoryAssignmentPanel = () => {
     };
 
     return (
-        <div className="flex min-h-screen font-['Poppins',sans-serif]">
-            {/* Sidebar - now uncommented */}
-            <Sidebar />
+        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
+            {/* Sidebar */}
+            <div className="w-full md:w-[250px] h-auto md:h-screen">
+                <Sidebar />
+            </div>
 
-            {/* Main Content - adjusted to match AccountInformation structure */}
-            <div className="flex-1 p-8 ml-[250px] bg-gray-50">
-                <div className="px-10 py-8">
+            {/* Main Content */}
+            <div className="flex-1 p-4 md:p-8 bg-gray-50">
+                <div className="px-4 md:px-10 py-4 md:py-8">
                     {/* Header */}
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">Quotation Builder</h1>
-                        <p className="text-gray-600">Browse inventory and assign parts to repair tickets.</p>
+                    <div className="mb-4 md:mb-6">
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Quotation Builder</h1>
+                        <p className="text-sm md:text-base text-gray-600">Browse inventory and assign parts to repair tickets.</p>
                     </div>
 
                     <RepairTicketCard ticketNumber={ticketParam || repairInfo.ticketId.replace('#','')} getStatusColor={getStatusColor} />
@@ -454,10 +456,10 @@ const InventoryAssignmentPanel = () => {
                         <>
                             {/* Inventory Modal */}
                             {showInventoryModal && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-4">
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-2 sm:px-4">
                                     <div className="bg-white rounded-lg shadow-xl max-h-[90vh] w-full max-w-4xl overflow-hidden flex flex-col">
-                                        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                                            <h2 className="text-lg font-semibold text-gray-800">
+                                        <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
+                                            <h2 className="text-base sm:text-lg font-semibold text-gray-800 pr-2">
                                                 Select Parts for Option {inventorySlotTarget === "A" ? "A – Recommended" : "B – Alternative"}
                                             </h2>
                                             <button
@@ -465,12 +467,12 @@ const InventoryAssignmentPanel = () => {
                                                     setModalSelectedParts([]);
                                                     setShowInventoryModal(false);
                                                 }}
-                                                className="text-gray-500 hover:text-gray-700"
+                                                className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                                             >
                                                 ✕
                                             </button>
                                         </div>
-                                        <div className="flex-1 overflow-y-auto p-4">
+                                        <div className="flex-1 overflow-y-auto p-2 sm:p-4">
                                             <AvailableInventory
                                                 inventoryItems={(() => {
                                                     // Filter out parts that are already in the other option
@@ -489,13 +491,13 @@ const InventoryAssignmentPanel = () => {
                                                 getStatusColor={getStatusColor}
                                              />
                                         </div>
-                                        <div className="p-4 border-t border-gray-200 flex justify-between items-center">
-                                            <div className="text-sm text-gray-600">
+                                        <div className="p-3 sm:p-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                                            <div className="text-xs sm:text-sm text-gray-600">
                                                 {modalSelectedParts.length} part{modalSelectedParts.length !== 1 ? 's' : ''} selected
                                             </div>
                                             <button
                                                 onClick={applyModalSelections}
-                                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm sm:text-base"
                                             >
                                                 Done
                                             </button>
@@ -533,11 +535,11 @@ const InventoryAssignmentPanel = () => {
                 </div>
             </div>
             {showOverrideModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-2 sm:px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Override Customer Selection</h3>
-                            <button className="text-gray-500 hover:text-gray-700" onClick={() => {
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-800 pr-2">Override Customer Selection</h3>
+                            <button className="text-gray-500 hover:text-gray-700 flex-shrink-0" onClick={() => {
                                 setShowOverrideModal(false);
                                 setOverrideSelection(null);
                                 setOverrideNotes("");
@@ -551,10 +553,10 @@ const InventoryAssignmentPanel = () => {
                             </div>
                         ) : (
                             <>
-                                <p className="text-sm text-gray-600 mb-4">
+                                <p className="text-xs sm:text-sm text-gray-600 mb-4">
                                     Choose the option you will proceed with. This will immediately approve the quotation on behalf of the customer.
                                 </p>
-                                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
                                     {(() => {
                                         const recommendedIds = Array.isArray(existingQuotation?.recommendedPart) 
                                             ? existingQuotation.recommendedPart 
@@ -686,20 +688,20 @@ const InventoryAssignmentPanel = () => {
                                         );
                                     })()}
                                 </div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                     Notes <span className="text-red-600">*</span>
                                 </label>
                                 <textarea
-                                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500"
+                                    className="w-full border border-gray-300 rounded-lg p-2 text-xs sm:text-sm focus:ring-2 focus:ring-green-500"
                                     rows={3}
                                     value={overrideNotes}
                                     onChange={(e) => setOverrideNotes(e.target.value)}
                                     placeholder="Document why you overrode the customer decision (required)."
                                     required
                                 />
-                                <div className="mt-5 flex justify-end gap-3">
+                                <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                                     <button
-                                        className="px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-50"
+                                        className="w-full sm:w-auto px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
                                         onClick={() => {
                                             setShowOverrideModal(false);
                                             setOverrideSelection(null);
@@ -710,7 +712,7 @@ const InventoryAssignmentPanel = () => {
                                         Cancel
                                     </button>
                                     <button
-                                        className="px-4 py-2 rounded-md bg-green-600 text-white flex items-center gap-2 disabled:opacity-60 hover:bg-green-700"
+                                        className="w-full sm:w-auto px-4 py-2 rounded-md bg-green-600 text-white flex items-center justify-center gap-2 disabled:opacity-60 hover:bg-green-700 text-sm sm:text-base"
                                         onClick={handleOverrideSubmit}
                                         disabled={!overrideSelection || !overrideNotes?.trim() || overrideLoading}
                                     >
@@ -725,21 +727,21 @@ const InventoryAssignmentPanel = () => {
             )}
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm Deletion</h3>
-                        <p className="text-sm text-gray-600 mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-2 sm:px-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4">Confirm Deletion</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                             Are you sure you want to delete this quotation? This action cannot be undone.
                         </p>
-                        <div className="flex justify-end gap-3">
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                             <button
-                                className="px-4 py-2 rounded-md border text-gray-700"
+                                className="w-full sm:w-auto px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
                                 onClick={() => setShowDeleteConfirm(false)}
                             >
                                 Cancel
                             </button>
                             <button
-                                className="px-4 py-2 rounded-md bg-red-600 text-white"
+                                className="w-full sm:w-auto px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm sm:text-base"
                                 onClick={confirmDeleteQuotation}
                             >
                                 Delete
