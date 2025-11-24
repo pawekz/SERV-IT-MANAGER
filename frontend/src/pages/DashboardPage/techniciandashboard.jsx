@@ -19,12 +19,12 @@ const TechnicianDashboard = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    // State for dashboard statistics
-    const [stats, setStats] = useState({
-        users: 0,
-        devicesInRepair: 87,
-        warrantyRequests: 32,
-        satisfactionRate: "94%",
+    // State for ticket counts by status
+    const [ticketCounts, setTicketCounts] = useState({
+        newTickets: 0,        // RECEIVED
+        diagnosing: 0,         // DIAGNOSING
+        awaitingParts: 0,     // AWAITING_PARTS
+        readyForPickup: 0,    // READY_FOR_PICKUP + COMPLETED
     });
     // State for inventory data
     const [inventoryData, setInventoryData] = useState([]);
@@ -153,6 +153,87 @@ const TechnicianDashboard = () => {
         fetchLowStock();
     }, []);
 
+    // Fetch ticket counts by status
+    useEffect(() => {
+        const fetchTicketCounts = async () => {
+            try {
+                const statuses = [
+                    { status: "RECEIVED", key: "newTickets" },
+                    { status: "DIAGNOSING", key: "diagnosing" },
+                    { status: "AWAITING_PARTS", key: "awaitingParts" },
+                ];
+
+                const promises = statuses.map(({ status }) =>
+                    api
+                        .get("/repairTicket/getRepairTicketsByStatusPageableAssignedToTech", {
+                            params: { status },
+                            validateStatus: (s) => s >= 200 && s < 300 || s === 204,
+                        })
+                        .then((res) => {
+                            if (res.status === 204 || !res.data) return 0;
+                            const data = res.data;
+                            const tickets = Array.isArray(data) ? data : data.content ?? [];
+                            return tickets.length;
+                        })
+                        .catch((err) => {
+                            console.warn(`Failed to fetch tickets for ${status}:`, err);
+                            return 0;
+                        })
+                );
+
+                // Fetch READY_FOR_PICKUP and COMPLETED separately, then combine
+                const readyForPickupPromise = api
+                    .get("/repairTicket/getRepairTicketsByStatusPageableAssignedToTech", {
+                        params: { status: "READY_FOR_PICKUP" },
+                        validateStatus: (s) => s >= 200 && s < 300 || s === 204,
+                    })
+                    .then((res) => {
+                        if (res.status === 204 || !res.data) return 0;
+                        const data = res.data;
+                        const tickets = Array.isArray(data) ? data : data.content ?? [];
+                        return tickets.length;
+                    })
+                    .catch((err) => {
+                        console.warn("Failed to fetch READY_FOR_PICKUP tickets:", err);
+                        return 0;
+                    });
+
+                const completedPromise = api
+                    .get("/repairTicket/getRepairTicketsByStatusPageableAssignedToTech", {
+                        params: { status: "COMPLETED" },
+                        validateStatus: (s) => s >= 200 && s < 300 || s === 204,
+                    })
+                    .then((res) => {
+                        if (res.status === 204 || !res.data) return 0;
+                        const data = res.data;
+                        const tickets = Array.isArray(data) ? data : data.content ?? [];
+                        return tickets.length;
+                    })
+                    .catch((err) => {
+                        console.warn("Failed to fetch COMPLETED tickets:", err);
+                        return 0;
+                    });
+
+                const [newTickets, diagnosing, awaitingParts, readyForPickup, completed] = await Promise.all([
+                    ...promises,
+                    readyForPickupPromise,
+                    completedPromise,
+                ]);
+
+                setTicketCounts({
+                    newTickets,
+                    diagnosing,
+                    awaitingParts,
+                    readyForPickup: readyForPickup + completed,
+                });
+            } catch (err) {
+                console.error("Failed to fetch ticket counts:", err);
+            }
+        };
+
+        fetchTicketCounts();
+    }, []);
+
     // Fetch user data
     useEffect(() => {
         const fetchUser = async () => {
@@ -273,7 +354,7 @@ const TechnicianDashboard = () => {
                             </div>
                             <div>
                             <div className="text-gray-600 text-sm mb-2">New Tickets</div>
-                            <div className="text-2xl font-bold text-gray-800">3</div>
+                            <div className="text-2xl font-bold text-gray-800">{ticketCounts.newTickets}</div>
                             <div className="text-xs text-gray-500 mt-1">Assigned today</div>
                             </div>
                         </div>
@@ -291,8 +372,8 @@ const TechnicianDashboard = () => {
                             </svg>
                             </div>
                             <div>
-                            <div className="text-gray-600 text-sm mb-2">In Progress</div>
-                            <div className="text-2xl font-bold text-gray-800">5</div>
+                            <div className="text-gray-600 text-sm mb-2">Diagnosing</div>
+                            <div className="text-2xl font-bold text-gray-800">{ticketCounts.diagnosing}</div>
                             <div className="text-xs text-gray-500 mt-1">Currently working</div>
                         </div>
                         </div>
@@ -309,7 +390,7 @@ const TechnicianDashboard = () => {
                             </div>
                             <div>
                             <div className="text-gray-600 text-sm mb-2">Awaiting Parts</div>
-                            <div className="text-2xl font-bold text-gray-800">2</div>
+                            <div className="text-2xl font-bold text-gray-800">{ticketCounts.awaitingParts}</div>
                             <div className="text-xs text-gray-500 mt-1">Parts ordered</div>
                         </div>
                         </div>
@@ -319,7 +400,7 @@ const TechnicianDashboard = () => {
                             </div>
                             <div>
                             <div className="text-gray-600 text-sm mb-2">Ready for Pickup</div>
-                            <div className="text-2xl font-bold text-gray-800">4</div>
+                            <div className="text-2xl font-bold text-gray-800">{ticketCounts.readyForPickup}</div>
                             <div className="text-xs text-gray-500 mt-1">Completed repairs</div>
                             </div>
                         </div>

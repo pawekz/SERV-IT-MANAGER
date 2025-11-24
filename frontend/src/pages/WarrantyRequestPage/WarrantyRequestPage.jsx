@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {Package, TabletSmartphone, Computer, Headphones, Archive, Search} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import RequestReturn from "../../components/RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import CheckWarranty from "../../components/CheckWarranty/CheckWarranty.jsx";
 import WarrantyDetails from "../../components/WarrantyDetails/WarrantyDetails.jsx";
-
-
 
 const WarrantyRequestPage = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
@@ -89,13 +85,10 @@ const WarrantyRequestPage = () => {
                 console.log("No warranties found for email:", email);
             } else if (response.ok) {
                 const data = await response.json();
-                // Ensure customerName is constructed from firstName and lastName if not present
+                // Use split name fields directly
                 const processedData = data.map(w => ({
                     ...w,
-                    customerName: w.customerName || 
-                        (w.customerFirstName && w.customerLastName 
-                            ? `${w.customerFirstName} ${w.customerLastName}`.trim()
-                            : w.customerFirstName || w.customerLastName || 'N/A')
+                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
                 }));
                 setWarranty(processedData);
                 console.log("Warranties by email fetched successfully:", processedData);
@@ -137,13 +130,10 @@ const WarrantyRequestPage = () => {
                 console.log("No warranties found");
             } else if (response.ok) {
                 const data = JSON.parse(text);
-                // Ensure customerName is constructed from firstName and lastName if not present
+                // Use split name fields directly
                 const processedData = Array.isArray(data) ? data.map(w => ({
                     ...w,
-                    customerName: w.customerName || 
-                        (w.customerFirstName && w.customerLastName 
-                            ? `${w.customerFirstName} ${w.customerLastName}`.trim()
-                            : w.customerFirstName || w.customerLastName || 'N/A')
+                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
                 })) : data;
                 setWarranty(processedData);
                 console.log("Warranties fetched successfully:", processedData);
@@ -293,12 +283,14 @@ const WarrantyRequestPage = () => {
             filtered = filtered.filter(w => {
                 const serial = (w.serialNumber || '').toString().toLowerCase();
                 const device = (w.deviceName || '').toString().toLowerCase();
-                const customer = (w.customerName || '').toString().toLowerCase();
+                const firstName = (w.customerFirstName || '').toString().toLowerCase();
+                const lastName = (w.customerLastName || '').toString().toLowerCase();
+                const customerFull = (firstName + ' ' + lastName).trim();
                 
                 if (filterBy === "serial") return serial.includes(q);
                 if (filterBy === "device") return device.includes(q);
-                if (filterBy === "customer") return customer.includes(q);
-                return serial.includes(q) || device.includes(q) || customer.includes(q);
+                if (filterBy === "customer") return firstName.includes(q) || lastName.includes(q) || customerFull.includes(q);
+                return serial.includes(q) || device.includes(q) || firstName.includes(q) || lastName.includes(q) || customerFull.includes(q);
             });
         }
 
@@ -343,9 +335,15 @@ const WarrantyRequestPage = () => {
                         <tr>
                             <th 
                                 className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
-                                onClick={() => handleSort('customerName')}
+                                onClick={() => handleSort('customerFirstName')}
                             >
-                                Customer {sortConfig.key === 'customerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                First Name {sortConfig.key === 'customerFirstName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                                className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
+                                onClick={() => handleSort('customerLastName')}
+                            >
+                                Last Name {sortConfig.key === 'customerLastName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                                 className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
@@ -372,7 +370,8 @@ const WarrantyRequestPage = () => {
                                 tabIndex={0}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(warrantyItem); }}
                             >
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerFirstName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerLastName || '—'}</td>
                                 <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.deviceName || '—'}</td>
                                 <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.serialNumber || '—'}</td>
                                 <td className="px-5 py-3">
@@ -642,7 +641,7 @@ const WarrantyRequestPage = () => {
                                                                             <strong>Device:</strong> {request.deviceName}
                                                                         </p>
                                                                         <p className="text-sm text-gray-600">
-                                                                            <strong>Customer:</strong> {request.customerName}
+                                                                            <strong>Customer:</strong> {(request.customerFirstName || '') + ' ' + (request.customerLastName || '')}
                                                                         </p>
                                                                         {role === "customer" ? (
                                                                             <p

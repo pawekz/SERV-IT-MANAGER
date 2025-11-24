@@ -98,10 +98,7 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-m w-full">
                     <div>
                         <strong>Customer Name:</strong><br />
-                        {data.customerName || 
-                         (data.customerFirstName && data.customerLastName 
-                            ? `${data.customerFirstName} ${data.customerLastName}`.trim()
-                            : data.customerFirstName || data.customerLastName || 'N/A')}
+                        {((data.customerFirstName || '') + ' ' + (data.customerLastName || '')).trim() || 'N/A'}
                     </div>
                     <div>
                         <strong>Customer Email:</strong><br />

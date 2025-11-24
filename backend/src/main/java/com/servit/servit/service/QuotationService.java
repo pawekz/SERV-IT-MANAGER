@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.servit.servit.dto.notification.NotificationDTO;
 import com.servit.servit.repository.WarrantyRepository;
 import com.servit.servit.entity.WarrantyEntity;
+import com.servit.servit.enumeration.WarrantyStatus;
 import com.servit.servit.dto.repairticket.UpdateRepairStatusRequestDTO;
 import com.servit.servit.enumeration.RepairStatusEnum;
 import org.springframework.context.annotation.Lazy;
@@ -50,6 +51,10 @@ public class QuotationService {
 
     @Autowired
     private WarrantyRepository warrantyRepository;
+
+    @Autowired
+    @Lazy
+    private WarrantyService warrantyService;
 
     @Autowired
     private EmailService emailService;
@@ -610,6 +615,13 @@ public class QuotationService {
 
             try {
                 WarrantyEntity warranty = new WarrantyEntity();
+                
+                // Generate warranty number
+                String warrantyNumber = warrantyService.generateWarrantyNumber();
+                warranty.setWarrantyNumber(warrantyNumber);
+                warranty.setStatus(WarrantyStatus.CHECKED_IN);
+                warranty.setCreatedAt(LocalDateTime.now());
+                
                 RepairTicketEntity ticket = repairTicketRepository.findByTicketNumber(entity.getRepairTicketNumber()).orElse(null);
                 if (ticket != null) {
                     warranty.setCustomerFirstName(ticket.getCustomerFirstName() == null ? "UNKNOWN" : ticket.getCustomerFirstName());
@@ -632,7 +644,7 @@ public class QuotationService {
                 part.setWarranty(warranty);
                 warranty.setItem(part);
                 partRepository.save(part);
-                logger.info("Warranty {} created and linked to part {}", warranty.getWarrantyId(), part.getPartId());
+                logger.info("Warranty {} (warranty number: {}) created and linked to part {}", warranty.getWarrantyId(), warrantyNumber, part.getPartId());
             } catch (Exception exw) {
                 logger.warn("Failed to create/link warranty for part {}: {}", part.getPartId(), exw.getMessage());
             }
