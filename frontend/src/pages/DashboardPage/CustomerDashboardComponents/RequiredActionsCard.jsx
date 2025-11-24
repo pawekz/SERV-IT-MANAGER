@@ -41,6 +41,9 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
   const [parts, setParts] = useState([]);
   const [selectedPartId, setSelectedPartId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+  const [processing, setProcessing] = useState(false);
 
   const closeToast = () => setToast((prev) => ({ ...prev, show: false }));
 
@@ -72,25 +75,47 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
 
   const getPart = (id) => parts.find((p) => p.id === id);
 
-  const handleApprove = async () => {
-    if (!activeAction || !selectedPartId) return;
+  const handleActionClick = (type) => {
+    if (type === 'approve' && !selectedPartId) {
+      setToast({ show: true, message: 'Please select a part before approving.', type: 'error' });
+      return;
+    }
+    setActionType(type);
+    setShowConfirm(true);
+  };
+
+  const confirmAction = async () => {
+    if (!activeAction) return;
+    setProcessing(true);
     try {
-      setModalLoading(true);
-      await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
-        params: { customerSelection: String(selectedPartId) },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
-      setModalOpen(false);
-      onDecisionComplete();
+      if (actionType === 'approve') {
+        if (!selectedPartId) {
+          setToast({ show: true, message: 'Please select a part before approving.', type: 'error' });
+          setProcessing(false);
+          return;
+        }
+        await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
+          params: { customerSelection: String(selectedPartId) },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
+        setModalOpen(false);
+        onDecisionComplete();
+      } else if (actionType === 'reject') {
+        await api.patch(`/quotation/denyQuotation/${activeAction.quotation.quotationId}`);
+        setToast({ show: true, message: 'Quotation rejected', type: 'success' });
+        setModalOpen(false);
+        onDecisionComplete();
+      }
     } catch (err) {
-      console.error('Failed to approve quotation', err);
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+      console.error(`Failed to ${actionType} quotation`, err);
+      const errorMessage = err?.response?.data?.message || err?.message || `Failed to ${actionType} the quotation. Please try again.`;
       setToast({ show: true, message: errorMessage, type: 'error' });
     } finally {
-      setModalLoading(false);
+      setShowConfirm(false);
+      setProcessing(false);
     }
   };
 
@@ -218,20 +243,57 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
                   Need help deciding? Call us at <strong>(02) 8700 1234</strong> and mention ticket{' '}
                   <strong>{activeAction.ticket.ticketNumber}</strong>.
                 </p>
-                <div className="flex justify-end gap-3">
-                  <button className="px-4 py-2 rounded-md border text-gray-700" onClick={() => setModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60"
-                    onClick={handleApprove}
-                    disabled={!selectedPartId || modalLoading}
-                  >
-                    Approve Selection
-                  </button>
-                </div>
+                                    <div className="flex justify-end gap-3">
+                                      <button className="px-4 py-2 rounded-md border text-gray-700" onClick={() => setModalOpen(false)}>
+                                        Cancel
+                                      </button>
+                                      <button
+                                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                                        onClick={() => handleActionClick('reject')}
+                                        disabled={modalLoading || processing}
+                                      >
+                                        Reject Quotation
+                                      </button>
+                                      <button
+                                        className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 flex items-center gap-2"
+                                        onClick={() => handleActionClick('approve')}
+                                        disabled={!selectedPartId || modalLoading || processing}
+                                      >
+                                        {processing && actionType === 'approve' && <Spinner size="small" />}
+                                        Approve Selection
+                                      </button>
+                                    </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {showConfirm && activeAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm {actionType === "approve" ? "Approval" : "Rejection"}</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to {actionType === "approve" ? "approve" : "reject"} this quotation?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                disabled={processing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAction}
+                className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${actionType === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"} disabled:opacity-50`}
+                disabled={processing}
+              >
+                {processing && <Spinner size="small" />}
+                {processing ? "Processing..." : "Confirm"}
+              </button>
+            </div>
           </div>
         </div>
       )}
