@@ -435,7 +435,7 @@ const InventoryAssignmentPanel = () => {
 
             {/* Main Content */}
             <div className="flex-1 p-4 md:p-8 bg-gray-50">
-                <div className="px-4 md:px-10 py-4 md:py-8">
+                <div className="">
                     {/* Header */}
                     <div className="mb-4 md:mb-6">
                         <h1 className="text-xl md:text-2xl font-bold text-gray-800">Quotation Builder</h1>
