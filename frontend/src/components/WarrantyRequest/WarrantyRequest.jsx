@@ -146,6 +146,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const [imageViewerIndex, setImageViewerIndex] = useState(0);
     const [formData, setFormData] = useState(() => ({
         warrantyNumber: '',
+        status: data.status || '',
         accessories: '' ,
         color: '' ,
         password: '' ,
@@ -198,6 +199,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                 return {
                     ...prev,
                     ...data,
+                    status: data.status || prev.status || '',
                     warrantyPhotosUrls: data.warrantyPhotosUrls || []
                 };
             });
@@ -364,29 +366,61 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                         <span className="text-sm font-medium">Status:</span>
                                         <select
                                             onChange={handleStatusChange}
-                                            value={formData.status}
+                                            value={formData.status || data.status || ''}
                                             disabled={false}
                                             className="font-semibold px-3 py-2 border rounded-md bg-gray-100 text-gray-800 w-48"
                                         >
-                                            {STATUS_OPTIONS.filter((status) => {
-                                                const currentIndex = STATUS_OPTIONS.indexOf(formData.status);
-                                                const statusIndex = STATUS_OPTIONS.indexOf(status);
-
-                                                if (status === "DENIED") return true; // Always show DENIED
-
-                                                if (status === formData.status) return true; // Show current status as selected
-
-                                                if (formData.status === "CHECKED_IN") {
-                                                    return status === "ITEM_RETURNED";
+                                            {(() => {
+                                                const currentStatus = formData.status || data.status || '';
+                                                
+                                                if (!currentStatus) {
+                                                    // If no status, show only first option
+                                                    return STATUS_OPTIONS.filter(s => s === STATUS_OPTIONS[0]);
+                                                }
+                                                
+                                                const currentIndex = STATUS_OPTIONS.indexOf(currentStatus);
+                                                
+                                                // If current status not found in options, show all
+                                                if (currentIndex === -1) {
+                                                    return STATUS_OPTIONS;
                                                 }
 
-                                                if (formData.status === "ITEM_RETURNED") {
-                                                    return role === "admin" && statusIndex > currentIndex;
-                                                }
+                                                return STATUS_OPTIONS.filter((status) => {
+                                                    const statusIndex = STATUS_OPTIONS.indexOf(status);
 
-                                                // For other statuses, only allow forward movement
-                                                return statusIndex > currentIndex;
-                                            }).map((status) => (
+                                                    // Always show DENIED
+                                                    if (status === "DENIED") return true;
+
+                                                    // Always show current status
+                                                    if (status === currentStatus) return true;
+
+                                                    // From CHECKED_IN, can only go to ITEM_RETURNED
+                                                    if (currentStatus === "CHECKED_IN") {
+                                                        return status === "ITEM_RETURNED";
+                                                    }
+
+                                                    // From ITEM_RETURNED, admin can go to any next status (but not back)
+                                                    if (currentStatus === "ITEM_RETURNED") {
+                                                        // Show all statuses after ITEM_RETURNED (indices 2, 3, 4, 5)
+                                                        // This includes: WAITING_FOR_WARRANTY_REPLACEMENT, WARRANTY_REPLACEMENT_ARRIVED, WARRANTY_REPLACEMENT_COMPLETED
+                                                        // Allow both admin and technician to progress forward
+                                                        return statusIndex > currentIndex;
+                                                    }
+
+                                                    // For statuses after ITEM_RETURNED (WAITING_FOR_WARRANTY_REPLACEMENT, etc.), 
+                                                    // allow forward movement to next statuses in sequence
+                                                    // This handles: 
+                                                    // - WAITING_FOR_WARRANTY_REPLACEMENT (index 2) -> can go to 3, 4, 5
+                                                    // - WARRANTY_REPLACEMENT_ARRIVED (index 3) -> can go to 4, 5
+                                                    // - WARRANTY_REPLACEMENT_COMPLETED (index 4) -> can go to 5 (DENIED)
+                                                    if (currentIndex > 1) { // Statuses at index 2 or higher (after ITEM_RETURNED)
+                                                        // Allow all statuses after current one
+                                                        return statusIndex > currentIndex;
+                                                    }
+
+                                                    return false;
+                                                });
+                                            })().map((status) => (
                                                 <option key={status} value={status}>
                                                     {status.replace(/_/g, " ")}
                                                 </option>
@@ -403,8 +437,9 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                             <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                             </div>
-                            <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
-                                <div><strong>Customer Name:</strong><br />{data.customerFirstName} {data.customerLastName}</div>
+                            <div className="grid grid-cols-4 md:grid-cols-2 gap-2 text-m w-full">
+                                <div><strong>Customer First Name:</strong><br />{data.customerFirstName || 'N/A'}</div>
+                                <div><strong>Customer Last Name:</strong><br />{data.customerLastName || 'N/A'}</div>
                                 <div><strong>Customer Email:</strong><br />{data.customerEmail}</div>
                                 <div><strong>Customer Phone Number:</strong><br />{data.customerPhoneNumber}</div>
                             </div>
