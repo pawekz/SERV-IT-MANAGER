@@ -391,7 +391,7 @@ const UserManagement = () => {
                     <div className="flex-shrink-0">
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center py-2 px-4 rounded-md font-medium transition-all text-white bg-[#25D482] hover:bg-[#1fab6b]"
+                            className="flex items-center py-2 px-4 rounded-md font-medium transition-all text-white bg-[#2563eb] hover:bg-[#1e49c7]"
                         >
                             Create Employee
                         </button>
@@ -423,7 +423,7 @@ const UserManagement = () => {
                                             aria-label="Search users"
                                             onChange={handleSearchInput}
                                             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#1e49c7]"
                                         />
                                         {searchTerm && (
                                             <button
@@ -436,7 +436,7 @@ const UserManagement = () => {
 
                                     <button
                                         onClick={handleSearch}
-                                        className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium"
+                                        className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#2563eb] text-white rounded-md hover:bg-[#1e49c7] text-sm font-medium"
                                     >Search</button>
                                 </div>
 
@@ -445,7 +445,7 @@ const UserManagement = () => {
                                     <select
                                         value={selectedStatus}
                                         onChange={handleStatusChange}
-                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
                                     >
                                         {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                     </select>
@@ -456,7 +456,7 @@ const UserManagement = () => {
                                     <select
                                         value={selectedRole}
                                         onChange={handleRoleChange}
-                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
                                     >
                                         {roleOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                     </select>
@@ -467,7 +467,7 @@ const UserManagement = () => {
                                     <select
                                         value={pageSize}
                                         onChange={handlePageSizeChange}
-                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
                                     >
                                         {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
                                     </select>
@@ -650,7 +650,7 @@ const UserManagement = () => {
                                                  <button
                                                      key={i}
                                                      onClick={() => fetchUsers(i)}
-                                                     className={`px-3 py-1.5 rounded-md text-xs font-medium border ${i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                                     className={`px-3 py-1.5 rounded-md text-xs font-medium border ${i === currentPage ? 'bg-[#2563eb] text-white border-[#2563eb]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
                                                  >{i}</button>
                                              );
                                          }
