@@ -7,6 +7,7 @@ import {
 import {useEffect, useState, useMemo} from "react";
 import api, { parseJwt } from '../../config/ApiConfig.jsx';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 
 const AdminDashboard = () => {
@@ -66,8 +67,6 @@ const AdminDashboard = () => {
     // Keep the setter only to avoid unused variable warnings.
     const [, setTotalRatings] = useState(0);
 
-    // Profile picture state
-    const [profileUrl, setProfileUrl] = useState(null);
 
     // Get initials from user data
     const getInitials = () => {
@@ -459,29 +458,21 @@ const AdminDashboard = () => {
     }, [statusDistribution]);
 
     useEffect(() => {
-        const fetchCurrentUserWithPicture = async () => {
+        const fetchCurrentUser = async () => {
             try {
                 const resp = await api.get('/user/getCurrentUser');
                 const merged = { ...userData, ...resp.data, password: '********' };
                 setUserData(prev => ({ ...prev, ...merged }));
                 sessionStorage.setItem('userData', JSON.stringify(merged));
-                if (merged.profilePictureUrl && merged.profilePictureUrl !== '0') {
-                    try {
-                        const urlResp = await api.get(`/user/getProfilePicture/${merged.userId}`);
-                        setProfileUrl(urlResp.data);
-                    } catch { setProfileUrl(null); }
-                } else {
-                    setProfileUrl(null);
-                }
             } catch (e) {
-                setProfileUrl(null);
+                console.error('Error fetching user data:', e);
             }
         };
-        fetchCurrentUserWithPicture();
-        const interval = setInterval(fetchCurrentUserWithPicture, 240000);
-        return () => clearInterval(interval);
+        fetchCurrentUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    
+    const { data: profileUrl } = useProfilePhoto(userData.userId, userData.profilePictureUrl);
 
     return (
         <>

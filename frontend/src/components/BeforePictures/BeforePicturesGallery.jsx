@@ -1,55 +1,13 @@
-import { useEffect, useState } from 'react';
-import api from '../../config/ApiConfig';
-
-function parseTypeAndFilename(path) {
-  if (!path) return { type: '', filename: '' };
-  const match = path.replace(/\\/g, '/').match(/(images|documents)\/([^/]+)\/([^/]+)$/);
-  if (!match) return { type: '', filename: '' };
-  return { type: `${match[1]}/${match[2]}`, filename: match[3] };
-}
-
-function isAbsoluteUrl(u) {
-  try {
-    const url = new URL(u);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch (e) {
-    return false;
-  }
-}
-
-async function fetchTicketFile(type, filename) {
-  if (!type || !filename) return null;
-  const res = await api.get(`/repairTicket/files/${type}/${filename}`, { responseType: 'blob' });
-  return URL.createObjectURL(res.data);
-}
+import { useState } from 'react';
+import { useRepairPhoto } from '../../hooks/useRepairPhoto';
 
 function TicketImage({ path, alt, className }) {
-  const [src, setSrc] = useState(null);
-  useEffect(() => {
-    let url;
-    // If path is already an absolute URL (e.g., presigned S3 URL), use it directly
-    if (isAbsoluteUrl(path)) {
-      setSrc(path);
-      return () => {};
-    }
-    const { type, filename } = parseTypeAndFilename(path);
-    if (type && filename) {
-      fetchTicketFile(type, filename)
-        .then(objUrl => {
-          url = objUrl;
-          setSrc(objUrl);
-        })
-        .catch(err => {
-          console.error('Failed to fetch ticket file blob, falling back to original path', err);
-          setSrc(path);
-        });
-    } else {
-      // If it doesn't match expected pattern, just use path directly (fallback)
-      setSrc(path);
-    }
-    return () => { if (url) URL.revokeObjectURL(url); };
-  }, [path]);
-  if (!src) return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
+  const { data: src, isLoading } = useRepairPhoto(path);
+  
+  if (isLoading || !src) {
+    return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
+  }
+  
   return <img src={src} alt={alt} className={className} />;
 }
 

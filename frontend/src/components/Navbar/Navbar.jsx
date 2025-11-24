@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Settings, LogOut, LayoutGrid } from 'lucide-react';
-import api from '../../config/ApiConfig.jsx';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('authToken'));
-    const [profileUrl, setProfileUrl] = useState(null);
     const dropdownRef = useRef(null);
     const [showDropdown, setShowDropdown] = useState(false);
 
@@ -24,25 +23,12 @@ const Navbar = () => {
         return () => window.removeEventListener('storage', onStorage);
     }, []);
 
-    // Fetch profile picture similar to Sidebar
-    useEffect(() => {
-        const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-        let mounted = true;
-        const fetchProfile = async () => {
-            try {
-                if (userData && userData.userId && userData.profilePictureUrl && userData.profilePictureUrl !== '0') {
-                    const resp = await api.get(`/user/getProfilePicture/${userData.userId}`);
-                    if (mounted) setProfileUrl(resp.data);
-                } else {
-                    if (mounted) setProfileUrl(null);
-                }
-            } catch (e) {
-                if (mounted) setProfileUrl(null);
-            }
-        };
-        if (isLoggedIn) fetchProfile();
-        return () => { mounted = false; };
-    }, [isLoggedIn]);
+    // Fetch profile picture using cached hook
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const { data: profileUrl } = useProfilePhoto(
+        isLoggedIn ? userData?.userId : null,
+        isLoggedIn ? userData?.profilePictureUrl : null
+    );
 
     // close dropdown when clicking outside
     useEffect(() => {
@@ -61,8 +47,8 @@ const Navbar = () => {
         window.location.href = '/';
     };
 
-    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const formatInitials = () => {
+        const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
         const first = (userData.firstName || '').trim();
         const last = (userData.lastName || '').trim();
         const initial = (first.charAt(0) || '') + (last.charAt(0) || '');
@@ -146,7 +132,7 @@ const Navbar = () => {
                                 aria-expanded={showDropdown}
                             >
                                 {profileUrl ? (
-                                    <img src={profileUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover border" />
+                                    <img src={profileUrl} alt="Profile" onError={(e) => { e.target.style.display = 'none'; }} className="w-10 h-10 rounded-full object-cover border" />
                                 ) : (
                                     <div className="w-10 h-10 rounded-full bg-[#e6f9e6] text-[#33e407] flex items-center justify-center font-semibold">
                                         {formatInitials()}
