@@ -228,53 +228,58 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
         </div>
       )}
 
-      <div className="space-y-4 min-h-[180px]">
-        {pendingQuotations.length === 0 && !loading ? (
-          <div className="text-center text-gray-500 py-8">You're all caught up. No actions required.</div>
-        ) : loading ? (
-          <div className="text-center text-gray-500 py-8">Loading actions...</div>
-        ) : (
-          <>
-            {paginatedQuotations.map((action) => (
-              <div key={action.quotation.quotationId} className="flex items-start justify-between border border-gray-100 rounded-lg p-3 min-h-[60px]">
-                <div className="flex items-start">
-                  <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-800">
-                      Approve quotation for ticket {action.ticket.ticketNumber}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Expires {action.quotation.expiryAt ? new Date(action.quotation.expiryAt).toLocaleDateString() : 'in 7 days'}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex-shrink-0"
-                  onClick={() => openModal(action)}
-                >
-                  Compare & Decide
-                </button>
-              </div>
-            ))}
-            {/* Fill remaining space to maintain consistent height */}
-            {paginatedQuotations.length < itemsPerPage && Array.from({ length: itemsPerPage - paginatedQuotations.length }).map((_, idx) => (
-              <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
-                <div className="flex items-start justify-between border border-gray-100 rounded-lg p-3">
+      <div className="h-[252px] relative overflow-hidden">
+        <div 
+          key={`${page}-${loading}`} 
+          className="space-y-4 absolute inset-0 animate-fadeIn"
+        >
+          {pendingQuotations.length === 0 && !loading ? (
+            <div className="text-center text-gray-500 py-8 h-full flex items-center justify-center">You're all caught up. No actions required.</div>
+          ) : loading ? (
+            <div className="text-center text-gray-500 py-8 h-full flex items-center justify-center">Loading actions...</div>
+          ) : (
+            <>
+              {paginatedQuotations.map((action) => (
+                <div key={action.quotation.quotationId} className="flex items-start justify-between border border-gray-100 rounded-lg p-3 min-h-[60px]">
                   <div className="flex items-start">
-                    <div className="w-8 h-8 rounded-full mr-3"></div>
+                    <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    </div>
                     <div>
-                      <div className="font-medium">&nbsp;</div>
-                      <div className="text-xs">&nbsp;</div>
+                      <div className="font-medium text-gray-800">
+                        Approve quotation for ticket {action.ticket.ticketNumber}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Expires {action.quotation.expiryAt ? new Date(action.quotation.expiryAt).toLocaleDateString() : 'in 7 days'}
+                      </div>
                     </div>
                   </div>
-                  <div className="px-3 py-1"></div>
+                  <button
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex-shrink-0"
+                    onClick={() => openModal(action)}
+                  >
+                    Compare & Decide
+                  </button>
                 </div>
-              </div>
-            ))}
-          </>
-        )}
+              ))}
+              {/* Fill remaining space to maintain consistent height */}
+              {paginatedQuotations.length < itemsPerPage && Array.from({ length: itemsPerPage - paginatedQuotations.length }).map((_, idx) => (
+                <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
+                  <div className="flex items-start justify-between border border-gray-100 rounded-lg p-3">
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 rounded-full mr-3"></div>
+                      <div>
+                        <div className="font-medium">&nbsp;</div>
+                        <div className="text-xs">&nbsp;</div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1"></div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Page indicator at bottom */}

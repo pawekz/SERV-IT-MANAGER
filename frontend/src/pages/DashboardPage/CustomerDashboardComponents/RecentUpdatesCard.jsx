@@ -169,45 +169,50 @@ const RecentUpdatesCard = ({ customerEmail }) => {
         </button>
       </div>
 
-      <div className="space-y-4 min-h-[180px]">
-        {loading ? (
-          <div className="text-center text-gray-500 py-8">Loading updates...</div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-8">{typeof error === 'string' ? error : 'Failed to load updates'}</div>
-        ) : updates.length === 0 ? (
-          <div className="text-center text-gray-600 py-8">No updates available.</div>
-        ) : (
-          <>
-            {updates.map((update, idx) => {
-              const { icon: Icon, color } = getEventIcon(update.eventType);
-              return (
-                <div key={`${update.ticketNumber}-${update.timestamp}-${idx}`} className="flex items-start min-h-[60px]">
-                  <div className={`w-8 h-8 ${color} rounded-full flex items-center justify-center mr-3 flex-shrink-0`}>
-                    <Icon className="h-4 w-4" />
+      <div className="h-[252px] relative overflow-hidden">
+        <div 
+          key={`${page}-${loading}`} 
+          className="space-y-4 absolute inset-0 animate-fade-in"
+        >
+          {loading ? (
+            <div className="text-center text-gray-500 py-8 h-full flex items-center justify-center">Loading updates...</div>
+          ) : error ? (
+            <div className="text-center text-red-500 py-8 h-full flex items-center justify-center">{typeof error === 'string' ? error : 'Failed to load updates'}</div>
+          ) : updates.length === 0 ? (
+            <div className="text-center text-gray-600 py-8 h-full flex items-center justify-center">No updates available.</div>
+          ) : (
+            <>
+              {updates.map((update, idx) => {
+                const { icon: Icon, color } = getEventIcon(update.eventType);
+                return (
+                  <div key={`${update.ticketNumber}-${update.timestamp}-${idx}`} className="flex items-start min-h-[60px]">
+                    <div className={`w-8 h-8 ${color} rounded-full flex items-center justify-center mr-3 flex-shrink-0`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800">{update.message}</div>
+                      <div className="text-xs text-gray-500">
+                        {formatTimeAgo(update.timestamp)} • #{update.ticketNumber}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-800">{update.message}</div>
-                    <div className="text-xs text-gray-500">
-                      {formatTimeAgo(update.timestamp)} • #{update.ticketNumber}
+                );
+              })}
+              {/* Fill remaining space to maintain consistent height */}
+              {updates.length < 3 && Array.from({ length: 3 - updates.length }).map((_, idx) => (
+                <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 rounded-full mr-3"></div>
+                    <div className="flex-1">
+                      <div className="font-medium">&nbsp;</div>
+                      <div className="text-xs">&nbsp;</div>
                     </div>
                   </div>
                 </div>
-              );
-            })}
-            {/* Fill remaining space to maintain consistent height */}
-            {updates.length < 3 && Array.from({ length: 3 - updates.length }).map((_, idx) => (
-              <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
-                <div className="flex items-start">
-                  <div className="w-8 h-8 rounded-full mr-3"></div>
-                  <div className="flex-1">
-                    <div className="font-medium">&nbsp;</div>
-                    <div className="text-xs">&nbsp;</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+              ))}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Page indicator at bottom */}
