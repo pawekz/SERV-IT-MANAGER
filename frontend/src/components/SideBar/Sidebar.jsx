@@ -1,7 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import { Link } from 'react-router-dom';
 import { LayoutGrid, UserCog, Settings, Truck, ShieldCheck, ClipboardList, LogOut, FolderClock, Inbox, FileClock, Menu, X } from 'lucide-react';
-import api from '../../config/ApiConfig.jsx';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 const formatName = (raw) => {
     if (!raw || typeof raw !== 'string') return '';
@@ -17,28 +17,7 @@ const Sidebar = ({ activePage }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const [profileUrl, setProfileUrl] = useState(null);
-
-    // Fetch presigned URL if profile picture exists
-    useEffect(() => {
-        let intervalId;
-        const fetchProfile = async () => {
-            try {
-                if (userData && userData.userId && userData.profilePictureUrl && userData.profilePictureUrl !== '0') {
-                    const resp = await api.get(`/user/getProfilePicture/${userData.userId}`);
-                    setProfileUrl(resp.data);
-                } else {
-                    setProfileUrl(null);
-                }
-            } catch (e) {
-                setProfileUrl(null); // fallback to initials
-            }
-        };
-        fetchProfile();
-        // refresh every 4 minutes (presigned expires in 5)
-        intervalId = setInterval(fetchProfile, 240000);
-        return () => clearInterval(intervalId);
-    }, [userData?.userId, userData?.profilePictureUrl]);
+    const { data: profileUrl } = useProfilePhoto(userData?.userId, userData?.profilePictureUrl);
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);

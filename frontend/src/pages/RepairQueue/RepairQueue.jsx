@@ -75,6 +75,8 @@ const RepairQueue = () => {
     const [selectedQuotationTicket, setSelectedQuotationTicket] = useState(null);
     const [quotationParts, setQuotationParts] = useState([]);
     const [selectedPartId, setSelectedPartId] = useState(null);
+    const [showQuotationConfirm, setShowQuotationConfirm] = useState(false);
+    const [quotationActionType, setQuotationActionType] = useState(null); // 'approve' or 'reject'
 
     // New UI state to match HistoryPage
     const [search, setSearch] = useState('');
@@ -200,44 +202,71 @@ const RepairQueue = () => {
         }
     };
 
-    // Handle quotation approval
-    const handleQuotationApprove = async () => {
-        if (!selectedQuotationTicket || !selectedPartId) return;
+    // Handle quotation action click
+    const handleQuotationActionClick = (type) => {
+        if (type === 'approve' && !selectedPartId) {
+            showToast('Please select a part before approving.', 'error');
+            return;
+        }
+        setQuotationActionType(type);
+        setShowQuotationConfirm(true);
+    };
+
+    // Confirm quotation action
+    const confirmQuotationAction = async () => {
+        if (!selectedQuotationTicket) return;
         const quotation = quotations[selectedQuotationTicket.ticketNumber];
         if (!quotation) return;
 
         try {
             setQuotationModalLoading(true);
-            await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
-                params: { customerSelection: String(selectedPartId) },
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
-            setQuotationModalOpen(false);
-            
-            // Refresh quotations and tickets
-            const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
-            if (quotationData && quotationData.length > 0) {
-                setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+            if (quotationActionType === 'approve') {
+                if (!selectedPartId) {
+                    showToast('Please select a part before approving.', 'error');
+                    setQuotationModalLoading(false);
+                    return;
+                }
+                await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
+                    params: { customerSelection: String(selectedPartId) },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
+                
+                // Refresh quotations and tickets
+                const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
+                if (quotationData && quotationData.length > 0) {
+                    setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+                }
+                
+                // Refresh ticket status
+                const { data: ticketData } = await api.get(`/repairTicket/getRepairTicket/${selectedQuotationTicket.ticketNumber}`);
+                setTicketRequests(prevRequests =>
+                    prevRequests.map(request =>
+                        request.ticketNumber === selectedQuotationTicket.ticketNumber
+                            ? { ...request, status: ticketData.repairStatus, repairStatus: ticketData.repairStatus }
+                            : request
+                    )
+                );
+            } else if (quotationActionType === 'reject') {
+                await api.patch(`/quotation/denyQuotation/${quotation.quotationId}`);
+                showToast('Quotation rejected', 'success');
+                
+                // Refresh quotations
+                const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
+                if (quotationData && quotationData.length > 0) {
+                    setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+                }
             }
-            
-            // Refresh ticket status
-            const { data: ticketData } = await api.get(`/repairTicket/getRepairTicket/${selectedQuotationTicket.ticketNumber}`);
-            setTicketRequests(prevRequests =>
-                prevRequests.map(request =>
-                    request.ticketNumber === selectedQuotationTicket.ticketNumber
-                        ? { ...request, status: ticketData.repairStatus, repairStatus: ticketData.repairStatus }
-                        : request
-                )
-            );
+            setQuotationModalOpen(false);
         } catch (err) {
-            console.error('Failed to approve quotation', err);
-            const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+            console.error(`Failed to ${quotationActionType} quotation`, err);
+            const errorMessage = err?.response?.data?.message || err?.message || `Failed to ${quotationActionType} the quotation. Please try again.`;
             showToast(errorMessage, 'error');
         } finally {
             setQuotationModalLoading(false);
+            setShowQuotationConfirm(false);
         }
     };
 
@@ -1109,11 +1138,18 @@ const RepairQueue = () => {
                                                                             Cancel
                                                                         </button>
                                                                         <button
+                                                                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                                                                            onClick={() => handleQuotationActionClick('reject')}
+                                                                            disabled={quotationModalLoading}
+                                                                        >
+                                                                            Reject Quotation
+                                                                        </button>
+                                                                        <button
                                                                             className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 flex items-center gap-2"
-                                                                            onClick={handleQuotationApprove}
+                                                                            onClick={() => handleQuotationActionClick('approve')}
                                                                             disabled={!selectedPartId || quotationModalLoading}
                                                                         >
-                                                                            {quotationModalLoading && <Spinner size="small" />}
+                                                                            {quotationModalLoading && quotationActionType === 'approve' && <Spinner size="small" />}
                                                                             Approve Selection
                                                                         </button>
                                                                     </div>
@@ -1122,6 +1158,35 @@ const RepairQueue = () => {
                                                         })()}
                                                     </>
                                                 )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Quotation Confirmation Modal */}
+                                    {showQuotationConfirm && selectedQuotationTicket && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                            <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm {quotationActionType === "approve" ? "Approval" : "Rejection"}</h3>
+                                                <p className="text-sm text-gray-600 mb-6">
+                                                    Are you sure you want to {quotationActionType === "approve" ? "approve" : "reject"} this quotation?
+                                                </p>
+                                                <div className="flex justify-end gap-3">
+                                                    <button
+                                                        onClick={() => setShowQuotationConfirm(false)}
+                                                        className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                                                        disabled={quotationModalLoading}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={confirmQuotationAction}
+                                                        className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${quotationActionType === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"} disabled:opacity-50`}
+                                                        disabled={quotationModalLoading}
+                                                    >
+                                                        {quotationModalLoading && <Spinner size="small" />}
+                                                        {quotationModalLoading ? "Processing..." : "Confirm"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}

@@ -5,6 +5,7 @@ import NotificationBell from "../../components/Notifications/NotificationBell.js
 import { useEffect, useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
 import api from '../../config/ApiConfig';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 const TechnicianDashboard = () => {
     const [userData, setUserData] = useState({
@@ -43,8 +44,6 @@ const TechnicianDashboard = () => {
     // New state for low stock
     const [lowStock, setLowStock] = useState([]);
 
-    // New state for profile picture URL
-    const [profileUrl, setProfileUrl] = useState(null);
 
     const navigate = useNavigate();
 
@@ -154,9 +153,9 @@ const TechnicianDashboard = () => {
         fetchLowStock();
     }, []);
 
-    // Fetch profile picture URL
+    // Fetch user data
     useEffect(() => {
-        const fetchWithPicture = async () => {
+        const fetchUser = async () => {
             try {
                 const currentStored = sessionStorage.getItem('userData');
                 let parsed = currentStored ? JSON.parse(currentStored) : null;
@@ -166,23 +165,15 @@ const TechnicianDashboard = () => {
                     sessionStorage.setItem('userData', JSON.stringify(parsed));
                     setUserData(prev => ({ ...prev, ...parsed }));
                 }
-                if (parsed.profilePictureUrl && parsed.profilePictureUrl !== '0') {
-                    try {
-                        const presigned = await api.get(`/user/getProfilePicture/${parsed.userId}`);
-                        setProfileUrl(presigned.data);
-                    } catch { setProfileUrl(null); }
-                } else {
-                    setProfileUrl(null);
-                }
             } catch (e) {
-                setProfileUrl(null);
+                console.error('Error fetching user data:', e);
             }
         };
-        fetchWithPicture();
-        const interval = setInterval(fetchWithPicture, 240000);
-        return () => clearInterval(interval);
+        fetchUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    
+    const { data: profileUrl } = useProfilePhoto(userData.userId, userData.profilePictureUrl);
 
     // Chart data
     const chartData = {

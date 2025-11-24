@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Package } from 'lucide-react';
+import { AlertTriangle, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../config/ApiConfig';
 import Toast from '../../../components/Toast/Toast.jsx';
 import Spinner from '../../../components/Spinner/Spinner.jsx';
@@ -41,6 +41,24 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
   const [parts, setParts] = useState([]);
   const [selectedPartId, setSelectedPartId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+  const [processing, setProcessing] = useState(false);
+  const [page, setPage] = useState(0);
+  
+  const itemsPerPage = 3;
+  const totalPages = Math.ceil(pendingQuotations.length / itemsPerPage);
+  const startIndex = page * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedQuotations = pendingQuotations.slice(startIndex, endIndex);
+  
+  const prevPage = () => setPage((p) => Math.max(0, p - 1));
+  const nextPage = () => setPage((p) => Math.min(totalPages - 1, p + 1));
+  
+  // Reset to first page when pendingQuotations changes
+  useEffect(() => {
+    setPage(0);
+  }, [pendingQuotations.length]);
 
   const closeToast = () => setToast((prev) => ({ ...prev, show: false }));
 
@@ -72,25 +90,47 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
 
   const getPart = (id) => parts.find((p) => p.id === id);
 
-  const handleApprove = async () => {
-    if (!activeAction || !selectedPartId) return;
+  const handleActionClick = (type) => {
+    if (type === 'approve' && !selectedPartId) {
+      setToast({ show: true, message: 'Please select a part before approving.', type: 'error' });
+      return;
+    }
+    setActionType(type);
+    setShowConfirm(true);
+  };
+
+  const confirmAction = async () => {
+    if (!activeAction) return;
+    setProcessing(true);
     try {
-      setModalLoading(true);
-      await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
-        params: { customerSelection: String(selectedPartId) },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
-      setModalOpen(false);
-      onDecisionComplete();
+      if (actionType === 'approve') {
+        if (!selectedPartId) {
+          setToast({ show: true, message: 'Please select a part before approving.', type: 'error' });
+          setProcessing(false);
+          return;
+        }
+        await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
+          params: { customerSelection: String(selectedPartId) },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
+        setModalOpen(false);
+        onDecisionComplete();
+      } else if (actionType === 'reject') {
+        await api.patch(`/quotation/denyQuotation/${activeAction.quotation.quotationId}`);
+        setToast({ show: true, message: 'Quotation rejected', type: 'success' });
+        setModalOpen(false);
+        onDecisionComplete();
+      }
     } catch (err) {
-      console.error('Failed to approve quotation', err);
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+      console.error(`Failed to ${actionType} quotation`, err);
+      const errorMessage = err?.response?.data?.message || err?.message || `Failed to ${actionType} the quotation. Please try again.`;
       setToast({ show: true, message: errorMessage, type: 'error' });
     } finally {
-      setModalLoading(false);
+      setShowConfirm(false);
+      setProcessing(false);
     }
   };
 
@@ -160,39 +200,91 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-white p-6 rounded-lg shadow-sm relative">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800">Required Actions</h3>
         {loading && <Spinner size="small" />}
       </div>
-      {pendingQuotations.length === 0 && !loading ? (
-        <p className="text-sm text-gray-500">You’re all caught up. No actions required.</p>
-      ) : (
-        <div className="space-y-4">
-          {pendingQuotations.map((action) => (
-            <div key={action.quotation.quotationId} className="flex items-start justify-between border border-gray-100 rounded-lg p-3">
-              <div className="flex items-start">
-                <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center mr-3">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-gray-800">
-                    Approve quotation for ticket {action.ticket.ticketNumber}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Expires {action.quotation.expiryAt ? new Date(action.quotation.expiryAt).toLocaleDateString() : 'in 7 days'}
-                  </div>
-                </div>
-              </div>
-              <button
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                onClick={() => openModal(action)}
-              >
-                Compare & Decide
-              </button>
-            </div>
-          ))}
+
+      {/* Pagination controls in the top-right corner */}
+      {pendingQuotations.length > itemsPerPage && (
+        <div className="absolute top-3 right-3 flex items-center space-x-2">
+          <button
+            onClick={prevPage}
+            disabled={page <= 0 || loading}
+            aria-label="Previous page"
+            className={`p-1 rounded border bg-white hover:bg-gray-100 text-gray-700 ${page <= 0 || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={nextPage}
+            disabled={loading || (totalPages > 0 && page >= totalPages - 1)}
+            aria-label="Next page"
+            className={`p-1 rounded border bg-white hover:bg-gray-100 text-gray-700 ${loading || (totalPages > 0 && page >= totalPages - 1) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
+      )}
+
+      <div className="h-[252px] relative overflow-hidden">
+        <div 
+          key={`${page}-${loading}`} 
+          className="space-y-4 absolute inset-0 animate-fadeIn"
+        >
+          {pendingQuotations.length === 0 && !loading ? (
+            <div className="text-center text-gray-500 py-8 h-full flex items-center justify-center">You're all caught up. No actions required.</div>
+          ) : loading ? (
+            <div className="text-center text-gray-500 py-8 h-full flex items-center justify-center">Loading actions...</div>
+          ) : (
+            <>
+              {paginatedQuotations.map((action) => (
+                <div key={action.quotation.quotationId} className="flex items-start justify-between border border-gray-100 rounded-lg p-3 min-h-[60px]">
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-800">
+                        Approve quotation for ticket {action.ticket.ticketNumber}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Expires {action.quotation.expiryAt ? new Date(action.quotation.expiryAt).toLocaleDateString() : 'in 7 days'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex-shrink-0"
+                    onClick={() => openModal(action)}
+                  >
+                    Compare & Decide
+                  </button>
+                </div>
+              ))}
+              {/* Fill remaining space to maintain consistent height */}
+              {paginatedQuotations.length < itemsPerPage && Array.from({ length: itemsPerPage - paginatedQuotations.length }).map((_, idx) => (
+                <div key={`placeholder-${idx}`} className="min-h-[60px] opacity-0 pointer-events-none" aria-hidden="true">
+                  <div className="flex items-start justify-between border border-gray-100 rounded-lg p-3">
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 rounded-full mr-3"></div>
+                      <div>
+                        <div className="font-medium">&nbsp;</div>
+                        <div className="text-xs">&nbsp;</div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1"></div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Page indicator at bottom */}
+      {!loading && totalPages > 0 && (
+        <div className="mt-4 text-sm text-gray-500 text-right">Page {page + 1} of {totalPages}</div>
       )}
 
       {modalOpen && activeAction && (
@@ -218,20 +310,57 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
                   Need help deciding? Call us at <strong>(02) 8700 1234</strong> and mention ticket{' '}
                   <strong>{activeAction.ticket.ticketNumber}</strong>.
                 </p>
-                <div className="flex justify-end gap-3">
-                  <button className="px-4 py-2 rounded-md border text-gray-700" onClick={() => setModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60"
-                    onClick={handleApprove}
-                    disabled={!selectedPartId || modalLoading}
-                  >
-                    Approve Selection
-                  </button>
-                </div>
+                                    <div className="flex justify-end gap-3">
+                                      <button className="px-4 py-2 rounded-md border text-gray-700" onClick={() => setModalOpen(false)}>
+                                        Cancel
+                                      </button>
+                                      <button
+                                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                                        onClick={() => handleActionClick('reject')}
+                                        disabled={modalLoading || processing}
+                                      >
+                                        Reject Quotation
+                                      </button>
+                                      <button
+                                        className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 flex items-center gap-2"
+                                        onClick={() => handleActionClick('approve')}
+                                        disabled={!selectedPartId || modalLoading || processing}
+                                      >
+                                        {processing && actionType === 'approve' && <Spinner size="small" />}
+                                        Approve Selection
+                                      </button>
+                                    </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {showConfirm && activeAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm {actionType === "approve" ? "Approval" : "Rejection"}</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to {actionType === "approve" ? "approve" : "reject"} this quotation?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                disabled={processing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAction}
+                className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${actionType === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"} disabled:opacity-50`}
+                disabled={processing}
+              >
+                {processing && <Spinner size="small" />}
+                {processing ? "Processing..." : "Confirm"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,17 +1,10 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useMemo} from "react";
 import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
-
-async function getWarrantyPhotos(photoUrls) {
-    if (!photoUrls || photoUrls.length === 0) return [];
-    const promises = photoUrls.map(photoUrl =>
-        api.get('/warranty/getWarrantyPhotos', { params: { photoUrl } }).then(res => res.data)
-    );
-    return Promise.all(promises);
-}
+import { useWarrantyPhoto } from '../../hooks/useWarrantyPhoto';
 
 const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     if (!data) return null;
@@ -39,7 +32,6 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         warrantyNumber: data.warrantyNumber,
         returnReason: data.returnReason
     });
-    const [warrantyPhotos, setWarrantyPhotos] = useState([]);
     const STATUS_OPTIONS = [
         "CHECKED_IN",
         "ITEM_RETURNED",
@@ -85,27 +77,41 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
             });
         }
     }, [data?.warrantyNumber]);
-
+    
+    // Reset fetched photos when warranty photos URLs change
     useEffect(() => {
-        if (data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0) {
-            getWarrantyPhotos(data.warrantyPhotosUrls)
-                .then(urls => {
-                    setWarrantyPhotos(urls);
-                    // If formData doesn't yet have photos, sync them in for unified display logic
-                    setFormData(prev => {
-                        if (!prev.warrantyPhotosUrls || prev.warrantyPhotosUrls.length === 0) {
-                            return { ...prev, warrantyPhotosUrls: urls };
-                        }
-                        return prev;
-                    });
-                })
-                .catch(() => {
-                    setWarrantyPhotos([]);
-                });
-        } else {
-            setWarrantyPhotos([]);
-        }
-    }, [data.warrantyPhotosUrls]);
+        setFetchedWarrantyPhotos({});
+    }, [data?.warrantyNumber]);
+
+    // Component to fetch individual warranty photo with caching
+    const WarrantyPhotoFetcher = ({ photoUrl, index }) => {
+        const { data: presignedUrl } = useWarrantyPhoto(photoUrl);
+        
+        useEffect(() => {
+            if (presignedUrl) {
+                setFetchedWarrantyPhotos(prev => ({ ...prev, [index]: presignedUrl }));
+            }
+        }, [presignedUrl, index]);
+        
+        return null;
+    };
+    
+    // State to store fetched warranty photo URLs by index
+    const [fetchedWarrantyPhotos, setFetchedWarrantyPhotos] = useState({});
+    
+    // Extract photo URLs, handling both base64 (new uploads) and presigned URLs
+    const warrantyPhotos = useMemo(() => {
+        if (!data.warrantyPhotosUrls || data.warrantyPhotosUrls.length === 0) return [];
+        
+        return data.warrantyPhotosUrls.map((photoUrl, idx) => {
+            // If it's already a base64 data URL (from new uploads), use it directly
+            if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:'))) {
+                return photoUrl;
+            }
+            // Otherwise, use the cached presigned URL
+            return fetchedWarrantyPhotos[idx] || photoUrl;
+        });
+    }, [data.warrantyPhotosUrls, fetchedWarrantyPhotos]);
 
     const UpdateStatus = async () => {
         try {
@@ -208,10 +214,13 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     };
     const closeImageViewer = () => setImageViewerOpen(false);
 
-    // Unified photo source preference: formData.warrantyPhotosUrls first, else warrantyPhotos fallback
-    const displayedPhotos = (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0)
-        ? formData.warrantyPhotosUrls
-        : warrantyPhotos;
+    // Unified photo source preference: formData.warrantyPhotosUrls first (new uploads), else warrantyPhotos fallback (cached)
+    const displayedPhotos = useMemo(() => {
+        if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+            return formData.warrantyPhotosUrls;
+        }
+        return warrantyPhotos;
+    }, [formData.warrantyPhotosUrls, warrantyPhotos]);
 
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
@@ -443,6 +452,20 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         </div>
 
                         {/* Device Condition Section */}
+                        {/* Fetch warranty photos in background */}
+                        {data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0 && data.warrantyPhotosUrls.map((photoUrl, idx) => {
+                            // Only fetch if it's not already a base64/blob URL
+                            if (photoUrl && !photoUrl.startsWith('data:') && !photoUrl.startsWith('blob:')) {
+                                return (
+                                    <WarrantyPhotoFetcher
+                                        key={`warranty-photo-${idx}-${photoUrl}`}
+                                        photoUrl={photoUrl}
+                                        index={idx}
+                                    />
+                                );
+                            }
+                            return null;
+                        })}
 
                         <div className="mb-6 mt-5">
                             <div className="mb-6">
@@ -516,8 +539,6 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                                             }
                                                                             return { ...prev, warrantyPhotosUrls: updated };
                                                                         });
-                                                                    } else {
-                                                                        setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
                                                                     }
                                                                 }}
                                                                 style={{
