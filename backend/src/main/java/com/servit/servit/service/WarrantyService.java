@@ -308,16 +308,9 @@ public class WarrantyService {
 
                 // Map basic customer and issue details
                 ticket.setTicketNumber(warranty.getWarrantyNumber());
-                // Split full customer name into first / last if possible
-                String fullName = warranty.getCustomerFirstName() + " " + warranty.getCustomerLastName();
-                if (fullName != null && !fullName.isBlank()) {
-                    String trimmed = fullName.trim();
-                    String[] parts = trimmed.split("\\s+", 2); // split into at most 2 parts
-                    ticket.setCustomerFirstName(parts[0]);
-                    if (parts.length > 1) {
-                        ticket.setCustomerLastName(parts[1]);
-                    }
-                }
+                // Use split name fields directly
+                ticket.setCustomerFirstName(warranty.getCustomerFirstName());
+                ticket.setCustomerLastName(warranty.getCustomerLastName());
                 ticket.setCustomerEmail(warranty.getCustomerEmail());
                 ticket.setCustomerPhoneNumber(warranty.getCustomerPhoneNumber());
                 ticket.setReportedIssue(warranty.getReportedIssue());
@@ -383,7 +376,8 @@ public class WarrantyService {
                 emailService.sendWarrrantyPdfEmail(
                         warranty.getCustomerEmail(),
                         warranty.getWarrantyNumber(),
-                        warranty.getCustomerFirstName() + " " + warranty.getCustomerLastName(),
+                        warranty.getCustomerFirstName(),
+                        warranty.getCustomerLastName(),
                         pdfPath
                 );
             } catch (Exception emailEx) {
