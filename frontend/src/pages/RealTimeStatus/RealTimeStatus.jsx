@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useLocation, Link } from 'react-router-dom'
-import api from "../../config/ApiConfig.jsx"
+import { useLocation, Link, useNavigate } from 'react-router-dom'
+import api, { parseJwt } from "../../config/ApiConfig.jsx"
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import BeforePicturesGallery from '../../components/BeforePictures/BeforePicturesGallery.jsx'
 import AfterPicturesGallery from '../DashboardPage/CustomerDashboardComponents/AfterPicturesGallery.jsx'
@@ -35,6 +35,7 @@ const PartPhoto = ({ partId, photoUrl, className = "w-20 h-20 object-cover round
 
 const RealTimeStatus = () => {
     const location = useLocation()
+    const navigate = useNavigate()
     const ticketNumberParam = location.state?.ticketNumber || null
     const prevStatusRef = useRef(null)
 
@@ -45,6 +46,9 @@ const RealTimeStatus = () => {
     const [quotationParts, setQuotationParts] = useState([])
     const [loading, setLoading] = useState(true)
     const [statusTransition, setStatusTransition] = useState(false)
+    const [hasFeedback, setHasFeedback] = useState(false)
+    const [checkingFeedback, setCheckingFeedback] = useState(false)
+    const [userRole, setUserRole] = useState(null)
 
     const statusOrder = [
         "RECEIVED",
@@ -148,6 +152,45 @@ const RealTimeStatus = () => {
     useEffect(() => {
         fetchData()
     }, [ticketNumberParam])
+
+    // Check user role
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            const payload = parseJwt(token);
+            if (payload && payload.role) {
+                setUserRole(payload.role);
+            }
+        }
+    }, [])
+
+    // Check if feedback exists when status is COMPLETED
+    useEffect(() => {
+        const statusVal = normalizeStatus(currentStatus);
+        const ticketId = ticketDetails?.repairTicketId;
+        
+        if (ticketId && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
+            setCheckingFeedback(true);
+            // Check if feedback exists
+            api.get(`/feedback/check/${ticketId}`)
+                .then(res => {
+                    // Explicitly convert to boolean - if res.data is truthy, feedback exists
+                    setHasFeedback(Boolean(res.data));
+                })
+                .catch(err => {
+                    console.error('Error checking feedback:', err);
+                    // On error, assume no feedback exists so button can show
+                    setHasFeedback(false);
+                })
+                .finally(() => {
+                    setCheckingFeedback(false);
+                });
+        } else {
+            // For non-completed tickets, reset feedback state
+            setHasFeedback(false);
+            setCheckingFeedback(false);
+        }
+    }, [currentStatus, ticketDetails?.repairTicketId])
 
     // WebSocket for real-time updates
     useEffect(() => {
@@ -284,12 +327,17 @@ const RealTimeStatus = () => {
                                     </button>
                                 </Link>
                             )}
-                            {normalizeStatus(currentStatus) === "COMPLETED" && (
-                                <Link to={`/feedbackform/${ticketDetails?.repairTicketId || 0}`} className="inline-block w-full sm:w-auto animate-fade-in">
-                                    <button className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base">
-                                        Give Feedback
-                                    </button>
-                                </Link>
+                            {(normalizeStatus(currentStatus) === "COMPLETED" || normalizeStatus(currentStatus) === "COMPLETE") && 
+                             hasFeedback === false && 
+                             checkingFeedback === false && 
+                             userRole && 
+                             userRole.toUpperCase() === 'CUSTOMER' && (
+                                <button 
+                                    onClick={() => navigate(`/feedbackform/${ticketDetails?.repairTicketId || ticketDetails?.id || 0}`)}
+                                    className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base"
+                                >
+                                    Give Feedback
+                                </button>
                             )}
                         </div>
                     </div>
