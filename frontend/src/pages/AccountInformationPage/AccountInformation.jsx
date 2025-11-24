@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal.jsx';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 // Utility to title-case multi-word names
 const toTitleCase = (str) => str
@@ -23,7 +24,6 @@ const AccountInformation = () => {
         password: '********',
         profilePictureUrl: null
     });
-    const [displayProfileUrl, setDisplayProfileUrl] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -55,9 +55,6 @@ const AccountInformation = () => {
                         const parsed = JSON.parse(cached);
                         if (parsed && parsed.userId) {
                             setUserData(parsed);
-                            if (parsed.profilePictureUrl && parsed.profilePictureUrl !== '0') {
-                                await fetchPresignedUrl(parsed.userId, parsed.profilePictureUrl);
-                            }
                         }
                     } catch (_) { }
                 }
@@ -77,11 +74,6 @@ const AccountInformation = () => {
                 };
                 setUserData(merged);
                 sessionStorage.setItem('userData', JSON.stringify(merged));
-                if (merged.profilePictureUrl && merged.profilePictureUrl !== '0') {
-                    await fetchPresignedUrl(merged.userId, merged.profilePictureUrl);
-                } else {
-                    setDisplayProfileUrl(null);
-                }
                 setError(null);
             } catch (err) {
                 console.error('Error fetching user data:', err);
@@ -112,14 +104,7 @@ const AccountInformation = () => {
         fetchUserData();
     }, []);
 
-    const fetchPresignedUrl = async (userId, rawUrl) => {
-        try {
-            const resp = await api.get(`/user/getProfilePicture/${userId}`);
-            setDisplayProfileUrl(resp.data);
-        } catch (e) {
-            if (rawUrl && rawUrl !== '0') setDisplayProfileUrl(rawUrl);
-        }
-    };
+    const { data: displayProfileUrl } = useProfilePhoto(userData.userId, userData.profilePictureUrl);
 
     useEffect(() => {
         setEditFormData({ firstName: userData.firstName, lastName: userData.lastName, username: userData.username, phoneNumber: userData.phoneNumber });
@@ -204,8 +189,6 @@ const AccountInformation = () => {
             const newData = { ...userData, ...refreshed.data, password: '********' };
             setUserData(newData);
             sessionStorage.setItem('userData', JSON.stringify(newData));
-            if (newData.profilePictureUrl && newData.profilePictureUrl !== '0') await fetchPresignedUrl(newData.userId, newData.profilePictureUrl);
-            else setDisplayProfileUrl(null);
         } catch (err) {
             console.error('Upload failed', err);
             setUploadError(err.response?.data || err.message || 'Failed to upload image');
@@ -224,7 +207,6 @@ const AccountInformation = () => {
             const newData = { ...userData, ...refreshed.data, profilePictureUrl: null };
             setUserData(newData);
             sessionStorage.setItem('userData', JSON.stringify(newData));
-            setDisplayProfileUrl(null);
         } catch (err) {
             setUploadError(err.response?.data || err.message || 'Failed to remove picture');
         } finally {

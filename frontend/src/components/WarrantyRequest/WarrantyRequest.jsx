@@ -1,18 +1,10 @@
-import React, {useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight, X} from "lucide-react";
+import React, {useEffect, useState, useMemo} from "react";
+import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
-import axios from "axios";
-
-async function getWarrantyPhotos(photoUrls) {
-    if (!photoUrls || photoUrls.length === 0) return [];
-    const promises = photoUrls.map(photoUrl =>
-        api.get('/warranty/getWarrantyPhotos', { params: { photoUrl } }).then(res => res.data)
-    );
-    return Promise.all(promises);
-}
+import { useWarrantyPhoto } from '../../hooks/useWarrantyPhoto';
 
 function TicketWarrantyImage({ path, alt, className }) {
     const { data: src, isLoading } = useWarrantyPhoto(path); // custom hook
@@ -57,13 +49,12 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
         password: '' ,
         type: '',
         techObservation: '',
-        warrantyPhotosUrls: data.warrantyPhotosUrls
+        warrantyPhotosUrls: data.warrantyPhotosfs
     }));
     const [reason, setReason] = useState({
         warrantyNumber: data.warrantyNumber,
         returnReason: data.returnReason
     });
-    const [warrantyPhotos, setWarrantyPhotos] = useState([]);
     const STATUS_OPTIONS = [
         "CHECKED_IN",
         "ITEM_RETURNED",
@@ -109,41 +100,41 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
             });
         }
     }, [data?.warrantyNumber]);
-
+    
+    // Reset fetched photos when warranty photos URLs change
     useEffect(() => {
-        if (!data.warrantyPhotosUrls || data.warrantyPhotosUrls.length === 0) {
-            setWarrantyPhotos([]);
-            return;
-        }
+        setFetchedWarrantyPhotos({});
+    }, [data?.warrantyNumber]);
 
-        const fetchPhotos = async () => {
-            try {
-                const fetched = await Promise.all(
-                    data.warrantyPhotosUrls.map(async (rawUrl) => {
-                        const res = await axios.get("/warranty/photo", {
-                            params: { url: rawUrl },
-                            responseType: "blob",
-                        });
-                        return URL.createObjectURL(res.data);
-                    })
-                );
-
-                setWarrantyPhotos(fetched);
-
-                // Sync to formData if needed
-                setFormData((prev) =>
-                    !prev.warrantyPhotosUrls?.length
-                        ? { ...prev, warrantyPhotosUrls: fetched }
-                        : prev
-                );
-            } catch (err) {
-                console.error("Failed to load warranty photos", err);
-                setWarrantyPhotos([]);
+    // Component to fetch individual warranty photo with caching
+    const WarrantyPhotoFetcher = ({ photoUrl, index }) => {
+        const { data: presignedUrl } = useWarrantyPhoto(photoUrl);
+        
+        useEffect(() => {
+            if (presignedUrl) {
+                setFetchedWarrantyPhotos(prev => ({ ...prev, [index]: presignedUrl }));
             }
-        };
-
-        fetchPhotos();
-    }, [data.warrantyPhotosUrls]);
+        }, [presignedUrl, index]);
+        
+        return null;
+    };
+    
+    // State to store fetched warranty photo URLs by index
+    const [fetchedWarrantyPhotos, setFetchedWarrantyPhotos] = useState({});
+    
+    // Extract photo URLs, handling both base64 (new uploads) and presigned URLs
+    const warrantyPhotos = useMemo(() => {
+        if (!data.warrantyPhotosUrls || data.warrantyPhotosUrls.length === 0) return [];
+        
+        return data.warrantyPhotosUrls.map((photoUrl, idx) => {
+            // If it's already a base64 data URL (from new uploads), use it directly
+            if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:'))) {
+                return photoUrl;
+            }
+            // Otherwise, use the cached presigned URL
+            return fetchedWarrantyPhotos[idx] || photoUrl;
+        });
+    }, [data.warrantyPhotosUrls, fetchedWarrantyPhotos]);
 
     const UpdateStatus = async () => {
         try {
@@ -246,11 +237,13 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     };
     const closeImageViewer = () => setImageViewerOpen(false);
 
-    // Unified photo source preference: formData.warrantyPhotosUrls first, else warrantyPhotos fallback
-    const displayedPhotos =
-        formData.warrantyPhotosUrls?.length > 0
-            ? formData.warrantyPhotosUrls
-            : warrantyPhotos;
+    // Unified photo source preference: formData.warrantyPhotosUrls first (new uploads), else warrantyPhotos fallback (cached)
+    const displayedPhotos = useMemo(() => {
+        if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+            return formData.warrantyPhotosUrls;
+        }
+        return warrantyPhotos;
+    }, [formData.warrantyPhotosUrls, warrantyPhotos]);
 
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
@@ -482,6 +475,20 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         </div>
 
                         {/* Device Condition Section */}
+                        {/* Fetch warranty photos in background */}
+                        {data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0 && data.warrantyPhotosUrls.map((photoUrl, idx) => {
+                            // Only fetch if it's not already a base64/blob URL
+                            if (photoUrl && !photoUrl.startsWith('data:') && !photoUrl.startsWith('blob:')) {
+                                return (
+                                    <WarrantyPhotoFetcher
+                                        key={`warranty-photo-${idx}-${photoUrl}`}
+                                        photoUrl={photoUrl}
+                                        index={idx}
+                                    />
+                                );
+                            }
+                            return null;
+                        })}
 
                         <div className="mb-6 mt-5">
                             {/* Header */}
@@ -533,20 +540,96 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                                     key={idx}
                                                     className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer"
                                                 >
-                                                    {/* Delete button only if not success and still CHECKED_IN */}
-                                                    {!success && data.status === "CHECKED_IN" && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setFormData(prev => {
-                                                                    const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
-                                                                    setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
-                                                                    if (updated.length === 0) setPhotoError("Please upload at least one photo of the device condition.");
-                                                                    else setPhotoError('');
-                                                                    return { ...prev, warrantyPhotosUrls: updated };
-                                                                });
-                                                                setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                    Upload Photo(s)
+                                                </label>
+                                            </>
+                                        )}
+                                        <input
+                                            id="photo-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            multiple
+                                            onChange={handlePhotoUpload}
+                                            disabled={success}
+                                            max={3}
+                                        />
+                                        {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
+                                            <p className="text-sm text-gray-600">
+                                                Uploaded Images:
+                                            </p>
+                                        )}
+                                        {photoError && (
+                                            <p className="text-sm text-red-600">
+                                                {photoError instanceof Error ? photoError.message : photoError}
+                                            </p>
+                                        )}
+                                        {displayedPhotos && displayedPhotos.length > 0 && (
+                                            <div className="flex gap-4 mt-2 justify-center">
+                                                {displayedPhotos.map((src, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        style={{
+                                                            width: 96,
+                                                            height: 96,
+                                                            background: "#f3f4f6",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            borderRadius: 8,
+                                                            border: "1px solid #e5e7eb",
+                                                            overflow: "hidden",
+                                                            cursor: "pointer",
+                                                            position: "relative"
+                                                        }}
+                                                    >
+                                                        {!success && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={e => {
+                                                                    e.stopPropagation();
+                                                                    if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
+                                                                        setFormData(prev => {
+                                                                            const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
+                                                                            setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
+                                                                            if (updated.length === 0) {
+                                                                                setPhotoError("Please upload at least one photo of the device condition.");
+                                                                            } else {
+                                                                                setPhotoError('');
+                                                                            }
+                                                                            return { ...prev, warrantyPhotosUrls: updated };
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: 4,
+                                                                    right: 4,
+                                                                    background: "rgba(255,255,255,0.8)",
+                                                                    border: "none",
+                                                                    borderRadius: "50%",
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    cursor: "pointer",
+                                                                    zIndex: 2
+                                                                }}
+                                                                aria-label="Remove photo"
+                                                                disabled={success}
+                                                            >
+                                                                <X size={18} className="text-gray-500 hover:text-red-500" />
+                                                            </button>
+                                                        )}
+                                                        <img
+                                                            src={src}
+                                                            alt={`Device condition ${idx + 1}`}
+                                                            style={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                objectFit: "contain",
+                                                                background: "#f3f4f6"
                                                             }}
                                                             className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 border-none z-10 hover:bg-red-100"
                                                             aria-label="Remove photo"
