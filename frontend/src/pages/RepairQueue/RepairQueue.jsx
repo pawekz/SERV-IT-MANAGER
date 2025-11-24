@@ -53,7 +53,7 @@ const statusChipClasses = (statusRaw) => {
 
 const RepairQueue = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-
+    const isCustomer = userData?.role?.toLowerCase() === 'customer';
     const token = localStorage.getItem('authToken');
     const decoded = parseJwt(token);
     const role = decoded?.role?.toLowerCase();
@@ -597,7 +597,11 @@ const RepairQueue = () => {
                                         <div className="flex flex-col gap-2">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                                className={`px-3 py-1.5 text-xs font-medium rounded-md text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+                                                    ${isCustomer
+                                                    ? "bg-[#25D482] hover:bg-[#1fab6b] focus-visible:ring-[#25D482]"
+                                                    : "bg-[#2563eb] hover:bg-[#1e49c7] focus-visible:ring-[#2563eb]"
+                                                }`}
                                             >
                                                 View
                                             </button>
@@ -693,7 +697,12 @@ const RepairQueue = () => {
                     key={i}
                     onClick={() => setCurrentPage(i)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                        i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        i === currentPage ? isCustomer
+                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                : 'bg-[#2563eb] text-white border-[#2563eb]'
+                            : isCustomer
+                                ? 'bg-white text-gray-700 border-gray-300 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-[#2563eb]/10 hover:text-[#2563eb]'
                     }`}
                 >
                     {i + 1}
@@ -722,7 +731,13 @@ const RepairQueue = () => {
                         className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                     >Prev</button>
                     <div className="flex gap-1">{pages.length > 0 ? pages : (
-                        <button className="px-3 py-1.5 rounded-md text-xs font-medium border bg-[#25D482] text-white">1</button>
+                        <button
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
+                                isCustomer
+                                    ? 'bg-[#25D482] text-white border-[#25D482] hover:bg-[#1fab6b]'
+                                    : 'bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1e49c7]'
+                            }`}
+                        >1</button>
                     )}</div>
                     <button
                         onClick={() => currentPage < (Math.max(1, totalPages) - 1) && setCurrentPage(currentPage + 1)}
@@ -934,13 +949,31 @@ const RepairQueue = () => {
                                                 <div className="flex border-b border-gray-300">
                                                     <NavLink
                                                         to="/repairqueue"
-                                                        className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                        className={({ isActive }) =>{ const isCustomer = role === "customer";
+
+                                                            return (
+                                                                `px-4 py-3 font-medium transition-all ` +
+                                                                (isActive
+                                                                        ? `border-b-2 ${isCustomer ? "border-[#25D482] text-[#25D482]" : "border-[#2563eb] text-[#2563eb]"}`
+                                                                        : `${isCustomer ? "text-gray-600 hover:text-[#25D482]" : "text-gray-600 hover:text-[#2563eb]"}`
+                                                                )
+                                                            );
+                                                        }}
                                                     >
                                                         Pending Repairs
                                                     </NavLink>
                                                     <NavLink
                                                         to="/resolvedrepairs"
-                                                        className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                        className={({ isActive }) =>{ const isCustomer = role === "customer";
+
+                                                            return (
+                                                                `px-4 py-3 font-medium transition-all ` +
+                                                                (isActive
+                                                                        ? `border-b-2 ${isCustomer ? "border-[#25D482] text-[#25D482]" : "border-[#2563eb] text-[#2563eb]"}`
+                                                                        : `${isCustomer ? "text-gray-600 hover:text-[#25D482]" : "text-gray-600 hover:text-[#2563eb]"}`
+                                                                )
+                                                            );
+                                                        }}
                                                     >
                                                         Resolved Repairs
                                                     </NavLink>
@@ -968,7 +1001,11 @@ const RepairQueue = () => {
                                                         aria-label="Search tickets"
                                                         onChange={e => setSearch(e.target.value)}
                                                         onKeyDown={e => e.key === 'Enter' && (setCurrentPage(0))}
-                                                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                        className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2
+                                                            ${isCustomer
+                                                            ? "border-gray-300 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                            : "border-gray-300 focus:ring-[#2563eb]/30 focus:border-[#2563eb]"
+                                                        }`}
                                                     />
                                                     {search && (
                                                         <button
@@ -981,7 +1018,12 @@ const RepairQueue = () => {
 
                                                 <button
                                                     onClick={() => setCurrentPage(0)}
-                                                    className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                                    className={
+                                                        'w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 text-white rounded-md text-sm font-medium whitespace-nowrap border-gray-300 ' +
+                                                        (isCustomer
+                                                            ? 'bg-[#25D482] hover:bg-[#1fab6b]'
+                                                            : 'bg-[#2563eb] hover:bg-[#1e49c7]')
+                                                    }
                                                 >Search</button>
                                             </div>
 
@@ -990,8 +1032,12 @@ const RepairQueue = () => {
                                                 <select
                                                     value={statusFilter}
                                                     onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(0); }}
-                                                    className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
-                                                >
+                                                    className={
+                                                        'px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2' +
+                                                        (isCustomer
+                                                            ? 'focus:ring-[#25D482]/30 focus:border-[#25D482]'
+                                                            : 'focus:ring-[#2563eb]/30 focus:border-[#2563eb]')
+                                                    }                                                >
                                                     {availableStatuses.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                                 </select>
                                             </div>
@@ -1000,7 +1046,12 @@ const RepairQueue = () => {
                                                 <select
                                                     value={pageSize}
                                                     onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setCurrentPage(0); }}
-                                                    className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                                    className={
+                                                        'px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2' +
+                                                        (isCustomer
+                                                            ?  'focus:ring-[#25D482]/30 focus:border-[#25D482]'
+                                                            : 'focus:ring-[#2563eb]/30 focus:border-[#2563eb]')
+                                                    }
                                                 >
                                                     {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
                                                 </select>
@@ -1008,12 +1059,24 @@ const RepairQueue = () => {
                                             <div className="flex items-center gap-1" aria-label="Display mode">
                                                 <button
                                                     onClick={() => setViewMode('table')}
-                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'table' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                        viewMode === 'table'
+                                                            ? (isCustomer
+                                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                    }`}
                                                     aria-pressed={viewMode === 'table'}
                                                 >Table</button>
                                                 <button
                                                     onClick={() => setViewMode('cards')}
-                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'cards' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                        viewMode === 'cards'
+                                                            ? (isCustomer
+                                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                    }`}
                                                     aria-pressed={viewMode === 'cards'}
                                                 >Cards</button>
                                             </div>

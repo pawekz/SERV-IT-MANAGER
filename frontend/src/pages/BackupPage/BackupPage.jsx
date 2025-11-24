@@ -120,7 +120,7 @@ const BackupPage = () => {
                         <button
                             onClick={handleManualBackup}
                             disabled={actionLoading}
-                            className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-[#25D482] hover:bg-[#1fab6b] disabled:bg-gray-400"
+                            className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-[#2563eb] hover:bg-[#1e49c7] disabled:bg-gray-400"
                         >
                             <HardDriveDownload className="mr-2" />
                             {actionLoading ? 'Backing up...' : 'Manual Back Up'}
@@ -167,8 +167,8 @@ const BackupPage = () => {
                                     key={title}
                                     className={`px-4 py-3 font-medium transition-all ${
                                         activeTab === title
-                                            ? 'border-b-2 border-[#01e135] text-[#01e135]'
-                                            : 'text-gray-600 hover:text-[#01e135]'
+                                            ? 'border-b-2 border-[#1e49c7] text-[#1e49c7]'
+                                            : 'text-gray-600 hover:text-[#1e49c7]'
                                     }`}
                                     onClick={() => setActiveTab(title)}
                                 >
