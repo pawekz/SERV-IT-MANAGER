@@ -168,18 +168,18 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                         <h3 className="font-bold text-lg mb-4">Customer Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                                 <input type="text"
-                                       placeholder="Name"
+                                       placeholder="First Name"
                                        className="input w-full rounded-lg border-2 p-2"
                                        value={formData.customerFirstName}
                                        onChange={e => handleChange("customerFirstName", e.target.value)}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                                 <input type="text"
-                                       placeholder="Name"
+                                       placeholder="Last Name"
                                        className="input w-full rounded-lg border-2 p-2"
                                        value={formData.customerLastName}
                                        onChange={e => handleChange("customerLastName", e.target.value)}
