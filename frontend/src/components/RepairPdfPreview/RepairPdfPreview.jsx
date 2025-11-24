@@ -355,7 +355,10 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 <LoadingModal
                     show={loading}
                     title="Processing"
-                    message="Please wait while we submit the repair ticket..."
+                    message={kind === "warranty"
+                        ? "Please wait while we submit the warranty ticket..."
+                        : "Please wait while we submit the repair ticket..."
+                    }
                 />
             )}
         </div>

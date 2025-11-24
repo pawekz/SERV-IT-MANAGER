@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight, X} from "lucide-react"; // removed unused Upload, SquareX
+import {ChevronLeft, ChevronRight, X} from "lucide-react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import WarrantyReceive from "../WarrantyRecieve/WarrantyReceive.jsx";
 import Toast from "../Toast/Toast.jsx";
 import api from '../../config/ApiConfig';
+import axios from "axios";
 
 async function getWarrantyPhotos(photoUrls) {
     if (!photoUrls || photoUrls.length === 0) return [];
@@ -12,6 +13,29 @@ async function getWarrantyPhotos(photoUrls) {
     );
     return Promise.all(promises);
 }
+
+function TicketWarrantyImage({ path, alt, className }) {
+    const { data: src, isLoading } = useWarrantyPhoto(path); // custom hook
+
+    if (isLoading) {
+        return (
+            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+                Loading...
+            </div>
+        );
+    }
+
+    if (!src) {
+        return (
+            <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+                <Camera size={40} className="text-gray-300" />
+            </div>
+        );
+    }
+
+    return <img src={src} alt={alt} className={className} />;
+}
+
 
 const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     if (!data) return null;
@@ -87,24 +111,38 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     }, [data?.warrantyNumber]);
 
     useEffect(() => {
-        if (data.warrantyPhotosUrls && data.warrantyPhotosUrls.length > 0) {
-            getWarrantyPhotos(data.warrantyPhotosUrls)
-                .then(urls => {
-                    setWarrantyPhotos(urls);
-                    // If formData doesn't yet have photos, sync them in for unified display logic
-                    setFormData(prev => {
-                        if (!prev.warrantyPhotosUrls || prev.warrantyPhotosUrls.length === 0) {
-                            return { ...prev, warrantyPhotosUrls: urls };
-                        }
-                        return prev;
-                    });
-                })
-                .catch(() => {
-                    setWarrantyPhotos([]);
-                });
-        } else {
+        if (!data.warrantyPhotosUrls || data.warrantyPhotosUrls.length === 0) {
             setWarrantyPhotos([]);
+            return;
         }
+
+        const fetchPhotos = async () => {
+            try {
+                const fetched = await Promise.all(
+                    data.warrantyPhotosUrls.map(async (rawUrl) => {
+                        const res = await axios.get("/warranty/photo", {
+                            params: { url: rawUrl },
+                            responseType: "blob",
+                        });
+                        return URL.createObjectURL(res.data);
+                    })
+                );
+
+                setWarrantyPhotos(fetched);
+
+                // Sync to formData if needed
+                setFormData((prev) =>
+                    !prev.warrantyPhotosUrls?.length
+                        ? { ...prev, warrantyPhotosUrls: fetched }
+                        : prev
+                );
+            } catch (err) {
+                console.error("Failed to load warranty photos", err);
+                setWarrantyPhotos([]);
+            }
+        };
+
+        fetchPhotos();
     }, [data.warrantyPhotosUrls]);
 
     const UpdateStatus = async () => {
@@ -209,9 +247,10 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
     const closeImageViewer = () => setImageViewerOpen(false);
 
     // Unified photo source preference: formData.warrantyPhotosUrls first, else warrantyPhotos fallback
-    const displayedPhotos = (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0)
-        ? formData.warrantyPhotosUrls
-        : warrantyPhotos;
+    const displayedPhotos =
+        formData.warrantyPhotosUrls?.length > 0
+            ? formData.warrantyPhotosUrls
+            : warrantyPhotos;
 
     const imageViewerNextPhoto = () => setImageViewerIndex((prev) => (prev + 1) % (displayedPhotos.length || 1));
     const imageViewerPrevPhoto = () => setImageViewerIndex((prev) => (prev - 1 + displayedPhotos.length) % (displayedPhotos.length || 1));
@@ -289,7 +328,7 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                                 <h2 className="font-bold text-gray-800">CUSTOMER INFORMATION</h2>
                             </div>
                             <div className="grid grid-cols-4 md:grid-cols-3 gap-2 text-m w-full">
-                                <div><strong>Customer Name:</strong><br />{data.customerName}</div>
+                                <div><strong>Customer Name:</strong><br />{data.customerFirstName} {data.customerLastName}</div>
                                 <div><strong>Customer Email:</strong><br />{data.customerEmail}</div>
                                 <div><strong>Customer Phone Number:</strong><br />{data.customerPhoneNumber}</div>
                             </div>
@@ -445,119 +484,95 @@ const WarrantyRequest = ({ isOpen, onClose, data = {}, onSuccess }) => {
                         {/* Device Condition Section */}
 
                         <div className="mb-6 mt-5">
+                            {/* Header */}
                             <div className="mb-6">
                                 <div className="bg-gray-100 p-2 mb-4 border-l-4 border-[#33e407]">
                                     <h2 className="font-bold text-gray-800">DEVICE CONDITION</h2>
                                 </div>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                    <div className="space-y-3">
-                                        {!success && data.status === "CHECKED_IN" && (
-                                            <>
-                                                <label
-                                                    htmlFor="photo-upload"
-                                                    className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+
+                                {/* Container */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center space-y-3">
+
+                                    {/* Upload Button - only if not success AND status is CHECKED_IN */}
+                                    {!success && data.status === "CHECKED_IN" && (
+                                        <>
+                                            <label
+                                                htmlFor="photo-upload"
+                                                className="cursor-pointer inline-block px-4 py-2 bg-white border border-green-600 text-green-600 rounded-md hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+                                            >
+                                                Upload Photo(s)
+                                            </label>
+                                            <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
+                                        </>
+                                    )}
+
+                                    {/* File Input */}
+                                    <input
+                                        id="photo-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        multiple
+                                        onChange={handlePhotoUpload}
+                                        disabled={success}
+                                        max={3}
+                                    />
+
+                                    {/* Error */}
+                                    {photoError && (
+                                        <p className="text-sm text-red-600">
+                                            {photoError instanceof Error ? photoError.message : photoError}
+                                        </p>
+                                    )}
+
+                                    {/* Photo Display */}
+                                    {displayedPhotos.length > 0 && (
+                                        <div className="flex gap-4 mt-2 justify-center flex-wrap">
+                                            {displayedPhotos.map((src, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="relative w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer"
                                                 >
-                                                    Upload Photo(s)
-                                                </label>
-                                            </>
-                                        )}
-                                        <input
-                                            id="photo-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            multiple
-                                            onChange={handlePhotoUpload}
-                                            disabled={success}
-                                            max={3}
-                                        />
-                                        {formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0 && (
-                                            <p className="text-sm text-gray-600">
-                                                Uploaded Images:
-                                            </p>
-                                        )}
-                                        {photoError && (
-                                            <p className="text-sm text-red-600">
-                                                {photoError instanceof Error ? photoError.message : photoError}
-                                            </p>
-                                        )}
-                                        {displayedPhotos && displayedPhotos.length > 0 && (
-                                            <div className="flex gap-4 mt-2 justify-center">
-                                                {displayedPhotos.map((src, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        style={{
-                                                            width: 96,
-                                                            height: 96,
-                                                            background: "#f3f4f6",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            borderRadius: 8,
-                                                            border: "1px solid #e5e7eb",
-                                                            overflow: "hidden",
-                                                            cursor: "pointer",
-                                                            position: "relative"
-                                                        }}
-                                                    >
-                                                        {!success && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={e => {
-                                                                    e.stopPropagation();
-                                                                    if (formData.warrantyPhotosUrls && formData.warrantyPhotosUrls.length > 0) {
-                                                                        setFormData(prev => {
-                                                                            const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
-                                                                            setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
-                                                                            if (updated.length === 0) {
-                                                                                setPhotoError("Please upload at least one photo of the device condition.");
-                                                                            } else {
-                                                                                setPhotoError('');
-                                                                            }
-                                                                            return { ...prev, warrantyPhotosUrls: updated };
-                                                                        });
-                                                                    } else {
-                                                                        setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
-                                                                    }
-                                                                }}
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    top: 4,
-                                                                    right: 4,
-                                                                    background: "rgba(255,255,255,0.8)",
-                                                                    border: "none",
-                                                                    borderRadius: "50%",
-                                                                    width: 24,
-                                                                    height: 24,
-                                                                    display: "flex",
-                                                                    alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                    cursor: "pointer",
-                                                                    zIndex: 2
-                                                                }}
-                                                                aria-label="Remove photo"
-                                                                disabled={success}
-                                                            >
-                                                                <X size={18} className="text-gray-500 hover:text-red-500" />
-                                                            </button>
-                                                        )}
-                                                        <img
-                                                            src={src}
-                                                            alt={`Device condition ${idx + 1}`}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                objectFit: "contain",
-                                                                background: "#f3f4f6"
+                                                    {/* Delete button only if not success and still CHECKED_IN */}
+                                                    {!success && data.status === "CHECKED_IN" && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setFormData(prev => {
+                                                                    const updated = prev.warrantyPhotosUrls.filter((_, i) => i !== idx);
+                                                                    setPhotoFiles(pf => (pf ? pf.filter((_, i) => i !== idx) : pf));
+                                                                    if (updated.length === 0) setPhotoError("Please upload at least one photo of the device condition.");
+                                                                    else setPhotoError('');
+                                                                    return { ...prev, warrantyPhotosUrls: updated };
+                                                                });
+                                                                setWarrantyPhotos(prev => prev.filter((_, i) => i !== idx));
                                                             }}
-                                                            onClick={() => openImageViewer(idx)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <p className="text-sm text-gray-400">Upload up to 3 photos of device condition</p>
-                                    </div>
+                                                            className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 border-none z-10 hover:bg-red-100"
+                                                            aria-label="Remove photo"
+                                                        >
+                                                            <X size={16} className="text-gray-500 hover:text-red-500" />
+                                                        </button>
+                                                    )}
+                                                    <img
+                                                        src={src}
+                                                        alt={`Device condition ${idx + 1}`}
+                                                        className="w-full h-full object-contain"
+                                                        onClick={() => openImageViewer(idx)}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* No Photos Placeholder */}
+                                    {displayedPhotos.length === 0 && (
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            {(!success && data.status === "CHECKED_IN")
+                                                ? "No photos uploaded yet"
+                                                : "No photos available"}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
