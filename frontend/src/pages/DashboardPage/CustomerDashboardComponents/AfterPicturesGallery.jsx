@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useRepairPhoto } from '../../../hooks/useRepairPhoto';
+import { useAfterRepairPhoto } from '../../../hooks/useAfterRepairPhoto';
 
 function TicketImage({ path, alt, className }) {
-  const { data: src, isLoading } = useRepairPhoto(path);
+  const { data: src, isLoading } = useAfterRepairPhoto(path);
   
   if (isLoading || !src) {
     return <div className={className + ' bg-gray-100 flex items-center justify-center'}>Loading...</div>;
