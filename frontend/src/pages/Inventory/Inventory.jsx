@@ -1013,37 +1013,50 @@ const Inventory = () => {
             const categoryValue = categoryPath.length > 1 ? categoryPath[1] : selectedCategory;
             const partNumberValue = categoryPath.length > 2 ? categoryPath[2] : null;
             
-            // If a specific part number is selected in the path (from brand grouping: "All/Brand/PartNumber")
+            // Parse the path structure based on grouping modes:
+            // Part Number: "All/Brand/PartNumber" (3 parts)
+            // Brand: "All/Brand" (2 parts, flat)
+            // Name: "All/Brand/Name" (3 parts)
+            // Model: "All/Brand/Model" (3 parts)
+            
             if (partNumberValue) {
-                // Exact match for part number from brand grouping
-                if (item.partNumber !== partNumberValue) return false;
-            } 
-            // If path is "All/XXX" (2 parts) - need to determine if it's part number or brand
-            else if (categoryPath.length === 2 && categoryPath[0] === 'All') {
-                const itemPartNumber = (item.partNumber || '').trim();
+                // Path has 3 parts: "All/Brand/PartNumber" or "All/Brand/Name" or "All/Brand/Model"
+                const brandValue = categoryValue;
                 const itemBrand = (item.brand || '').trim();
-                const selectedValue = categoryValue.trim();
+                const itemPartNumber = (item.partNumber || '').trim();
+                const itemName = (item.name || '').trim();
+                const itemModel = (item.model || '').trim();
+                const selectedValue = partNumberValue.trim();
                 
-                // Check if it's a brand match (case-insensitive)
-                const isBrandMatch = itemBrand.toLowerCase() === selectedValue.toLowerCase();
-                
-                // Check if it's a part number match (exact)
-                const isPartNumberMatch = itemPartNumber === selectedValue;
-                
-                // If it matches brand, filter by brand
-                if (isBrandMatch) {
-                    // Brand match - show this item
-                    return true;
-                }
-                // If it matches part number exactly, filter by part number
-                else if (isPartNumberMatch) {
-                    // Part number match - show this item
-                    return true;
-                }
-                // Otherwise, no match
-                else {
+                // First check if brand matches
+                if (itemBrand.toLowerCase() !== brandValue.toLowerCase()) {
                     return false;
                 }
+                
+                // Then check the third level (could be part number, name, or model)
+                const isPartNumberMatch = itemPartNumber === selectedValue;
+                const isNameMatch = itemName.toLowerCase() === selectedValue.toLowerCase();
+                const isModelMatch = itemModel.toLowerCase() === selectedValue.toLowerCase();
+                
+                // Match if any of the third-level values match
+                if (isPartNumberMatch || isNameMatch || isModelMatch) {
+                    return true;
+                }
+                
+                return false;
+            } 
+            // If path is "All/XXX" (2 parts) - this is brand selection (flat structure)
+            else if (categoryPath.length === 2 && categoryPath[0] === 'All') {
+                // This is brand selection - match by brand only
+                const itemBrand = (item.brand || '').trim();
+                const selectedBrand = categoryValue.trim();
+                
+                // Exact brand match (case-insensitive)
+                if (itemBrand.toLowerCase() === selectedBrand.toLowerCase()) {
+                    return true;
+                }
+                
+                return false;
             }
             // Otherwise, it's a brand/model category - use flexible matching
             else {

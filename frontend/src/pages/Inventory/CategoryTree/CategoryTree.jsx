@@ -3,7 +3,7 @@ import { ChevronRight, ChevronDown, Package, Folder, FolderOpen, Hash, Tag, Sear
 
 const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter }) => {
     const [expandedCategories, setExpandedCategories] = useState(new Set(['All']));
-    const [groupingMode, setGroupingMode] = useState('prefix'); // 'prefix', 'brand'
+    const [groupingMode, setGroupingMode] = useState('prefix'); // 'prefix', 'brand', 'name', 'model'
     const [searchQuery, setSearchQuery] = useState('');
 
     // Extract category value based on grouping mode
@@ -14,6 +14,10 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
                 return item.partNumber || 'Unknown Part Number';
             case 'brand':
                 return item.brand || 'Unknown Brand';
+            case 'name':
+                return item.name || 'Unknown Name';
+            case 'model':
+                return item.model || 'Unknown Model';
             default:
                 return 'All';
         }
@@ -32,87 +36,194 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
         };
         
         if (groupingMode === 'prefix') {
-            // For part number grouping: All > Part Numbers (flat structure, no sub-folders)
-            // Group by EXACT part number - no prefix extraction, no substring matching
-            const partNumberGroups = new Map();
+            // For part number grouping: All > Brands > Part Numbers (hierarchical)
+            const brandGroups = new Map();
             
             items.forEach(item => {
-                // Use exact part number as-is, trim whitespace but preserve the exact value
+                const brand = (item.brand || 'Unknown Brand').trim();
                 const partNumber = (item.partNumber || 'Unknown Part Number').trim();
                 
-                // Ensure we're using the exact part number string (no normalization)
-                if (!partNumberGroups.has(partNumber)) {
-                    partNumberGroups.set(partNumber, {
+                if (!brandGroups.has(brand)) {
+                    brandGroups.set(brand, {
+                        count: 0,
+                        items: [],
+                        partNumbers: new Map()
+                    });
+                }
+                
+                const brandGroup = brandGroups.get(brand);
+                brandGroup.count++;
+                brandGroup.items.push(item);
+                
+                if (!brandGroup.partNumbers.has(partNumber)) {
+                    brandGroup.partNumbers.set(partNumber, {
                         count: 0,
                         items: []
                     });
                 }
                 
-                const group = partNumberGroups.get(partNumber);
+                const partNumberGroup = brandGroup.partNumbers.get(partNumber);
+                partNumberGroup.count++;
+                partNumberGroup.items.push(item);
+            });
+            
+            // Build hierarchical structure: All > Brands > Part Numbers
+            brandGroups.forEach((brandData, brand) => {
+                // Create brand node
+                tree['All'].children[brand] = {
+                    count: brandData.count,
+                    children: {},
+                    items: brandData.items,
+                    type: 'category',
+                    path: `All/${brand}`
+                };
+                
+                // Create part number nodes under each brand
+                brandData.partNumbers.forEach((partData, partNumber) => {
+                    tree['All'].children[brand].children[partNumber] = {
+                        count: partData.count,
+                        children: {},
+                        items: partData.items,
+                        type: 'partNumber',
+                        path: `All/${brand}/${partNumber}`
+                    };
+                });
+            });
+        } else if (groupingMode === 'brand') {
+            // For brand grouping: All > Brands (flat structure, no sub-folders)
+            const brandGroups = new Map();
+            
+            items.forEach(item => {
+                const brand = (item.brand || 'Unknown Brand').trim();
+                
+                if (!brandGroups.has(brand)) {
+                    brandGroups.set(brand, {
+                        count: 0,
+                        items: []
+                    });
+                }
+                
+                const group = brandGroups.get(brand);
                 group.count++;
                 group.items.push(item);
             });
             
             // Create direct children under "All" - no sub-folders
-            // Each node represents items with the EXACT same part number
-            partNumberGroups.forEach((groupData, partNumber) => {
-                // Use exact part number in path - this ensures exact matching in filtering
-                // Path format: "All/5125" (exact part number, no modifications)
-                tree['All'].children[partNumber] = {
+            brandGroups.forEach((groupData, brand) => {
+                tree['All'].children[brand] = {
                     count: groupData.count,
                     children: {}, // No children - flat structure
                     items: groupData.items,
-                    type: 'partNumber',
-                    path: `All/${partNumber}` // Exact path for exact matching
+                    type: 'category',
+                    path: `All/${brand}`
                 };
             });
-        } else {
-            // For brand grouping: All > Brands > Part Numbers
-            const groupedItems = new Map();
+        } else if (groupingMode === 'name') {
+            // For name grouping: All > Brands > Names (hierarchical)
+            const brandGroups = new Map();
             
             items.forEach(item => {
-                const categoryValue = getCategoryValue(item, groupingMode);
+                const brand = (item.brand || 'Unknown Brand').trim();
+                const name = (item.name || 'Unknown Name').trim();
                 
-                if (!groupedItems.has(categoryValue)) {
-                    groupedItems.set(categoryValue, {
+                if (!brandGroups.has(brand)) {
+                    brandGroups.set(brand, {
                         count: 0,
                         items: [],
-                        partNumbers: new Set()
+                        names: new Map()
                     });
                 }
                 
-                const group = groupedItems.get(categoryValue);
-                group.count++;
-                group.items.push(item);
-                group.partNumbers.add(item.partNumber);
+                const brandGroup = brandGroups.get(brand);
+                brandGroup.count++;
+                brandGroup.items.push(item);
+                
+                if (!brandGroup.names.has(name)) {
+                    brandGroup.names.set(name, {
+                        count: 0,
+                        items: []
+                    });
+                }
+                
+                const nameGroup = brandGroup.names.get(name);
+                nameGroup.count++;
+                nameGroup.items.push(item);
             });
             
-            // Build tree structure for brand mode
-            groupedItems.forEach((groupData, categoryValue) => {
-                // Create category node (Brand)
-                tree['All'].children[categoryValue] = {
-                    count: groupData.count,
+            // Build hierarchical structure: All > Brands > Names
+            brandGroups.forEach((brandData, brand) => {
+                // Create brand node
+                tree['All'].children[brand] = {
+                    count: brandData.count,
                     children: {},
-                    items: groupData.items,
-                    partNumbers: Array.from(groupData.partNumbers).sort(),
+                    items: brandData.items,
                     type: 'category',
-                    path: `All/${categoryValue}`
+                    path: `All/${brand}`
                 };
                 
-                // Create sub-groups by part number under each brand
-                groupData.items.forEach(item => {
-                    const partNumber = item.partNumber || 'Unknown';
-                    if (!tree['All'].children[categoryValue].children[partNumber]) {
-                        tree['All'].children[categoryValue].children[partNumber] = {
-                            count: 0,
-                            children: {},
-                            items: [],
-                            type: 'partNumber',
-                            path: `All/${categoryValue}/${partNumber}`
-                        };
-                    }
-                    tree['All'].children[categoryValue].children[partNumber].count++;
-                    tree['All'].children[categoryValue].children[partNumber].items.push(item);
+                // Create name nodes under each brand
+                brandData.names.forEach((nameData, name) => {
+                    tree['All'].children[brand].children[name] = {
+                        count: nameData.count,
+                        children: {},
+                        items: nameData.items,
+                        type: 'category',
+                        path: `All/${brand}/${name}`
+                    };
+                });
+            });
+        } else if (groupingMode === 'model') {
+            // For model grouping: All > Brands > Models (hierarchical)
+            const brandGroups = new Map();
+            
+            items.forEach(item => {
+                const brand = (item.brand || 'Unknown Brand').trim();
+                const model = (item.model || 'Unknown Model').trim();
+                
+                if (!brandGroups.has(brand)) {
+                    brandGroups.set(brand, {
+                        count: 0,
+                        items: [],
+                        models: new Map()
+                    });
+                }
+                
+                const brandGroup = brandGroups.get(brand);
+                brandGroup.count++;
+                brandGroup.items.push(item);
+                
+                if (!brandGroup.models.has(model)) {
+                    brandGroup.models.set(model, {
+                        count: 0,
+                        items: []
+                    });
+                }
+                
+                const modelGroup = brandGroup.models.get(model);
+                modelGroup.count++;
+                modelGroup.items.push(item);
+            });
+            
+            // Build hierarchical structure: All > Brands > Models
+            brandGroups.forEach((brandData, brand) => {
+                // Create brand node
+                tree['All'].children[brand] = {
+                    count: brandData.count,
+                    children: {},
+                    items: brandData.items,
+                    type: 'category',
+                    path: `All/${brand}`
+                };
+                
+                // Create model nodes under each brand
+                brandData.models.forEach((modelData, model) => {
+                    tree['All'].children[brand].children[model] = {
+                        count: modelData.count,
+                        children: {},
+                        items: modelData.items,
+                        type: 'category',
+                        path: `All/${brand}/${model}`
+                    };
                 });
             });
         }
@@ -218,7 +329,7 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
             case 'partNumber':
                 return <Hash size={16} className="mr-2 text-gray-500" />;
             case 'category':
-                if (groupingMode === 'brand') {
+                if (groupingMode === 'brand' || groupingMode === 'name' || groupingMode === 'model') {
                     return <Tag size={16} className="mr-2 text-gray-500" />;
                 }
                 return <Hash size={16} className="mr-2 text-gray-500" />;
@@ -315,6 +426,10 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
                 return 'Part Number';
             case 'brand':
                 return 'Brand';
+            case 'name':
+                return 'Name';
+            case 'model':
+                return 'Model';
             default:
                 return 'Part Number';
         }
@@ -375,6 +490,8 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
                     >
                         <option value="prefix">Part Number</option>
                         <option value="brand">Brand</option>
+                        <option value="name">Name</option>
+                        <option value="model">Model</option>
                     </select>
                 </div>
                 
