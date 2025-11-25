@@ -138,11 +138,18 @@ const RealTimeStatus = () => {
                             uniquePartIds.map(id => api.get(`/part/getPartById/${id}`).catch(() => null))
                         )
                         setQuotationParts(partResponses.filter(r => r && r.data).map(r => r.data))
+                    } else {
+                        setQuotationParts([])
                     }
+                } else {
+                    setQuotation(null)
+                    setQuotationParts([])
                 }
             } catch (e) {
                 // No quotation found is okay
                 console.debug('No quotation found for ticket', ticketNumberParam)
+                setQuotation(null)
+                setQuotationParts([])
             }
         } finally {
             setLoading(false)
@@ -320,7 +327,7 @@ const RealTimeStatus = () => {
                             <p className="text-sm md:text-base text-gray-600">Track the progress of your repair request in real-time</p>
                         </div>
                         <div className="flex-shrink-0">
-                            {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
+                            {normalizeStatus(currentStatus) === "AWAITING_PARTS" && quotation && (
                                 <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block w-full sm:w-auto animate-fade-in">
                                     <button className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base">
                                         View Quotation / Approve
