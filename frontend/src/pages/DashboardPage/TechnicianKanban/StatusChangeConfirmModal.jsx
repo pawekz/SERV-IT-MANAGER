@@ -103,8 +103,8 @@ const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onC
               Prepare quotations immediately after moving this ticket:
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
-              <li>Option A – Recommended parts & labor</li>
-              <li>Option B – Alternative parts for customer choice</li>
+              <li>Option A – Recommended parts</li>
+              <li>Option B – Alternative parts</li>
             </ul>
           </div>
         )}
