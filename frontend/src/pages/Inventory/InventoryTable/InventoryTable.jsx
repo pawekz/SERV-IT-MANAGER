@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Pen, Trash, Eye, Settings, X, Upload, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, Package, Hash } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pen, Trash, Eye, Settings, X, Upload, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, Package, Hash } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../../../config/ApiConfig';
 import { usePartPhoto } from '../../../hooks/usePartPhoto.js';
@@ -333,9 +333,9 @@ const InventoryTable = ({
 
     return (
         <>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white">
             <table className="w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                <thead className="bg-gradient-to-r from-gray-50 via-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
                         <SortableHeader 
                             sortKey="partNumber" 
@@ -373,7 +373,9 @@ const InventoryTable = ({
                             currentSort={sortConfig} 
                             onSort={handleSort}
                         >
-                            Cost (Php)
+                            <div className="flex items-center gap-2">
+                                <span>Unit Cost (Php)</span>
+                            </div>
                         </SortableHeader>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
                             Actions
@@ -390,13 +392,13 @@ const InventoryTable = ({
                                 <React.Fragment key={item.partNumber}>
                                     {/* Main Group Row */}
                                     <tr 
-                                        className="group transition-all duration-200 hover:bg-blue-50/50 border-l-4 border-blue-500 cursor-pointer"
+                                        className="group transition-all duration-200 hover:bg-blue-50/50 border-l-4 border-blue-500 cursor-pointer bg-white"
                                         onClick={() => onToggleGroupExpansion(item.partNumber)}
                                     >
                                         <td className="pl-6 pr-4 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
                                                 <button
-                                                    className="p-1 hover:bg-gray-200 rounded-md transition-all"
+                                                    className="p-1.5 hover:bg-blue-100 rounded-md transition-all group"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onToggleGroupExpansion(item.partNumber);
@@ -405,18 +407,26 @@ const InventoryTable = ({
                                                 >
                                                     <ChevronDown 
                                                         size={16} 
-                                                        className={`transform transition-transform duration-200 ${
+                                                        className={`transform transition-transform duration-200 text-gray-600 group-hover:text-blue-600 ${
                                                             isExpanded ? 'rotate-180' : ''
                                                         }`}
                                                     />
                                                 </button>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-semibold text-gray-900 truncate">
+                                                    <div className="text-sm font-bold text-gray-900 truncate">
                                                         {highlightText(item.partNumber, searchQuery)}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">
-                                                        {item.totalParts} {item.totalParts === 1 ? 'item' : 'items'}
-                                                        {item.suppliersCount > 0 && ` • ${item.suppliersCount} supplier${item.suppliersCount > 1 ? 's' : ''}`}
+                                                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <Package size={12} />
+                                                            {item.totalParts} {item.totalParts === 1 ? 'item' : 'items'}
+                                                        </span>
+                                                        {item.suppliersCount > 0 && (
+                                                            <span className="text-gray-400">•</span>
+                                                        )}
+                                                        {item.suppliersCount > 0 && (
+                                                            <span>{item.suppliersCount} supplier{item.suppliersCount > 1 ? 's' : ''}</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -468,48 +478,62 @@ const InventoryTable = ({
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="min-w-0">
-                                                <div className="text-sm font-medium text-gray-900 truncate">
+                                                <div className="text-sm font-semibold text-gray-900 truncate mb-1">
                                                     {item.name || 'N/A'}
                                                 </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    <div>Brand: <span className="font-medium">{item.brand || 'N/A'}</span></div>
-                                                    <div>Model: <span className="font-medium">{item.model || 'N/A'}</span></div>
+                                                <div className="text-xs text-gray-600 mt-1.5 space-y-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-gray-500">Brand:</span>
+                                                        <span className="font-medium text-gray-700">{item.brand || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-gray-500">Model:</span>
+                                                        <span className="font-medium text-gray-700">{item.model || 'N/A'}</span>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onDescriptionClick(item);
                                                     }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 mt-1.5 font-medium"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 mt-2 font-medium inline-flex items-center gap-1 transition-colors"
                                                 >
-                                                    View full details →
+                                                    View full details
+                                                    <ChevronRight size={12} className="inline" />
                                                 </button>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap">
-                                            <div className="space-y-1.5">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(item.availability?.status)}`}>
+                                            <div className="space-y-2">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(item.availability?.status)}`}>
                                                     {item.availability?.status}
                                                 </span>
-                                                <div className="text-xs text-gray-600 space-y-0.5">
+                                                <div className="text-xs text-gray-600 space-y-1">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-16 text-gray-500">Available:</span>
-                                                        <span className="font-semibold text-gray-900">{item.availableStock}</span>
+                                                        <span className="w-20 text-gray-500">Available:</span>
+                                                        <span className="font-bold text-gray-900 text-sm">{item.availableStock}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-16 text-gray-500">Reserved:</span>
-                                                        <span className="font-semibold text-gray-900">{item.reservedStock || 0}</span>
+                                                        <span className="w-20 text-gray-500">Reserved:</span>
+                                                        <span className="font-semibold text-gray-700">{item.reservedStock || 0}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-16 text-gray-500">Threshold:</span>
-                                                        <span className="font-semibold text-gray-900">{item.lowStockThreshold}</span>
+                                                        <span className="w-20 text-gray-500">Threshold:</span>
+                                                        <span className="font-semibold text-gray-700">{item.lowStockThreshold}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                Php {item.unitCost?.toFixed(2) || '0.00'}
+                                            <div className="space-y-1">
+                                                <div className="text-sm font-semibold text-gray-900">
+                                                    Php {item.unitCost?.toFixed(2) || '0.00'}
+                                                </div>
+                                                {item.unitCost && item.availableStock > 0 && (
+                                                    <div className="text-xs text-gray-500">
+                                                        Total: Php {(item.unitCost * item.availableStock).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -545,7 +569,7 @@ const InventoryTable = ({
                                         item.allParts.map((part, index) => (
                                             <tr 
                                                 key={`${item.partNumber}-${part.id}`} 
-                                                className="bg-gray-50/50 border-l-4 border-gray-300 hover:bg-gray-100/50 transition-colors"
+                                                className="bg-gray-50/80 border-l-4 border-gray-300 hover:bg-gray-100 transition-colors"
                                             >
                                                 <td className="pl-16 pr-4 py-3 whitespace-nowrap">
                                                     <div className="text-sm">
@@ -598,7 +622,7 @@ const InventoryTable = ({
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-600">
+                                                    <div className="text-sm font-medium text-gray-700">
                                                         Php {part.unitCost?.toFixed(2) || '0.00'}
                                                     </div>
                                                 </td>
@@ -649,11 +673,13 @@ const InventoryTable = ({
                         })
                     ) : (
                         <tr>
-                            <td colSpan="6" className="px-6 py-12 text-center">
+                            <td colSpan="6" className="px-6 py-16 text-center">
                                 <div className="flex flex-col items-center justify-center">
-                                    <Package size={48} className="text-gray-400 mb-4" />
-                                    <p className="text-gray-500 font-medium">No inventory items found</p>
-                                    <p className="text-sm text-gray-400 mt-1">Add a new part to get started</p>
+                                    <div className="p-4 bg-gray-100 rounded-full mb-4">
+                                        <Package size={48} className="text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-700 font-semibold text-lg mb-1">No inventory items found</p>
+                                    <p className="text-sm text-gray-500">Try adjusting your filters or add a new part to get started</p>
                                 </div>
                             </td>
                         </tr>

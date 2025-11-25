@@ -1215,7 +1215,7 @@ const Inventory = () => {
                         {/* Search and View Controls */}
                         <div className="flex gap-4 mb-6">
                             {/* Main Table Area */}
-                            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
                                 <div className="p-4 border-b border-gray-100">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         {/* Search Bar */}
@@ -1232,7 +1232,7 @@ const Inventory = () => {
                                             </div>
                                         </div>
 
-                                        {/* Filter Button */}
+                                        {/* Filter Button and Results Count */}
                                         <div className="flex items-center gap-3">
                                             <button
                                                 onClick={() => setShowFilterSidebar(true)}
@@ -1241,6 +1241,9 @@ const Inventory = () => {
                                                 <SlidersHorizontal size={16} className="mr-2" />
                                                 <span>Filters</span>
                                             </button>
+                                            <p className="hidden md:block text-sm text-gray-700">
+                                                <span className="font-medium">{filteredItems.length}</span> results
+                                            </p>
                                             <button
                                                 onClick={() => {
                                                     if (expandedGroups.size === 0) {
@@ -1261,18 +1264,18 @@ const Inventory = () => {
                                     </div>
                                 </div>
 
-                                {/* Results Count and Active Filters */}
-                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <p className="text-sm text-gray-700">
-                                            <span className="font-medium">{filteredItems.length}</span> results
-                                        </p>
-                                        {(selectedCategory || Object.values(filters).some(v => {
-                                            if (typeof v === 'object' && v !== null) {
-                                                return Object.values(v).some(val => val !== '' && val !== null);
-                                            }
-                                            return v !== '' && v !== 'all' && v !== null;
-                                        })) && (
+                                {/* Active Filters */}
+                                {(selectedCategory || Object.values(filters).some(v => {
+                                    if (typeof v === 'object' && v !== null) {
+                                        return Object.values(v).some(val => val !== '' && val !== null);
+                                    }
+                                    return v !== '' && v !== 'all' && v !== null;
+                                })) && (
+                                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-sm text-gray-700 md:hidden">
+                                                <span className="font-medium">{filteredItems.length}</span> results
+                                            </p>
                                             <button
                                                 onClick={() => {
                                                     setSelectedCategory(null);
@@ -1286,13 +1289,13 @@ const Inventory = () => {
                                             >
                                                 Clear all filters
                                             </button>
-                                        )}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Content Area - Table */}
-                                <div className="min-h-[400px]">
-                                    <div className="overflow-x-auto">
+                                <div className="flex-1 min-h-[400px] flex flex-col">
+                                    <div className="overflow-x-auto flex-1">
                                         <InventoryTable
                                             paginatedItems={paginatedItems}
                                             searchQuery={searchQuery}
@@ -1307,32 +1310,111 @@ const Inventory = () => {
                                             onRefresh={fetchInventory}
                                         />
                                     </div>
-                                </div>
 
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="px-4 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                                        <div>
+                                {/* Enhanced Pagination - Only show when there are multiple pages */}
+                                {filteredItems.length > itemsPerPage && (
+                                    <div className="px-4 py-4 bg-white border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
+                                        <div className="flex items-center gap-2">
                                             <p className="text-sm text-gray-700">
-                                                Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
+                                                Showing <span className="font-semibold text-gray-900">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-semibold text-gray-900">{filteredItems.length}</span> results
                                             </p>
                                         </div>
-                                        <div className="flex space-x-2">
+                                        <div className="flex items-center gap-2">
+                                            {totalPages > 5 && (
+                                                <button
+                                                    onClick={() => setCurrentPage(1)}
+                                                    disabled={currentPage === 1}
+                                                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                                        currentPage === 1 
+                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                                    }`}
+                                                    title="First page"
+                                                >
+                                                    <ChevronLeft size={16} className="inline" />
+                                                    <ChevronLeft size={16} className="inline -ml-2" />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                                 disabled={currentPage === 1}
-                                                className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                                    currentPage === 1 
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                                }`}
+                                                title="Previous page"
                                             >
                                                 <ChevronLeft size={16} />
                                             </button>
+                                            
+                                            {/* Page Numbers */}
+                                            <div className="flex items-center gap-1">
+                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                    let pageNum;
+                                                    if (totalPages <= 5) {
+                                                        pageNum = i + 1;
+                                                    } else if (currentPage <= 3) {
+                                                        pageNum = i + 1;
+                                                    } else if (currentPage >= totalPages - 2) {
+                                                        pageNum = totalPages - 4 + i;
+                                                    } else {
+                                                        pageNum = currentPage - 2 + i;
+                                                    }
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setCurrentPage(pageNum)}
+                                                            className={`px-3 py-1.5 text-sm rounded-md transition-colors min-w-[36px] ${
+                                                                currentPage === pageNum
+                                                                    ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                                            }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            
                                             <button
                                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                                 disabled={currentPage === totalPages || totalPages === 0}
-                                                className={`px-3 py-1 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                                    currentPage === totalPages || totalPages === 0
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                                }`}
+                                                title="Next page"
                                             >
                                                 <ChevronRight size={16} />
                                             </button>
+                                            {totalPages > 5 && (
+                                                <button
+                                                    onClick={() => setCurrentPage(totalPages)}
+                                                    disabled={currentPage === totalPages || totalPages === 0}
+                                                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                                        currentPage === totalPages || totalPages === 0
+                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                                                    }`}
+                                                    title="Last page"
+                                                >
+                                                    <ChevronRight size={16} className="inline" />
+                                                    <ChevronRight size={16} className="inline -ml-2" />
+                                                </button>
+                                            )}
                                         </div>
+                                    </div>
+                                )}
+                                
+                                {/* Results summary when pagination is not shown (few items) */}
+                                {filteredItems.length > 0 && filteredItems.length <= itemsPerPage && (
+                                    <div className="px-4 py-3 bg-white border-t border-gray-200 mt-auto">
+                                        <p className="text-sm text-gray-700 text-center">
+                                            Showing all <span className="font-semibold text-gray-900">{filteredItems.length}</span> {filteredItems.length === 1 ? 'result' : 'results'}
+                                        </p>
                                     </div>
                                 )}
                             </div>
