@@ -9,14 +9,18 @@ const Toast = ({ show, message, type = "success", onClose, duration = 3000 }) =>
             // Don't auto-hide loading toasts (duration = 0)
             if (duration > 0) {
                 const hideTimer = setTimeout(() => setVisible(false), duration);
-                const closeTimer = setTimeout(() => onClose && onClose(), duration + 300); // 300ms for fade-out
+                const closeTimer = setTimeout(() => {
+                    if (onClose) onClose();
+                }, duration + 300); // 300ms for fade-out
                 return () => {
                     clearTimeout(hideTimer);
                     clearTimeout(closeTimer);
                 };
             }
+        } else {
+            setVisible(false);
         }
-    }, [show, duration, onClose]);
+    }, [show, duration]); // Removed onClose from dependencies to prevent infinite loops
 
     if (!show) return null;
 
