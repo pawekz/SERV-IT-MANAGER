@@ -6,4 +6,5 @@ import lombok.Data;
 public class UpdateRepairStatusRequestDTO {
     private String ticketNumber;
     private String repairStatus;
+    private String observations;
 }
