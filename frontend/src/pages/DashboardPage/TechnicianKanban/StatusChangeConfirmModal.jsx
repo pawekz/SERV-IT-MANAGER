@@ -5,7 +5,7 @@ const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onC
   if (!isOpen) return null;
 
   const requirePhotos = toStatus === "READY_FOR_PICKUP";
-  const needsObservation = fromStatus === "DIAGNOSING" && toStatus === "AWAITING_PARTS";
+  const needsObservation = (fromStatus === "DIAGNOSING" || fromStatus === "RECEIVED") && toStatus === "AWAITING_PARTS";
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState(null);
   const [observationText, setObservationText] = useState("");
