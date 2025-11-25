@@ -1,6 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, CheckCircle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../../config/ApiConfig';
+
+// Image validation utility
+const validateImageFile = (file) => {
+    if (!file) return { valid: true };
+    
+    const validMimeTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const validExtensions = ['.png', '.jpg', '.jpeg'];
+    
+    // Check MIME type
+    const mimeType = file.type?.toLowerCase();
+    if (!validMimeTypes.includes(mimeType)) {
+        return {
+            valid: false,
+            error: 'Only PNG, JPG, and JPEG files are accepted.'
+        };
+    }
+    
+    // Check file extension (case-insensitive)
+    const fileName = file.name?.toLowerCase() || '';
+    const extension = fileName.substring(fileName.lastIndexOf('.'));
+    if (!validExtensions.includes(extension)) {
+        return {
+            valid: false,
+            error: 'Only PNG, JPG, and JPEG files are accepted.'
+        };
+    }
+    
+    return { valid: true };
+};
 
 const AddPartModal = ({ 
     isOpen, 
@@ -18,6 +47,9 @@ const AddPartModal = ({
     const [objectUrl, setObjectUrl] = useState(null);
     const [imageError, setImageError] = useState(false);
     const [partId, setPartId] = useState(null);
+    const [imageValidationError, setImageValidationError] = useState(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingSubmit, setPendingSubmit] = useState(null);
 
     const fetchPresignedImageUrl = useCallback(async (id, originalUrl) => {
         try {
@@ -222,6 +254,33 @@ const AddPartModal = ({
         }
         
         const file = e.target.files && e.target.files[0];
+        
+        // Clear previous validation error
+        setImageValidationError(null);
+        
+        // Validate image file
+        if (file) {
+            const validation = validateImageFile(file);
+            if (!validation.valid) {
+                setImageValidationError(validation.error);
+                // Clear the file input
+                e.target.value = '';
+                // Revoke previous object URL if we created one
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    setObjectUrl(null);
+                }
+                setImagePreview(null);
+                onInputChange({
+                    target: {
+                        name: 'image',
+                        value: null
+                    }
+                });
+                return;
+            }
+        }
+        
         // Revoke previous object URL if we created one
         if (objectUrl) {
             URL.revokeObjectURL(objectUrl);
@@ -347,7 +406,20 @@ const AddPartModal = ({
                     </div>
                 )}
 
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    // Validate image if it's a File object
+                    if (newPart.image instanceof File) {
+                        const validation = validateImageFile(newPart.image);
+                        if (!validation.valid) {
+                            setImageValidationError(validation.error);
+                            return;
+                        }
+                    }
+                    // Show confirmation dialog
+                    setShowConfirmDialog(true);
+                    setPendingSubmit(e);
+                }} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -473,7 +545,7 @@ const AddPartModal = ({
                                     Select image
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/png,image/jpeg,image/jpg"
                                         onChange={handleImageChange}
                                         className="sr-only" // hide from visual flow and screen readers handled by label
                                     />
@@ -512,6 +584,14 @@ const AddPartModal = ({
                                 )}
                             </div>
                         </div>
+                        
+                        {/* Image validation error */}
+                        {imageValidationError && (
+                            <div className="mt-2 p-3 bg-red-100 border border-red-300 text-red-800 rounded-md flex items-center">
+                                <AlertCircle size={16} className="mr-2" />
+                                <span className="text-sm">{imageValidationError}</span>
+                            </div>
+                        )}
                     </div>
 
                     {error && (
@@ -543,6 +623,57 @@ const AddPartModal = ({
                         </button>
                     </div>
                 </form>
+                
+                {/* Confirmation Dialog */}
+                {showConfirmDialog && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                                    <AlertCircle size={20} className="mr-2 text-blue-600" />
+                                    Confirm Add Part
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowConfirmDialog(false);
+                                        setPendingSubmit(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="mb-6">
+                                <p className="text-gray-600">
+                                    Are you sure you want to add this part?
+                                </p>
+                            </div>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={() => {
+                                        setShowConfirmDialog(false);
+                                        setPendingSubmit(null);
+                                    }}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowConfirmDialog(false);
+                                        if (pendingSubmit) {
+                                            onSubmit(pendingSubmit);
+                                        }
+                                        setPendingSubmit(null);
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                >
+                                    Confirm Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
