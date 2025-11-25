@@ -1054,6 +1054,11 @@ const Inventory = () => {
         currentPage * itemsPerPage
     ), [filteredItems, currentPage, itemsPerPage]);
 
+    // Reset to page 1 when filters or category change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, filters]);
+
     return (
         <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
             {/* Navigation Sidebar */}
