@@ -1005,26 +1005,55 @@ const Inventory = () => {
 
         // Category filter - supports part number, brand, model, and part number patterns
         if (selectedCategory && selectedCategory !== 'All') {
-            // Parse the category path (format: "All/Category/PartNumber" or "All/Category")
+            // Parse the category path
+            // Format: "All/PartNumber" for part number grouping (2 parts)
+            // Format: "All/BrandName" for brand grouping when selecting brand folder (2 parts)
+            // Format: "All/Brand/PartNumber" for brand grouping when selecting specific part (3 parts)
             const categoryPath = selectedCategory.split('/');
             const categoryValue = categoryPath.length > 1 ? categoryPath[1] : selectedCategory;
             const partNumberValue = categoryPath.length > 2 ? categoryPath[2] : null;
             
-            // If a specific part number is selected in the path, match exactly
+            // If a specific part number is selected in the path (from brand grouping: "All/Brand/PartNumber")
             if (partNumberValue) {
+                // Exact match for part number from brand grouping
                 if (item.partNumber !== partNumberValue) return false;
-            } else {
-                // Match by category value (could be brand, model, part number prefix, etc.)
+            } 
+            // If path is "All/XXX" (2 parts) - need to determine if it's part number or brand
+            else if (categoryPath.length === 2 && categoryPath[0] === 'All') {
+                const itemPartNumber = (item.partNumber || '').trim();
+                const itemBrand = (item.brand || '').trim();
+                const selectedValue = categoryValue.trim();
+                
+                // Check if it's a brand match (case-insensitive)
+                const isBrandMatch = itemBrand.toLowerCase() === selectedValue.toLowerCase();
+                
+                // Check if it's a part number match (exact)
+                const isPartNumberMatch = itemPartNumber === selectedValue;
+                
+                // If it matches brand, filter by brand
+                if (isBrandMatch) {
+                    // Brand match - show this item
+                    return true;
+                }
+                // If it matches part number exactly, filter by part number
+                else if (isPartNumberMatch) {
+                    // Part number match - show this item
+                    return true;
+                }
+                // Otherwise, no match
+                else {
+                    return false;
+                }
+            }
+            // Otherwise, it's a brand/model category - use flexible matching
+            else {
                 const itemPartNumber = item.partNumber?.toUpperCase() || '';
                 const itemBrand = (item.brand || '').toLowerCase();
                 const itemModel = (item.model || '').toLowerCase();
                 const categoryUpper = categoryValue.toUpperCase();
                 const categoryLower = categoryValue.toLowerCase();
                 
-                // Check various matching strategies
-                const matchesPartNumber = itemPartNumber === categoryUpper || 
-                                         itemPartNumber.startsWith(categoryUpper) ||
-                                         categoryUpper.startsWith(itemPartNumber);
+                // For brand/model categories, use flexible matching
                 const matchesBrand = itemBrand === categoryLower || 
                                     itemBrand.includes(categoryLower) ||
                                     categoryLower.includes(itemBrand);
@@ -1037,7 +1066,7 @@ const Inventory = () => {
                     ((selectedCategory.startsWith('Letters') && /[A-Z]/.test(itemPartNumber.charAt(0))) ||
                      (selectedCategory.startsWith('Numbers') && /[0-9]/.test(itemPartNumber.charAt(0))));
                 
-                if (!matchesPartNumber && !matchesBrand && !matchesModel && !matchesAlphanumeric) {
+                if (!matchesBrand && !matchesModel && !matchesAlphanumeric) {
                     return false;
                 }
             }
@@ -1418,6 +1447,7 @@ const Inventory = () => {
                                     </div>
                                 )}
                             </div>
+                        </div>
 
                             {/* Right Sidebar - Categories and Filters */}
                             <div className="hidden lg:flex flex-col w-80 bg-white rounded-lg shadow-sm border border-gray-200 ml-4" style={{ height: 'calc(100vh - 200px)', maxHeight: 'calc(100vh - 200px)' }}>
