@@ -424,6 +424,13 @@ public class RepairTicketService {
             }
         }
 
+        if (request.getObservations() != null) {
+            String trimmed = request.getObservations().trim();
+            if (!trimmed.isEmpty()) {
+                repairTicket.setObservations(trimmed);
+            }
+        }
+
         repairTicket.setRepairStatus(newStatus);
 
         RepairStatusHistoryEntity statusHistory = new RepairStatusHistoryEntity();

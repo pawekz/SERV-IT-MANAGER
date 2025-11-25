@@ -138,11 +138,18 @@ const RealTimeStatus = () => {
                             uniquePartIds.map(id => api.get(`/part/getPartById/${id}`).catch(() => null))
                         )
                         setQuotationParts(partResponses.filter(r => r && r.data).map(r => r.data))
+                    } else {
+                        setQuotationParts([])
                     }
+                } else {
+                    setQuotation(null)
+                    setQuotationParts([])
                 }
             } catch (e) {
                 // No quotation found is okay
                 console.debug('No quotation found for ticket', ticketNumberParam)
+                setQuotation(null)
+                setQuotationParts([])
             }
         } finally {
             setLoading(false)
@@ -320,7 +327,7 @@ const RealTimeStatus = () => {
                             <p className="text-sm md:text-base text-gray-600">Track the progress of your repair request in real-time</p>
                         </div>
                         <div className="flex-shrink-0">
-                            {normalizeStatus(currentStatus) === "AWAITING_PARTS" && (
+                            {normalizeStatus(currentStatus) === "AWAITING_PARTS" && quotation && (
                                 <Link to={`/quotationapproval/${ticketNumberParam}`} className="inline-block w-full sm:w-auto animate-fade-in">
                                     <button className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium transform hover:scale-105 text-sm md:text-base">
                                         View Quotation / Approve
@@ -437,7 +444,7 @@ const RealTimeStatus = () => {
                         )}
 
                         {/* Diagnostics & Observations Card */}
-                        {ticketDetails && (ticketDetails.reportedIssue || ticketDetails.observations) && (
+                        {ticketDetails && (
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md">
                                 <div className="flex items-center gap-2 mb-4">
                                     <ClipboardCheck className="text-green-600" size={20} />
@@ -449,12 +456,12 @@ const RealTimeStatus = () => {
                                         <p className="text-gray-900 mt-1 whitespace-pre-wrap">{ticketDetails.reportedIssue}</p>
                                     </div>
                                 )}
-                                {ticketDetails.observations && (
-                                    <div>
-                                        <span className="text-sm font-medium text-gray-500">Technician Observations</span>
-                                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">{ticketDetails.observations}</p>
-                                    </div>
-                                )}
+                                <div>
+                                    <span className="text-sm font-medium text-gray-500">Technician Observations</span>
+                                    <p className={`mt-1 whitespace-pre-wrap text-sm ${ticketDetails.observations ? "text-gray-900" : "text-gray-500 italic"}`}>
+                                        {ticketDetails.observations?.trim() || "Technician has not added observations yet."}
+                                    </p>
+                                </div>
                             </div>
                         )}
 

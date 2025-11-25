@@ -1,5 +1,6 @@
 package com.servit.servit.controller;
 
+import com.servit.servit.dto.quotation.ApproveQuotationRequestDTO;
 import com.servit.servit.dto.quotation.QuotationDTO;
 import com.servit.servit.service.QuotationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +31,22 @@ public class QuotationController {
     }
 
     @PatchMapping("/approveQuotation/{quotationId}")
-    public QuotationDTO approveQuotation(@PathVariable Long quotationId, @RequestParam String customerSelection) {
+    public QuotationDTO approveQuotation(@PathVariable Long quotationId,
+                                         @RequestParam(value = "customerSelection", required = false) String customerSelection,
+                                         @RequestBody(required = false) ApproveQuotationRequestDTO body) {
         try {
-            return quotationService.approveQuotation(quotationId, customerSelection);
+            String resolvedSelection = customerSelection;
+            if ((resolvedSelection == null || resolvedSelection.isBlank()) && body != null) {
+                resolvedSelection = body.getCustomerSelection();
+            }
+            if (resolvedSelection == null || resolvedSelection.trim().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "customerSelection is required");
+            }
+            return quotationService.approveQuotation(quotationId, resolvedSelection.trim());
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to approve quotation", e);
         }

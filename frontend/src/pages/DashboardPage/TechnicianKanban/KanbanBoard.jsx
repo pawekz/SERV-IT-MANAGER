@@ -104,7 +104,7 @@ const KanbanBoard = () => {
     const showToast = (message, type = "success") => setToast({ show: true, message, type })
     const closeToast = () => setToast({ ...toast, show: false })
 
-    const handleConfirmChange = async (photos = []) => {
+    const handleConfirmChange = async ({ photos = [], observation } = {}) => {
         if (!pendingChange) return
         const task = tasks.find((t) => t.id === pendingChange.taskId)
         try {
@@ -134,10 +134,14 @@ const KanbanBoard = () => {
 
                 showToast(data?.message || "Status updated successfully")
             } else {
-                const { data } = await api.patch("/repairTicket/updateRepairStatus", {
+                const payload = {
                     ticketNumber: task.ticketId, // ticketId stores ticketNumber
                     repairStatus: pendingChange.newStatus,
-                })
+                }
+                if (observation && observation.trim()) {
+                    payload.observations = observation.trim()
+                }
+                const { data } = await api.patch("/repairTicket/updateRepairStatus", payload)
 
                 // Ensure UI reflects backend-confirmed status
                 if (data && data.newStatus) {
