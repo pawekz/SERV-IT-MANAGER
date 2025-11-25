@@ -167,7 +167,12 @@ public class EmailService {
         emailUtil.sendEmail(to, subject, htmlContent);
     }
 
-    public void sendWarrrantyPdfEmail(String to, String WarrantyNumber, String customerName, String pdfPath) throws MessagingException {
+    public void sendWarrrantyPdfEmail(String to, String WarrantyNumber, String customerFirstName, String customerLastName, String pdfPath) throws MessagingException {
+        String customerName = (customerFirstName != null ? customerFirstName : "") + " " + (customerLastName != null ? customerLastName : "");
+        customerName = customerName.trim();
+        if (customerName.isEmpty()) {
+            customerName = "Customer";
+        }
         String subject = "Warranty Check In Confirmation - " + WarrantyNumber + " - IOCONNECT";
         String htmlContent = "<html>" +
                 "<head>" +

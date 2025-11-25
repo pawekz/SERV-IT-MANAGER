@@ -55,18 +55,28 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
     );
   }
 
-  const prev = () => setCurrent((prev) => (prev - 2 + tickets.length) % tickets.length);
-  const next = () => setCurrent((prev) => (prev + 2) % tickets.length);
+  const prev = () => {
+    if (tickets.length <= 2) return;
+    setCurrent((prev) => (prev - 2 + tickets.length) % tickets.length);
+  };
 
-  const visibleTickets = tickets.length === 1
-    ? [tickets[0]]
-    : [tickets[current], tickets[(current + 1) % tickets.length]].filter((t, idx, arr) => arr.indexOf(t) === idx);
+  const next = () => {
+    if (tickets.length <= 2) return;
+    setCurrent((prev) => (prev + 2) % tickets.length);
+  };
+
+  // Calculate translateX based on current index
+  // Each slide shows 2 items, so we move by 50% per slide
+  const translateX = -(current * 50);
 
   return (
-    <div className="relative w-full mb-8">
-      <div className="flex flex-wrap -mx-2">
-        {visibleTickets.map((t) => (
-          <div key={t.ticketNumber} className="px-2 flex-1 min-w-[50%]">
+    <div className="relative w-full mb-8 overflow-hidden">
+      <div 
+        className="flex transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(${translateX}%)` }}
+      >
+        {tickets.map((t) => (
+          <div key={t.ticketNumber} className="w-1/2 flex-shrink-0 px-2">
             <ActiveRepairCard ticket={t} className="w-full" />
           </div>
         ))}
@@ -76,13 +86,15 @@ const ActiveRepairsCarousel = ({ customerEmail }) => {
         <>
           <button
             onClick={prev}
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 hover:bg-gray-100"
+            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 hover:bg-gray-100 z-10 transition-opacity"
+            aria-label="Previous"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={next}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 hover:bg-gray-100"
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 hover:bg-gray-100 z-10 transition-opacity"
+            aria-label="Next"
           >
             <ChevronRight className="w-5 h-5" />
           </button>

@@ -5,8 +5,13 @@ export const PHOTO_CACHE_TTL_MS = 12 * 60 * 1000;
 
 export async function fetchPresignedPhotoUrl(photoUrl) {
     if (!photoUrl) return null;
-    const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
-    return res.data;
+    try {
+        const res = await api.get(`/repairTicket/getRepairPhotos`, { params: { photoUrl } });
+        return res.data || null;
+    } catch (err) {
+        console.error('Error fetching presigned repair photo URL:', err);
+        return null;
+    }
 }
 
 export function useRepairPhoto(path) {
@@ -16,6 +21,7 @@ export function useRepairPhoto(path) {
         enabled: !!path,
         staleTime: PHOTO_CACHE_TTL_MS,
         gcTime: PHOTO_CACHE_TTL_MS * 2,
+        retry: 1,
     });
 }
 

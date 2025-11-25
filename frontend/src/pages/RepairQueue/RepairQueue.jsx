@@ -53,7 +53,7 @@ const statusChipClasses = (statusRaw) => {
 
 const RepairQueue = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-
+    const isCustomer = userData?.role?.toLowerCase() === 'customer';
     const token = localStorage.getItem('authToken');
     const decoded = parseJwt(token);
     const role = decoded?.role?.toLowerCase();
@@ -75,6 +75,8 @@ const RepairQueue = () => {
     const [selectedQuotationTicket, setSelectedQuotationTicket] = useState(null);
     const [quotationParts, setQuotationParts] = useState([]);
     const [selectedPartId, setSelectedPartId] = useState(null);
+    const [showQuotationConfirm, setShowQuotationConfirm] = useState(false);
+    const [quotationActionType, setQuotationActionType] = useState(null); // 'approve' or 'reject'
 
     // New UI state to match HistoryPage
     const [search, setSearch] = useState('');
@@ -200,44 +202,71 @@ const RepairQueue = () => {
         }
     };
 
-    // Handle quotation approval
-    const handleQuotationApprove = async () => {
-        if (!selectedQuotationTicket || !selectedPartId) return;
+    // Handle quotation action click
+    const handleQuotationActionClick = (type) => {
+        if (type === 'approve' && !selectedPartId) {
+            showToast('Please select a part before approving.', 'error');
+            return;
+        }
+        setQuotationActionType(type);
+        setShowQuotationConfirm(true);
+    };
+
+    // Confirm quotation action
+    const confirmQuotationAction = async () => {
+        if (!selectedQuotationTicket) return;
         const quotation = quotations[selectedQuotationTicket.ticketNumber];
         if (!quotation) return;
 
         try {
             setQuotationModalLoading(true);
-            await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
-                params: { customerSelection: String(selectedPartId) },
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
-            setQuotationModalOpen(false);
-            
-            // Refresh quotations and tickets
-            const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
-            if (quotationData && quotationData.length > 0) {
-                setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+            if (quotationActionType === 'approve') {
+                if (!selectedPartId) {
+                    showToast('Please select a part before approving.', 'error');
+                    setQuotationModalLoading(false);
+                    return;
+                }
+                await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
+                    params: { customerSelection: String(selectedPartId) },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
+                
+                // Refresh quotations and tickets
+                const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
+                if (quotationData && quotationData.length > 0) {
+                    setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+                }
+                
+                // Refresh ticket status
+                const { data: ticketData } = await api.get(`/repairTicket/getRepairTicket/${selectedQuotationTicket.ticketNumber}`);
+                setTicketRequests(prevRequests =>
+                    prevRequests.map(request =>
+                        request.ticketNumber === selectedQuotationTicket.ticketNumber
+                            ? { ...request, status: ticketData.repairStatus, repairStatus: ticketData.repairStatus }
+                            : request
+                    )
+                );
+            } else if (quotationActionType === 'reject') {
+                await api.patch(`/quotation/denyQuotation/${quotation.quotationId}`);
+                showToast('Quotation rejected', 'success');
+                
+                // Refresh quotations
+                const { data: quotationData } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${selectedQuotationTicket.ticketNumber}`);
+                if (quotationData && quotationData.length > 0) {
+                    setQuotations(prev => ({ ...prev, [selectedQuotationTicket.ticketNumber]: quotationData[0] }));
+                }
             }
-            
-            // Refresh ticket status
-            const { data: ticketData } = await api.get(`/repairTicket/getRepairTicket/${selectedQuotationTicket.ticketNumber}`);
-            setTicketRequests(prevRequests =>
-                prevRequests.map(request =>
-                    request.ticketNumber === selectedQuotationTicket.ticketNumber
-                        ? { ...request, status: ticketData.repairStatus, repairStatus: ticketData.repairStatus }
-                        : request
-                )
-            );
+            setQuotationModalOpen(false);
         } catch (err) {
-            console.error('Failed to approve quotation', err);
-            const errorMessage = err?.response?.data?.message || err?.message || 'Failed to approve the quotation. Please try again.';
+            console.error(`Failed to ${quotationActionType} quotation`, err);
+            const errorMessage = err?.response?.data?.message || err?.message || `Failed to ${quotationActionType} the quotation. Please try again.`;
             showToast(errorMessage, 'error');
         } finally {
             setQuotationModalLoading(false);
+            setShowQuotationConfirm(false);
         }
     };
 
@@ -568,7 +597,11 @@ const RepairQueue = () => {
                                         <div className="flex flex-col gap-2">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setSelectedRequest(ticket); setModalOpen(true); }}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                                className={`px-3 py-1.5 text-xs font-medium rounded-md text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+                                                    ${isCustomer
+                                                    ? "bg-[#25D482] hover:bg-[#1fab6b] focus-visible:ring-[#25D482]"
+                                                    : "bg-[#2563eb] hover:bg-[#1e49c7] focus-visible:ring-[#2563eb]"
+                                                }`}
                                             >
                                                 View
                                             </button>
@@ -664,7 +697,12 @@ const RepairQueue = () => {
                     key={i}
                     onClick={() => setCurrentPage(i)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                        i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        i === currentPage ? isCustomer
+                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                : 'bg-[#2563eb] text-white border-[#2563eb]'
+                            : isCustomer
+                                ? 'bg-white text-gray-700 border-gray-300 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-[#2563eb]/10 hover:text-[#2563eb]'
                     }`}
                 >
                     {i + 1}
@@ -693,7 +731,13 @@ const RepairQueue = () => {
                         className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                     >Prev</button>
                     <div className="flex gap-1">{pages.length > 0 ? pages : (
-                        <button className="px-3 py-1.5 rounded-md text-xs font-medium border bg-[#25D482] text-white">1</button>
+                        <button
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
+                                isCustomer
+                                    ? 'bg-[#25D482] text-white border-[#25D482] hover:bg-[#1fab6b]'
+                                    : 'bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1e49c7]'
+                            }`}
+                        >1</button>
                     )}</div>
                     <button
                         onClick={() => currentPage < (Math.max(1, totalPages) - 1) && setCurrentPage(currentPage + 1)}
@@ -905,13 +949,31 @@ const RepairQueue = () => {
                                                 <div className="flex border-b border-gray-300">
                                                     <NavLink
                                                         to="/repairqueue"
-                                                        className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                        className={({ isActive }) =>{ const isCustomer = role === "customer";
+
+                                                            return (
+                                                                `px-4 py-3 font-medium transition-all ` +
+                                                                (isActive
+                                                                        ? `border-b-2 ${isCustomer ? "border-[#25D482] text-[#25D482]" : "border-[#2563eb] text-[#2563eb]"}`
+                                                                        : `${isCustomer ? "text-gray-600 hover:text-[#25D482]" : "text-gray-600 hover:text-[#2563eb]"}`
+                                                                )
+                                                            );
+                                                        }}
                                                     >
                                                         Pending Repairs
                                                     </NavLink>
                                                     <NavLink
                                                         to="/resolvedrepairs"
-                                                        className={({ isActive }) => `px-4 py-3 font-medium transition-all ${isActive ? 'border-b-2 border-[#2563eb] text-[#2563eb]' : 'text-gray-600 hover:text-[#2563eb]'}`}
+                                                        className={({ isActive }) =>{ const isCustomer = role === "customer";
+
+                                                            return (
+                                                                `px-4 py-3 font-medium transition-all ` +
+                                                                (isActive
+                                                                        ? `border-b-2 ${isCustomer ? "border-[#25D482] text-[#25D482]" : "border-[#2563eb] text-[#2563eb]"}`
+                                                                        : `${isCustomer ? "text-gray-600 hover:text-[#25D482]" : "text-gray-600 hover:text-[#2563eb]"}`
+                                                                )
+                                                            );
+                                                        }}
                                                     >
                                                         Resolved Repairs
                                                     </NavLink>
@@ -939,7 +1001,11 @@ const RepairQueue = () => {
                                                         aria-label="Search tickets"
                                                         onChange={e => setSearch(e.target.value)}
                                                         onKeyDown={e => e.key === 'Enter' && (setCurrentPage(0))}
-                                                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                        className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2
+                                                            ${isCustomer
+                                                            ? "border-gray-300 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                            : "border-gray-300 focus:ring-[#2563eb]/30 focus:border-[#2563eb]"
+                                                        }`}
                                                     />
                                                     {search && (
                                                         <button
@@ -952,7 +1018,12 @@ const RepairQueue = () => {
 
                                                 <button
                                                     onClick={() => setCurrentPage(0)}
-                                                    className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                                    className={
+                                                        'w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 text-white rounded-md text-sm font-medium whitespace-nowrap border-gray-300 ' +
+                                                        (isCustomer
+                                                            ? 'bg-[#25D482] hover:bg-[#1fab6b]'
+                                                            : 'bg-[#2563eb] hover:bg-[#1e49c7]')
+                                                    }
                                                 >Search</button>
                                             </div>
 
@@ -961,8 +1032,12 @@ const RepairQueue = () => {
                                                 <select
                                                     value={statusFilter}
                                                     onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(0); }}
-                                                    className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
-                                                >
+                                                    className={
+                                                        'px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2' +
+                                                        (isCustomer
+                                                            ? 'focus:ring-[#25D482]/30 focus:border-[#25D482]'
+                                                            : 'focus:ring-[#2563eb]/30 focus:border-[#2563eb]')
+                                                    }                                                >
                                                     {availableStatuses.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                                 </select>
                                             </div>
@@ -971,7 +1046,12 @@ const RepairQueue = () => {
                                                 <select
                                                     value={pageSize}
                                                     onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setCurrentPage(0); }}
-                                                    className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                                    className={
+                                                        'px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2' +
+                                                        (isCustomer
+                                                            ?  'focus:ring-[#25D482]/30 focus:border-[#25D482]'
+                                                            : 'focus:ring-[#2563eb]/30 focus:border-[#2563eb]')
+                                                    }
                                                 >
                                                     {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
                                                 </select>
@@ -979,12 +1059,24 @@ const RepairQueue = () => {
                                             <div className="flex items-center gap-1" aria-label="Display mode">
                                                 <button
                                                     onClick={() => setViewMode('table')}
-                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'table' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                        viewMode === 'table'
+                                                            ? (isCustomer
+                                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                    }`}
                                                     aria-pressed={viewMode === 'table'}
                                                 >Table</button>
                                                 <button
                                                     onClick={() => setViewMode('cards')}
-                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'cards' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                        viewMode === 'cards'
+                                                            ? (isCustomer
+                                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                    }`}
                                                     aria-pressed={viewMode === 'cards'}
                                                 >Cards</button>
                                             </div>
@@ -1109,11 +1201,18 @@ const RepairQueue = () => {
                                                                             Cancel
                                                                         </button>
                                                                         <button
+                                                                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                                                                            onClick={() => handleQuotationActionClick('reject')}
+                                                                            disabled={quotationModalLoading}
+                                                                        >
+                                                                            Reject Quotation
+                                                                        </button>
+                                                                        <button
                                                                             className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 flex items-center gap-2"
-                                                                            onClick={handleQuotationApprove}
+                                                                            onClick={() => handleQuotationActionClick('approve')}
                                                                             disabled={!selectedPartId || quotationModalLoading}
                                                                         >
-                                                                            {quotationModalLoading && <Spinner size="small" />}
+                                                                            {quotationModalLoading && quotationActionType === 'approve' && <Spinner size="small" />}
                                                                             Approve Selection
                                                                         </button>
                                                                     </div>
@@ -1122,6 +1221,35 @@ const RepairQueue = () => {
                                                         })()}
                                                     </>
                                                 )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Quotation Confirmation Modal */}
+                                    {showQuotationConfirm && selectedQuotationTicket && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                            <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm {quotationActionType === "approve" ? "Approval" : "Rejection"}</h3>
+                                                <p className="text-sm text-gray-600 mb-6">
+                                                    Are you sure you want to {quotationActionType === "approve" ? "approve" : "reject"} this quotation?
+                                                </p>
+                                                <div className="flex justify-end gap-3">
+                                                    <button
+                                                        onClick={() => setShowQuotationConfirm(false)}
+                                                        className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                                                        disabled={quotationModalLoading}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={confirmQuotationAction}
+                                                        className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${quotationActionType === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"} disabled:opacity-50`}
+                                                        disabled={quotationModalLoading}
+                                                    >
+                                                        {quotationModalLoading && <Spinner size="small" />}
+                                                        {quotationModalLoading ? "Processing..." : "Confirm"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}

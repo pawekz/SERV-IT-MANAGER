@@ -10,7 +10,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        customerName: "",
+        customerFirstName: "",
+        customerLastName: "",
         customerPhoneNumber: "",
         customerEmail: "",
         warrantyNumber: "",
@@ -30,7 +31,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
         if (role === "customer" && isOpen) {
             setFormData(prev => ({
                 ...prev,
-                customerName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+                customerFirstName: userData.firstName || "",
+                customerLastName: userData.lastName || "",
                 customerPhoneNumber: userData.phoneNumber || "",
                 customerEmail: userData.email || "",
             }));
@@ -106,7 +108,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error("Not authenticated. Please log in.");
             if (
-                !formData.customerName ||
+                !formData.customerFirstName ||
+                !formData.customerLastName ||
                 !formData.customerEmail ||
                 !formData.customerPhoneNumber ||
                 !formData.returnReason
@@ -121,13 +124,15 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                 return;
             }
             const payload = new FormData();
-            payload.append("customerName", formData.customerName);
+            payload.append("customerFirstName", formData.customerFirstName);
+            payload.append("customerLastName", formData.customerLastName);
             payload.append("customerPhoneNumber", formData.customerPhoneNumber);
             payload.append("customerEmail", formData.customerEmail);
             payload.append("warrantyNumber", formData.warrantyNumber);
             payload.append("serialNumber", formData.serialNumber);
             payload.append("reportedIssue", formData.reportedIssue);
             payload.append("returnReason", formData.returnReason);
+            console.log("subt:",payload)
             const response = await api.post('/warranty/checkInWarranty', payload, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -163,12 +168,21 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
                         <h3 className="font-bold text-lg mb-4">Customer Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                                 <input type="text"
-                                       placeholder="Name"
+                                       placeholder="First Name"
                                        className="input w-full rounded-lg border-2 p-2"
-                                       value={formData.customerName}
-                                       onChange={e => handleChange("customerName", e.target.value)}
+                                       value={formData.customerFirstName}
+                                       onChange={e => handleChange("customerFirstName", e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                <input type="text"
+                                       placeholder="Last Name"
+                                       className="input w-full rounded-lg border-2 p-2"
+                                       value={formData.customerLastName}
+                                       onChange={e => handleChange("customerLastName", e.target.value)}
                                 />
                             </div>
 

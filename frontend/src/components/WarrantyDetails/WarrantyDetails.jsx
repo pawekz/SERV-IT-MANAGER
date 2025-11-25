@@ -1,32 +1,24 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect} from "react";
 import WarrantyStepper from "../WarrantyStepper/WarrantyStepper.jsx";
 import api from '../../config/ApiConfig';
-
-
+import { useWarrantyPhoto } from '../../hooks/useWarrantyPhoto';
 
 const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
     if (!data) return null;
-    const [photoFiles, setPhotoFiles] = useState(null);
 
     function SecureImage({ src, idx, openImageViewer }) {
-        const [imageUrl, setImageUrl] = useState(null);
+        const { data: imageUrl, isLoading } = useWarrantyPhoto(src);
 
         useEffect(() => {
-            const fetchImageWithAuth = async () => {
-                try {
-                    const response = await api.get(src, { responseType: 'blob' });
-                    const blobUrl = URL.createObjectURL(response.data);
-                    setImageUrl(blobUrl);
-                } catch (err) {
-                    console.error("Error fetching image:", err);
+            // Cleanup blob URLs when component unmounts or src changes
+            return () => {
+                if (imageUrl && imageUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(imageUrl);
                 }
             };
+        }, [imageUrl]);
 
-            fetchImageWithAuth();
-        }, [src]);
-
-
-        if (!imageUrl) {
+        if (isLoading || !imageUrl) {
             return <div className="w-full h-full bg-gray-200 animate-pulse rounded" />; // Skeleton while loading
         }
 
@@ -106,10 +98,7 @@ const WarrantyDetails = ({ isOpen, onClose,data = {}, onSuccess}) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-m w-full">
                     <div>
                         <strong>Customer Name:</strong><br />
-                        {data.customerName || 
-                         (data.customerFirstName && data.customerLastName 
-                            ? `${data.customerFirstName} ${data.customerLastName}`.trim()
-                            : data.customerFirstName || data.customerLastName || 'N/A')}
+                        {((data.customerFirstName || '') + ' ' + (data.customerLastName || '')).trim() || 'N/A'}
                     </div>
                     <div>
                         <strong>Customer Email:</strong><br />

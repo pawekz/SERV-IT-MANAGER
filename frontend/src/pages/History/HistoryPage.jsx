@@ -41,6 +41,8 @@ const statusChipClasses = (statusRaw) => {
 
 
 const HistoryPage = () => {
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const isCustomer = userData?.role?.toLowerCase() === 'customer';
     const [tickets, setTickets] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -231,7 +233,11 @@ const HistoryPage = () => {
                                     <td className="px-5 py-3">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#25D482] text-white hover:bg-[#1fab6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D482]"
+                                            className={`px-3 py-1.5 text-xs font-medium rounded-md text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+                                                    ${isCustomer
+                                                ? "bg-[#25D482] hover:bg-[#1fab6b] focus-visible:ring-[#25D482]"
+                                                : "bg-[#2563eb] hover:bg-[#1e49c7] focus-visible:ring-[#2563eb]"
+                                            }`}
                                         >
                                             View
                                         </button>
@@ -266,7 +272,12 @@ const HistoryPage = () => {
                     key={i}
                     onClick={() => goToPage(i)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                        i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        i === currentPage ? isCustomer
+                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                : 'bg-[#2563eb] text-white border-[#2563eb]'
+                            : isCustomer
+                                ? 'bg-white text-gray-700 border-gray-300 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-[#2563eb]/10 hover:text-[#2563eb]'
                     }`}
                 >
                     {i + 1}
@@ -296,7 +307,11 @@ const HistoryPage = () => {
                         className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                     >Prev</button>
                     <div className="flex gap-1">{pages.length > 0 ? pages : (
-                        <button className="px-3 py-1.5 rounded-md text-xs font-medium border bg-[#25D482] text-white">1</button>
+                        <button className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
+                            isCustomer
+                                ? 'bg-[#25D482] text-white border-[#25D482] hover:bg-[#1fab6b]'
+                                : 'bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1e49c7]'
+                        }`}>1</button>
                     )}</div>
                     <button
                         onClick={() => currentPage < (Math.max(1, totalPages) - 1) && goToPage(currentPage + 1)}
@@ -343,7 +358,11 @@ const HistoryPage = () => {
                                         aria-label="Search tickets"
                                         onChange={e => setSearch(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                        className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2
+                                                            ${isCustomer
+                                            ? "border-gray-300 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                            : "border-gray-300 focus:ring-[#2563eb]/30 focus:border-[#2563eb]"
+                                        }`}
                                     />
                                     {search && (
                                         <button
@@ -356,7 +375,12 @@ const HistoryPage = () => {
 
                                 <button
                                     onClick={handleSearch}
-                                    className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                    className={
+                                        'w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 text-white rounded-md text-sm font-medium whitespace-nowrap border-gray-300 ' +
+                                        (isCustomer
+                                            ? 'bg-[#25D482] hover:bg-[#1fab6b]'
+                                            : 'bg-[#2563eb] hover:bg-[#1e49c7]')
+                                    }
                                 >Search</button>
                             </div>
                             <div className="flex items-center gap-2">
@@ -382,12 +406,24 @@ const HistoryPage = () => {
                             <div className="flex items-center gap-1" aria-label="Display mode">
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'table' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                        viewMode === 'table'
+                                            ? (isCustomer
+                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                    }`}
                                     aria-pressed={viewMode === 'table'}
                                 >Table</button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'cards' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                    className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                        viewMode === 'cards'
+                                            ? (isCustomer
+                                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                    }`}
                                     aria-pressed={viewMode === 'cards'}
                                 >Cards</button>
                             </div>

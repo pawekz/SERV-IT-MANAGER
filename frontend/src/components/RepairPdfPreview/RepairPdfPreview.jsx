@@ -135,7 +135,7 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     }
                 }
 
-                showToast("Repair ticket submitted successfully!", "success");
+                showToast(kind === "repair" ? "Repair ticket submitted successfully!" : "Warranty ticket submitted successfully!", "success");
                 setTimeout(() => setLoading(false), 500);
             } catch (err) {
                 setError(err.message);
@@ -263,7 +263,9 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                                 </svg>
                             </div>
                         </div>
-                        <h2 className="text-xl font-semibold text-center text-gray-900 mb-1">Repair Ticket Checked In</h2>
+                        <h2 className="text-xl font-semibold text-center text-gray-900 mb-1">
+                            {kind === "repair" ? "Repair Ticket Checked In" : "Warranty Ticket Checked In"}
+                        </h2>
                         <p className="text-center text-gray-500 mb-6 text-sm">What would you like to do next?</p>
                         <div className="flex flex-col gap-2">
                             <button
@@ -355,7 +357,10 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                 <LoadingModal
                     show={loading}
                     title="Processing"
-                    message="Please wait while we submit the repair ticket..."
+                    message={kind === "warranty"
+                        ? "Please wait while we submit the warranty ticket..."
+                        : "Please wait while we submit the repair ticket..."
+                    }
                 />
             )}
         </div>

@@ -17,6 +17,7 @@ import RecentUpdatesCard from "./CustomerDashboardComponents/RecentUpdatesCard.j
 import RequiredActionsCard from "./CustomerDashboardComponents/RequiredActionsCard.jsx";
 import DocumentAccessCard from "./CustomerDashboardComponents/DocumentAccessCard.jsx";
 import api from '../../config/ApiConfig.jsx';
+import { useProfilePhoto } from '../../hooks/useProfilePhoto';
 
 const CustomerDashboard = () => {
     const [userData, setUserData] = useState({
@@ -51,7 +52,6 @@ const CustomerDashboard = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
 
-    const [profileUrl, setProfileUrl] = useState(null);
     const [pendingQuotations, setPendingQuotations] = useState([]);
     const [pendingLoading, setPendingLoading] = useState(false);
 
@@ -234,7 +234,7 @@ const CustomerDashboard = () => {
     }, [userData.email]);
 
     useEffect(() => {
-        const ensureUserWithPicture = async () => {
+        const ensureUser = async () => {
             try {
                 let stored = sessionStorage.getItem('userData');
                 let parsed = stored ? JSON.parse(stored) : null;
@@ -250,23 +250,15 @@ const CustomerDashboard = () => {
                     sessionStorage.setItem('userData', JSON.stringify(parsed));
                     setUserData(prev => ({ ...prev, ...parsed }));
                 }
-                if (parsed.profilePictureUrl && parsed.profilePictureUrl !== '0') {
-                    try {
-                        const presigned = await api.get(`/user/getProfilePicture/${parsed.userId}`);
-                        setProfileUrl(presigned.data);
-                    } catch { setProfileUrl(null); }
-                } else {
-                    setProfileUrl(null);
-                }
             } catch (e) {
-                setProfileUrl(null);
+                console.error('Error fetching user data:', e);
             }
         };
-        ensureUserWithPicture();
-        const interval = setInterval(ensureUserWithPicture, 240000);
-        return () => clearInterval(interval);
+        ensureUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    
+    const { data: profileUrl } = useProfilePhoto(userData.userId, userData.profilePictureUrl);
 
     // Get current repair items for pagination
     const indexOfLastItem = currentPage * itemsPerPage;

@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {Package, TabletSmartphone, Computer, Headphones, Archive, Search} from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import RequestReturn from "../../components/RequestReturn/RequestReturn.jsx";
 import WarrantyRequest from "../../components/WarrantyRequest/WarrantyRequest.jsx";
 import CheckWarranty from "../../components/CheckWarranty/CheckWarranty.jsx";
 import WarrantyDetails from "../../components/WarrantyDetails/WarrantyDetails.jsx";
 
-
-
 const WarrantyRequestPage = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const role = localStorage.getItem('userRole')?.toLowerCase();
+    const isCustomer = role === 'customer';
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [warranty, setWarranty] = useState([]);
@@ -89,13 +86,10 @@ const WarrantyRequestPage = () => {
                 console.log("No warranties found for email:", email);
             } else if (response.ok) {
                 const data = await response.json();
-                // Ensure customerName is constructed from firstName and lastName if not present
+                // Use split name fields directly
                 const processedData = data.map(w => ({
                     ...w,
-                    customerName: w.customerName || 
-                        (w.customerFirstName && w.customerLastName 
-                            ? `${w.customerFirstName} ${w.customerLastName}`.trim()
-                            : w.customerFirstName || w.customerLastName || 'N/A')
+                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
                 }));
                 setWarranty(processedData);
                 console.log("Warranties by email fetched successfully:", processedData);
@@ -137,13 +131,10 @@ const WarrantyRequestPage = () => {
                 console.log("No warranties found");
             } else if (response.ok) {
                 const data = JSON.parse(text);
-                // Ensure customerName is constructed from firstName and lastName if not present
+                // Use split name fields directly
                 const processedData = Array.isArray(data) ? data.map(w => ({
                     ...w,
-                    customerName: w.customerName || 
-                        (w.customerFirstName && w.customerLastName 
-                            ? `${w.customerFirstName} ${w.customerLastName}`.trim()
-                            : w.customerFirstName || w.customerLastName || 'N/A')
+                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
                 })) : data;
                 setWarranty(processedData);
                 console.log("Warranties fetched successfully:", processedData);
@@ -293,12 +284,14 @@ const WarrantyRequestPage = () => {
             filtered = filtered.filter(w => {
                 const serial = (w.serialNumber || '').toString().toLowerCase();
                 const device = (w.deviceName || '').toString().toLowerCase();
-                const customer = (w.customerName || '').toString().toLowerCase();
+                const firstName = (w.customerFirstName || '').toString().toLowerCase();
+                const lastName = (w.customerLastName || '').toString().toLowerCase();
+                const customerFull = (firstName + ' ' + lastName).trim();
                 
                 if (filterBy === "serial") return serial.includes(q);
                 if (filterBy === "device") return device.includes(q);
-                if (filterBy === "customer") return customer.includes(q);
-                return serial.includes(q) || device.includes(q) || customer.includes(q);
+                if (filterBy === "customer") return firstName.includes(q) || lastName.includes(q) || customerFull.includes(q);
+                return serial.includes(q) || device.includes(q) || firstName.includes(q) || lastName.includes(q) || customerFull.includes(q);
             });
         }
 
@@ -343,9 +336,15 @@ const WarrantyRequestPage = () => {
                         <tr>
                             <th 
                                 className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
-                                onClick={() => handleSort('customerName')}
+                                onClick={() => handleSort('customerFirstName')}
                             >
-                                Customer {sortConfig.key === 'customerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                First Name {sortConfig.key === 'customerFirstName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                                className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
+                                onClick={() => handleSort('customerLastName')}
+                            >
+                                Last Name {sortConfig.key === 'customerLastName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                                 className="px-5 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100"
@@ -372,7 +371,8 @@ const WarrantyRequestPage = () => {
                                 tabIndex={0}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(warrantyItem); }}
                             >
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerFirstName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerLastName || '—'}</td>
                                 <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.deviceName || '—'}</td>
                                 <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.serialNumber || '—'}</td>
                                 <td className="px-5 py-3">
@@ -418,7 +418,12 @@ const WarrantyRequestPage = () => {
                     key={i}
                     onClick={() => setCurrentPage(i)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                        i === currentPage ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        i === currentPage ? isCustomer
+                                ? 'bg-[#25D482] text-white border-[#25D482]'
+                                : 'bg-[#2563eb] text-white border-[#2563eb]'
+                            : isCustomer
+                                ? 'bg-white text-gray-700 border-gray-300 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-[#2563eb]/10 hover:text-[#2563eb]'
                     }`}
                 >
                     {i + 1}
@@ -485,7 +490,11 @@ const WarrantyRequestPage = () => {
                             <div className="flex-shrink-0">
                                 <button
                                     onClick={() => setCheckWarrantyModalOpen(true)}
-                                    className="flex items-center bg-[#10B981] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-[#0f9f6e] transition-all duration-200 min-w-[44px] min-h-[44px] whitespace-nowrap"
+                                    className={`flex items-center px-3 py-2 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] whitespace-nowrap text-white
+                                        ${isCustomer
+                                        ? "bg-[#10B981] hover:bg-[#0f9f6e]"         // customer = green
+                                        : "bg-[#2563eb] hover:bg-[#1e49c7]"         // staff/admin = blue
+                                    }`}
                                 >
                                     <span className="text-sm sm:text-base">Warranty Status Checker</span>
                                 </button>
@@ -520,11 +529,17 @@ const WarrantyRequestPage = () => {
                                                             setActiveTab('pending');
                                                             setCurrentPage(0);
                                                         }}
-                                                        className={`px-4 py-3 font-medium transition-all ${
-                                                            activeTab === 'pending' 
-                                                                ? 'border-b-2 border-[#2563eb] text-[#2563eb]' 
-                                                                : 'text-gray-600 hover:text-[#2563eb]'
-                                                        }`}
+                                                        className={`px-4 py-3 font-medium transition-all 
+                                                                ${activeTab === 'pending'
+                                                                ? (isCustomer
+                                                                        ? "border-b-2 border-[#25D482] text-[#25D482]"   
+                                                                        : "border-b-2 border-[#2563eb] text-[#2563eb]"   
+                                                                )
+                                                                : (isCustomer
+                                                                        ? "text-gray-600 hover:text-[#25D482]"          
+                                                                        : "text-gray-600 hover:text-[#2563eb]"    
+                                                                )
+                                                            }`}
                                                     >
                                                         Pending Warranties
                                                     </button>
@@ -533,10 +548,16 @@ const WarrantyRequestPage = () => {
                                                             setActiveTab('resolved');
                                                             setCurrentPage(0);
                                                         }}
-                                                        className={`px-4 py-3 font-medium transition-all ${
-                                                            activeTab === 'resolved' 
-                                                                ? 'border-b-2 border-[#2563eb] text-[#2563eb]' 
-                                                                : 'text-gray-600 hover:text-[#2563eb]'
+                                                        className={`px-4 py-3 font-medium transition-all 
+                                                                ${activeTab === 'resolved'
+                                                            ? (isCustomer
+                                                                    ? "border-b-2 border-[#25D482] text-[#25D482]"
+                                                                    : "border-b-2 border-[#2563eb] text-[#2563eb]"
+                                                            )
+                                                            : (isCustomer
+                                                                    ? "text-gray-600 hover:text-[#25D482]"
+                                                                    : "text-gray-600 hover:text-[#2563eb]"
+                                                            )
                                                         }`}
                                                     >
                                                         Resolved Warranties
@@ -573,7 +594,11 @@ const WarrantyRequestPage = () => {
                                                             value={searchQuery}
                                                             onChange={(e) => setSearchQuery(e.target.value)}
                                                             onKeyDown={e => e.key === 'Enter' && setCurrentPage(0)}
-                                                            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                            className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2
+                                                            ${isCustomer
+                                                                ? "border-gray-300 focus:ring-[#25D482]/30 focus:border-[#25D482]"
+                                                                : "border-gray-300 focus:ring-[#2563eb]/30 focus:border-[#2563eb]"
+                                                            }`}
                                                         />
                                                         {searchQuery && (
                                                             <button
@@ -584,7 +609,12 @@ const WarrantyRequestPage = () => {
                                                     </div>
                                                     <button
                                                         onClick={() => setCurrentPage(0)}
-                                                        className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-[#25D482] text-white rounded-md hover:bg-[#1fab6b] text-sm font-medium whitespace-nowrap"
+                                                        className={
+                                                            'w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 text-white rounded-md text-sm font-medium whitespace-nowrap ' +
+                                                            (isCustomer
+                                                                ? 'bg-[#25D482] hover:bg-[#1fab6b]'
+                                                                : 'bg-[#2563eb] hover:bg-[#1e49c7]')
+                                                        }
                                                     >Search</button>
                                                 </div>
 
@@ -593,7 +623,12 @@ const WarrantyRequestPage = () => {
                                                     <select
                                                         value={pageSize}
                                                         onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setCurrentPage(0); }}
-                                                        className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
+                                                        className={
+                                                            'px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2' +
+                                                            (isCustomer
+                                                                ?  'focus:ring-[#25D482]/30 focus:border-[#25D482]'
+                                                                : 'focus:ring-[#2563eb]/30 focus:border-[#2563eb]')
+                                                        }
                                                     >
                                                         {[5,10,20].map(sz => <option key={sz} value={sz}>{sz}</option>)}
                                                     </select>
@@ -601,12 +636,24 @@ const WarrantyRequestPage = () => {
                                                 <div className="flex items-center gap-1" aria-label="Display mode">
                                                     <button
                                                         onClick={() => setViewMode('table')}
-                                                        className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'table' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                        className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                            viewMode === 'table'
+                                                                ? (isCustomer
+                                                                    ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                    : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                        }`}
                                                         aria-pressed={viewMode === 'table'}
                                                     >Table</button>
                                                     <button
                                                         onClick={() => setViewMode('cards')}
-                                                        className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${viewMode === 'cards' ? 'bg-[#25D482] text-white border-[#25D482]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                                                        className={`px-3 py-2 rounded-md text-xs font-semibold border transition-colors ${
+                                                            viewMode === 'cards'
+                                                                ? (isCustomer
+                                                                    ? 'bg-[#25D482] text-white border-[#25D482]'
+                                                                    : 'bg-[#2563eb] text-white border-[#2563eb]')
+                                                                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                                                        }`}
                                                         aria-pressed={viewMode === 'cards'}
                                                     >Cards</button>
                                                 </div>
@@ -642,7 +689,7 @@ const WarrantyRequestPage = () => {
                                                                             <strong>Device:</strong> {request.deviceName}
                                                                         </p>
                                                                         <p className="text-sm text-gray-600">
-                                                                            <strong>Customer:</strong> {request.customerName}
+                                                                            <strong>Customer:</strong> {(request.customerFirstName || '') + ' ' + (request.customerLastName || '')}
                                                                         </p>
                                                                         {role === "customer" ? (
                                                                             <p

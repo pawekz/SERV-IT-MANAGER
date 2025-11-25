@@ -33,6 +33,8 @@ function TicketImage({ path, alt }) {
 
 const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, customerAction }) => {
     // derive unified status (backend uses repairStatus)
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const isCustomer = userData?.role?.toLowerCase() === 'customer';
     const displayStatus = ticket.status || ticket.repairStatus || 'N/A';
 
     const images = ticket.repairPhotosUrls && ticket.repairPhotosUrls.length > 0
@@ -131,7 +133,11 @@ const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, custo
 
                     <button
                         onClick={(e) => { e.stopPropagation(); onClick(); }}
-                        className="inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400/40 focus:outline-none rounded-lg transition-colors"
+                        className={`inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white rounded-lg transition-colors focus:ring-2 focus:outline-none
+                                ${isCustomer
+                                ? "bg-[#25D482] hover:bg-[#1fab6b] focus:ring-[#25D482]/40"
+                                : "bg-[#2563eb] hover:bg-[#1e49c7] focus:ring-[#2563eb]/40"
+                            }`}
                     >
                         More Info
                     </button>
