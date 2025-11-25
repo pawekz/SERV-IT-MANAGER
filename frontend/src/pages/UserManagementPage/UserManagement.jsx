@@ -1,5 +1,5 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { PenLine, Trash2, CheckCheck, Activity } from "lucide-react"
 import Toast from "../../components/Toast/Toast.jsx";
 import CreateEmployeeModal from "../../components/CreateEmployeeModal/CreateEmployeeModal.jsx";
@@ -102,8 +102,13 @@ const UserManagement = () => {
     const roleOptions = ['All Roles', ...Array.from(new Set(users.map(u => (u.role || '').toString().trim()).filter(Boolean))).map(r => (r.charAt(0).toUpperCase() + r.toLowerCase().slice(1)) )];
     const statusOptions = ['All Status', ...Array.from(new Set(users.map(u => (u.status || '').toString().trim()).filter(Boolean)))];
 
-    // Filter users based on search term, selected role, and status
-    useEffect(() => {
+    const applyFilters = useCallback((overrides = {}) => {
+        const {
+            searchTerm = appliedSearchTerm,
+            role = selectedRole,
+            status = selectedStatus,
+        } = overrides;
+
         let filtered = users || [];
 
         // Exclude current logged-in user
@@ -114,8 +119,9 @@ const UserManagement = () => {
         }
 
         // First filter by search term
-        if (appliedSearchTerm.trim() !== '') {
-            const q = appliedSearchTerm.toLowerCase();
+        const trimmedSearch = searchTerm.trim();
+        if (trimmedSearch !== '') {
+            const q = trimmedSearch.toLowerCase();
             filtered = filtered.filter(user =>
                 (user.email || '').toLowerCase().includes(q) ||
                 ((user.firstName || '') + ' ' + (user.lastName || '')).toLowerCase().includes(q)
@@ -123,17 +129,22 @@ const UserManagement = () => {
         }
 
         // Then filter by role if not "All Roles"
-        if (selectedRole && selectedRole !== 'All Roles') {
-            filtered = filtered.filter(user => (user.role || '').charAt(0).toUpperCase()+ (user.role || '').toLowerCase().slice(1) === selectedRole);
+        if (role && role !== 'All Roles') {
+            filtered = filtered.filter(user => (user.role || '').charAt(0).toUpperCase()+ (user.role || '').toLowerCase().slice(1) === role);
         }
 
         // Filter by status if not "All Status"
-        if (selectedStatus && selectedStatus !== 'All Status') {
-            filtered = filtered.filter(user => user.status === selectedStatus);
+        if (status && status !== 'All Status') {
+            filtered = filtered.filter(user => user.status === status);
         }
 
         setFilteredUsers(filtered);
     }, [appliedSearchTerm, selectedRole, selectedStatus, users, currentUserEmail]);
+
+    // Filter users based on search term, selected role, and status
+    useEffect(() => {
+        applyFilters();
+    }, [applyFilters]);
 
     // Handle search input change
     const handleSearchInput = (e) => {
@@ -143,13 +154,15 @@ const UserManagement = () => {
     const handleSearch = () => {
         const trimmed = searchInput.trim();
         setAppliedSearchTerm(trimmed);
-        fetchUsers(1);
+        applyFilters({ searchTerm: trimmed });
+        setCurrentPage(1);
     };
 
     const handleClearSearch = () => {
         setSearchInput('');
         setAppliedSearchTerm('');
-        fetchUsers(1);
+        applyFilters({ searchTerm: '' });
+        setCurrentPage(1);
     };
 
     // Handle role selection change
