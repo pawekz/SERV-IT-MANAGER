@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Plus, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
@@ -47,8 +47,6 @@ const Inventory = () => {
         activeAlertsCount: 0
     });
     const [showStockSettingsModal, setShowStockSettingsModal] = useState(false);
-    // only need setter; the selected value isn't referenced elsewhere
-    const [, setSelectedPartNumberForSettings] = useState(null);
 
     // Enhanced bulk add state for multiple serial numbers
     const [showBulkAddModal, setShowBulkAddModal] = useState(false);
@@ -117,20 +115,25 @@ const Inventory = () => {
         notes: ""
     });
 
-    // Function to check if the user is a technician
-    const isTechnician = () => {
-        return userRole === 'technician';
-    };
+    // Memoized role checks
+    const isTechnician = useMemo(() => userRole === 'technician', [userRole]);
+    const isAdmin = useMemo(() => userRole === 'admin', [userRole]);
 
-    // Function to check if the user is an admin
-    const isAdmin = () => {
-        return userRole === 'admin';
-    };
+    // Show notification helper function (defined first as it's used by other callbacks)
+    const showNotification = useCallback((message, type = 'success', duration = 3000) => {
+        setToast({ show: true, message, type, duration });
+        // If duration > 0, Toast component will auto-hide and call onClose; we also ensure state resets after a short buffer
+        if (duration > 0) {
+            setTimeout(() => {
+                setToast({ show: false, message: '', type: 'success', duration: 3000 });
+            }, duration + 350);
+        }
+    }, []);
 
     // Show technician restriction message
-    const showTechnicianRestrictionMessage = () => {
+    const showTechnicianRestrictionMessage = useCallback(() => {
         showNotification("As a technician, you don't have permission to modify inventory.", "error");
-    };
+    }, [showNotification]);
 
     // Enhanced helper function to calculate availability status with part number aggregation
     const calculateAvailabilityStatus = (availableStock, threshold) => {
@@ -148,63 +151,8 @@ const Inventory = () => {
         }
     };
 
-    // Enhanced parseJwt to better handle role extraction
-    /*const parseJwt = (token) => {
-        try {
-            if (!token || typeof token !== 'string') {
-                console.error("Invalid token: token is null, undefined, or not a string");
-                return null;
-            }
-
-            // Check if token has the correct format (should have exactly 2 dots for JWS)
-            const parts = token.split('.');
-            if (parts.length !== 3) {
-                console.error("Invalid JWT format: token should have exactly 3 parts separated by dots");
-                return null;
-            }
-
-            const base64Url = parts[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            console.error("Error parsing JWT:", e);
-            return null;
-        }
-    };*/
-
-    // Enhanced helper function to get user email from token
-    /*const getUserEmailFromToken = (token) => {
-        try {
-            const decodedToken = parseJwt(token);
-            const email = decodedToken?.email ||
-                decodedToken?.sub ||
-                decodedToken?.preferred_username ||
-                decodedToken?.user_email;
-
-            return email || "unknown@example.com";
-        } catch (e) {
-            console.error("Error extracting email from token:", e);
-            return "error@example.com";
-        }
-    };*/
-
-    // Show notification helper function
-    const showNotification = (message, type = 'success', duration = 3000) => {
-        setToast({ show: true, message, type, duration });
-        // If duration > 0, Toast component will auto-hide and call onClose; we also ensure state resets after a short buffer
-        if (duration > 0) {
-            setTimeout(() => {
-                setToast({ show: false, message: '', type: 'success', duration: 3000 });
-            }, duration + 350);
-        }
-    };
-
-    // Highlight matching text in search results
-    const highlightText = (text, searchTerm) => {
+    // Highlight matching text in search results (memoized)
+    const highlightText = useCallback((text, searchTerm) => {
         if (!searchTerm.trim() || !text) return text;
         
         const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -217,166 +165,10 @@ const Inventory = () => {
                 </span>
             ) : part
         );
-    };
+    }, []);
 
-    // Fetch backend low stock data for comparison (optional)
-    const fetchBackendLowStockData = async () => {
-        try {
-            const response = await api.get('/part/stock/lowStockPartNumbers');
-            // Log backend vs frontend comparison for debugging
-            console.log('Backend low stock count:', response.data.length);
-            console.log('Frontend low stock count:', lowStockPartNumbers.length);
-        } catch (err) {
-            console.error("Error fetching backend low stock data:", err);
-        }
-    };
-
-    // Manual low stock check and display modal
-    const checkAndShowLowStock = async () => {
-        if (!isAdmin()) {
-            showTechnicianRestrictionMessage();
-            return;
-        }
-
-        try {
-            // Always show modal when manually triggered, even if no low stock items
-            // The low stock data is already calculated in fetchInventory()
-            setShowLowStockModal(true);
-        } catch (err) {
-            console.error("Error checking low stock:", err);
-            showNotification("Failed to check low stock items", "error");
-        }
-    };
-
-    // Refresh stock tracking for all part numbers
-    const refreshAllStockTracking = async (showLowStockModalAfter = true) => {
-        if (!isAdmin()) {
-            showTechnicianRestrictionMessage();
-            return;
-        }
-        try {
-            // show loading toast
-            setToast({ show: true, message: 'Refreshing stock tracking...', type: 'loading', duration: 0 });
-            await api.post('/part/stock/refreshAllTracking', {});
-            showNotification("Stock tracking refreshed successfully");
-            await fetchInventory();
-            if (showLowStockModalAfter) {
-                await checkAndShowLowStock();
-            }
-        } catch (err) {
-            console.error("Error refreshing stock tracking:", err);
-            showNotification("Failed to refresh stock tracking", "error");
-        } finally {
-            // close loading toast
-            setToast({ show: false, message: '', type: 'success', duration: 3000 });
-        }
-    };
-
-    // Handle stock settings
-    const handleStockSettings = (partNumber) => {
-        if (!isAdmin()) {
-            showTechnicianRestrictionMessage();
-            return;
-        }
-
-        // Find the current stock count for this part number
-        const partData = inventoryItems.find(item => item.partNumber === partNumber);
-        const currentCount = partData ? partData.currentStock : 0;
-
-        setSelectedPartNumberForSettings(partNumber);
-        setStockSettings({
-            partNumber: partNumber,
-            partName: partData ? partData.name : "",
-            currentCount: currentCount,
-            lowStockThreshold: partData ? partData.lowStockThreshold : 10,
-            priorityLevel: "NORMAL",
-            notes: ""
-        });
-        setShowStockSettingsModal(true);
-    };
-
-    // Update stock settings
-    const updateStockSettings = async (e) => {
-        e.preventDefault();
-        
-        try {
-            await api.put('/part/stock/updateTracking', stockSettings);
-            showNotification("Stock settings updated successfully");
-            setShowStockSettingsModal(false);
-            await fetchInventory();
-            setTimeout(() => {
-                fetchInventory();
-            }, 500);
-        } catch (err) {
-            console.error("Error updating stock settings:", err);
-            showNotification("Failed to update stock settings", "error");
-        }
-    };
-
-    // Enhanced delete part function
-    const handleDeletePart = (partId) => {
-        if (!isAdmin()) {
-            showTechnicianRestrictionMessage();
-            return;
-        }
-
-        // Find the actual individual part from allParts arrays
-        let partToDelete = null;
-        for (const item of inventoryItems) {
-            if (item.allParts) {
-                const foundPart = item.allParts.find(part => part.id === partId);
-                if (foundPart) {
-                    partToDelete = foundPart;
-                    break;
-                }
-            }
-        }
-        
-        console.log("Deleting individual part:", partToDelete);
-        
-        if (!partToDelete) {
-            showNotification("Part not found", "error");
-            return;
-        }
-        
-        setPartToDelete(partToDelete);
-        setShowDeleteModal(true);
-    };
-
-    // Confirm delete part (DeleteConfirmModal already shows confirmation, this is the actual delete)
-    const confirmDeletePart = async () => {
-        try {
-            // show loading toast
-            setToast({ show: true, message: 'Deleting part...', type: 'loading', duration: 0 });
-            await api.delete(`/part/deletePart/${partToDelete.id}`);
-            showNotification("Part deleted successfully");
-            await fetchInventory();
-            await refreshAllStockTracking();
-        } catch (err) {
-            console.error("Error deleting part:", err);
-            showNotification("Failed to delete part. " + (err.response?.data?.message || "Please try again."), "error");
-            // Don't clear inventory on error - keep existing data
-        } finally {
-            setShowDeleteModal(false);
-            setPartToDelete(null);
-            // close loading toast if still open
-            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
-        }
-    };
-
-    // Handle description click to show modal
-    const handleDescriptionClick = (item) => {
-        const title = `${item.brand || ''} ${item.model || ''}`.trim() || item.name || "Part Description";
-        setSelectedDescription({
-            title: title,
-            content: item.description || "No description available",
-            part: item
-        });
-        setShowDescriptionModal(true);
-    };
-
-    // Enhanced inventory fetching with part number aggregation
-    const fetchInventory = async () => {
+    // Enhanced inventory fetching with part number aggregation (defined early as it's used by other callbacks)
+    const fetchInventory = useCallback(async () => {
         setLoading(true);
         // show loading toast
         setToast({ show: true, message: 'Loading inventory...', type: 'loading', duration: 0 });
@@ -409,7 +201,6 @@ const Inventory = () => {
                         serialNumber: item.serialNumber,
                         brand: item.brand,
                         model: item.model,
-                        /*category: item.category || "GENERAL",*/
                         totalParts: 1,
                         suppliers: new Set([item.supplierName || 'Unknown']),
                         allParts: [item],
@@ -465,27 +256,6 @@ const Inventory = () => {
             }));
             
             setLowStockPartNumbers(lowStockPartNumbers);
-            
-            // Debug logging
-            console.log('Stock Status Calculation Summary:');
-            console.log('Total items:', transformedItems.length);
-            console.log('Low stock items:', lowStockItems.length);
-            console.log('Out of stock items:', outOfStockItems.length);
-            console.log('Low stock part numbers:', lowStockPartNumbers);
-            
-            // Additional debug logging for stock threshold checking
-            transformedItems.forEach(item => {
-                const debugInfo = {
-                    partNumber: item.partNumber,
-                    availableStock: item.availableStock,
-                    lowStockThreshold: item.lowStockThreshold,
-                    status: item.availability.status,
-                    isLowStock: item.availableStock < item.lowStockThreshold
-                };
-                if (debugInfo.isLowStock !== (debugInfo.status === 'Low Stock')) {
-                    console.warn('Stock status mismatch for:', debugInfo);
-                }
-            });
 
             setLoading(false);
             // close loading toast
@@ -501,7 +271,159 @@ const Inventory = () => {
                 setInventoryItems([]);
             }
         }
+    }, [showNotification, calculateAvailabilityStatus]);
+
+    // Fetch backend low stock data for comparison (optional)
+    const fetchBackendLowStockData = useCallback(async () => {
+        try {
+            const response = await api.get('/part/stock/lowStockPartNumbers');
+            // Log backend vs frontend comparison for debugging
+            // Backend and frontend low stock counts are logged for debugging if needed
+        } catch (err) {
+            console.error("Error fetching backend low stock data:", err);
+        }
+    }, []);
+
+    // Manual low stock check and display modal
+    const checkAndShowLowStock = useCallback(async () => {
+        if (!isAdmin) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
+        try {
+            // Always show modal when manually triggered, even if no low stock items
+            // The low stock data is already calculated in fetchInventory()
+            setShowLowStockModal(true);
+        } catch (err) {
+            console.error("Error checking low stock:", err);
+            showNotification("Failed to check low stock items", "error");
+        }
+    }, [isAdmin, showTechnicianRestrictionMessage, showNotification]);
+
+    // Refresh stock tracking for all part numbers
+    const refreshAllStockTracking = useCallback(async (showLowStockModalAfter = true) => {
+        if (!isAdmin) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+        try {
+            // show loading toast
+            setToast({ show: true, message: 'Refreshing stock tracking...', type: 'loading', duration: 0 });
+            await api.post('/part/stock/refreshAllTracking', {});
+            showNotification("Stock tracking refreshed successfully");
+            await fetchInventory();
+            if (showLowStockModalAfter) {
+                await checkAndShowLowStock();
+            }
+        } catch (err) {
+            console.error("Error refreshing stock tracking:", err);
+            showNotification("Failed to refresh stock tracking", "error");
+        } finally {
+            // close loading toast
+            setToast({ show: false, message: '', type: 'success', duration: 3000 });
+        }
+    }, [isAdmin, showTechnicianRestrictionMessage, showNotification, checkAndShowLowStock, fetchInventory]);
+
+    // Handle stock settings
+    const handleStockSettings = (partNumber) => {
+        if (!isAdmin) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
+        // Find the current stock count for this part number
+        const partData = inventoryItems.find(item => item.partNumber === partNumber);
+        const currentCount = partData ? partData.currentStock : 0;
+
+        setStockSettings({
+            partNumber: partNumber,
+            partName: partData ? partData.name : "",
+            currentCount: currentCount,
+            lowStockThreshold: partData ? partData.lowStockThreshold : 10,
+            priorityLevel: "NORMAL",
+            notes: ""
+        });
+        setShowStockSettingsModal(true);
     };
+
+    // Update stock settings
+    const updateStockSettings = async (e) => {
+        e.preventDefault();
+        
+        try {
+            await api.put('/part/stock/updateTracking', stockSettings);
+            showNotification("Stock settings updated successfully");
+            setShowStockSettingsModal(false);
+            await fetchInventory();
+            setTimeout(() => {
+                fetchInventory();
+            }, 500);
+        } catch (err) {
+            console.error("Error updating stock settings:", err);
+            showNotification("Failed to update stock settings", "error");
+        }
+    };
+
+    // Enhanced delete part function
+    const handleDeletePart = (partId) => {
+        if (!isAdmin) {
+            showTechnicianRestrictionMessage();
+            return;
+        }
+
+        // Find the actual individual part from allParts arrays
+        let partToDelete = null;
+        for (const item of inventoryItems) {
+            if (item.allParts) {
+                const foundPart = item.allParts.find(part => part.id === partId);
+                if (foundPart) {
+                    partToDelete = foundPart;
+                    break;
+                }
+            }
+        }
+        
+        if (!partToDelete) {
+            showNotification("Part not found", "error");
+            return;
+        }
+        
+        setPartToDelete(partToDelete);
+        setShowDeleteModal(true);
+    };
+
+    // Confirm delete part (DeleteConfirmModal already shows confirmation, this is the actual delete)
+    const confirmDeletePart = async () => {
+        try {
+            // show loading toast
+            setToast({ show: true, message: 'Deleting part...', type: 'loading', duration: 0 });
+            await api.delete(`/part/deletePart/${partToDelete.id}`);
+            showNotification("Part deleted successfully");
+            await fetchInventory();
+            await refreshAllStockTracking();
+        } catch (err) {
+            console.error("Error deleting part:", err);
+            showNotification("Failed to delete part. " + (err.response?.data?.message || "Please try again."), "error");
+            // Don't clear inventory on error - keep existing data
+        } finally {
+            setShowDeleteModal(false);
+            setPartToDelete(null);
+            // close loading toast if still open
+            setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
+        }
+    };
+
+    // Handle description click to show modal
+    const handleDescriptionClick = useCallback((item) => {
+        const title = `${item.brand || ''} ${item.model || ''}`.trim() || item.name || "Part Description";
+        setSelectedDescription({
+            title: title,
+            content: item.description || "No description available",
+            part: item
+        });
+        setShowDescriptionModal(true);
+    }, []);
 
     // Initialize component
     useEffect(() => {
@@ -541,7 +463,8 @@ const Inventory = () => {
         };
 
         checkAuthentication();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount - fetchInventory and showNotification are stable callbacks
 
     // Handle form input changes
     const handleInputChange = (e) => {
@@ -608,7 +531,7 @@ const Inventory = () => {
     const handleBulkAdd = async (e) => {
         e.preventDefault();
 
-        if (!isAdmin()) {
+        if (!isAdmin) {
             showTechnicianRestrictionMessage();
             return;
         }
@@ -763,7 +686,7 @@ const Inventory = () => {
                 }
             } catch (err) {
                 // If endpoint doesn't exist, try alternative approach
-                console.log("Customer lookup endpoint not available or customer not found");
+                // Customer lookup endpoint not available or customer not found
                 setFetchedCustomer(null);
                 return null;
             }
@@ -778,12 +701,12 @@ const Inventory = () => {
 
     // Handle edit button click for individual parts
     const handleEditClick = async (part) => {
-        if (!isAdmin()) {
+        if (!isAdmin) {
             showTechnicianRestrictionMessage();
             return;
         }
 
-        console.log("Editing individual part:", part);
+        // Editing individual part
         setEditPart({...part});
         setShowEditModal(true);
         
@@ -811,7 +734,7 @@ const Inventory = () => {
     const handleUpdatePart = async (e) => {
         e.preventDefault();
 
-        if (!isAdmin()) {
+        if (!isAdmin) {
             showTechnicianRestrictionMessage();
             return;
         }
@@ -881,7 +804,7 @@ const Inventory = () => {
     const handleAddPart = async (e) => {
         e.preventDefault();
 
-        if (!isAdmin()) {
+        if (!isAdmin) {
             showTechnicianRestrictionMessage();
             return;
         }
@@ -990,15 +913,15 @@ const Inventory = () => {
         }
     };
 
-    // Enhanced filtering function
-    const filteredItems = inventoryItems.filter(item => {
+    // Memoized filtered items based on search query, category, and filters
+    const filteredItems = useMemo(() => inventoryItems.filter(item => {
         // Search query filter
         const matchesSearch = 
-            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (item.allParts && item.allParts.some(part => 
-                part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.allParts && item.allParts.some(part => 
+            part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
             ));
 
         if (!matchesSearch) return false;
@@ -1121,15 +1044,15 @@ const Inventory = () => {
         }
 
         return true;
-    });
+    }), [inventoryItems, searchQuery, selectedCategory, filters]);
 
-    // Pagination
+    // Memoized pagination calculations
     const itemsPerPage = 10;
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-    const paginatedItems = filteredItems.slice(
+    const totalPages = useMemo(() => Math.ceil(filteredItems.length / itemsPerPage), [filteredItems.length, itemsPerPage]);
+    const paginatedItems = useMemo(() => filteredItems.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
-    );
+    ), [filteredItems, currentPage, itemsPerPage]);
 
     return (
         <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
@@ -1140,57 +1063,57 @@ const Inventory = () => {
 
             {/* Main Content Area */}
             <div className="flex-1 bg-gray-50 flex">
-                {/* Main Content */}
+            {/* Main Content */}
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="px-4 md:px-6 lg:px-8 py-6 flex-1 overflow-y-auto">
-                        {/* Header with enhanced controls */}
+                    {/* Header with enhanced controls */}
                         <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {isTechnician()
-                                        ? "View and search parts inventory"
-                                        : "Manage your parts and inventory"}
-                                </p>
-                            </div>
-                            {isAdmin() && (
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
+                            <p className="text-sm text-gray-600 mt-1">
+                                    {isTechnician
+                                    ? "View and search parts inventory"
+                                    : "Manage your parts and inventory"}
+                            </p>
+                        </div>
+                            {isAdmin && (
                                 <div className="flex flex-wrap gap-2">
                                     <div className="relative group">
-                                        <button
-                                            onClick={refreshAllStockTracking}
+                                    <button
+                                        onClick={refreshAllStockTracking}
                                             className="px-3 py-2 bg-blue-600 text-white rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-                                            title="Refresh Stock & Show Low Stock Alert"
-                                        >
-                                            <RefreshCw size={16} className="mr-1" />
+                                        title="Refresh Stock & Show Low Stock Alert"
+                                    >
+                                        <RefreshCw size={16} className="mr-1" />
                                             <span className="hidden sm:inline">Refresh & Check Stock</span>
                                             <span className="inline sm:hidden">Refresh</span>
-                                        </button>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowBulkAddModal(true)}
-                                        className="px-3 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
-                                        title="Add multiple parts with different serial numbers"
-                                    >
-                                        <Package size={16} className="mr-1" />
-                                        <span className="hidden sm:inline">Bulk Add</span>
-                                        <span className="inline sm:hidden">Bulk</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setShowAddModal(true)}
-                                        className="px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center justify-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
-                                        title="Add a single new part to inventory"
-                                    >
-                                        <Plus size={16} className="mr-1" />
-                                        <span className="hidden sm:inline">Add New Part</span>
-                                        <span className="inline sm:hidden">Add</span>
                                     </button>
                                 </div>
-                            )}
-                        </div>
+                                <button
+                                    onClick={() => setShowBulkAddModal(true)}
+                                        className="px-3 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
+                                    title="Add multiple parts with different serial numbers"
+                                >
+                                    <Package size={16} className="mr-1" />
+                                        <span className="hidden sm:inline">Bulk Add</span>
+                                        <span className="inline sm:hidden">Bulk</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                        className="px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center justify-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
+                                    title="Add a single new part to inventory"
+                                >
+                                    <Plus size={16} className="mr-1" />
+                                        <span className="hidden sm:inline">Add New Part</span>
+                                        <span className="inline sm:hidden">Add</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Stock Summary Cards */}
-                        {isAdmin() && (
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    {/* Stock Summary Cards */}
+                        {isAdmin && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
                                 <div className="flex items-center">
                                     <Package className="h-8 w-8 text-blue-600" />
@@ -1244,35 +1167,35 @@ const Inventory = () => {
                                     </div>
                                 </div>
                             </div>
-                            </div>
-                        )}
+                        </div>
+                    )}
 
-                        {/* Loading Indicator */}
-                        {loading && (
-                            <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
-                                <p>Loading inventory data...</p>
-                            </div>
-                        )}
+                    {/* Loading Indicator */}
+                    {loading && (
+                        <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
+                            <p>Loading inventory data...</p>
+                        </div>
+                    )}
 
                         {/* Search and View Controls */}
                         <div className="flex gap-4 mb-6">
                             {/* Main Table Area */}
                             <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
                                 <div className="p-4 border-b border-gray-100">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         {/* Search Bar */}
                                         <div className="relative flex-1 max-w-2xl">
-                                            <input
-                                                type="text"
-                                                placeholder="Search by name, SKU, part number, or serial number..."
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name, SKU, part number, or serial number..."
                                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                            />
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
                                             <div className="absolute left-3 top-3 text-gray-400">
-                                                <Search size={18} />
-                                            </div>
-                                        </div>
+                                        <Search size={18} />
+                                    </div>
+                                </div>
 
                                         {/* Filter Button and Results Count */}
                                         <div className="flex items-center gap-3">
@@ -1282,7 +1205,7 @@ const Inventory = () => {
                                             >
                                                 <SlidersHorizontal size={16} className="mr-2" />
                                                 <span>Filters</span>
-                                            </button>
+                                    </button>
                                             <p className="hidden md:block text-sm text-gray-700">
                                                 <span className="font-medium">{filteredItems.length}</span> results
                                             </p>
@@ -1302,9 +1225,9 @@ const Inventory = () => {
                                                 />
                                                 {expandedGroups.size === 0 ? 'Expand All' : 'Collapse All'}
                                             </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                        </div>
 
                                 {/* Active Filters */}
                                 {(selectedCategory || Object.values(filters).some(v => {
@@ -1331,36 +1254,36 @@ const Inventory = () => {
                                             >
                                                 Clear all filters
                                             </button>
-                                        </div>
                                     </div>
+                                </div>
                                 )}
 
                                 {/* Content Area - Table */}
                                 <div className="flex-1 min-h-[400px] flex flex-col">
                                     <div className="overflow-x-auto flex-1">
-                                        <InventoryTable
-                                            paginatedItems={paginatedItems}
-                                            searchQuery={searchQuery}
-                                            expandedGroups={expandedGroups}
-                                            isAdmin={isAdmin()}
-                                            onToggleGroupExpansion={toggleGroupExpansion}
-                                            onDescriptionClick={handleDescriptionClick}
-                                            onStockSettings={handleStockSettings}
-                                            onEditClick={handleEditClick}
-                                            onDeletePart={handleDeletePart}
-                                            highlightText={highlightText}
-                                            onRefresh={fetchInventory}
-                                        />
-                                    </div>
+                            <InventoryTable
+                                paginatedItems={paginatedItems}
+                                searchQuery={searchQuery}
+                                expandedGroups={expandedGroups}
+                                            isAdmin={isAdmin}
+                                onToggleGroupExpansion={toggleGroupExpansion}
+                                onDescriptionClick={handleDescriptionClick}
+                                onStockSettings={handleStockSettings}
+                                onEditClick={handleEditClick}
+                                onDeletePart={handleDeletePart}
+                                highlightText={highlightText}
+                                onRefresh={fetchInventory}
+                            />
+                        </div>
 
                                 {/* Enhanced Pagination - Only show when there are multiple pages */}
                                 {filteredItems.length > itemsPerPage && (
                                     <div className="px-4 py-4 bg-white border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-sm text-gray-700">
+                                <p className="text-sm text-gray-700">
                                                 Showing <span className="font-semibold text-gray-900">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-semibold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-semibold text-gray-900">{filteredItems.length}</span> results
-                                            </p>
-                                        </div>
+                                </p>
+                            </div>
                                         <div className="flex items-center gap-2">
                                             {totalPages > 5 && (
                                                 <button
@@ -1377,18 +1300,18 @@ const Inventory = () => {
                                                     <ChevronLeft size={16} className="inline -ml-2" />
                                                 </button>
                                             )}
-                                            <button
-                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                                disabled={currentPage === 1}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
                                                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                                                     currentPage === 1 
                                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                                                         : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
                                                 }`}
                                                 title="Previous page"
-                                            >
-                                                <ChevronLeft size={16} />
-                                            </button>
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
                                             
                                             {/* Page Numbers */}
                                             <div className="flex items-center gap-1">
@@ -1420,18 +1343,18 @@ const Inventory = () => {
                                                 })}
                                             </div>
                                             
-                                            <button
-                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                disabled={currentPage === totalPages || totalPages === 0}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
                                                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                                                     currentPage === totalPages || totalPages === 0
                                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                         : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
                                                 }`}
                                                 title="Next page"
-                                            >
-                                                <ChevronRight size={16} />
-                                            </button>
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
                                             {totalPages > 5 && (
                                                 <button
                                                     onClick={() => setCurrentPage(totalPages)}
@@ -1447,8 +1370,8 @@ const Inventory = () => {
                                                     <ChevronRight size={16} className="inline -ml-2" />
                                                 </button>
                                             )}
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
                                 )}
                                 
                                 {/* Results summary when pagination is not shown (few items) */}

@@ -242,7 +242,7 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
             const findMatchingNodes = (node, path = 'All') => {
                 if (node.children) {
                     Object.entries(node.children).forEach(([childName, childNode]) => {
-                        const childPath = node.path ? `${node.path}/${childName}` : `${path}/${childName}`;
+                        const childPath = childNode.path || `${path}/${childName}`;
                         
                         // Check if this node or its children match
                         const nameMatches = childName.toLowerCase().includes(query);
@@ -266,12 +266,26 @@ const CategoryTree = ({ items, selectedCategory, onCategorySelect, onClearFilter
             };
             
             findMatchingNodes(categoryTree['All'], 'All');
-            setExpandedCategories(nodesToExpand);
+            setExpandedCategories(prev => {
+                // Only update if the sets are different to prevent infinite loops
+                const prevArray = Array.from(prev).sort();
+                const newArray = Array.from(nodesToExpand).sort();
+                if (prevArray.length !== newArray.length || 
+                    prevArray.some((val, idx) => val !== newArray[idx])) {
+                    return nodesToExpand;
+                }
+                return prev;
+            });
         } else {
             // Reset to just 'All' when search is cleared
-            setExpandedCategories(new Set(['All']));
+            setExpandedCategories(prev => {
+                if (prev.size !== 1 || !prev.has('All')) {
+                    return new Set(['All']);
+                }
+                return prev;
+            });
         }
-    }, [searchQuery, categoryTree]);
+    }, [searchQuery, items, groupingMode]); // Use items and groupingMode instead of categoryTree to prevent infinite loops
 
     // Filter tree nodes based on search query
     const shouldShowNode = (node, name, path) => {
