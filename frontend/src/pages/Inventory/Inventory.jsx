@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Plus, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw } from 'lucide-react';
+import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Plus, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 import InventoryTable from './InventoryTable';
@@ -13,6 +13,10 @@ import StockSettingsModal from "./StockSettingsModal/StockSettingsModal.jsx";
 import AddPartModal from "./AddPartModal/AddPartModal.jsx";
 import EditPartModal from "./EditPartModal/EditPartModal.jsx";
 import BulkAddModal from "./BulkAddModal/BulkAddModal.jsx";
+
+// Import new modern UI components
+import CategoryTree from "./CategoryTree/CategoryTree.jsx";
+import FilterSidebar from "./FilterSidebar/FilterSidebar.jsx";
 
 const Inventory = () => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +79,15 @@ const Inventory = () => {
 
     // Accordion state for expanding part number groups
     const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+    // Modern UI state
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [filters, setFilters] = useState({
+        stockStatus: 'all',
+        priceRange: { min: '', max: '' },
+        dateRange: { start: '', end: '' }
+    });
+    const [showFilterSidebar, setShowFilterSidebar] = useState(false);
 
     // New part form state
     const [newPart, setNewPart] = useState({
@@ -977,17 +990,96 @@ const Inventory = () => {
         }
     };
 
-    // Filter items based on search query
-    const filteredItems = inventoryItems.filter(item =>
-        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        /*item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||*/
-        item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        // Search in serial numbers of all parts in the group
-        (item.allParts && item.allParts.some(part => 
-            part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
-        ))
-    );
+    // Enhanced filtering function
+    const filteredItems = inventoryItems.filter(item => {
+        // Search query filter
+        const matchesSearch = 
+            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.allParts && item.allParts.some(part => 
+                part.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+            ));
+
+        if (!matchesSearch) return false;
+
+        // Category filter - supports part number, brand, model, and part number patterns
+        if (selectedCategory && selectedCategory !== 'All') {
+            // Parse the category path (format: "All/Category/PartNumber" or "All/Category")
+            const categoryPath = selectedCategory.split('/');
+            const categoryValue = categoryPath.length > 1 ? categoryPath[1] : selectedCategory;
+            const partNumberValue = categoryPath.length > 2 ? categoryPath[2] : null;
+            
+            // If a specific part number is selected in the path, match exactly
+            if (partNumberValue) {
+                if (item.partNumber !== partNumberValue) return false;
+            } else {
+                // Match by category value (could be brand, model, part number prefix, etc.)
+                const itemPartNumber = item.partNumber?.toUpperCase() || '';
+                const itemBrand = (item.brand || '').toLowerCase();
+                const itemModel = (item.model || '').toLowerCase();
+                const categoryUpper = categoryValue.toUpperCase();
+                const categoryLower = categoryValue.toLowerCase();
+                
+                // Check various matching strategies
+                const matchesPartNumber = itemPartNumber === categoryUpper || 
+                                         itemPartNumber.startsWith(categoryUpper) ||
+                                         categoryUpper.startsWith(itemPartNumber);
+                const matchesBrand = itemBrand === categoryLower || 
+                                    itemBrand.includes(categoryLower) ||
+                                    categoryLower.includes(itemBrand);
+                const matchesModel = itemModel === categoryLower || 
+                                    itemModel.includes(categoryLower) ||
+                                    categoryLower.includes(itemModel);
+                
+                // For alphanumeric patterns
+                const matchesAlphanumeric = (selectedCategory.startsWith('Letters') || selectedCategory.startsWith('Numbers')) && 
+                    ((selectedCategory.startsWith('Letters') && /[A-Z]/.test(itemPartNumber.charAt(0))) ||
+                     (selectedCategory.startsWith('Numbers') && /[0-9]/.test(itemPartNumber.charAt(0))));
+                
+                if (!matchesPartNumber && !matchesBrand && !matchesModel && !matchesAlphanumeric) {
+                    return false;
+                }
+            }
+        }
+
+        // Stock status filter
+        if (filters.stockStatus !== 'all') {
+            const status = item.availability?.status?.toLowerCase().replace(/\s+/g, '-');
+            
+            if (filters.stockStatus === 'in-stock') {
+                // "In Stock" includes Good, Normal, and Low Stock (but not Out of Stock)
+                const inStockStatuses = ['good', 'normal', 'low-stock', 'in-stock'];
+                if (!inStockStatuses.includes(status)) return false;
+            } else if (filters.stockStatus === 'out-of-stock') {
+                // "Out of Stock" filter - match "out-of-stock" status
+                if (status !== 'out-of-stock') return false;
+            } else {
+                // For other filters (low-stock), do exact match
+                if (status !== filters.stockStatus) return false;
+            }
+        }
+
+        // Price range filter
+        if (filters.priceRange?.min && item.unitCost < parseFloat(filters.priceRange.min)) return false;
+        if (filters.priceRange?.max && item.unitCost > parseFloat(filters.priceRange.max)) return false;
+
+
+        // Date range filter
+        if (filters.dateRange?.start && item.dateAdded) {
+            const itemDate = new Date(item.dateAdded);
+            const startDate = new Date(filters.dateRange.start);
+            if (itemDate < startDate) return false;
+        }
+        if (filters.dateRange?.end && item.dateAdded) {
+            const itemDate = new Date(item.dateAdded);
+            const endDate = new Date(filters.dateRange.end);
+            endDate.setHours(23, 59, 59, 999);
+            if (itemDate > endDate) return false;
+        }
+
+        return true;
+    });
 
     // Pagination
     const itemsPerPage = 10;
@@ -999,68 +1091,64 @@ const Inventory = () => {
 
     return (
         <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
-            {/* Sidebar */}
-            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+            {/* Navigation Sidebar */}
+            <div className="w-full md:w-[250px] h-auto md:h-screen">
                 <Sidebar activePage={'inventory'}/>
             </div>
 
-
-            {/* Main Content */}
-            <div className="flex-1 bg-gray-50">
-                <div className="px-10 py-8">
-                    {/* Header with enhanced controls */}
-                    <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                {isTechnician()
-                                    ? "View and search parts inventory"
-                                    : "Manage your parts and inventory"}
-                            </p>
-                        </div>
-                        {isAdmin() && (
-                            <div className="mt-4 md:mt-0 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 w-full md:w-auto">
-                                <div className="relative group w-full md:w-auto">
-                                    <button
-                                        onClick={refreshAllStockTracking}
-                                        className="w-full md:w-auto max-w-xs px-3 py-2 bg-blue-600 text-white rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-                                        title="Refresh Stock & Show Low Stock Alert"
-                                    >
-                                        <RefreshCw size={16} className="mr-1" />
-                                        <span className="hidden xs:inline">Refresh & Check Stock</span>
-                                        <span className="inline xs:hidden">Refresh</span>
-                                    </button>
-                                    {/* Enhanced Tooltip */}
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                        Refresh all stock data & check for low stock alerts
-                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowBulkAddModal(true)}
-                                    className="w-full md:w-auto max-w-xs px-3 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
-                                    title="Add multiple parts with different serial numbers"
-                                >
-                                    <Package size={16} className="mr-1" />
-                                    <span className="hidden xs:inline">Bulk Add</span>
-                                    <span className="inline xs:hidden">Bulk</span>
-                                </button>
-                                <button
-                                    onClick={() => setShowAddModal(true)}
-                                    className="w-full md:w-auto max-w-xs px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center justify-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
-                                    title="Add a single new part to inventory"
-                                >
-                                    <Plus size={16} className="mr-1" />
-                                    <span className="hidden xs:inline">Add New Part</span>
-                                    <span className="inline xs:hidden">Add</span>
-                                </button>
+            {/* Main Content Area */}
+            <div className="flex-1 bg-gray-50 flex">
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    <div className="px-4 md:px-6 lg:px-8 py-6 flex-1 overflow-y-auto">
+                        {/* Header with enhanced controls */}
+                        <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {isTechnician()
+                                        ? "View and search parts inventory"
+                                        : "Manage your parts and inventory"}
+                                </p>
                             </div>
-                        )}
-                    </div>
+                            {isAdmin() && (
+                                <div className="flex flex-wrap gap-2">
+                                    <div className="relative group">
+                                        <button
+                                            onClick={refreshAllStockTracking}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                                            title="Refresh Stock & Show Low Stock Alert"
+                                        >
+                                            <RefreshCw size={16} className="mr-1" />
+                                            <span className="hidden sm:inline">Refresh & Check Stock</span>
+                                            <span className="inline sm:hidden">Refresh</span>
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowBulkAddModal(true)}
+                                        className="px-3 py-2 bg-green-600 text-white rounded-md flex items-center justify-center hover:bg-green-700 transition-colors shadow-sm hover:shadow-md"
+                                        title="Add multiple parts with different serial numbers"
+                                    >
+                                        <Package size={16} className="mr-1" />
+                                        <span className="hidden sm:inline">Bulk Add</span>
+                                        <span className="inline sm:hidden">Bulk</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAddModal(true)}
+                                        className="px-4 py-2 bg-[#25D482] text-white rounded-md flex items-center justify-center hover:bg-[#1fab6b] transition-colors shadow-sm hover:shadow-md"
+                                        title="Add a single new part to inventory"
+                                    >
+                                        <Plus size={16} className="mr-1" />
+                                        <span className="hidden sm:inline">Add New Part</span>
+                                        <span className="inline sm:hidden">Add</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
-                    {/* Stock Summary Cards */}
-                    {isAdmin() && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        {/* Stock Summary Cards */}
+                        {isAdmin() && (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
                                 <div className="flex items-center">
                                     <Package className="h-8 w-8 text-blue-600" />
@@ -1114,130 +1202,260 @@ const Inventory = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                            </div>
+                        )}
 
-                    {/* Loading Indicator */}
-                    {loading && (
-                        <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
-                            <p>Loading inventory data...</p>
-                        </div>
-                    )}
+                        {/* Loading Indicator */}
+                        {loading && (
+                            <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
+                                <p>Loading inventory data...</p>
+                            </div>
+                        )}
 
-                    {/* Available Inventory */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <div className="p-5 border-b border-gray-100">
-                            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                                <Package size={20} className="mr-2" />
-                                Available Inventory
-                                <span className=" bg-blue-100 text-blue-800 text-xs rounded-full
-                                    sm:ml-2 sm:px-1 sm:py-0.5
-                                    ml-1 px-2 py-
-                                    ">
-                                    {inventoryItems.length} items
-                                </span>
-                            </h2>
-                        </div>
+                        {/* Search and View Controls */}
+                        <div className="flex gap-4 mb-6">
+                            {/* Main Table Area */}
+                            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div className="p-4 border-b border-gray-100">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                        {/* Search Bar */}
+                                        <div className="relative flex-1 max-w-2xl">
+                                            <input
+                                                type="text"
+                                                placeholder="Search by name, SKU, part number, or serial number..."
+                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                            />
+                                            <div className="absolute left-3 top-3 text-gray-400">
+                                                <Search size={18} />
+                                            </div>
+                                        </div>
 
-                        {/* Search and Filters */}
-                        <div className="p-5 border-b border-gray-100">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                {/* Search input always on top for mobile */}
-                                <div className="relative w-full">
-                                    <input
-                                        type="text"
-                                        placeholder="Search by name, SKU, part number, or serial number..."
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                    <div className="absolute left-3 top-2.5 text-gray-400">
-                                        <Search size={18} />
-                                    </div>
-                                </div>
-                                {/* Filters and actions below search on mobile, inline on desktop */}
-                                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 flex items-center hover:bg-gray-50 w-full sm:w-auto">
-                                        <span className="mr-1">Filters</span>
-                                        <ChevronDown size={16} />
-                                    </button>
-                                    <div className="flex flex-row gap-2 w-full sm:w-auto">
-                                        <div className="relative group w-full sm:w-auto">
+                                        {/* Filter Button */}
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setShowFilterSidebar(true)}
+                                                className="lg:hidden px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 flex items-center hover:bg-gray-50 transition-colors"
+                                            >
+                                                <SlidersHorizontal size={16} className="mr-2" />
+                                                <span>Filters</span>
+                                            </button>
                                             <button
                                                 onClick={() => {
                                                     if (expandedGroups.size === 0) {
-                                                        // Expand all
                                                         setExpandedGroups(new Set(paginatedItems.map(item => item.partNumber)));
                                                     } else {
-                                                        // Collapse all
                                                         setExpandedGroups(new Set());
                                                     }
                                                 }}
-                                                className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md text-sm hover:bg-indigo-200 hover:text-indigo-800 flex items-center transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto"
-                                                title={expandedGroups.size === 0 ? "Expand all groups to see individual parts" : "Collapse all groups"}
+                                                className="hidden md:flex px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200 transition-colors items-center"
                                             >
                                                 <ChevronDown
                                                     size={14}
-                                                    className={`mr-1 transition-transform duration-200 ${
-                                                        expandedGroups.size > 0 ? 'rotate-180' : ''
-                                                    }`}
+                                                    className={`mr-1 transition-transform ${expandedGroups.size > 0 ? 'rotate-180' : ''}`}
                                                 />
                                                 {expandedGroups.size === 0 ? 'Expand All' : 'Collapse All'}
                                             </button>
-                                            {/* Enhanced Tooltip */}
-                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                                {expandedGroups.size === 0 ? 'Show all individual parts with serial numbers' : 'Hide individual parts'}
-                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center px-2 py-1 bg-gray-100 rounded text-xs text-gray-600 w-full sm:w-auto">
-                                            <Eye size={12} className="mr-1" />
-                                            {expandedGroups.size} of {paginatedItems.length} expanded
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Inventory Table */}
-                        <div className="mt-4 flex flex-col">
-                            <InventoryTable
-                                paginatedItems={paginatedItems}
-                                searchQuery={searchQuery}
-                                expandedGroups={expandedGroups}
-                                isAdmin={isAdmin()}
-                                onToggleGroupExpansion={toggleGroupExpansion}
-                                onDescriptionClick={handleDescriptionClick}
-                                onStockSettings={handleStockSettings}
-                                onEditClick={handleEditClick}
-                                onDeletePart={handleDeletePart}
-                                highlightText={highlightText}
-                                onRefresh={fetchInventory}
-                            />
-                        </div>
+                                {/* Results Count and Active Filters */}
+                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <p className="text-sm text-gray-700">
+                                            <span className="font-medium">{filteredItems.length}</span> results
+                                        </p>
+                                        {(selectedCategory || Object.values(filters).some(v => {
+                                            if (typeof v === 'object' && v !== null) {
+                                                return Object.values(v).some(val => val !== '' && val !== null);
+                                            }
+                                            return v !== '' && v !== 'all' && v !== null;
+                                        })) && (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedCategory(null);
+                                                    setFilters({
+                                                        stockStatus: 'all',
+                                                        priceRange: { min: '', max: '' },
+                                                        dateRange: { start: '', end: '' }
+                                                    });
+                                                }}
+                                                className="text-xs text-blue-600 hover:text-blue-800"
+                                            >
+                                                Clear all filters
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
 
-                        {/* Pagination */}
-                        <div className="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
-                                </p>
+                                {/* Content Area - Table */}
+                                <div className="min-h-[400px]">
+                                    <div className="overflow-x-auto">
+                                        <InventoryTable
+                                            paginatedItems={paginatedItems}
+                                            searchQuery={searchQuery}
+                                            expandedGroups={expandedGroups}
+                                            isAdmin={isAdmin()}
+                                            onToggleGroupExpansion={toggleGroupExpansion}
+                                            onDescriptionClick={handleDescriptionClick}
+                                            onStockSettings={handleStockSettings}
+                                            onEditClick={handleEditClick}
+                                            onDeletePart={handleDeletePart}
+                                            highlightText={highlightText}
+                                            onRefresh={fetchInventory}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="px-4 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-gray-700">
+                                                Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * itemsPerPage, filteredItems.length)}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-medium">{filteredItems.length}</span> results
+                                            </p>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                            >
+                                                <ChevronLeft size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages || totalPages === 0}
+                                                className={`px-3 py-1 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                            >
+                                                <ChevronRight size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                >
-                                    <ChevronLeft size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages || totalPages === 0}
-                                    className={`px-3 py-1 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                >
-                                    <ChevronRight size={16} />
-                                </button>
+
+                            {/* Right Sidebar - Categories and Filters */}
+                            <div className="hidden lg:flex flex-col w-80 bg-white rounded-lg shadow-sm border border-gray-200 ml-4" style={{ height: 'calc(100vh - 200px)', maxHeight: 'calc(100vh - 200px)' }}>
+                                {/* Categories Panel */}
+                                <div className="overflow-y-auto border-b border-gray-200" style={{ height: '50%', maxHeight: '50%', flexShrink: 0 }}>
+                                    <CategoryTree
+                                        items={inventoryItems}
+                                        selectedCategory={selectedCategory}
+                                        onCategorySelect={setSelectedCategory}
+                                        onClearFilter={() => setSelectedCategory(null)}
+                                    />
+                                </div>
+                                
+                                {/* Desktop Filters Panel */}
+                                <div className="overflow-y-auto flex flex-col" style={{ height: '50%', maxHeight: '50%', flexShrink: 0 }}>
+                                    <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                        <h3 className="text-sm font-semibold text-gray-800 flex items-center">
+                                            <SlidersHorizontal size={16} className="mr-2" />
+                                            Advanced Filters
+                                        </h3>
+                                    </div>
+                                    <div className="p-4 overflow-y-auto">
+                                    <div className="space-y-4">
+                                        {/* Stock Status Filter */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                                Stock Status
+                                            </label>
+                                            <select
+                                                value={filters.stockStatus || 'all'}
+                                                onChange={(e) => setFilters({ ...filters, stockStatus: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                                <option value="all">All Status</option>
+                                                <option value="in-stock">In Stock</option>
+                                                <option value="low-stock">Low Stock</option>
+                                                <option value="out-of-stock">Out of Stock</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Price Range Filter */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                                Price Range
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input
+                                                    type="number"
+                                                    placeholder="Min"
+                                                    value={filters.priceRange?.min || ''}
+                                                    onChange={(e) => setFilters({
+                                                        ...filters,
+                                                        priceRange: { ...filters.priceRange, min: e.target.value }
+                                                    })}
+                                                    className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    placeholder="Max"
+                                                    value={filters.priceRange?.max || ''}
+                                                    onChange={(e) => setFilters({
+                                                        ...filters,
+                                                        priceRange: { ...filters.priceRange, max: e.target.value }
+                                                    })}
+                                                    className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Date Range Filter */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                                Date Added
+                                            </label>
+                                            <div className="space-y-2">
+                                                <input
+                                                    type="date"
+                                                    value={filters.dateRange?.start || ''}
+                                                    onChange={(e) => setFilters({
+                                                        ...filters,
+                                                        dateRange: { ...filters.dateRange, start: e.target.value }
+                                                    })}
+                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                <input
+                                                    type="date"
+                                                    value={filters.dateRange?.end || ''}
+                                                    onChange={(e) => setFilters({
+                                                        ...filters,
+                                                        dateRange: { ...filters.dateRange, end: e.target.value }
+                                                    })}
+                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Clear Filters Button */}
+                                        {(selectedCategory || Object.values(filters).some(v => {
+                                            if (typeof v === 'object' && v !== null) {
+                                                return Object.values(v).some(val => val !== '' && val !== null);
+                                            }
+                                            return v !== '' && v !== 'all' && v !== null;
+                                        })) && (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedCategory(null);
+                                                    setFilters({
+                                                        stockStatus: 'all',
+                                                        priceRange: { min: '', max: '' },
+                                                        dateRange: { start: '', end: '' }
+                                                    });
+                                                }}
+                                                className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
+                                            >
+                                                Clear All Filters
+                                            </button>
+                                        )}
+                                    </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1436,6 +1654,21 @@ const Inventory = () => {
                     }}
                 />
             )}
+
+            {/* Filter Sidebar (Mobile) */}
+            <FilterSidebar
+                isOpen={showFilterSidebar}
+                onClose={() => setShowFilterSidebar(false)}
+                filters={filters}
+                onFilterChange={setFilters}
+                onClearFilters={() => {
+                    setFilters({
+                        stockStatus: 'all',
+                        priceRange: { min: '', max: '' },
+                        dateRange: { start: '', end: '' }
+                    });
+                }}
+            />
 
             {/* Toast component (single source for notifications, loading, errors) */}
             <Toast
