@@ -66,6 +66,8 @@ const Inventory = () => {
     const [editLoading, setEditLoading] = useState(false);
     const [editSuccess, setEditSuccess] = useState(false);
     const [editError, setEditError] = useState(null);
+    const [showEditConfirm, setShowEditConfirm] = useState(false);
+    const [pendingEditSubmit, setPendingEditSubmit] = useState(null);
     
     // Customer fetching state
     const [fetchedCustomer, setFetchedCustomer] = useState(null);
@@ -328,7 +330,7 @@ const Inventory = () => {
         setShowDeleteModal(true);
     };
 
-    // Confirm delete part
+    // Confirm delete part (DeleteConfirmModal already shows confirmation, this is the actual delete)
     const confirmDeletePart = async () => {
         try {
             // show loading toast
@@ -340,6 +342,7 @@ const Inventory = () => {
         } catch (err) {
             console.error("Error deleting part:", err);
             showNotification("Failed to delete part. " + (err.response?.data?.message || "Please try again."), "error");
+            // Don't clear inventory on error - keep existing data
         } finally {
             setShowDeleteModal(false);
             setPartToDelete(null);
@@ -479,6 +482,11 @@ const Inventory = () => {
             // notify user of failure via toast
             showNotification("Failed to load inventory items, add items or check your connection.", 'error', 5000);
             setLoading(false);
+            // Don't clear inventoryItems on error - keep existing data visible
+            // Only clear if we have no data at all (initial load)
+            if (inventoryItems.length === 0) {
+                setInventoryItems([]);
+            }
         }
     };
 
@@ -579,6 +587,10 @@ const Inventory = () => {
         }
     };
 
+    // State for bulk add confirmation
+    const [showBulkAddConfirm, setShowBulkAddConfirm] = useState(false);
+    const [pendingBulkAdd, setPendingBulkAdd] = useState(null);
+
     // Handle bulk add submission
     const handleBulkAdd = async (e) => {
         e.preventDefault();
@@ -588,7 +600,17 @@ const Inventory = () => {
             return;
         }
 
+        // Show confirmation dialog
+        setShowBulkAddConfirm(true);
+        setPendingBulkAdd(e);
+    };
+
+    // Confirm bulk add
+    const confirmBulkAdd = async () => {
+        if (!pendingBulkAdd) return;
+
         setBulkAddLoading(true);
+        setShowBulkAddConfirm(false);
 
         try {
             // show loading toast
@@ -607,6 +629,7 @@ const Inventory = () => {
 
             if (validItems.length === 0) {
                 showNotification("No valid items to add", "error");
+                setPendingBulkAdd(null);
                 return;
             }
 
@@ -680,8 +703,10 @@ const Inventory = () => {
             }
             
             showNotification(errorMessage, "error");
+            // Don't clear inventory on error - keep existing data
         } finally {
             setBulkAddLoading(false);
+            setPendingBulkAdd(null);
             // close loading toast if still open
             setToast(prev => prev.type === 'loading' ? { show: false, message: '', type: 'success', duration: 3000 } : prev);
         }
@@ -815,8 +840,23 @@ const Inventory = () => {
             }, 1500);
         } catch (err) {
             console.error("Error updating part:", err);
-            setEditError(err.message || err.response?.data?.message || "Failed to update part");
-            showNotification(err.message || err.response?.data?.message || "Failed to update part", 'error');
+            let errorMessage = err.message || err.response?.data?.message || "Failed to update part";
+            
+            // Handle image validation errors
+            if (err.response?.status === 400 || err.response?.status === 500) {
+                const responseData = err.response.data;
+                if (typeof responseData === 'string' && (responseData.includes('Only PNG') || responseData.includes('Invalid photo type') || responseData.includes('PNG, JPG, and JPEG'))) {
+                    errorMessage = "Only PNG, JPG, and JPEG files are accepted.";
+                } else if (typeof responseData === 'string') {
+                    errorMessage = responseData;
+                } else if (responseData?.message) {
+                    errorMessage = responseData.message;
+                }
+            }
+            
+            setEditError(errorMessage);
+            showNotification(errorMessage, 'error');
+            // Don't clear inventory on error - keep existing data
         } finally {
             setEditLoading(false);
             // close loading toast if still open
@@ -894,19 +934,32 @@ const Inventory = () => {
             
             if (err.response?.status === 400) {
                 const responseData = err.response.data;
-                if (typeof responseData === 'string' && responseData.includes('Serial number already exists')) {
-                    const serialMatch = responseData.match(/Serial number already exists: (\w+)/);
-                    if (serialMatch) {
-                        errorMessage = `Serial number "${serialMatch[1]}" already exists in the database. Please use a unique serial number.`;
+                if (typeof responseData === 'string') {
+                    if (responseData.includes('Serial number already exists')) {
+                        const serialMatch = responseData.match(/Serial number already exists: (\w+)/);
+                        if (serialMatch) {
+                            errorMessage = `Serial number "${serialMatch[1]}" already exists in the database. Please use a unique serial number.`;
+                        } else {
+                            errorMessage = "Serial number already exists. Please use a unique serial number.";
+                        }
+                    } else if (responseData.includes('Only PNG') || responseData.includes('Invalid photo type') || responseData.includes('PNG, JPG, and JPEG')) {
+                        errorMessage = "Only PNG, JPG, and JPEG files are accepted.";
+                    } else if (responseData.includes('duplicate') || responseData.includes('already exists')) {
+                        errorMessage = "Duplicate data detected. Please check your input values.";
+                    } else if (responseData.includes('Part number does not exist')) {
+                        errorMessage = "The part number does not exist. Please check the part number or add as a new part.";
                     } else {
-                        errorMessage = "Serial number already exists. Please use a unique serial number.";
+                        errorMessage = responseData || "Invalid data provided";
                     }
-                } else if (responseData.includes('duplicate') || responseData.includes('already exists')) {
-                    errorMessage = "Duplicate data detected. Please check your input values.";
-                } else if (responseData.includes('Part number does not exist')) {
-                    errorMessage = "The part number does not exist. Please check the part number or add as a new part.";
+                } else if (responseData?.message) {
+                    errorMessage = responseData.message;
+                }
+            } else if (err.response?.status === 500) {
+                const responseData = err.response.data;
+                if (typeof responseData === 'string' && (responseData.includes('Only PNG') || responseData.includes('Invalid photo type') || responseData.includes('PNG, JPG, and JPEG'))) {
+                    errorMessage = "Only PNG, JPG, and JPEG files are accepted.";
                 } else {
-                    errorMessage = responseData || "Invalid data provided";
+                    errorMessage = "Server error occurred. Please try again later.";
                 }
             } else if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
@@ -916,6 +969,7 @@ const Inventory = () => {
             
             setAddPartError(errorMessage);
             showNotification(errorMessage, 'error');
+            // Don't clear inventory on error - keep existing data
         } finally {
             setAddPartLoading(false);
             // close loading toast if still open
@@ -1212,7 +1266,11 @@ const Inventory = () => {
                         setShowEditModal(false);
                         setFetchedCustomer(null);
                     }}
-                    onSubmit={handleUpdatePart}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        setShowEditConfirm(true);
+                        setPendingEditSubmit(e);
+                    }}
                     onInputChange={handleEditInputChange}
                     editPart={editPart}
                     loading={editLoading}
@@ -1222,6 +1280,57 @@ const Inventory = () => {
                     fetchedCustomer={fetchedCustomer}
                     fetchingCustomer={fetchingCustomer}
                 />
+            )}
+
+            {/* Edit Part Confirmation Dialog */}
+            {showEditConfirm && editPart && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                                <AlertTriangle size={20} className="mr-2 text-blue-600" />
+                                Confirm Update Part
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowEditConfirm(false);
+                                    setPendingEditSubmit(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="mb-6">
+                            <p className="text-gray-600">
+                                Are you sure you want to update this part?
+                            </p>
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowEditConfirm(false);
+                                    setPendingEditSubmit(null);
+                                }}
+                                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowEditConfirm(false);
+                                    if (pendingEditSubmit) {
+                                        handleUpdatePart(pendingEditSubmit);
+                                    }
+                                    setPendingEditSubmit(null);
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Confirm Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Description Modal */}
@@ -1257,6 +1366,51 @@ const Inventory = () => {
                     onRemoveBulkItem={removeBulkItem}
                     loading={bulkAddLoading}
                 />
+            )}
+
+            {/* Bulk Add Confirmation Dialog */}
+            {showBulkAddConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                                <AlertTriangle size={20} className="mr-2 text-blue-600" />
+                                Confirm Bulk Add
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowBulkAddConfirm(false);
+                                    setPendingBulkAdd(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="mb-6">
+                            <p className="text-gray-600">
+                                Are you sure you want to add {bulkAddItems.length} part(s)?
+                            </p>
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowBulkAddConfirm(false);
+                                    setPendingBulkAdd(null);
+                                }}
+                                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmBulkAdd}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Confirm Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Stock Settings Modal */}
