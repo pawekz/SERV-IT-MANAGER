@@ -437,7 +437,7 @@ const RealTimeStatus = () => {
                         )}
 
                         {/* Diagnostics & Observations Card */}
-                        {ticketDetails && (ticketDetails.reportedIssue || ticketDetails.observations) && (
+                        {ticketDetails && (
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 transition-all duration-300 hover:shadow-md">
                                 <div className="flex items-center gap-2 mb-4">
                                     <ClipboardCheck className="text-green-600" size={20} />
@@ -449,12 +449,12 @@ const RealTimeStatus = () => {
                                         <p className="text-gray-900 mt-1 whitespace-pre-wrap">{ticketDetails.reportedIssue}</p>
                                     </div>
                                 )}
-                                {ticketDetails.observations && (
-                                    <div>
-                                        <span className="text-sm font-medium text-gray-500">Technician Observations</span>
-                                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">{ticketDetails.observations}</p>
-                                    </div>
-                                )}
+                                <div>
+                                    <span className="text-sm font-medium text-gray-500">Technician Observations</span>
+                                    <p className={`mt-1 whitespace-pre-wrap text-sm ${ticketDetails.observations ? "text-gray-900" : "text-gray-500 italic"}`}>
+                                        {ticketDetails.observations?.trim() || "Technician has not added observations yet."}
+                                    </p>
+                                </div>
                             </div>
                         )}
 

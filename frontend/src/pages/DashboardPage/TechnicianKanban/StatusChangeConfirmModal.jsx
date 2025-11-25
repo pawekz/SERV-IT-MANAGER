@@ -1,12 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Spinner from "../../../components/Spinner/Spinner.jsx";
 
 const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onCancel, ticketNumber, loading }) => {
   if (!isOpen) return null;
 
   const requirePhotos = toStatus === "READY_FOR_PICKUP";
+  const needsObservation = fromStatus === "DIAGNOSING" && toStatus === "AWAITING_PARTS";
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState(null);
+  const [observationText, setObservationText] = useState("");
+  const [observationError, setObservationError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPhotos([]);
+      setError(null);
+      setObservationText("");
+      setObservationError("");
+    }
+  }, [isOpen]);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -24,22 +36,50 @@ const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onC
       setError("Please upload at least 1 photo.");
       return;
     }
-    onConfirm(photos);
+    if (needsObservation && !observationText.trim()) {
+      setObservationError("Please add a technician observation before moving this ticket.");
+      return;
+    }
+    onConfirm({ photos, observation: observationText.trim() || undefined });
   };
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6">
-        <h2 className="text-lg font-semibold mb-4">Confirm Status Change</h2>
-        <p className="mb-4 text-sm text-gray-700">
-          Are you sure you want to move ticket <span className="font-medium">{ticketNumber}</span> from
-          <span className="font-semibold mx-1">{fromStatus}</span> to
-          <span className="font-semibold mx-1">{toStatus}</span>?
+      <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-lg p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Confirm Status Change</h2>
+          {ticketNumber && <span className="text-xs font-medium text-gray-500">Ticket #{ticketNumber}</span>}
+        </div>
+
+        <p className="text-sm text-gray-700 leading-relaxed">
+          Confirm moving this ticket from <span className="font-semibold">{fromStatus?.replace(/_/g, " ")}</span> to{" "}
+          <span className="font-semibold">{toStatus?.replace(/_/g, " ")}</span>. This action updates the customer&apos;s real-time view.
         </p>
-        {toStatus === "AWAITING_PARTS" && (
-          <p className="mb-4 text-xs text-amber-600">
-            Reminder: prepare a quotation with Option A (Recommended) and Option B (Alternative) immediately after this move so the customer can approve it.
-          </p>
+
+        {needsObservation && (
+          <div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="technician-observation" className="text-sm font-semibold text-gray-900">
+                Technician observation
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+              <span className="text-xs text-gray-500">Visible to customer</span>
+            </div>
+            <textarea
+              id="technician-observation"
+              className={`mt-2 w-full rounded-lg border ${observationError ? "border-red-500" : "border-gray-200"} p-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500`}
+              rows={5}
+              value={observationText}
+              onChange={(e) => {
+                setObservationText(e.target.value);
+                if (e.target.value.trim()) {
+                  setObservationError("");
+                }
+              }}
+              placeholder="Summarize the diagnosis and next steps so the customer knows why parts are needed."
+            />
+            {observationError && <p className="mt-2 text-xs text-red-600">{observationError}</p>}
+          </div>
         )}
 
         {requirePhotos && (
@@ -56,7 +96,20 @@ const StatusChangeConfirmModal = ({ isOpen, fromStatus, toStatus, onConfirm, onC
           </>
         )}
 
-        <div className="flex justify-end gap-3">
+        {toStatus === "AWAITING_PARTS" && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="font-semibold text-amber-800">Quotation Prep Reminder</p>
+            <p className="mt-1">
+              Prepare quotations immediately after moving this ticket:
+            </p>
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              <li>Option A – Recommended parts & labor</li>
+              <li>Option B – Alternative parts for customer choice</li>
+            </ul>
+          </div>
+        )}
+
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
           <button
             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
             onClick={onCancel}
