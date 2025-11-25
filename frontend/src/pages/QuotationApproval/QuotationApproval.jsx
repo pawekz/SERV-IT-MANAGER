@@ -166,11 +166,8 @@ const QuotationApproval = () => {
           setProcessing(false);
           return;
         }
-        await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
-          params: { customerSelection: String(selectedPartId) },
-          headers: {
-            'Content-Type': 'application/json',
-          },
+        await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, {
+          customerSelection: String(selectedPartId),
         });
         setToast({ show: true, message: "Quotation approved successfully. Ticket status updated to REPAIRING.", type: "success" });
         setQuotation(prev => ({ ...prev, status: "APPROVED", customerSelection: selectedPartId }));

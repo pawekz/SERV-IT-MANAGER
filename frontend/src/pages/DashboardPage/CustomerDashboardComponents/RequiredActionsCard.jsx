@@ -109,11 +109,8 @@ const RequiredActionsCard = ({ pendingQuotations = [], loading = false, onDecisi
           setProcessing(false);
           return;
         }
-        await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, null, {
-          params: { customerSelection: String(selectedPartId) },
-          headers: {
-            'Content-Type': 'application/json',
-          },
+        await api.patch(`/quotation/approveQuotation/${activeAction.quotation.quotationId}`, {
+          customerSelection: String(selectedPartId),
         });
         setToast({ show: true, message: 'Quotation approved successfully. Ticket status updated to REPAIRING.', type: 'success' });
         setModalOpen(false);

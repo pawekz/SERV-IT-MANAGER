@@ -226,11 +226,8 @@ const RepairQueue = () => {
                     setQuotationModalLoading(false);
                     return;
                 }
-                await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, null, {
-                    params: { customerSelection: String(selectedPartId) },
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                await api.patch(`/quotation/approveQuotation/${quotation.quotationId}`, {
+                    customerSelection: String(selectedPartId),
                 });
                 showToast('Quotation approved successfully. Ticket status updated to REPAIRING.', 'success');
                 
