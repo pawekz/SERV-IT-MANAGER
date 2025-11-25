@@ -69,7 +69,7 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
             setOtpDigits(["", "", "", "", "", ""]); // Reset OTP digits when modal is closed
         } else {
             // Focus the first input when modal becomes visible
-            if(inputsRef.current[0]) {
+            if (inputsRef.current[0]) {
                 inputsRef.current[0].focus();
             }
         }
@@ -137,14 +137,14 @@ const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldo
 
 // Forgot Password Modal
 const ForgotPasswordModal = ({
-                                 visible,
-                                 onClose,
-                                 onSend,
-                                 loading,
-                                 error,
-                                 email,
-                                 setEmail
-                             }) => {
+    visible,
+    onClose,
+    onSend,
+    loading,
+    error,
+    email,
+    setEmail
+}) => {
     if (!visible) return null;
     return (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
@@ -195,16 +195,16 @@ const ForgotPasswordModal = ({
 
 // New Password Modal
 const NewPasswordModal = ({
-                              visible,
-                              onClose,
-                              onSubmit,
-                              loading,
-                              error,
-                              password,
-                              setPassword,
-                              confirmPassword,
-                              setConfirmPassword
-                          }) => {
+    visible,
+    onClose,
+    onSubmit,
+    loading,
+    error,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword
+}) => {
     if (!visible) return null;
 
     return (
@@ -338,7 +338,7 @@ const LoginPage = () => {
     const handleTabSwitch = (tab) => {
         setActiveTab(tab);
         setError(''); // Clear any existing errors when switching tabs
-        
+
         // Navigate to the appropriate URL based on the selected tab
         if (tab === 'staff') {
             navigate('/login/staff');
@@ -409,7 +409,11 @@ const LoginPage = () => {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
+            let errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
+            if (errorMessage === 'Incorrect password') {
+                errorMessage = 'Incorrect credentials, please try again';
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -600,21 +604,19 @@ const LoginPage = () => {
                 <div className="flex">
                     <button
                         onClick={() => handleTabSwitch('customer')}
-                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                            activeTab === 'customer'
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${activeTab === 'customer'
                                 ? 'bg-white text-gray-800 border-b-2 border-[#2563eb]'
                                 : 'bg-gray-100 text-gray-600 hover:text-gray-800'
-                        }`}
+                            }`}
                     >
                         Customer Login
                     </button>
                     <button
                         onClick={() => handleTabSwitch('staff')}
-                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                            activeTab === 'staff'
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${activeTab === 'staff'
                                 ? 'bg-white text-gray-800 border-b-2 border-[#2563eb]'
                                 : 'bg-gray-100 text-gray-600 hover:text-gray-800'
-                        }`}
+                            }`}
                     >
                         Staff Login
                     </button>
