@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { HelpCircle, Package } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api from '../../config/ApiConfig';
@@ -38,6 +38,7 @@ const PartPhoto = ({ partId, photoUrl }) => {
 };
 
 const QuotationApproval = () => {
+  const navigate = useNavigate();
   const { ticketNumber } = useParams();
   const [quotation, setQuotation] = useState(null);
   const [parts, setParts] = useState([]);
@@ -114,8 +115,14 @@ const QuotationApproval = () => {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center text-red-600 font-medium">
-          {error}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+          <p className="text-red-600 font-medium mb-4">{error}</p>
+          <button
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md shadow"
+            onClick={() => navigate("/realtimestatus", { state: { ticketNumber } })}
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
