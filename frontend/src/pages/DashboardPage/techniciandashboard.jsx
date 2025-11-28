@@ -1,6 +1,6 @@
 import Sidebar from "../../components/SideBar/Sidebar.jsx"
 import KanbanBoard from "./TechnicianKanban/KanbanBoard.jsx"
-import {User, ClipboardPlus, PackageCheck, X, Clock, Plus, AlertTriangle} from "lucide-react";
+import {User, ClipboardPlus, PackageCheck, X, Clock, Plus, AlertTriangle, ChevronLeft, ChevronRight} from "lucide-react";
 import NotificationBell from "../../components/Notifications/NotificationBell.jsx";
 import { useEffect, useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
@@ -43,6 +43,9 @@ const TechnicianDashboard = () => {
 
     // New state for low stock
     const [lowStock, setLowStock] = useState([]);
+    // Pagination state for low stock
+    const [lowStockPage, setLowStockPage] = useState(0);
+    const itemsPerPageLowStock = 5;
 
 
     const navigate = useNavigate();
@@ -299,6 +302,14 @@ const TechnicianDashboard = () => {
         setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev));
     };
 
+    // Low stock pagination functions
+    const lowStockTotalPages = Math.ceil(lowStock.length / itemsPerPageLowStock);
+    const lowStockPrevPage = () => setLowStockPage((p) => Math.max(0, p - 1));
+    const lowStockNextPage = () => setLowStockPage((p) => Math.min(lowStockTotalPages - 1, p + 1));
+    const lowStockStartIndex = lowStockPage * itemsPerPageLowStock;
+    const lowStockEndIndex = lowStockStartIndex + itemsPerPageLowStock;
+    const currentLowStockItems = lowStock.slice(lowStockStartIndex, lowStockEndIndex);
+
     return (
         <div className="flex min-h-screen flex-col md:flex-row">
             {/* Custom Sidebar Component */}
@@ -410,34 +421,76 @@ const TechnicianDashboard = () => {
                     <KanbanBoard />
 
                     <div className="gap-4 md:gap-6">
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="bg-white p-6 rounded-lg shadow-sm relative">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><AlertTriangle size={18} className="text-red-600" /> Low-Stock Parts</h3>
+                            
+                            {/* Pagination controls in the top-right corner */}
+                            {lowStock.length > 0 && (
+                                <div className="absolute top-3 right-3 flex items-center space-x-2">
+                                    <button
+                                        onClick={lowStockPrevPage}
+                                        disabled={lowStockPage <= 0}
+                                        aria-label="Previous page"
+                                        className={`p-1 rounded border bg-white hover:bg-gray-100 text-gray-700 ${lowStockPage <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={lowStockNextPage}
+                                        disabled={lowStockTotalPages > 0 && lowStockPage >= lowStockTotalPages - 1}
+                                        aria-label="Next page"
+                                        className={`p-1 rounded border bg-white hover:bg-gray-100 text-gray-700 ${lowStockTotalPages > 0 && lowStockPage >= lowStockTotalPages - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+
                             {lowStock.length === 0 ? (
                                 <div className="text-sm text-gray-500">All parts are above threshold.</div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-gray-50 text-left">
-                                                <th className="px-3 py-2">Part Number</th>
-                                                <th className="px-3 py-2">Name</th>
-                                                <th className="px-3 py-2">Available</th>
-                                                <th className="px-3 py-2">Threshold</th>
-                                                <th className="px-3 py-2">Priority</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {lowStock.slice(0,5).map(item => (
-                                                <tr key={item.partNumber} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/inventory?search=${encodeURIComponent(item.partNumber)}`)}>
-                                                    <td className="px-3 py-2 font-medium text-gray-800">{item.partNumber}</td>
-                                                    <td className="px-3 py-2 text-gray-700">{item.partName}</td>
-                                                    <td className="px-3 py-2 text-gray-700">{item.currentAvailableStock}</td>
-                                                    <td className="px-3 py-2 text-gray-700">{item.lowStockThreshold}</td>
-                                                    <td className="px-3 py-2 text-gray-700">{item.priorityLevel}</td>
+                                <div>
+                                    <div className="h-[252px] overflow-y-auto overflow-x-auto">
+                                        <table className="min-w-full text-sm">
+                                            <thead className="sticky top-0 bg-gray-50">
+                                                <tr className="text-left">
+                                                    <th className="px-3 py-2">Part Number</th>
+                                                    <th className="px-3 py-2">Name</th>
+                                                    <th className="px-3 py-2">Available</th>
+                                                    <th className="px-3 py-2">Threshold</th>
+                                                    <th className="px-3 py-2">Priority</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody
+                                                key={`${lowStockPage}-${currentLowStockItems.length}`}
+                                                className="divide-y divide-gray-200 animate-fade-in"
+                                            >
+                                                {currentLowStockItems.map(item => (
+                                                    <tr key={item.partNumber} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/inventory?search=${encodeURIComponent(item.partNumber)}`)}>
+                                                        <td className="px-3 py-2 font-medium text-gray-800">{item.partNumber}</td>
+                                                        <td className="px-3 py-2 text-gray-700">{item.partName}</td>
+                                                        <td className="px-3 py-2 text-gray-700">{item.currentAvailableStock}</td>
+                                                        <td className="px-3 py-2 text-gray-700">{item.lowStockThreshold}</td>
+                                                        <td className="px-3 py-2 text-gray-700">{item.priorityLevel}</td>
+                                                    </tr>
+                                                ))}
+                                                {/* Fill remaining space to maintain consistent height */}
+                                                {currentLowStockItems.length < itemsPerPageLowStock && Array.from({ length: itemsPerPageLowStock - currentLowStockItems.length }).map((_, idx) => (
+                                                    <tr key={`placeholder-${idx}`} className="opacity-0 pointer-events-none" aria-hidden="true">
+                                                        <td className="px-3 py-2">&nbsp;</td>
+                                                        <td className="px-3 py-2">&nbsp;</td>
+                                                        <td className="px-3 py-2">&nbsp;</td>
+                                                        <td className="px-3 py-2">&nbsp;</td>
+                                                        <td className="px-3 py-2">&nbsp;</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {/* Optional page indicator at bottom */}
+                                    {lowStockTotalPages > 0 && (
+                                        <div className="mt-4 text-sm text-gray-500 text-right">Page {lowStockPage + 1} of {lowStockTotalPages}</div>
+                                    )}
                                 </div>
                             )}
                         </div>
