@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import TermsEditor from "../TermsEditor/TermsEditor.jsx";
+import TOCModal from "../../components/TOCModal/TOCModal.jsx";
 import { X } from "lucide-react";
 import Toast from "../../components/Toast/Toast.jsx"; // Import Toast
 
@@ -297,7 +297,7 @@ const SignatureCapturePad = ({
                             Terms & Conditions
                         </h2>
                         <div className="max-h-[60vh] overflow-y-auto border border-gray-100 rounded-lg p-6 bg-gray-50">
-                            <TermsEditor />
+                            <TOCModal />
                         </div>
                     </div>
                 </div>
