@@ -18,6 +18,11 @@ const statusChipClasses = (statusRaw) => {
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
+const formatStatusText = (status) => {
+    if (!status) return status;
+    return status.toString().replace(/_/g, ' ');
+};
+
 function TicketImage({ path, alt, className }) {
     const { data: src, isLoading } = useRepairPhoto(path);
     if (isLoading) {
@@ -53,6 +58,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
     const ticketId = ticket?.repairTicketId || ticket?.id;
     const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket?.repairPhotosUrls]);
+    const afterImages = useMemo(() => ticket?.afterRepairPhotosUrls || [], [ticket?.afterRepairPhotosUrls]);
     const queryClient = useQueryClient();
 
     // Reset issue expansion when the ticket changes
@@ -113,11 +119,14 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     }, [isOpen, ticket, statusVal, ticketId]);
 
     useEffect(() => {
-        if (!isOpen || !images.length) return;
+        if (!isOpen) return;
         images.forEach((url) => {
             prefetchRepairPhoto(queryClient, url);
         });
-    }, [images, isOpen, queryClient]);
+        afterImages.forEach((url) => {
+            prefetchRepairPhoto(queryClient, url);
+        });
+    }, [images, afterImages, isOpen, queryClient]);
 
     if (!isOpen || !ticket) return null;
 
@@ -127,10 +136,11 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     // Technician name (fall back to a few common ticket properties)
     const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
 
+    const allImages = useMemo(() => [...images, ...afterImages], [images, afterImages]);
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
-    const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? images.length - 1 : prev - 1)); };
-    const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === images.length - 1 ? 0 : prev + 1)); };
+    const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? allImages.length - 1 : prev - 1)); };
+    const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === allImages.length - 1 ? 0 : prev + 1)); };
 
     // Download PDF handler
     const handleDownloadPdf = async () => {
@@ -159,7 +169,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 flex-wrap">
                                 <h2 className="text-xl font-semibold tracking-tight text-gray-900">Ticket #{ticket.ticketNumber}</h2>
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{statusVal}</span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{formatStatusText(statusVal)}</span>
                             </div>
 
                             <p className="text-xs text-gray-500">Detailed repair ticket overview</p>
@@ -243,7 +253,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
 
                             <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400" /> Repair Photos</h3>
+                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400" /> Before Repair Photos</h3>
                                     {images.length > 0 && (
                                         <span className="text-[11px] text-gray-500">{images.length} photo{images.length > 1 ? 's' : ''}</span>
                                     )}
@@ -251,7 +261,26 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                 <div className="flex flex-wrap gap-3">
                                     {images.length > 0 ? images.map((url, idx) => (
                                         <button key={idx} type="button" onClick={() => openImageModal(idx)} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40">
-                                            <TicketImageThumb path={url} alt={`Repair Photo ${idx + 1}`} />
+                                            <TicketImageThumb path={url} alt={`Before Repair Photo ${idx + 1}`} />
+                                            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                        </button>
+                                    )) : (
+                                        <span className="text-xs text-gray-400">No photos</span>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><User size={14} className="text-gray-400" /> After Repair Photos</h3>
+                                    {afterImages.length > 0 && (
+                                        <span className="text-[11px] text-gray-500">{afterImages.length} photo{afterImages.length > 1 ? 's' : ''}</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    {afterImages.length > 0 ? afterImages.map((url, idx) => (
+                                        <button key={idx} type="button" onClick={() => openImageModal(images.length + idx)} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#25D482]/40">
+                                            <TicketImageThumb path={url} alt={`After Repair Photo ${idx + 1}`} />
                                             <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                         </button>
                                     )) : (
@@ -267,8 +296,8 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Summary</h4>
                                 <ul className="text-[13px] space-y-2 text-gray-600">
                                     <li className="flex justify-between"><span>Ticket #</span><span className="font-medium text-gray-900">{ticket.ticketNumber}</span></li>
-                                    <li className="flex justify-between"><span>Status</span><span className="font-medium text-gray-900">{statusVal}</span></li>
-                                    <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length}</span></li>
+                                    <li className="flex justify-between"><span>Status</span><span className="font-medium text-gray-900">{formatStatusText(statusVal)}</span></li>
+                                    <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length + afterImages.length}</span></li>
                                 </ul>
                             </div>
 
@@ -319,11 +348,11 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                         </button>
                         <div className="relative flex items-center justify-center">
                             <TicketImage
-                                path={images[currentImageIdx]}
-                                alt={`Repair Photo ${currentImageIdx + 1}`}
+                                path={allImages[currentImageIdx]}
+                                alt={`Photo ${currentImageIdx + 1}`}
                                 className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
                             />
-                            {images.length > 1 && (
+                            {allImages.length > 1 && (
                                 <>
                                     <button
                                         onClick={goLeft}
@@ -340,7 +369,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                         <ChevronRight size={24} />
                                     </button>
                                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                                        {images.map((_, idx) => (
+                                        {allImages.map((_, idx) => (
                                             <span
                                                 key={idx}
                                                 className={`inline-block w-2.5 h-2.5 rounded-full cursor-pointer transition-all ${idx === currentImageIdx ? 'bg-white scale-125' : 'bg-gray-400/70 hover:bg-gray-300/80'}`}

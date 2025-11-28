@@ -142,18 +142,41 @@ public class RepairTicketService {
             repairTicket.setTicketNumber(req.getTicketNumber());
 
             AtomicInteger counter = new AtomicInteger(1);
-            if (req.getRepairPhotos() != null) {
-                repairTicket.setRepairPhotos(req.getRepairPhotos().stream().map(photo -> {
+            if (req.getRepairPhotos() != null && !req.getRepairPhotos().isEmpty()) {
+                List<RepairPhotoEntity> photoEntities = new java.util.ArrayList<>();
+                for (MultipartFile photo : req.getRepairPhotos()) {
+                    if (photo == null || photo.isEmpty()) {
+                        logger.warn("Skipping null or empty photo for ticket: {}", req.getTicketNumber());
+                        continue;
+                    }
                     try {
-                        String path = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), counter.getAndIncrement());
+                        if (photo.getSize() == 0) {
+                            logger.warn("Skipping empty photo (size 0) for ticket: {}", req.getTicketNumber());
+                            continue;
+                        }
+                        int photoIndex = counter.getAndIncrement();
+                        String path = fileUtil.saveRepairPhoto(photo, repairTicket.getTicketNumber(), photoIndex);
                         RepairPhotoEntity rp = new RepairPhotoEntity();
                         rp.setPhotoUrl(path);
                         rp.setRepairTicket(repairTicket);
-                        return rp;
+                        photoEntities.add(rp);
+                        logger.info("Successfully saved repair photo {} for ticket: {}", photoIndex, req.getTicketNumber());
+                    } catch (IllegalArgumentException e) {
+                        logger.error("Invalid photo format for ticket {}: {}", req.getTicketNumber(), e.getMessage());
+                        throw new IllegalArgumentException("Invalid photo format: " + e.getMessage(), e);
                     } catch (IOException e) {
-                        throw new RuntimeException("Failed to save repair photo", e);
+                        logger.error("IO error saving repair photo for ticket {}: {}", req.getTicketNumber(), e.getMessage(), e);
+                        throw new RuntimeException("Failed to save repair photo: " + e.getMessage(), e);
+                    } catch (Exception e) {
+                        logger.error("Unexpected error saving repair photo for ticket {}: {}", req.getTicketNumber(), e.getMessage(), e);
+                        throw new RuntimeException("Failed to save repair photo: " + e.getMessage(), e);
                     }
-                }).collect(Collectors.toList()));
+                }
+                if (photoEntities.isEmpty()) {
+                    logger.warn("No valid photos were processed for ticket: {}", req.getTicketNumber());
+                    throw new IllegalArgumentException("At least one valid repair photo is required");
+                }
+                repairTicket.setRepairPhotos(photoEntities);
             }
 
             RepairTicketEntity saved = repairTicketRepository.save(repairTicket);

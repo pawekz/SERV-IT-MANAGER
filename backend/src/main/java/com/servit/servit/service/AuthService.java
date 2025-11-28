@@ -100,19 +100,19 @@ public class AuthService {
 
     private void validateCustomerAccess(UserEntity user) {
         if (user.getRole() != UserRoleEnum.CUSTOMER) {
-            throw new BadCredentialsException("Access denied: not a customer account");
+            throw new BadCredentialsException("User does not exist");
         }
     }
 
     private void validateStaffAccess(UserEntity user) {
         if (user.getRole() == UserRoleEnum.CUSTOMER) {
-            throw new BadCredentialsException("Access denied: not a staff account");
+            throw new BadCredentialsException("User does not exist");
         }
     }
 
     private void validatePassword(String rawPassword, String encodedPassword, String username) {
         if (!encoder.matches(rawPassword, encodedPassword)) {
-            throw new BadCredentialsException("Incorrect password");
+            throw new BadCredentialsException("Incorrect username or password");
         }
     }
 

@@ -1060,17 +1060,17 @@ const Inventory = () => {
     }, [selectedCategory, filters]);
 
     return (
-        <div className="flex min-h-screen flex-col md:flex-row font-['Poppins',sans-serif]">
+        <div className="flex min-h-screen w-full overflow-x-hidden flex-col md:flex-row font-['Poppins',sans-serif]">
             {/* Navigation Sidebar */}
-            <div className="w-full md:w-[250px] h-auto md:h-screen">
+            <div className="w-full md:w-[250px] flex-shrink-0 h-auto md:h-screen">
                 <Sidebar activePage={'inventory'}/>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-gray-50 flex">
+            <div className="flex-1 bg-gray-50 flex min-w-0 overflow-x-hidden">
             {/* Main Content */}
-                <div className="flex-1 flex flex-col min-w-0">
-                    <div className="px-4 md:px-6 lg:px-8 py-6 flex-1 overflow-y-auto">
+                <div className="flex-1 flex flex-col min-w-0 max-w-full">
+                    <div className="px-4 md:px-6 lg:px-8 py-6 flex-1 overflow-y-auto w-full">
                     {/* Header with enhanced controls */}
                         <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                         <div>
@@ -1183,9 +1183,9 @@ const Inventory = () => {
                     )}
 
                         {/* Search and View Controls */}
-                        <div className="flex gap-4 mb-6">
+                        <div className="flex flex-col xl:flex-row gap-4 mb-6 w-full">
                             {/* Main Table Area */}
-                            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                            <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col min-w-0 max-w-full overflow-hidden">
                                 <div className="p-4 border-b border-gray-100">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         {/* Search Bar */}
@@ -1391,7 +1391,7 @@ const Inventory = () => {
                         </div>
 
                             {/* Right Sidebar - Categories and Filters */}
-                            <div className="hidden lg:flex flex-col w-80 bg-white rounded-lg shadow-sm border border-gray-200 ml-4" style={{ height: 'calc(100vh - 200px)', maxHeight: 'calc(100vh - 200px)' }}>
+                            <div className="hidden lg:flex flex-col flex-shrink-0 lg:w-72 xl:w-80 bg-white rounded-lg shadow-sm border border-gray-200" style={{ height: 'calc(100vh - 200px)', maxHeight: 'calc(100vh - 200px)' }}>
                                 {/* Categories Panel */}
                                 <div className="overflow-y-auto border-b border-gray-200" style={{ height: '50%', maxHeight: '50%', flexShrink: 0 }}>
                                     <CategoryTree

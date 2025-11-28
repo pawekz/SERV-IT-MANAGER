@@ -87,10 +87,12 @@ const WarrantyRequestPage = () => {
             } else if (response.ok) {
                 const data = await response.json();
                 // Use split name fields directly
-                const processedData = data.map(w => ({
-                    ...w,
-                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
-                }));
+                const processedData = data
+                    .filter(w => w != null)
+                    .map(w => ({
+                        ...w,
+                        customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
+                    }));
                 setWarranty(processedData);
                 console.log("Warranties by email fetched successfully:", processedData);
             } else {
@@ -132,10 +134,14 @@ const WarrantyRequestPage = () => {
             } else if (response.ok) {
                 const data = JSON.parse(text);
                 // Use split name fields directly
-                const processedData = Array.isArray(data) ? data.map(w => ({
-                    ...w,
-                    customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
-                })) : data;
+                const processedData = Array.isArray(data) 
+                    ? data
+                        .filter(w => w != null)
+                        .map(w => ({
+                            ...w,
+                            customerName: (w.customerFirstName || '') + ' ' + (w.customerLastName || '')
+                        })) 
+                    : data;
                 setWarranty(processedData);
                 console.log("Warranties fetched successfully:", processedData);
             } else {
@@ -277,11 +283,15 @@ const WarrantyRequestPage = () => {
     };
 
     const applyFilters = (list) => {
-        let filtered = list.slice();
+        // Filter out null/undefined entries first
+        let filtered = list.filter(w => w != null).slice();
         
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(w => {
+                // Additional null check for safety
+                if (!w) return false;
+                
                 const serial = (w.serialNumber || '').toString().toLowerCase();
                 const device = (w.deviceName || '').toString().toLowerCase();
                 const firstName = (w.customerFirstName || '').toString().toLowerCase();
@@ -297,6 +307,8 @@ const WarrantyRequestPage = () => {
 
         if (sortConfig.key) {
             filtered.sort((a, b) => {
+                // Null checks for sorting
+                if (!a || !b) return 0;
                 const aVal = a[sortConfig.key] || '';
                 const bVal = b[sortConfig.key] || '';
                 if (sortConfig.direction === 'asc') {
@@ -363,7 +375,9 @@ const WarrantyRequestPage = () => {
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                        {displayedWarranties.map((warrantyItem, index) => (
+                        {displayedWarranties
+                            .filter(warrantyItem => warrantyItem != null)
+                            .map((warrantyItem, index) => (
                             <tr 
                                 key={index}
                                 className="hover:bg-gray-50 focus-within:bg-gray-50 cursor-pointer transition-colors"
@@ -371,17 +385,17 @@ const WarrantyRequestPage = () => {
                                 tabIndex={0}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(warrantyItem); }}
                             >
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerFirstName || '—'}</td>
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.customerLastName || '—'}</td>
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.deviceName || '—'}</td>
-                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem.serialNumber || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem?.customerFirstName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem?.customerLastName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem?.deviceName || '—'}</td>
+                                <td className="px-5 py-3 whitespace-nowrap">{warrantyItem?.serialNumber || '—'}</td>
                                 <td className="px-5 py-3">
                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                        warrantyItem.status === "DENIED" ? "bg-yellow-100 text-yellow-800" :
-                                        warrantyItem.status === "WARRANTY_REPLACEMENT_COMPLETED" ? "bg-green-100 text-green-800" :
+                                        warrantyItem?.status === "DENIED" ? "bg-yellow-100 text-yellow-800" :
+                                        warrantyItem?.status === "WARRANTY_REPLACEMENT_COMPLETED" ? "bg-green-100 text-green-800" :
                                         "bg-blue-100 text-blue-800"
                                     }`}>
-                                        {warrantyItem.status?.replace(/_/g, " ") || 'N/A'}
+                                        {warrantyItem?.status?.replace(/_/g, " ") || 'N/A'}
                                     </span>
                                 </td>
                                 <td className="px-5 py-3">
@@ -672,7 +686,9 @@ const WarrantyRequestPage = () => {
                                                 ) : (
                                                     <>
                                                         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
-                                                            {displayedWarranties.map((request, index) => (
+                                                            {displayedWarranties
+                                                                .filter(request => request != null)
+                                                                .map((request, index) => (
                                                                 <div
                                                                     key={index}
                                                                     onClick={() => handleCardClick(request)}
@@ -680,43 +696,44 @@ const WarrantyRequestPage = () => {
                                                                                 ${role !== "customer" ? "bg-[rgba(37,99,235,0.05)] border-[#2563eb]" : "bg-[rgba(51,228,7,0.05)] border-[#33e407]"}`
                                                                     }
                                                                 >
-                                                                    <div className="mr-4 flex items-start">{getProductIcon(request.deviceName)}</div>
+                                                                    <div className="mr-4 flex items-start">{getProductIcon(request?.deviceName)}</div>
                                                                     <div>
                                                                         <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                                                            {request.warrantyNumber}
+                                                                            {request?.warrantyNumber || 'N/A'}
                                                                         </h2>
                                                                         <p className="text-sm text-gray-600">
-                                                                            <strong>Device:</strong> {request.deviceName}
+                                                                            <strong>Device:</strong> {request?.deviceName || '—'}
                                                                         </p>
                                                                         <p className="text-sm text-gray-600">
-                                                                            <strong>Customer:</strong> {(request.customerFirstName || '') + ' ' + (request.customerLastName || '')}
+                                                                            <strong>Customer:</strong> {(request?.customerFirstName || '') + ' ' + (request?.customerLastName || '')}
                                                                         </p>
                                                                         {role === "customer" ? (
                                                                             <p
                                                                                 className={`text-sm font-medium mt-1 ${
-                                                                                    request.status === "CHECKED_IN" ? "text-green-600" : "text-yellow-600"
+                                                                                    request?.status === "CHECKED_IN" ? "text-green-600" : "text-yellow-600"
                                                                                 }`}
                                                                             >
-                                                                                Status: {request.status?.replace(/_/g, " ")}
+                                                                                Status: {request?.status?.replace(/_/g, " ") || 'N/A'}
                                                                             </p>
                                                                         ) : (
                                                                             <>
                                                                                 <span className="text-sm font-semibold text-gray-600 pr-2">Status:</span>
                                                                                 <select
                                                                                     onClick={(e) => e.stopPropagation()}
-                                                                                    onChange={(e) => handleStatusChange(e, request.status, request)}
-                                                                                    value={request.status}
+                                                                                    onChange={(e) => handleStatusChange(e, request?.status, request)}
+                                                                                    value={request?.status || ''}
                                                                                     className="text-xs px-2 border rounded-md bg-[rgba(51,228,7,0.05)] border-[0] text-gray-800 w-32 h-7"
                                                                                 >
                                                                                     {STATUS_OPTIONS
                                                                                         .filter((status, index) => {
-                                                                                            const currentIndex = STATUS_OPTIONS.indexOf(request.status);
-                                                                                            if (status === request.status) return true;
+                                                                                            const currentStatus = request?.status || '';
+                                                                                            const currentIndex = STATUS_OPTIONS.indexOf(currentStatus);
+                                                                                            if (status === currentStatus) return true;
                                                                                             if (status === "DENIED") return true;
-                                                                                            if (request.status === "CHECKED_IN") {
+                                                                                            if (currentStatus === "CHECKED_IN") {
                                                                                                 return status === "ITEM_RETURNED";
                                                                                             }
-                                                                                            if (request.status === "ITEM_RETURNED") {
+                                                                                            if (currentStatus === "ITEM_RETURNED") {
                                                                                                 const statusIndex = STATUS_OPTIONS.indexOf(status);
                                                                                                 return statusIndex >= currentIndex && (status === "ITEM_RETURNED" || role === "admin");
                                                                                             }

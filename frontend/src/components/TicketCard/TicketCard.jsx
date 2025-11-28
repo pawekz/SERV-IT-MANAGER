@@ -15,6 +15,11 @@ const statusChipClasses = (statusRaw) => {
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
+const formatStatusText = (status) => {
+    if (!status) return status;
+    return status.toString().replace(/_/g, ' ');
+};
+
 function TicketImage({ path, alt }) {
     const { data: src, isLoading } = useRepairPhoto(path);
 
@@ -95,7 +100,7 @@ const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, custo
                     </>
                 )}
                 <div className="absolute top-2 left-2">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusChipClasses(displayStatus)}`}>{displayStatus}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusChipClasses(displayStatus)}`}>{formatStatusText(displayStatus)}</span>
                 </div>
             </div>
             <div className="flex flex-col gap-3 px-4 py-4">

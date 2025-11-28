@@ -65,10 +65,11 @@ const InitialSetupPage = () => {
 
     try {
       await api.patch('/user/register/onboard', formData);
-      // Success – keep modal visible briefly then redirect to staff login
+      window.dispatchEvent(new Event('initialSetupComplete'));
+      // Success – keep modal visible briefly then redirect to landing page
       timeoutRef.current = setTimeout(() => {
         setShowLoadingModal(false);
-        navigate('/login/staff');
+        navigate('/');
       }, 900);
     } catch (err) {
       // Hide modal and show error on failure

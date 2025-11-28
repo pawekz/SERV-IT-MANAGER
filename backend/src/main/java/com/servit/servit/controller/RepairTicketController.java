@@ -70,10 +70,31 @@ public class RepairTicketController {
     @PostMapping("/checkInRepairTicket")
     public ResponseEntity<?> checkInRepairTicket(@ModelAttribute CheckInRepairTicketRequestDTO req) {
         try {
+            if (req == null) {
+                logger.error("Check-in request is null");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is required");
+            }
+            if (req.getTicketNumber() == null || req.getTicketNumber().trim().isEmpty()) {
+                logger.error("Ticket number is missing in check-in request");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ticket number is required");
+            }
+            if (req.getRepairPhotos() == null || req.getRepairPhotos().isEmpty()) {
+                logger.error("Repair photos are missing for ticket: {}", req.getTicketNumber());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("At least one repair photo is required");
+            }
+            
             RepairTicketEntity ticket = repairTicketService.checkInRepairTicket(req);
+            logger.info("Successfully checked in repair ticket: {}", req.getTicketNumber());
             return ResponseEntity.status(HttpStatus.OK).body(ticket);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            logger.error("Validation error during check-in: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (RuntimeException e) {
+            logger.error("Runtime error during check-in: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to check in repair ticket: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during check-in: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
@@ -115,11 +136,9 @@ public class RepairTicketController {
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 String jwt = authorizationHeader.substring(7);
                 String extractedEmail = jwtUtil.extractAllClaims(jwt).get("email", String.class);
-                // Only use the extracted email if it looks like a real email address (contains '@')
                 if (extractedEmail != null && extractedEmail.contains("@")) {
                     email = extractedEmail.trim();
                 } else if (extractedEmail != null && !extractedEmail.isBlank()) {
-                    // If the token contains a username-like value (without '@'), try to map it via user repository to a real email.
                     String resolved = userRepository.findByUsername(extractedEmail).map(u -> u.getEmail()).orElse(extractedEmail);
                     if (resolved != null && resolved.contains("@")) {
                         email = resolved.trim();
@@ -265,7 +284,6 @@ public class RepairTicketController {
         }
     }
 
-    // this is the new endpoint for getting the files, the old one is still working (possible bug due to capturing only the first part of the path)
     @GetMapping("/files/{category}/{subfolder}/{filename:.+}")
     public ResponseEntity<Resource> getTicketFileV2(@PathVariable String category,
                                                     @PathVariable String subfolder,
@@ -342,7 +360,6 @@ public class RepairTicketController {
             @PageableDefault(size = 20) Pageable pageable,
             HttpServletRequest request) {
         try {
-            // Extract JWT token from Authorization header
             String authorizationHeader = request.getHeader("Authorization");
             if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
                 logger.warn("Missing or invalid Authorization header for getRepairTicketsByStatusPageableAssignedToTech");
@@ -350,14 +367,12 @@ public class RepairTicketController {
             }
             String jwt = authorizationHeader.substring(7);
 
-            // Extract email claim from JWT token (prefer full email). If token only contains username, try to resolve to full email via UserRepository.
             String email;
             try {
                 String extracted = jwtUtil.extractAllClaims(jwt).get("email", String.class);
                 if (extracted != null && extracted.contains("@")) {
                     email = extracted.trim();
                 } else if (extracted != null && !extracted.isBlank()) {
-                    // extracted looks like a username; try to resolve to email
                     email = userRepository.findByUsername(extracted)
                             .map(u -> u.getEmail())
                             .orElse(extracted);

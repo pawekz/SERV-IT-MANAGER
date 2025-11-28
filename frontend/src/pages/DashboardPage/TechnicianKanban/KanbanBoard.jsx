@@ -11,6 +11,7 @@ import Toast from "../../../components/Toast/Toast.jsx"
 const KanbanBoard = () => {
     // All tasks fetched from the backend
     const [tasks, setTasks] = useState([])
+    const [activeTaskId, setActiveTaskId] = useState(null)
 
     // Pending change info for modal confirmation
     const [pendingChange, setPendingChange] = useState(null) // { taskId, prevStatus, newStatus }
@@ -86,20 +87,36 @@ const KanbanBoard = () => {
         fetchTickets()
     }, [])
 
-    const updateTaskStatus = (taskId, newStatus) => {
+    const moveTask = (draggedId, targetId) => {
+        if (draggedId === targetId) return
         setTasks((prev) => {
-            const task = prev.find((t) => t.id === taskId)
-            if (!task || task.status === newStatus) return prev
-
-            // Optimistically update UI
-            const updated = prev.map((t) =>
-                t.id === taskId ? { ...t, status: newStatus } : t
-            )
-
-            setPendingChange({ taskId, prevStatus: task.status, newStatus })
+            const dragIndex = prev.findIndex((t) => t.id === draggedId)
+            const hoverIndex = prev.findIndex((t) => t.id === targetId)
+            if (dragIndex === -1 || hoverIndex === -1) return prev
+            if (prev[dragIndex].status !== prev[hoverIndex].status) return prev
+            const updated = [...prev]
+            const [removed] = updated.splice(dragIndex, 1)
+            updated.splice(hoverIndex, 0, removed)
             return updated
         })
     }
+
+    const updateTaskStatus = (taskId, newStatus) => {
+        let change = null
+        setTasks((prev) => {
+            const task = prev.find((t) => t.id === taskId)
+            if (!task || task.status === newStatus) return prev
+            change = { taskId, prevStatus: task.status, newStatus }
+            const filtered = prev.filter((t) => t.id !== taskId)
+            return [...filtered, { ...task, status: newStatus }]
+        })
+        if (change) {
+            setPendingChange(change)
+        }
+    }
+
+    const handleDragStart = (taskId) => setActiveTaskId(taskId)
+    const handleDragEnd = () => setActiveTaskId(null)
 
     const showToast = (message, type = "success") => setToast({ show: true, message, type })
     const closeToast = () => setToast({ ...toast, show: false })
@@ -190,10 +207,13 @@ const KanbanBoard = () => {
 
     return (
         <DndProvider backend={HTML5Backend}>
-            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm mb-6 md:mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Repair Queue</h3>
-                <div className="overflow-x-auto">
-                    <div className="flex gap-3 md:gap-4" style={{ minWidth: "800px" }}>
+            <div className="bg-gradient-to-b from-white to-gray-50 p-4 md:p-6 rounded-2xl shadow-lg mb-6 md:mb-8 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Repair Queue</h3>
+                    <span className="text-sm text-gray-500">{tasks.length} tickets</span>
+                </div>
+                <div className="overflow-x-auto pt-2 pb-2">
+                    <div className="flex gap-3 md:gap-4 transition-all duration-300" style={{ minWidth: "800px" }}>
                         {columns.map((column) => (
                             <KanbanColumn
                                 key={column.status}
@@ -201,6 +221,10 @@ const KanbanBoard = () => {
                                 status={column.status}
                                 tasks={getTasksByStatus(column.status)}
                                 onTaskDrop={updateTaskStatus}
+                                onReorder={moveTask}
+                                activeTaskId={activeTaskId}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
                             />
                         ))}
                         <StatusChangeConfirmModal
@@ -212,8 +236,6 @@ const KanbanBoard = () => {
                             onCancel={handleCancelChange}
                             loading={isUpdating}
                         />
-
-                        {/* Toast */}
                         <Toast show={toast.show} message={toast.message} type={toast.type} onClose={closeToast} />
                     </div>
                 </div>

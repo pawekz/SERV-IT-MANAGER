@@ -4,6 +4,13 @@ import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import api from '../../config/ApiConfig.jsx';
 
+const clearAuthContext = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('userData');
+};
+
 // Employee Onboarding Page – accessed via emailed link.
 const EmployeeSignUpPage = () => {
     const navigate = useNavigate();
@@ -23,6 +30,10 @@ const EmployeeSignUpPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [pwError, setPwError] = useState('');
     const [pwLoading, setPwLoading] = useState(false);
+
+    useEffect(() => {
+        clearAuthContext();
+    }, []);
 
     // Toast notification state
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });

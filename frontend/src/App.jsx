@@ -20,10 +20,8 @@ import NewRepair from "./pages/NewRepair/NewRepair.jsx";
 import AdminDashboard from "./pages/DashboardPage/AdminDashboard.jsx";
 import CustomerDashboard from "./pages/DashboardPage/CustomerDashboard.jsx";
 import Techniciandashboard from "./pages/DashboardPage/techniciandashboard.jsx";
-import MockUpUpdateStatusAndPushNotifications from "./pages/MockUpUpdateStatusAndPushNotifications/MockUpUpdateStatusAndPushNotifications";
 import { useEffect, useState } from "react";
 import HistoryPage from "./pages/History/HistoryPage.jsx";
-import FAQ from "./pages/FAQ/FAQ.jsx";
 import EmployeeSignUpPage from './pages/SignUpPage/EmployeeSignUpPage';
 import Quotation from './pages/QuotationBuilderPanel/InventoryAssignmentPanel.jsx'
 import InitialSetupPage from "./pages/InitialSetupPage/InitialSetupPage.jsx";
@@ -35,7 +33,6 @@ import Error404 from "./pages/ErrorPages/Error404";
 
 function AppContent() {
     const location = useLocation();
-    // Function to parse JWT token
     const parseJwt = (token) => {
         try {
             return JSON.parse(atob(token.split('.')[1]));
@@ -44,15 +41,12 @@ function AppContent() {
         }
     };
 
-    // Role-based route renderer
     const ProtectedRoute = ({ element, allowedRoles }) => {
-        // Check if logged in
         const token = localStorage.getItem('authToken');
         if (!token) {
             return <Navigate to="/login" />;
         }
 
-        // Check if role matches
         const decodedToken = parseJwt(token);
         if (!decodedToken || !allowedRoles.includes(decodedToken.role?.toLowerCase())) {
             return <Navigate to="/login" />;
@@ -61,7 +55,6 @@ function AppContent() {
         return element;
     };
 
-    // Dashboard component based on role
     const Dashboard = () => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -85,8 +78,7 @@ function AppContent() {
         }
     };
 
-    // Initial admin setup detection
-    const [needsSetup, setNeedsSetup] = useState(null); // null while loading
+    const [needsSetup, setNeedsSetup] = useState(null);
     useEffect(() => {
         const checkUserCount = async () => {
             try {
@@ -95,24 +87,26 @@ function AppContent() {
                     const count = res.data;
                     setNeedsSetup(count === 0);
                 } else {
-                    setNeedsSetup(false); // fallback to normal mode on error
+                    setNeedsSetup(false);
                 }
             } catch (e) {
                 setNeedsSetup(false);
             }
         };
-        // Only check user count once on initial app mount
         checkUserCount();
-    }, []); // Empty dependency array - runs only once on mount
+    }, []);
 
-    // Global event listener for token expiration
+    useEffect(() => {
+        const handleInitialSetupComplete = () => setNeedsSetup(false);
+        window.addEventListener('initialSetupComplete', handleInitialSetupComplete);
+        return () => window.removeEventListener('initialSetupComplete', handleInitialSetupComplete);
+    }, []);
+
     useEffect(() => {
         const handleTokenExpired = () => {
-            // Clear all auth data and application state
             localStorage.clear();
             sessionStorage.clear();
 
-            // Force redirect to login
             window.location.href = '/login';
         };
 
@@ -124,7 +118,6 @@ function AppContent() {
     }, []);
 
     if (needsSetup === null && location.pathname === "/") {
-        // Still checking the server – show spinner
         return (
             <div className="flex flex-col items-center justify-center h-screen gap-4">
                 <Spinner size="large" />
@@ -140,6 +133,7 @@ function AppContent() {
             ) : (
                 <>
                     {/* Public routes */}
+
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/employee-onboarding" element={<EmployeeSignUpPage />} />
@@ -153,20 +147,18 @@ function AppContent() {
                     } />
 
                     {/* Protected History route */}
+
                     <Route path="/history" element={
                         <ProtectedRoute element={<HistoryPage />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
 
                     {/* Single dashboard route that renders different components based on role */}
+
                     <Route path="/dashboard" element={
                         <ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
 
                     {/* Protected routes */}
-
-                    <Route path="/faq" element={
-                        <ProtectedRoute element={<FAQ />} allowedRoles={['customer', 'technician', 'admin']} />
-                    } />
 
                     <Route path="/accountinformation" element={
                         <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
@@ -211,17 +203,13 @@ function AppContent() {
                         <ProtectedRoute element={<NewRepair />} allowedRoles={['admin', 'technician']} />
                     } />
 
-                    <Route path="*" element={<Error404 />} />
-
-                    {/* Testing Pages */}
-
-                    <Route path="/test/mockup-status" element={
-                        <ProtectedRoute element={<MockUpUpdateStatusAndPushNotifications />} allowedRoles={['admin']} />
-                    } />
-
                     <Route path="/realtimestatus" element={
                         <ProtectedRoute element={<RealTimeStatus />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
+
+                    { /* 404 error page */ }
+
+                    <Route path="*" element={<Error404 />} />
 
 
                 </>

@@ -400,7 +400,7 @@ const ResolvedRepairs = () => {
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                     <td className="px-5 py-3">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>
-                                                {statusVal}
+                                                {statusVal.replace(/_/g, ' ')}
                                             </span>
                                     </td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
@@ -895,7 +895,7 @@ const ResolvedRepairs = () => {
 
                                     {/* Body */}
                                     {(() => {
-                                        const resolvedList = displayedTickets; // applyFilters already narrowed to resolved
+                                        const resolvedList = displayedTickets;
 
                                         if (resolvedList.length === 0) {
                                             return (

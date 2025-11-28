@@ -1,17 +1,40 @@
-import { useDrag } from "react-dnd";
+import { useRef } from "react";
+import { useDrag, useDrop } from "react-dnd";
 import { Smartphone, Laptop, Tablet, Monitor } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Reusable Kanban card representing a single repair ticket or task.
-// Extracted from the previous inline implementation for better reuse and readability.
-const KanbanCard = ({ task }) => {
+const KanbanCard = ({ task, onReorder, activeTaskId, onDragStart, onDragEnd, index }) => {
+  const ref = useRef(null);
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
-    item: { id: task.id, status: task.status },
+    item: () => {
+      onDragStart?.(task.id);
+      return { id: task.id, status: task.status, index };
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }));
+    end: () => onDragEnd?.(),
+  }), [task, index, onDragStart, onDragEnd]);
+
+  const [, drop] = useDrop({
+    accept: "task",
+    hover: (item, monitor) => {
+      if (!ref.current || item.id === task.id) return;
+      if (item.status !== task.status) return;
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      if (item.index < index && hoverClientY < hoverMiddleY) return;
+      if (item.index > index && hoverClientY > hoverMiddleY) return;
+      onReorder(item.id, task.id);
+      item.index = index;
+    },
+  });
+
+  drag(drop(ref));
 
   const getDeviceIcon = (deviceType) => {
     const type = (deviceType || "").toLowerCase();
@@ -29,26 +52,25 @@ const KanbanCard = ({ task }) => {
     }
   };
 
+  const isActive = activeTaskId === task.id;
+
   return (
     <div
-      ref={drag}
-      className="bg-white p-3 rounded-lg border-l-4 border-[#33e407] shadow-sm cursor-move"
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-      }}
+      ref={ref}
+      className={`group bg-white p-3 rounded-xl border border-gray-100 cursor-grab transition-all duration-300 ${isDragging ? "opacity-70 scale-[0.98]" : "hover:-translate-y-1"} ${isActive ? "ring-2 ring-[#2563eb]/30" : ""}`}
     >
-      <div className="flex">
-        <div className="w-12 h-12 bg-gray-200 rounded mr-3 flex items-center justify-center">
+      <div className="flex gap-3">
+        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#2563eb]/15 to-[#33e407]/15 flex items-center justify-center flex-shrink-0">
           {getDeviceIcon(task.deviceType)}
         </div>
-        <div className="flex-1">
-          <div className="font-medium text-sm">{task.title}</div>
-          <div className="text-xs text-gray-500">{task.ticketId}</div>
-          <div className="text-xs mt-1">{task.customer}</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm text-gray-800 truncate">{task.title}</div>
+          <div className="text-xs text-gray-500 mt-1">{task.ticketId}</div>
+          <div className="text-xs text-gray-600 mt-1 truncate">{task.customer}</div>
           {task.status === "AWAITING_PARTS" && (
             <Link
               to={`/quotation-builder/${encodeURIComponent(task.ticketId)}`}
-              className="inline-block mt-1 text-xs text-green-600 hover:underline"
+              className="inline-flex mt-2 text-[11px] font-semibold text-[#33e407] hover:text-[#2ab306] transition-colors"
             >
               Build Quotation
             </Link>
@@ -56,7 +78,7 @@ const KanbanCard = ({ task }) => {
           {task.status === "REPAIRING" && (
             <Link
               to={`/quotationviewer/${encodeURIComponent(task.ticketId)}?repairStatus=${task.status}`}
-              className="inline-block mt-1 text-xs text-blue-600 hover:underline"
+              className="inline-flex mt-2 text-[11px] font-semibold text-[#2563eb] hover:text-[#1d4dc6] transition-colors"
             >
               View Quotation
             </Link>

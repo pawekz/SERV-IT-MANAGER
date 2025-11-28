@@ -259,8 +259,8 @@ const InventoryTable = ({
 
     return (
         <>
-        <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="overflow-x-auto max-w-full">
+            <table className="w-full table-auto max-w-full">
                 <thead>
                     <tr className="bg-gray-50">
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -290,7 +290,7 @@ const InventoryTable = ({
                                 {/* Main Group Row */}
                                 <tr className="group transition-all duration-200 ease-in-out hover:bg-gray-50 border-l-4 border-blue-500 cursor-pointer" 
                                     onClick={() => onToggleGroupExpansion(item.partNumber)}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-normal break-words">
                                         <div className="flex items-center">
                                             <button
                                                 className="mr-3 p-1 hover:bg-gray-200 rounded-md transition-all duration-200 ease-in-out"
@@ -377,7 +377,7 @@ const InventoryTable = ({
                                             View details
                                         </button>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-normal break-words">
                                         <div className="flex flex-col">
                                             <div className="flex items-center mb-1">
                                                 <span className={`px-2 py-1 text-xs rounded-full ${item.availability?.color}`}>
@@ -389,7 +389,7 @@ const InventoryTable = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-normal break-words text-sm font-medium">
                                         <div className="flex space-x-3 items-center">
                                             {isAdmin && (
                                                 <div className="relative group">
@@ -432,7 +432,7 @@ const InventoryTable = ({
                                 {expandedGroups.has(item.partNumber) && item.allParts && (
                                     item.allParts.map((part, index) => (
                                         <tr key={`${item.partNumber}-${part.id}`} className="animate-in slide-in-from-top-1 duration-200 ease-in-out bg-gray-50 border-l-4 border-gray-300 hover:bg-gray-100 transition-colors duration-150">
-                                            <td className="px-6 py-3 whitespace-nowrap pl-12" colSpan="2">
+                                            <td className="px-6 py-3 whitespace-normal break-words pl-12" colSpan="2">
                                                 <div className="text-sm text-gray-700">
                                                     <span className="font-medium">Item #{index + 1}</span>
                                                     <div className="text-xs text-gray-500">ID: {part.id}</div>
@@ -451,7 +451,7 @@ const InventoryTable = ({
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-3 whitespace-nowrap">
+                                            <td className="px-6 py-3 whitespace-normal break-words">
                                                 <div className="text-sm text-gray-700">
                                                     <div className="flex items-center">
                                                         <span className={`px-2 py-1 text-xs rounded-full ${
@@ -475,7 +475,7 @@ const InventoryTable = ({
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                                            <td className="px-6 py-3 whitespace-normal break-words text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     {isAdmin ? (
                                                         <>

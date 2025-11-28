@@ -7,7 +7,7 @@ import {
     X
 } from "lucide-react"
 
-import TermsEditor from "../TermsEditor/TermsEditor.jsx";
+import TOCModal from "../../components/TOCModal/TOCModal.jsx";
 
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from "react";
@@ -18,6 +18,7 @@ import RequiredActionsCard from "./CustomerDashboardComponents/RequiredActionsCa
 import DocumentAccessCard from "./CustomerDashboardComponents/DocumentAccessCard.jsx";
 import api from '../../config/ApiConfig.jsx';
 import { useProfilePhoto } from '../../hooks/useProfilePhoto';
+import FAQModal from "../../components/FAQModal/FAQModal.jsx";
 
 const CustomerDashboard = () => {
     const [userData, setUserData] = useState({
@@ -57,6 +58,7 @@ const CustomerDashboard = () => {
 
     // Modal state for Terms & Conditions
     const [showTermsModal, setShowTermsModal] = useState(false);
+    const [showFaqModal, setShowFaqModal] = useState(false);
 
     const parseJwt = (token) => {
         try {
@@ -282,17 +284,17 @@ const CustomerDashboard = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col md:flex-rowflex-col md:flex-row">
+        <div className="flex min-h-screen flex-col md:flex-row w-full overflow-x-hidden bg-gray-50">
             {/* Custom Sidebar Component */}
-            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+            <div className="w-full md:w-[250px] h-auto md:h-screen flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 bg-white">
                 <Sidebar activePage={'dashboard'}/>
             </div>
 
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-gray-50">
+            <div className="flex-1 min-w-0 bg-gray-50 overflow-x-hidden">
                 {/* Header with User Menu */}
-                <div className="bg-white px-8 py-4 flex justify-between items-center border-b border-gray-200">
+                <div className="bg-white px-4 sm:px-8 py-4 flex justify-between items-center border-b border-gray-200">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
@@ -313,7 +315,7 @@ const CustomerDashboard = () => {
                 </div>
 
                 {/* Dashboard Content */}
-                <div className="p-8">
+                <div className="p-4 sm:p-8 w-full">
                     <h1 className="text-2xl font-bold text-gray-800 mb-6">Active Tickets</h1>
 
                     {/* Active Repair Card */}
@@ -341,12 +343,13 @@ const CustomerDashboard = () => {
                                     Email Support Team
                                 </a>
 
-                                <Link to="/FAQ">
-                                    <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
-                                        <HelpIcon className="h-5 w-5 mr-3" />
-                                        FAQ / Help Center
-                                    </button>
-                                </Link>
+                                <button
+                                    className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4"
+                                    onClick={() => setShowFaqModal(true)}
+                                >
+                                    <HelpIcon className="h-5 w-5 mr-3" />
+                                    FAQ / Help Center
+                                </button>
 
                                 <button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-700 rounded-md mt-4" onClick={() => setShowTermsModal(true)}>
                                     <FileText className="h-5 w-5 mr-3 text-green-600" />
@@ -384,8 +387,36 @@ const CustomerDashboard = () => {
                             Terms & Conditions
                         </h2>
                         <div className="max-h-[60vh] overflow-y-auto border border-gray-100 rounded-lg p-6 bg-gray-50">
-                            <TermsEditor />
+                            <TOCModal />
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* FAQ Modal */}
+            {showFaqModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+                    tabIndex={-1}
+                    aria-modal="true"
+                    role="dialog"
+                    onClick={() => setShowFaqModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-10 relative border border-gray-100"
+                        style={{ maxWidth: "900px", minHeight: "60vh" }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-red-400 transition-colors"
+                            onClick={() => setShowFaqModal(false)}
+                            aria-label="Close"
+                        >
+                            <X size={28} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center tracking-tight">
+                            FAQ & Help Center
+                        </h2>
+                        <FAQModal />
                     </div>
                 </div>
             )}
