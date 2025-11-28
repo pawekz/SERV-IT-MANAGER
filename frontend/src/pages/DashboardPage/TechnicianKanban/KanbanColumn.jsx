@@ -1,7 +1,6 @@
 import { useDrop } from "react-dnd"
-// import KanbanTask from "./KanbanTask"
 import KanbanCard from "./KanbanCard.jsx";
-const KanbanColumn = ({ title, status, tasks, onTaskDrop }) => {
+const KanbanColumn = ({ title, status, tasks, onTaskDrop, onReorder, activeTaskId, onDragStart, onDragEnd }) => {
     const [{ isOver }, drop] = useDrop({
         accept: "task",
         drop: (item) => onTaskDrop(item.id, status),
@@ -13,16 +12,25 @@ const KanbanColumn = ({ title, status, tasks, onTaskDrop }) => {
     return (
         <div
             ref={drop}
-            className={`flex-1 min-w-48 bg-gray-50 rounded-lg p-4 transition-colors ${
-                isOver ? "bg-teal-50 border-2 border-[#33e407] border-dashed" : ""
-            }`}
+            className={`flex-1 min-w-60 rounded-2xl border bg-white/80 backdrop-blur transition-all duration-300 p-4 ${isOver ? "border-[#33e407] shadow-lg translate-y-[-2px]" : "border-transparent shadow-sm hover:shadow-md"}`}
         >
-            <div className="font-semibold text-center py-2 border-b border-gray-200 mb-4">
-                {title} ({tasks.length})
+            <div className="flex items-center justify-between mb-4">
+                <div className="font-semibold text-gray-700 tracking-tight">{title}</div>
+                <div className="text-xs font-medium px-2 py-1 rounded-full bg-[#2563eb]/10 text-[#2563eb]">
+                    {tasks.length}
+                </div>
             </div>
-            <div className="space-y-3">
-                {tasks.map((task) => (
-                    <KanbanCard key={task.id} task={task} />
+            <div className="space-y-3 pb-1">
+                {tasks.map((task, index) => (
+                    <KanbanCard
+                        key={task.id}
+                        task={task}
+                        onReorder={onReorder}
+                        activeTaskId={activeTaskId}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        index={index}
+                    />
                 ))}
             </div>
         </div>
