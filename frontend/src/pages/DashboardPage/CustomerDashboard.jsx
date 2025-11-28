@@ -18,6 +18,7 @@ import RequiredActionsCard from "./CustomerDashboardComponents/RequiredActionsCa
 import DocumentAccessCard from "./CustomerDashboardComponents/DocumentAccessCard.jsx";
 import api from '../../config/ApiConfig.jsx';
 import { useProfilePhoto } from '../../hooks/useProfilePhoto';
+import FAQModal from "../../components/FAQModal/FAQModal.jsx";
 
 const CustomerDashboard = () => {
     const [userData, setUserData] = useState({
@@ -57,6 +58,7 @@ const CustomerDashboard = () => {
 
     // Modal state for Terms & Conditions
     const [showTermsModal, setShowTermsModal] = useState(false);
+    const [showFaqModal, setShowFaqModal] = useState(false);
 
     const parseJwt = (token) => {
         try {
@@ -341,12 +343,13 @@ const CustomerDashboard = () => {
                                     Email Support Team
                                 </a>
 
-                                <Link to="/FAQ">
-                                    <button className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4">
-                                        <HelpIcon className="h-5 w-5 mr-3" />
-                                        FAQ / Help Center
-                                    </button>
-                                </Link>
+                                <button
+                                    className="flex items-center w-full px-4 py-3 bg-amber-50 text-amber-600 rounded-md mt-4"
+                                    onClick={() => setShowFaqModal(true)}
+                                >
+                                    <HelpIcon className="h-5 w-5 mr-3" />
+                                    FAQ / Help Center
+                                </button>
 
                                 <button className="flex items-center w-full px-4 py-3 bg-green-50 text-green-700 rounded-md mt-4" onClick={() => setShowTermsModal(true)}>
                                     <FileText className="h-5 w-5 mr-3 text-green-600" />
@@ -386,6 +389,34 @@ const CustomerDashboard = () => {
                         <div className="max-h-[60vh] overflow-y-auto border border-gray-100 rounded-lg p-6 bg-gray-50">
                             <TermsEditor />
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* FAQ Modal */}
+            {showFaqModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+                    tabIndex={-1}
+                    aria-modal="true"
+                    role="dialog"
+                    onClick={() => setShowFaqModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-10 relative border border-gray-100"
+                        style={{ maxWidth: "900px", minHeight: "60vh" }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-red-400 transition-colors"
+                            onClick={() => setShowFaqModal(false)}
+                            aria-label="Close"
+                        >
+                            <X size={28} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center tracking-tight">
+                            FAQ & Help Center
+                        </h2>
+                        <FAQModal />
                     </div>
                 </div>
             )}
