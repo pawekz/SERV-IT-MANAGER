@@ -12,7 +12,7 @@ const KanbanColumn = ({ title, status, tasks, onTaskDrop, onReorder, activeTaskI
     return (
         <div
             ref={drop}
-            className={`flex-1 min-w-60 rounded-2xl border bg-white/80 backdrop-blur transition-all duration-300 p-4 ${isOver ? "border-[#33e407] shadow-lg translate-y-[-2px]" : "border-transparent shadow-sm hover:shadow-md"}`}
+            className={`flex-1 min-w-60 rounded-2xl border bg-white/80 backdrop-blur transition-all duration-300 p-4 ${isOver ? "border-[#2563eb] shadow-lg translate-y-[-2px]" : "border-transparent shadow-sm hover:shadow-md"}`}
         >
             <div className="flex items-center justify-between mb-4">
                 <div className="font-semibold text-gray-700 tracking-tight">{title}</div>
