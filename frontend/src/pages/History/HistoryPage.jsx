@@ -171,7 +171,17 @@ const HistoryPage = () => {
         return filtered;
     };
 
-    const clientFilteredTickets = applyFilters(tickets); // simplified redundant ternary
+    // Sort tickets by date in descending order (most recent first)
+    const sortTicketsByDate = (ticketsList) => {
+        return [...ticketsList].sort((a, b) => {
+            const dateA = a.checkInDate ? new Date(a.checkInDate) : new Date(0);
+            const dateB = b.checkInDate ? new Date(b.checkInDate) : new Date(0);
+            // Descending order: most recent first
+            return dateB - dateA;
+        });
+    };
+
+    const clientFilteredTickets = sortTicketsByDate(applyFilters(tickets)); // simplified redundant ternary
 
     // compute total pages for client side
     useEffect(() => {
