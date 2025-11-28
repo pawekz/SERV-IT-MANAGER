@@ -194,14 +194,21 @@ const ContactPage = () => {
                                         </div>
                                         <div className="mb-6">
                                             <label htmlFor="subject" className="block mb-2 font-medium text-gray-700">Subject</label>
-                                            <input
-                                                type="text"
+                                            <select
                                                 id="subject"
                                                 name="subject"
-                                                placeholder="What is this regarding?"
+                                                defaultValue=""
                                                 required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-md font-inherit text-base transition-all focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
-                                            />
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-md font-inherit text-base bg-white transition-all focus:outline-none focus:border-[#33e407] focus:ring-2 focus:ring-[rgba(51,228,7,0.1)]"
+                                            >
+                                                <option value="" disabled>Choose a topic</option>
+                                                <option value="general">General Inquiry</option>
+                                                <option value="support">Technical Support</option>
+                                                <option value="billing">Billing & Account</option>
+                                                <option value="demo">Product Demo Request</option>
+                                                <option value="partnership">Partnership Opportunity</option>
+                                                <option value="feedback">Feedback</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="mb-6">
