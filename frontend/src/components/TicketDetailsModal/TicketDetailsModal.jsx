@@ -18,6 +18,11 @@ const statusChipClasses = (statusRaw) => {
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
+const formatStatusText = (status) => {
+    if (!status) return status;
+    return status.toString().replace(/_/g, ' ');
+};
+
 function TicketImage({ path, alt, className }) {
     const { data: src, isLoading } = useRepairPhoto(path);
     if (isLoading) {
@@ -159,7 +164,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 flex-wrap">
                                 <h2 className="text-xl font-semibold tracking-tight text-gray-900">Ticket #{ticket.ticketNumber}</h2>
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{statusVal}</span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>{formatStatusText(statusVal)}</span>
                             </div>
 
                             <p className="text-xs text-gray-500">Detailed repair ticket overview</p>
@@ -267,7 +272,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Summary</h4>
                                 <ul className="text-[13px] space-y-2 text-gray-600">
                                     <li className="flex justify-between"><span>Ticket #</span><span className="font-medium text-gray-900">{ticket.ticketNumber}</span></li>
-                                    <li className="flex justify-between"><span>Status</span><span className="font-medium text-gray-900">{statusVal}</span></li>
+                                    <li className="flex justify-between"><span>Status</span><span className="font-medium text-gray-900">{formatStatusText(statusVal)}</span></li>
                                     <li className="flex justify-between"><span>Photos</span><span className="font-medium text-gray-900">{images.length}</span></li>
                                 </ul>
                             </div>
