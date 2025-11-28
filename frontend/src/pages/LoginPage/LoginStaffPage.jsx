@@ -301,6 +301,18 @@ const LoginPage = () => {
     const [newPasswordLoading, setNewPasswordLoading] = useState(false);
     const [newPasswordError, setNewPasswordError] = useState('');
 
+    // Prevent global 401 handler from reloading page in case of failed login attempts
+    useEffect(() => {
+        const suppressGlobalTokenRedirect = (event) => {
+            event.stopImmediatePropagation();
+            if (typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+        };
+        window.addEventListener('tokenExpired', suppressGlobalTokenRedirect, true);
+        return () => window.removeEventListener('tokenExpired', suppressGlobalTokenRedirect, true);
+    }, []);
+
     // Cooldown effects for account verification OTP resend
     useEffect(() => {
         let timer;
@@ -376,9 +388,11 @@ const LoginPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        setLoginProcessing(true);
         if (!formData.username || !formData.password) {
             setError('Username and password are required');
             setLoading(false);
+            setLoginProcessing(false);
             return;
         }
         try {
@@ -401,15 +415,19 @@ const LoginPage = () => {
             if (data.isVerified === false) {
                 // Do NOT request OTP here; just show modal
                 setShowOTPModal(true);
+                setLoginProcessing(false);
             } else if (data.status === "Inactive") {
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
                 setError('Your account is inactive. Please contact support.');
+                setLoginProcessing(false);
             } else {
                 navigate('/dashboard');
+                setLoginProcessing(false);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
+            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+            setLoginProcessing(false);
         } finally {
             setLoading(false);
         }

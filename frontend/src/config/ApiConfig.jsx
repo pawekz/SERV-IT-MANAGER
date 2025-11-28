@@ -79,15 +79,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response,
   error => {
+    const requestUrl = error.config?.url || '';
+    const isLoginRequest = requestUrl.includes('/auth/login');
 
     if (axios.isCancel(error)) {
       window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
-    } else if (error.response && error.response.status === 401) {
+    } else if (error.response && error.response.status === 401 && !isLoginRequest) {
       localStorage.removeItem('authToken');
-
       window.dispatchEvent(new Event('tokenExpired'));
     }
-
     return Promise.reject(error);
   }
 );
