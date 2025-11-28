@@ -97,6 +97,12 @@ function AppContent() {
     }, []);
 
     useEffect(() => {
+        const handleInitialSetupComplete = () => setNeedsSetup(false);
+        window.addEventListener('initialSetupComplete', handleInitialSetupComplete);
+        return () => window.removeEventListener('initialSetupComplete', handleInitialSetupComplete);
+    }, []);
+
+    useEffect(() => {
         const handleTokenExpired = () => {
             localStorage.clear();
             sessionStorage.clear();
