@@ -8,11 +8,43 @@ import api from '../../config/ApiConfig';
 import PdfViewer from "../PdfViewer/PdfViewer.jsx";
 
 function dataURLtoBlob(dataURL) {
-    const [header, base64] = dataURL.split(",");
-    const mime = header.match(/:(.*?);/)[1];
-    const binary = atob(base64);
-    const array = Array.from(binary, (char) => char.charCodeAt(0));
-    return new Blob([new Uint8Array(array)], { type: mime });
+    if (!dataURL || typeof dataURL !== 'string') {
+        throw new Error('Invalid dataURL: must be a non-empty string');
+    }
+    
+    const parts = dataURL.split(',');
+    if (parts.length !== 2) {
+        throw new Error('Invalid dataURL format: expected "data:[mediatype];base64,<data>"');
+    }
+    
+    const header = parts[0];
+    const base64 = parts[1];
+    
+    let mime = 'image/jpeg';
+    if (header.includes(':')) {
+        const mimeMatch = header.match(/:(.*?);/);
+        if (mimeMatch && mimeMatch[1]) {
+            mime = mimeMatch[1];
+        }
+    }
+    
+    if (!base64 || base64.trim().length === 0) {
+        throw new Error('Invalid dataURL: base64 data is empty');
+    }
+    
+    try {
+        const binary = atob(base64);
+        const array = Array.from(binary, (char) => char.charCodeAt(0));
+        const blob = new Blob([new Uint8Array(array)], { type: mime });
+        
+        if (blob.size === 0) {
+            throw new Error('Invalid dataURL: resulting blob is empty');
+        }
+        
+        return blob;
+    } catch (error) {
+        throw new Error(`Failed to convert dataURL to blob: ${error.message}`);
+    }
 }
 
 const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSuccess, kind }) => {
@@ -97,12 +129,46 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     return;
                 }
                 if (formData.repairPhotos && Array.isArray(formData.repairPhotos)) {
-                    formData.repairPhotos.slice(0, 3).forEach((base64DataURL, index) => {
-                        if (base64DataURL) {
+                    const validPhotos = formData.repairPhotos
+                        .slice(0, 3)
+                        .filter(photo => photo && typeof photo === 'string' && photo.trim().length > 0);
+                    
+                    if (validPhotos.length === 0) {
+                        setError("At least one repair photo is required");
+                        showToast("At least one repair photo is required", "error");
+                        setLoading(false);
+                        return;
+                    }
+                    
+                    validPhotos.forEach((base64DataURL, index) => {
+                        try {
                             const blob = dataURLtoBlob(base64DataURL);
-                            form.append("repairPhotos", blob, `photo-${index + 1}.jpg`);
+                            
+                            // Determine file extension from MIME type
+                            let extension = '.jpg';
+                            if (base64DataURL.includes('data:image/png')) {
+                                extension = '.png';
+                            } else if (base64DataURL.includes('data:image/jpeg') || base64DataURL.includes('data:image/jpg')) {
+                                extension = '.jpg';
+                            }
+                            
+                            const timestamp = Date.now();
+                            const filename = `repair-photo-${timestamp}-${index + 1}${extension}`;
+                            
+                            form.append("repairPhotos", blob, filename);
+                        } catch (error) {
+                            console.error(`Failed to process photo ${index + 1}:`, error);
+                            setError(`Failed to process photo ${index + 1}: ${error.message}`);
+                            showToast(`Failed to process photo ${index + 1}`, "error");
+                            setLoading(false);
+                            return;
                         }
                     });
+                } else {
+                    setError("Repair photos are required");
+                    showToast("Repair photos are required", "error");
+                    setLoading(false);
+                    return;
                 }
 
                 const response = await api.post('/repairTicket/checkInRepairTicket', form);
@@ -111,7 +177,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
 
                 const ticketNumber = result && result.ticketNumber ? result.ticketNumber : formData.ticketNumber;
 
-                // If admin selected a technician, explicitly assign (redundant-safe) after check-in
                 if (userRole === 'ADMIN' && formData.technicianEmail && ticketNumber) {
                     try {
                         await api.patch('/user/assignTechnician', {
@@ -119,7 +184,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                             technicianEmail: formData.technicianEmail
                         });
                     } catch (assignErr) {
-                        // Non-blocking: show toast but continue flow
                         showToast(`Technician assignment failed: ${assignErr?.response?.data || assignErr.message}`, 'error');
                     }
                 }
@@ -231,18 +295,6 @@ const RepairPdfPreview = ({ signatureDataURL, formData, onBack, success, setSucc
                     >
                         Back
                     </button>
-                    {/*<a*/}
-                    {/*    href={pdfUrl || "#"}*/}
-                    {/*    download={*/}
-                    {/*        (kind === "repair"*/}
-                    {/*            ? (formData.ticketNumber || "repair_ticket")*/}
-                    {/*            : (formData.warrantyNumber || "warranty_ticket")) + ".pdf"*/}
-                    {/*    }*/}
-                    {/*    className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"*/}
-                    {/*    style={{ display: pdfUrl ? "inline-block" : "none" }}*/}
-                    {/*>*/}
-                    {/*    Download PDF*/}
-                    {/*</a>*/}
                     <button
                         className="px-6 py-2 bg-[#25D482] hover:bg-[#1fab6b] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-[#25D482]"
                         onClick={success ? handleFinishClick : handleSubmit}
