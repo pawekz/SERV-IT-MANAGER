@@ -895,7 +895,7 @@ const ResolvedRepairs = () => {
 
                                     {/* Body */}
                                     {(() => {
-                                        const resolvedList = displayedTickets; // applyFilters already narrowed to resolved
+                                        const resolvedList = displayedTickets;
 
                                         if (resolvedList.length === 0) {
                                             return (

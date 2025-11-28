@@ -1083,7 +1083,7 @@ const RepairQueue = () => {
                                     {/* Body */}
                                     {ticketRequests.length === 0 ? (
                                         <p className="text-center text-gray-600">
-                                            No warranty return requests have been made yet.
+                                            No repair tickets have been made yet.
                                         </p>
 
                                     ) : (
