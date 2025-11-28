@@ -39,6 +39,12 @@ const statusChipClasses = (statusRaw) => {
     return map[status] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
+// Format status text by replacing underscores with spaces
+const formatStatusText = (status) => {
+    if (!status || status === 'ALL') return status;
+    return status.toString().replace(/_/g, ' ');
+};
+
 
 const HistoryPage = () => {
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
@@ -226,7 +232,7 @@ const HistoryPage = () => {
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.deviceBrand} {ticket.deviceModel}</td>
                                     <td className="px-5 py-3">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusChipClasses(statusVal)}`}>
-                                                {statusVal}
+                                                {formatStatusText(statusVal)}
                                             </span>
                                     </td>
                                     <td className="px-5 py-3 whitespace-nowrap">{ticket.checkInDate || '—'}</td>
@@ -390,7 +396,7 @@ const HistoryPage = () => {
                                     onChange={handleStatusFilterChange}
                                     className="px-2 py-2 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#25D482]/30"
                                 >
-                                    {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    {statusOptions.map(opt => <option key={opt} value={opt}>{formatStatusText(opt)}</option>)}
                                 </select>
                             </div>
                             <div className="flex items-center gap-2">
