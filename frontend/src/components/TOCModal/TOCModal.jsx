@@ -1,6 +1,6 @@
 import { CheckCircle } from "lucide-react";
 
-export default function TermsEditor() {
+export default function TOCModal() {
     return (
         <div className="font-sans text-gray-800">
             <div className="mb-8">
