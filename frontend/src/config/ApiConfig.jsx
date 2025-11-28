@@ -84,9 +84,12 @@ api.interceptors.response.use(
 
     if (axios.isCancel(error)) {
       window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
-    } else if (error.response && error.response.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('authToken');
-      window.dispatchEvent(new Event('tokenExpired'));
+  } else if (error.response && error.response.status === 401 && !isLoginRequest) {
+      const hadToken = !!localStorage.getItem('authToken');
+      if (hadToken) {
+        localStorage.removeItem('authToken');
+        window.dispatchEvent(new Event('tokenExpired'));
+      }
     }
     return Promise.reject(error);
   }
