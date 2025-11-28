@@ -164,10 +164,6 @@ function AppContent() {
 
                     {/* Protected routes */}
 
-                    <Route path="/faq" element={
-                        <ProtectedRoute element={<FAQ />} allowedRoles={['customer', 'technician', 'admin']} />
-                    } />
-
                     <Route path="/accountinformation" element={
                         <ProtectedRoute element={<AccountInformation />} allowedRoles={['admin', 'technician', 'customer']} />
                     } />
