@@ -432,6 +432,12 @@ const AdminDashboard = () => {
         COMPLETED: '#00c49f',
     };
 
+    // Helper function to format status labels (replace underscores with spaces)
+    const formatStatusLabel = (status) => {
+        if (!status) return '';
+        return status.replace(/_/g, ' ');
+    };
+
     // Chart/calendar helper data (removed unused chart/calendar constants)
 
 
@@ -632,18 +638,18 @@ const AdminDashboard = () => {
                                                  cx="50%"
                                                  cy="50%"
                                                  outerRadius={100}
-                                                 label={({ payload }) => `${payload.status}: ${payload.percentage.toFixed(1)}%`}
+                                                 label={({ payload }) => `${formatStatusLabel(payload.status)}: ${payload.percentage.toFixed(1)}%`}
                                              >
                                                  {pieData.map((entry, index) => (
                                                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#ccc'} />
                                                  ))}
                                              </Pie>
                                              <Tooltip
-                                                 formatter={(value, name) => [`${value} tickets`, name]}
+                                                 formatter={(value, name) => [`${value} tickets`, formatStatusLabel(name)]}
                                                  contentStyle={{ fontSize: '12px', padding: '4px 8px' }}
                                                  wrapperStyle={{ zIndex: 1000 }}
                                              />
-                                            <><Legend/></>
+                                            <Legend formatter={(value) => formatStatusLabel(value)} />
                                          </PieChart>
                                      </ResponsiveContainer>
                                 )}
