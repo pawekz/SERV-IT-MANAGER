@@ -212,7 +212,7 @@ const KanbanBoard = () => {
                     <h3 className="text-lg font-semibold text-gray-800">Repair Queue</h3>
                     <span className="text-sm text-gray-500">{tasks.length} tickets</span>
                 </div>
-                <div className="overflow-x-auto pt-2">
+                <div className="overflow-x-auto pt-2 pb-2">
                     <div className="flex gap-3 md:gap-4 transition-all duration-300" style={{ minWidth: "800px" }}>
                         {columns.map((column) => (
                             <KanbanColumn
