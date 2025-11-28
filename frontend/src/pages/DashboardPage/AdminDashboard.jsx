@@ -741,20 +741,38 @@ const AdminDashboard = () => {
 
                                         return (
                                             <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                                                <div className={`flex ${feedback.anonymous ? "justify-end" : "justify-between"} items-center mb-2`}>
-                                                    {/* Always surface the ticket identifier (keeps original format when present) */}
-                                                    <div className="font-medium text-sm text-gray-700">{ticketLabel}</div>
-                                                    <div className="text-yellow-500">
-                                                        {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
-                                                        {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
-                                                    </div>
-                                                </div>
-                                                <div className="text-sm text-gray-600">
-                                                    "{feedback.comments || "No comments provided"}"
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {feedback.anonymous ? "Anonymous" : feedback.customerName || userData.firstName || "Customer"}
-                                                </div>
+                                                {!feedback.anonymous ? (
+                                                    <>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <div className="font-medium text-sm text-gray-700">{ticketLabel}</div>
+                                                            <div className="text-yellow-500">
+                                                                {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
+                                                                {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-sm text-gray-600">
+                                                            "{feedback.comments || "No comments provided"}"
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            {feedback.customerName || userData.firstName || "Customer"}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <div className="text-sm text-gray-600">
+                                                                "{feedback.comments || "No comments provided"}"
+                                                            </div>
+                                                            <div className="text-yellow-500">
+                                                                {Array(feedback.overallSatisfactionRating || 5).fill('★').join('')}
+                                                                {Array(5 - (feedback.overallSatisfactionRating || 5)).fill('☆').join('')}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            Anonymous
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         );
                                     })
