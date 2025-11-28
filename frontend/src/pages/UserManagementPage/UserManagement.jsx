@@ -503,6 +503,7 @@ const UserManagement = () => {
                                 <thead>
                                     <tr>
                                         <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Name</th>
+                                        <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Username</th>
                                         <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Email</th>
                                         <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Status</th>
                                         <th className="bg-gray-50 text-left p-4 font-semibold text-gray-600 text-sm border-b border-gray-200">Role</th>
@@ -512,7 +513,7 @@ const UserManagement = () => {
                                 <tbody className="relative">
                                     {(!filteredUsers || filteredUsers.length === 0) ? (
                                         <tr>
-                                            <td colSpan={6} className="p-4 text-center text-gray-500">
+                                            <td colSpan={7} className="p-4 text-center text-gray-500">
                                                 No users matching your search criteria
                                             </td>
                                         </tr>
@@ -547,6 +548,7 @@ const UserManagement = () => {
                                                             )}
                                                          </div>
                                                      </td>
+                                                     <td className="p-4 border-b border-gray-200">{user.username || '-'}</td>
                                                      <td className="p-4 border-b border-gray-200">{user.email}</td>
                                                      <td className="p-4 border-b border-gray-200">
                                                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(user.status)}`}>
