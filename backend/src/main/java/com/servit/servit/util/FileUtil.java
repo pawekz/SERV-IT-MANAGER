@@ -95,10 +95,34 @@ public class FileUtil {
 
     private String getFileExtension(MultipartFile file) {
         String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || !originalFilename.contains(".")) {
-            throw new IllegalArgumentException("Invalid file name");
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            String contentType = file.getContentType();
+            if (contentType != null) {
+                if (contentType.contains("jpeg") || contentType.contains("jpg")) {
+                    return ".jpg";
+                } else if (contentType.contains("png")) {
+                    return ".png";
+                } else if (contentType.contains("pdf")) {
+                    return ".pdf";
+                }
+            }
+            throw new IllegalArgumentException("Invalid file name: filename is null or empty and content type could not be determined");
         }
-        return originalFilename.substring(originalFilename.lastIndexOf("."));
+        int lastDotIndex = originalFilename.lastIndexOf(".");
+        if (lastDotIndex == -1 || lastDotIndex == originalFilename.length() - 1) {
+            String contentType = file.getContentType();
+            if (contentType != null) {
+                if (contentType.contains("jpeg") || contentType.contains("jpg")) {
+                    return ".jpg";
+                } else if (contentType.contains("png")) {
+                    return ".png";
+                } else if (contentType.contains("pdf")) {
+                    return ".pdf";
+                }
+            }
+            throw new IllegalArgumentException("Invalid file name: no extension found in filename '" + originalFilename + "' and content type could not be determined");
+        }
+        return originalFilename.substring(lastDotIndex);
     }
 
     public String saveWarrantyTicketPdf(MultipartFile file, String warrantyNumber) throws IOException {
