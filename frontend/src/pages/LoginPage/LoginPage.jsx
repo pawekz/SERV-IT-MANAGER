@@ -346,6 +346,10 @@ const LoginPage = () => {
         setShowPassword(!showPassword);
     };
 
+    const handleGoBack = () => {
+        navigate('/');
+    };
+
     // Handle tab switching
     const handleTabSwitch = (tab) => {
         setActiveTab(tab);
@@ -570,7 +574,17 @@ const LoginPage = () => {
 
     return (
         <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-2xl relative overflow-hidden">
+            <div className="w-full max-w-md flex flex-col gap-4">
+                <div className="w-full">
+                    <button
+                        type="button"
+                        onClick={handleGoBack}
+                        className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+                    >
+                        ← Go Back
+                    </button>
+                </div>
+                <div className="w-full bg-white rounded-xl shadow-2xl relative overflow-hidden">
                 {/* Tab Buttons */}
                 <div className="flex">
                     <button
@@ -704,6 +718,7 @@ const LoginPage = () => {
                     <div className="text-center mt-4 text-sm text-gray-600">
                         Don't have an account? <a href="/signup" className={`font-medium hover:underline ${activeTab === 'customer' ? 'text-[#25D482]' : 'text-[#2563eb]'}`}>Sign Up</a>
                     </div>
+                </div>
                 </div>
             </div>
 
