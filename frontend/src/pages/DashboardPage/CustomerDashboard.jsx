@@ -282,17 +282,17 @@ const CustomerDashboard = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col md:flex-rowflex-col md:flex-row">
+        <div className="flex min-h-screen flex-col md:flex-row w-full overflow-x-hidden bg-gray-50">
             {/* Custom Sidebar Component */}
-            <div className=" w-full md:w-[250px] h-auto md:h-screen ">
+            <div className="w-full md:w-[250px] h-auto md:h-screen flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 bg-white">
                 <Sidebar activePage={'dashboard'}/>
             </div>
 
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-gray-50">
+            <div className="flex-1 min-w-0 bg-gray-50 overflow-x-hidden">
                 {/* Header with User Menu */}
-                <div className="bg-white px-8 py-4 flex justify-between items-center border-b border-gray-200">
+                <div className="bg-white px-4 sm:px-8 py-4 flex justify-between items-center border-b border-gray-200">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-800">Hello, {userData.firstName}</h2>
                     </div>
@@ -313,7 +313,7 @@ const CustomerDashboard = () => {
                 </div>
 
                 {/* Dashboard Content */}
-                <div className="p-8">
+                <div className="p-4 sm:p-8 w-full">
                     <h1 className="text-2xl font-bold text-gray-800 mb-6">Active Tickets</h1>
 
                     {/* Active Repair Card */}
