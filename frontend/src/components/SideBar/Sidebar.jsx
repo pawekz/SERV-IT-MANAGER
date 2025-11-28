@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { Link } from 'react-router-dom';
 import { LayoutGrid, UserCog, Settings, Truck, ShieldCheck, ClipboardList, LogOut, FolderClock, Inbox, FileClock, Menu, X } from 'lucide-react';
 import { useProfilePhoto } from '../../hooks/useProfilePhoto';
@@ -18,6 +18,12 @@ const Sidebar = ({ activePage }) => {
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const { data: profileUrl } = useProfilePhoto(userData?.userId, userData?.profilePictureUrl);
+    const [avatarSrc, setAvatarSrc] = useState(profileUrl || null);
+    const normalizedRole = (role || userData?.role?.toLowerCase?.()) || '';
+
+    useEffect(() => {
+        setAvatarSrc(profileUrl || null);
+    }, [profileUrl]);
 
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
@@ -28,6 +34,7 @@ const Sidebar = ({ activePage }) => {
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
         sessionStorage.removeItem('userData');
         window.location.href = '/login';
     };
@@ -35,10 +42,10 @@ const Sidebar = ({ activePage }) => {
     const linkClass = (page) =>
         `flex items-center px-6 py-3 transition-all duration-200 ${
             activePage === page
-                ? role === "customer"
+                ? normalizedRole === "customer"
                     ? "bg-[rgba(51,228,7,0.1)] text-[#33e407] font-semibold"
                     : "bg-[rgba(37,99,235,0.1)] text-[#2563eb] font-semibold"
-                : role === "customer"
+                : normalizedRole === "customer"
                     ? "text-gray-600 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
                     : "text-gray-600 hover:bg-[rgba(37,99,235,0.05)] hover:text-[#2563eb]"
         }`;
@@ -218,9 +225,9 @@ const Sidebar = ({ activePage }) => {
                 </div>
                 <nav className="flex-1 py-4 overflow-y-auto">
                     <ul>
-                        {role === 'admin' && adminLinks}
-                        {role === 'customer' && customerLinks}
-                        {role === 'technician' && technicianLinks}
+                        {normalizedRole === 'admin' && adminLinks}
+                        {normalizedRole === 'customer' && customerLinks}
+                        {normalizedRole === 'technician' && technicianLinks}
                     </ul>
                 </nav>
 
@@ -228,11 +235,11 @@ const Sidebar = ({ activePage }) => {
                     className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
                     onClick={toggleLogoutMenu}
                 >
-                    {profileUrl ? (
+                    {avatarSrc ? (
                         <img
-                            src={profileUrl || "/placeholder.svg"}
+                            src={avatarSrc || "/placeholder.svg"}
                             alt="Profile"
-                            onError={() => setProfileUrl(null)}
+                            onError={() => setAvatarSrc('/placeholder.svg')}
                             className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
                         />
                     ) : (
@@ -245,7 +252,7 @@ const Sidebar = ({ activePage }) => {
                             {fullName}
                         </h3>
                         <p className="text-xs text-gray-500 m-0">
-                            {role?.charAt(0).toUpperCase() + role?.slice(1)}
+                            {normalizedRole ? normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1) : ''}
                         </p>
                     </div>
 

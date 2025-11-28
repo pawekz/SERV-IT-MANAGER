@@ -3,6 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import Toast from '../../components/Toast/Toast.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
+import { parseJwt } from '../../config/ApiConfig.jsx';
+
+const persistUserContext = (payload = {}) => {
+    if (!payload) return;
+    const { token, role, email, user } = payload;
+    const claims = token ? parseJwt(token) : {};
+    const resolvedRole = role || claims?.role;
+    if (resolvedRole) {
+        localStorage.setItem('userRole', resolvedRole);
+    }
+    const resolvedEmail = email || claims?.email || claims?.sub;
+    if (resolvedEmail) {
+        localStorage.setItem('userEmail', resolvedEmail);
+    }
+    const resolvedUserData = user || {
+        userId: claims?.userId || claims?.sub || null,
+        firstName: claims?.firstName || '',
+        lastName: claims?.lastName || '',
+        email: resolvedEmail || '',
+        role: resolvedRole || ''
+    };
+    if (resolvedUserData) {
+        sessionStorage.setItem('userData', JSON.stringify(resolvedUserData));
+    }
+};
 
 const SignUpPage = () => {
     const navigate = useNavigate();
@@ -196,6 +221,7 @@ const SignUpPage = () => {
             }
 
             const loginData = await loginResponse.json();
+            persistUserContext(loginData);
             
             // Store auth token
             if (loginData.token) {

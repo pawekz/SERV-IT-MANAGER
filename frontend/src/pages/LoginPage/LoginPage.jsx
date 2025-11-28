@@ -5,6 +5,30 @@ import LoadingModal from "../../components/LoadingModal/LoadingModal.jsx";
 import Spinner from "../../components/Spinner/Spinner.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 
+const persistUserContext = (payload = {}) => {
+    if (!payload) return;
+    const { token, role, email, user } = payload;
+    const claims = token ? parseJwt(token) : {};
+    const resolvedRole = role || claims?.role;
+    if (resolvedRole) {
+        localStorage.setItem('userRole', resolvedRole);
+    }
+    const resolvedEmail = email || claims?.email || claims?.sub;
+    if (resolvedEmail) {
+        localStorage.setItem('userEmail', resolvedEmail);
+    }
+    const resolvedUserData = user || {
+        userId: claims?.userId || claims?.sub || null,
+        firstName: claims?.firstName || '',
+        lastName: claims?.lastName || '',
+        email: resolvedEmail || '',
+        role: resolvedRole || ''
+    };
+    if (resolvedUserData) {
+        sessionStorage.setItem('userData', JSON.stringify(resolvedUserData));
+    }
+};
+
 // OTP Modal Component
 const OTPModal = ({ visible, onClose, onVerify, onResend, loading, error, cooldown = 0 }) => {
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -407,11 +431,10 @@ const LoginPage = () => {
                 return;
             }
             localStorage.setItem('authToken', data.token);
-            localStorage.setItem('userRole', data.role);
+            persistUserContext(data);
             const tokenData = parseJwt(data.token);
             const resolvedUserEmail = data.email || tokenData.email || tokenData.sub;
             setUserEmail(resolvedUserEmail);
-            localStorage.setItem('userEmail', resolvedUserEmail);
             if (data.isVerified === false) {
                 // Do NOT request OTP here; just show modal
                 setLoginProcessing(false);
