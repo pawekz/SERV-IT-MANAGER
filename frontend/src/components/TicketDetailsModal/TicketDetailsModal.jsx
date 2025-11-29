@@ -56,7 +56,8 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [isOverflowing, setIsOverflowing] = useState(false);
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
-    const ticketId = ticket?.repairTicketId || ticket?.id;
+    // Derive ticketId from multiple possible fields, prioritizing repairTicketId
+    const ticketId = ticket?.repairTicketId || ticket?.id || ticket?.ticketId || null;
     const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket?.repairPhotosUrls]);
     const afterImages = useMemo(() => ticket?.afterRepairPhotosUrls || [], [ticket?.afterRepairPhotosUrls]);
     const queryClient = useQueryClient();
@@ -95,7 +96,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     }, []);
 
     useEffect(() => {
-        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
+        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && ticketId) {
             setCheckingFeedback(true);
             // Check if feedback exists
             api.get(`/feedback/check/${ticketId}`)
@@ -112,7 +113,7 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                     setCheckingFeedback(false);
                 });
         } else {
-            // For non-completed tickets, reset feedback state
+            // For non-completed tickets or missing ticketId, reset feedback state
             setHasFeedback(false);
             setCheckingFeedback(false);
         }
@@ -144,6 +145,10 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
 
     // Download PDF handler
     const handleDownloadPdf = async () => {
+        if (!ticket?.ticketNumber) {
+            window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Ticket number not available.', severity: 'error' } }));
+            return;
+        }
         setDownloading(true);
         try {
             const res = await api.get(`/repairTicket/getRepairTicketDocument/${ticket.ticketNumber}`, { responseType: 'blob' });
@@ -309,9 +314,10 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                                      hasFeedback === false && 
                                      checkingFeedback === false && 
                                      userRole && 
-                                     userRole.toUpperCase() === 'CUSTOMER' && (
+                                     userRole.toUpperCase() === 'CUSTOMER' &&
+                                     ticketId && (
                                         <button
-                                            onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
+                                            onClick={() => navigate(`/feedbackform/${ticketId}`)}
                                             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
                                         >
                                             <MessageSquare size={14} /> Give Feedback
