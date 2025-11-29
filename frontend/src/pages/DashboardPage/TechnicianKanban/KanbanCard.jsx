@@ -1,10 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Smartphone, Laptop, Tablet, Monitor } from "lucide-react";
 import { Link } from "react-router-dom";
+import api from "../../../config/ApiConfig";
 
 const KanbanCard = ({ task, onReorder, activeTaskId, onDragStart, onDragEnd, index }) => {
   const ref = useRef(null);
+  const [hasQuotation, setHasQuotation] = useState(false);
+  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
     item: () => {
@@ -35,6 +38,22 @@ const KanbanCard = ({ task, onReorder, activeTaskId, onDragStart, onDragEnd, ind
   });
 
   drag(drop(ref));
+
+  // Check if quotation exists for this ticket
+  useEffect(() => {
+    if (task.status === "AWAITING_PARTS" && task.ticketId) {
+      const checkQuotation = async () => {
+        try {
+          const { data } = await api.get(`/quotation/getQuotationByRepairTicketNumber/${task.ticketId}`);
+          setHasQuotation(data && data.length > 0);
+        } catch (err) {
+          // If error, assume no quotation exists
+          setHasQuotation(false);
+        }
+      };
+      checkQuotation();
+    }
+  }, [task.status, task.ticketId]);
 
   const getDeviceIcon = (deviceType) => {
     const type = (deviceType || "").toLowerCase();
@@ -72,7 +91,7 @@ const KanbanCard = ({ task, onReorder, activeTaskId, onDragStart, onDragEnd, ind
               to={`/quotation-builder/${encodeURIComponent(task.ticketId)}`}
               className="inline-flex mt-2 text-[11px] font-semibold text-[#33e407] hover:text-[#2ab306] transition-colors"
             >
-              Build Quotation
+              {hasQuotation ? "Edit Quotation" : "Build Quotation"}
             </Link>
           )}
           {task.status === "REPAIRING" && (
