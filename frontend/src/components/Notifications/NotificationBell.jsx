@@ -166,7 +166,7 @@ export default function NotificationBell() {
         navigate(`/quotationviewer/${encodeURIComponent(notif.ticketNumber)}`);
       }
     } else if (notif.ticketNumber) {
-      navigate(`/realtimestatus?ticketNumber=${notif.ticketNumber}`);
+      navigate("/realtimestatus", { state: { ticketNumber: notif.ticketNumber } });
     }
   };
 

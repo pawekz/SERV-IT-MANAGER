@@ -36,7 +36,10 @@ const PartPhoto = ({ partId, photoUrl, className = "w-20 h-20 object-cover round
 const RealTimeStatus = () => {
     const location = useLocation()
     const navigate = useNavigate()
-    const ticketNumberParam = location.state?.ticketNumber || null
+    // Support both state (preferred) and URL query params (fallback)
+    const ticketNumberParam = location.state?.ticketNumber || 
+                               new URLSearchParams(location.search).get('ticketNumber') || 
+                               null
     const prevStatusRef = useRef(null)
 
     const [history, setHistory] = useState([])

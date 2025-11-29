@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, ChevronDown, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
 const AvailableInventory = ({ inventoryItems, selectedParts, togglePartSelection, getStatusColor }) => {
@@ -15,6 +15,11 @@ const AvailableInventory = ({ inventoryItems, selectedParts, togglePartSelection
       );
     });
   }, [inventoryItems, searchQuery]);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

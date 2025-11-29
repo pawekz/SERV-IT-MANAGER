@@ -46,41 +46,34 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     const [checkingFeedback, setCheckingFeedback] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [issueExpanded, setIssueExpanded] = useState(false);
-    // Remove char-count style truncation constant; we will measure lines instead
-    // const ISSUE_PREVIEW_CHARS = 180; // number of characters to show before truncating
+
     const navigate = useNavigate();
 
-    // new refs and state for measuring and transitions
     const issueRef = useRef(null);
     const [twoLineHeight, setTwoLineHeight] = useState(0);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
     const statusVal = ticket?.status || ticket?.repairStatus || 'N/A';
-    const ticketId = ticket?.repairTicketId || ticket?.id;
+    const ticketId = ticket?.repairTicketId || ticket?.id || ticket?.ticketId || null;
     const images = useMemo(() => ticket?.repairPhotosUrls || [], [ticket?.repairPhotosUrls]);
     const afterImages = useMemo(() => ticket?.afterRepairPhotosUrls || [], [ticket?.afterRepairPhotosUrls]);
     const queryClient = useQueryClient();
 
-    // Reset issue expansion when the ticket changes
     useEffect(() => {
         setIssueExpanded(false);
     }, [ticket?.repairTicketId || ticket?.id || ticket?.ticketNumber]);
 
-    // Measure two-line height and detect overflow whenever the reportedIssue changes or when modal opens
     useEffect(() => {
         if (!issueRef.current) return;
         const el = issueRef.current;
-        // Compute line height from computed styles
         const computed = window.getComputedStyle(el);
         let lineHeight = parseFloat(computed.lineHeight);
         if (Number.isNaN(lineHeight) || lineHeight === 0) {
-            // fallback to font-size * 1.2 if line-height is 'normal'
             const fontSize = parseFloat(computed.fontSize) || 13;
             lineHeight = Math.round(fontSize * 1.2);
         }
         const twoH = lineHeight * 2;
         setTwoLineHeight(twoH);
-        // scrollHeight reports full content height regardless of maxHeight, so good for detecting overflow
         setIsOverflowing(el.scrollHeight > twoH + 1);
     }, [ticket?.reportedIssue, isOpen]);
 
@@ -95,24 +88,20 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     }, []);
 
     useEffect(() => {
-        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE')) {
+        if (isOpen && ticket && (statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && ticketId) {
             setCheckingFeedback(true);
-            // Check if feedback exists
             api.get(`/feedback/check/${ticketId}`)
                 .then(res => {
-                    // Explicitly convert to boolean - if res.data is truthy, feedback exists
                     setHasFeedback(Boolean(res.data));
                 })
                 .catch(err => {
                     console.error('Error checking feedback:', err);
-                    // On error, assume no feedback exists so button can show
                     setHasFeedback(false);
                 })
                 .finally(() => {
                     setCheckingFeedback(false);
                 });
         } else {
-            // For non-completed tickets, reset feedback state
             setHasFeedback(false);
             setCheckingFeedback(false);
         }
@@ -128,22 +117,23 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
         });
     }, [images, afterImages, isOpen, queryClient]);
 
+    const allImages = useMemo(() => [...images, ...afterImages], [images, afterImages]);
+
     if (!isOpen || !ticket) return null;
 
-    // Use only new first/last fields (legacy customerName removed)
     const first = ticket.customerFirstName || '';
     const last = ticket.customerLastName || '';
-    // Technician name (fall back to a few common ticket properties)
     const techName = ticket.technicianName || ticket.assignedTechnician || ticket.technician || '';
-
-    const allImages = useMemo(() => [...images, ...afterImages], [images, afterImages]);
     const openImageModal = idx => { setCurrentImageIdx(idx); setImageModalOpen(true); };
     const closeImageModal = () => setImageModalOpen(false);
     const goLeft = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === 0 ? allImages.length - 1 : prev - 1)); };
     const goRight = e => { e.stopPropagation(); setCurrentImageIdx(prev => (prev === allImages.length - 1 ? 0 : prev + 1)); };
 
-    // Download PDF handler
     const handleDownloadPdf = async () => {
+        if (!ticket?.ticketNumber) {
+            window.dispatchEvent(new CustomEvent('showSnackbar', { detail: { message: 'Ticket number not available.', severity: 'error' } }));
+            return;
+        }
         setDownloading(true);
         try {
             const res = await api.get(`/repairTicket/getRepairTicketDocument/${ticket.ticketNumber}`, { responseType: 'blob' });
@@ -304,14 +294,14 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Actions</h4>
                                 <div className="flex flex-col gap-2">
-                                    {/* Show Give Feedback button only for customers when ticket is completed and no feedback exists */}
-                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') && 
+                                    {(statusVal === 'COMPLETED' || statusVal === 'COMPLETE') &&
                                      hasFeedback === false && 
                                      checkingFeedback === false && 
                                      userRole && 
-                                     userRole.toUpperCase() === 'CUSTOMER' && (
+                                     userRole.toUpperCase() === 'CUSTOMER' &&
+                                     ticketId && (
                                         <button
-                                            onClick={() => navigate(`/feedbackform/${ticket.repairTicketId || ticket.id}`)}
+                                            onClick={() => navigate(`/feedbackform/${ticketId}`)}
                                             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
                                         >
                                             <MessageSquare size={14} /> Give Feedback
@@ -335,7 +325,6 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
                 </div>
             </div>
 
-            {/* Image Modal Overlay */}
             {imageModalOpen && (
                 <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={closeImageModal} role="dialog" aria-modal="true">
                     <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -388,7 +377,6 @@ function TicketDetailsModal({ data: ticket, onClose, isOpen }) {
     );
 }
 
-// Lightweight thumbnail component using existing fetch
 const TicketImageThumb = ({ path, alt }) => {
     const { data: src, isLoading } = useRepairPhoto(path);
 
