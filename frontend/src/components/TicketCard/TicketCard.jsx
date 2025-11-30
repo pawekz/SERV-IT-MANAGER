@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Children, cloneElement, isValidElement } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRepairPhoto } from '../../hooks/useRepairPhoto';
 
@@ -36,11 +36,49 @@ function TicketImage({ path, alt }) {
     return <img className="rounded-t-lg w-full h-40 md:h-44 object-cover" src={src} alt={alt || 'Repair photo'} loading="lazy" />;
 }
 
-const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, customerAction }) => {
+// Helper function to recursively modify button text from "Build Quotation" to "Edit Quotation"
+const modifyButtonText = (element, hasQuotation) => {
+    if (!isValidElement(element)) {
+        return element;
+    }
+
+    if (!hasQuotation) {
+        return element; // No need to modify if quotation doesn't exist
+    }
+
+    // Check if this element has children that contain "Build Quotation"
+    const children = element.props?.children;
+    let modifiedChildren = children;
+
+    if (typeof children === 'string' && children.includes('Build Quotation')) {
+        modifiedChildren = children.replace('Build Quotation', 'Edit Quotation');
+        return cloneElement(element, { ...element.props }, modifiedChildren);
+    } else if (Array.isArray(children)) {
+        modifiedChildren = Children.map(children, (child) => {
+            if (typeof child === 'string' && child.includes('Build Quotation')) {
+                return child.replace('Build Quotation', 'Edit Quotation');
+            } else if (isValidElement(child)) {
+                return modifyButtonText(child, hasQuotation);
+            }
+            return child;
+        });
+        return cloneElement(element, { ...element.props }, modifiedChildren);
+    } else if (isValidElement(children)) {
+        modifiedChildren = modifyButtonText(children, hasQuotation);
+        return cloneElement(element, { ...element.props }, modifiedChildren);
+    }
+
+    return element;
+};
+
+const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, customerAction, hasQuotation }) => {
     // derive unified status (backend uses repairStatus)
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
     const isCustomer = userData?.role?.toLowerCase() === 'customer';
     const displayStatus = ticket.status || ticket.repairStatus || 'N/A';
+    
+    // Check if quotation exists (either via prop or ticket property)
+    const quotationExists = hasQuotation !== undefined ? hasQuotation : (ticket.quotation || ticket.hasQuotation);
 
     const images = ticket.repairPhotosUrls && ticket.repairPhotosUrls.length > 0
         ? ticket.repairPhotosUrls
@@ -125,7 +163,10 @@ const TicketCard = ({ ticket, onClick, renderStatusControl, actionButtons, custo
                     {/* Action buttons (Build Quotation, View Quotation, etc.) */}
                     {actionButtons && (
                         <div className="mb-2 flex flex-col gap-2">
-                            {actionButtons}
+                            {quotationExists
+                                ? Children.map(actionButtons, (button) => modifyButtonText(button, quotationExists))
+                                : actionButtons
+                            }
                         </div>
                     )}
 

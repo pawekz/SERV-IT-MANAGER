@@ -920,6 +920,7 @@ const ResolvedRepairs = () => {
                                                                         {...(role !== 'customer' ? { renderStatusControl } : {})}
                                                                         actionButtons={renderActionButtons(request)}
                                                                         customerAction={renderCustomerAction(request)}
+                                                                        hasQuotation={!!quotations[request.ticketNumber]}
                                                                     />
                                                                 );
                                                             })}
