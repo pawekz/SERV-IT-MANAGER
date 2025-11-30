@@ -1106,6 +1106,7 @@ const RepairQueue = () => {
                                                                     {...(role !== 'customer' ? { renderStatusControl } : {})}
                                                                     actionButtons={renderActionButtons(request)}
                                                                     customerAction={renderCustomerAction(request)}
+                                                                    hasQuotation={!!quotations[request.ticketNumber]}
                                                                 />
                                                             );
                                                         })}
