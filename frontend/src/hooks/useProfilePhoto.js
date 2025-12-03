@@ -17,7 +17,10 @@ export async function fetchProfilePhotoUrl(userId) {
 export function useProfilePhoto(userId, profilePictureUrl) {
     return useQuery({
         queryKey: ['profile-photo', userId, profilePictureUrl],
-        queryFn: () => fetchProfilePhotoUrl(userId),
+        queryFn: () => {
+            if (!userId) return Promise.resolve(null);
+            return fetchProfilePhotoUrl(userId);
+        },
         enabled: !!(userId && profilePictureUrl && profilePictureUrl !== '0' && profilePictureUrl.trim() !== ''),
         staleTime: PROFILE_PHOTO_CACHE_TTL_MS,
         gcTime: PROFILE_PHOTO_CACHE_TTL_MS * 2,
