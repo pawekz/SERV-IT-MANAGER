@@ -138,9 +138,8 @@ const KanbanBoard = () => {
                 formData.append("repairStatus", pendingChange.newStatus)
                 photos.forEach((file) => formData.append("afterRepairPhotos", file))
 
-                const { data } = await api.patch("/repairTicket/updateRepairStatusWithPhotos", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                })
+                // Don't set Content-Type manually - axios 1.12.0 will set it automatically with boundary
+                const { data } = await api.patch("/repairTicket/updateRepairStatusWithPhotos", formData)
 
                 // Ensure UI reflects backend-confirmed status
                 if (data && data.newStatus) {

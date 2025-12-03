@@ -41,7 +41,9 @@ const Navbar = () => {
         return () => document.removeEventListener('click', onClick);
     }, []);
 
-    const handleLogout = () => {
+    const handleLogout = (e) => {
+        e?.preventDefault();
+        e?.stopPropagation();
         localStorage.clear();
         sessionStorage.clear();
         window.location.href = '/';

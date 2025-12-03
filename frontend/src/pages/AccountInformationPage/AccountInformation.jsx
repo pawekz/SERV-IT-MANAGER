@@ -184,7 +184,8 @@ const AccountInformation = () => {
         try {
             const fd = new FormData();
             fd.append('file', file);
-            await api.post('/user/updateCurrentUserProfilePicture', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            // Don't set Content-Type manually - axios 1.12.0 will set it automatically with boundary
+            await api.post('/user/updateCurrentUserProfilePicture', fd);
             const refreshed = await api.get('/user/getCurrentUser');
             const newData = { ...userData, ...refreshed.data, password: '********' };
             setUserData(newData);

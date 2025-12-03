@@ -35,7 +35,9 @@ const Sidebar = ({ activePage }) => {
     const toggleSidebar = () => setIsOpen(prev => !prev);
     const closeSidebar = () => setIsOpen(false);
 
-    const handleLogout = () => {
+    const handleLogout = (e) => {
+        e?.preventDefault();
+        e?.stopPropagation();
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
@@ -270,11 +272,20 @@ const Sidebar = ({ activePage }) => {
                         </div>
 
                         {showLogoutMenu && (
-                            <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
+                            <div 
+                                className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20"
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onPointerUp={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                            >
                                 <Link
                                     to="/accountinformation"
                                     className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
-                                    onClick={() => setShowLogoutMenu(false)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowLogoutMenu(false);
+                                    }}
                                 >
                                     <div className="flex items-center">
                                         <Settings size={16} className="mr-2" />
@@ -282,6 +293,7 @@ const Sidebar = ({ activePage }) => {
                                     </div>
                                 </Link>
                                 <button
+                                    type="button"
                                     onClick={handleLogout}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
                                 >

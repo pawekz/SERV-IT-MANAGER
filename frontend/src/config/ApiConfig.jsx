@@ -37,16 +37,18 @@ const api = axios.create({
 // Request interceptor: attach token, validate, handle expiration
 api.interceptors.request.use(
   config => {
-
     const token = localStorage.getItem('authToken');
 
     if (token) {
-
-      // Validate token format as it will trigger the error handling
+      // Validate token format
       if (!token.includes('.') || token.split('.').length !== 3) {
         localStorage.removeItem('authToken');
         window.dispatchEvent(new Event('tokenExpired'));
-        throw new axios.Cancel('Invalid token format. Please log in again.');
+        // Create a cancellation error that axios 1.12.0 will recognize
+        const cancelError = axios.CancelToken.source();
+        cancelError.cancel('Invalid token format. Please log in again.');
+        config.cancelToken = cancelError.token;
+        return config; // Return config with cancelToken - axios will handle cancellation
       }
 
       // Parse and validate token
@@ -55,7 +57,10 @@ api.interceptors.request.use(
       if (!payload) {
         localStorage.removeItem('authToken');
         window.dispatchEvent(new Event('tokenExpired'));
-        throw new axios.Cancel('Invalid token. Please log in again.');
+        const cancelError = axios.CancelToken.source();
+        cancelError.cancel('Invalid token. Please log in again.');
+        config.cancelToken = cancelError.token;
+        return config;
       }
 
       // Check expiration
@@ -64,10 +69,13 @@ api.interceptors.request.use(
       if (!payload.exp || payload.exp < now) {
         localStorage.removeItem('authToken');
         window.dispatchEvent(new Event('tokenExpired'));
-        throw new axios.Cancel('Session expired. Please log in again.');
+        const cancelError = axios.CancelToken.source();
+        cancelError.cancel('Session expired. Please log in again.');
+        config.cancelToken = cancelError.token;
+        return config;
       }
 
-      // Add token to headers
+      // Token is valid - add to headers
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -79,12 +87,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response,
   error => {
+    // Skip handling if request was cancelled (including our own cancellations)
+    if (axios.isCancel(error)) {
+      // Only dispatch tokenExpired if it's not already being handled (e.g., during logout)
+      // Check if token still exists to avoid duplicate events during logout
+      if (localStorage.getItem('authToken')) {
+        window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
+      }
+      return Promise.reject(error);
+    }
+
     const requestUrl = error.config?.url || '';
     const isLoginRequest = requestUrl.includes('/auth/login');
 
-    if (axios.isCancel(error)) {
-      window.dispatchEvent(new CustomEvent('tokenExpired', { detail: error.message }));
-  } else if (error.response && error.response.status === 401 && !isLoginRequest) {
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
       const hadToken = !!localStorage.getItem('authToken');
       if (hadToken) {
         localStorage.removeItem('authToken');

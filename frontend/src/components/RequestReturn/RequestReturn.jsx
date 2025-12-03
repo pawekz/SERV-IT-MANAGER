@@ -133,11 +133,8 @@ const RequestReturn = ({ isOpen, onClose, serialNumber, onSuccess }) => {
             payload.append("reportedIssue", formData.reportedIssue);
             payload.append("returnReason", formData.returnReason);
             console.log("subt:",payload)
-            const response = await api.post('/warranty/checkInWarranty', payload, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                }
-            });
+            // Don't set Content-Type manually - axios 1.12.0 will set it automatically with boundary
+            const response = await api.post('/warranty/checkInWarranty', payload);
             const result = response.data;
             onSuccess();
             onClose(); // Close the modal after successful submission
