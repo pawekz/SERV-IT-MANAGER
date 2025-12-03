@@ -28,6 +28,10 @@ const Sidebar = ({ activePage }) => {
     const toggleLogoutMenu = () => {
         setShowLogoutMenu(prev => !prev);
     };
+    const handleProfileToggle = (event) => {
+        event?.preventDefault();
+        setShowLogoutMenu(prev => !prev);
+    };
     const toggleSidebar = () => setIsOpen(prev => !prev);
     const closeSidebar = () => setIsOpen(false);
 
@@ -223,62 +227,72 @@ const Sidebar = ({ activePage }) => {
                         <X size={24} />
                     </button>
                 </div>
-                <nav className="flex-1 py-4 overflow-y-auto">
-                    <ul>
-                        {normalizedRole === 'admin' && adminLinks}
-                        {normalizedRole === 'customer' && customerLinks}
-                        {normalizedRole === 'technician' && technicianLinks}
-                    </ul>
-                </nav>
+                <div className="flex-1 flex flex-col">
+                    <nav className="flex-1 py-4 overflow-y-auto">
+                        <ul>
+                            {normalizedRole === 'admin' && adminLinks}
+                            {normalizedRole === 'customer' && customerLinks}
+                            {normalizedRole === 'technician' && technicianLinks}
+                        </ul>
+                    </nav>
 
-                <div
-                    className="p-4 border-t border-gray-200 flex items-center cursor-pointer relative"
-                    onClick={toggleLogoutMenu}
-                >
-                    {avatarSrc ? (
-                        <img
-                            src={avatarSrc || "/placeholder.svg"}
-                            alt="Profile"
-                            onError={() => setAvatarSrc('/placeholder.svg')}
-                            className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
-                        />
-                    ) : (
-                        <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
-                            <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
+                    <button
+                        type="button"
+                        className="w-full p-4 border-t border-gray-200 flex items-center text-left relative bg-white sticky bottom-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#33e407] md:focus-visible:ring-offset-2"
+                        onPointerUp={handleProfileToggle}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                handleProfileToggle(event);
+                            }
+                        }}
+                        aria-haspopup="true"
+                        aria-expanded={showLogoutMenu}
+                    >
+                        {avatarSrc ? (
+                            <img
+                                src={avatarSrc || "/placeholder.svg"}
+                                alt="Profile"
+                                onError={() => setAvatarSrc('/placeholder.svg')}
+                                className="w-9 h-9 rounded-full object-cover mr-3 border border-[#e6f9e6]"
+                            />
+                        ) : (
+                            <div className="w-9 h-9 bg-[#e6f9e6] text-[#33e407] rounded-full flex items-center justify-center font-semibold mr-3">
+                                <span>{(formattedFirst.charAt(0) || '') + (formattedLast.charAt(0) || '')}</span>
+                            </div>
+                        )}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-800 m-0">
+                                {fullName}
+                            </h3>
+                            <p className="text-xs text-gray-500 m-0">
+                                {normalizedRole ? normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1) : ''}
+                            </p>
                         </div>
-                    )}
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-800 m-0">
-                            {fullName}
-                        </h3>
-                        <p className="text-xs text-gray-500 m-0">
-                            {normalizedRole ? normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1) : ''}
-                        </p>
-                    </div>
 
-                    {showLogoutMenu && (
-                        <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
-                            <Link
-                                to="/accountinformation"
-                                className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
-                                onClick={() => setShowLogoutMenu(false)}
-                            >
-                                <div className="flex items-center">
-                                    <Settings size={16} className="mr-2" />
-                                    Settings
-                                </div>
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
-                            >
-                                <div className="flex items-center">
-                                    <LogOut size={16} className="mr-2" />
-                                    Logout
-                                </div>
-                            </button>
-                        </div>
-                    )}
+                        {showLogoutMenu && (
+                            <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-300 rounded shadow-md w-60 z-20">
+                                <Link
+                                    to="/accountinformation"
+                                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                                    onClick={() => setShowLogoutMenu(false)}
+                                >
+                                    <div className="flex items-center">
+                                        <Settings size={16} className="mr-2" />
+                                        Settings
+                                    </div>
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[rgba(51,228,7,0.05)] hover:text-[#33e407]"
+                                >
+                                    <div className="flex items-center">
+                                        <LogOut size={16} className="mr-2" />
+                                        Logout
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+                    </button>
                 </div>
             </div>
         </>
