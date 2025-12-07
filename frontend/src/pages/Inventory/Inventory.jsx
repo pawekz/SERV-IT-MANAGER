@@ -136,13 +136,15 @@ const Inventory = () => {
     }, [showNotification]);
 
     // Enhanced helper function to calculate availability status with part number aggregation
+    // Logic: Out of Stock (0) → Low Stock (1 to threshold) → Normal (threshold+1 to threshold*2) → Good
     const calculateAvailabilityStatus = (availableStock, threshold) => {
         // Ensure threshold is a valid number, default to 10 if invalid
         const validThreshold = (threshold && threshold > 0) ? threshold : 10;
         
         if (availableStock <= 0) {
             return { status: "Out of Stock", color: "bg-red-100 text-red-600" };
-        } else if (availableStock < validThreshold) {
+        } else if (availableStock <= validThreshold) {
+            // Items at or below threshold are "Low Stock" (excludes zero which is "Out of Stock")
             return { status: "Low Stock", color: "bg-yellow-100 text-yellow-600" };
         } else if (availableStock <= validThreshold * 2) {
             return { status: "Normal", color: "bg-blue-100 text-blue-600" };
@@ -234,28 +236,43 @@ const Inventory = () => {
 
             setInventoryItems(transformedItems);
             
-            // Calculate consistent stock summary from frontend data
-            const lowStockItems = transformedItems.filter(item => item.availability.status === 'Low Stock');
+            // Calculate out of stock from frontend data
             const outOfStockItems = transformedItems.filter(item => item.availability.status === 'Out of Stock');
             
-            setStockSummary({
-                totalPartNumbers: transformedItems.length,
-                lowStockCount: lowStockItems.length,
-                outOfStockCount: outOfStockItems.length,
-                activeAlertsCount: lowStockItems.length + outOfStockItems.length
-            });
-            
-            // Update lowStockPartNumbers to match the frontend calculation
-            const lowStockPartNumbers = lowStockItems.map(item => ({
-                partNumber: item.partNumber,
-                partName: item.name,
-                currentAvailableStock: item.availableStock,
-                lowStockThreshold: item.lowStockThreshold,
-                alertLevel: item.availableStock <= 0 ? 'CRITICAL' : 
-                           item.availableStock < item.lowStockThreshold * 0.5 ? 'HIGH' : 'MEDIUM'
-            }));
-            
-            setLowStockPartNumbers(lowStockPartNumbers);
+            // Fetch low stock count from backend tracking table for consistency with Dashboard
+            // This uses PartNumberStockTrackingEntity thresholds instead of individual PartEntity thresholds
+            try {
+                const lowStockResponse = await api.get('/part/stock/lowStockPartNumbers');
+                const backendLowStockItems = Array.isArray(lowStockResponse.data) ? lowStockResponse.data : [];
+                
+                setStockSummary({
+                    totalPartNumbers: transformedItems.length,
+                    lowStockCount: backendLowStockItems.length,
+                    outOfStockCount: outOfStockItems.length,
+                    activeAlertsCount: backendLowStockItems.length + outOfStockItems.length
+                });
+                
+                // Use backend data for low stock part numbers (has correct thresholds)
+                setLowStockPartNumbers(backendLowStockItems);
+            } catch (lowStockErr) {
+                console.error("Error fetching low stock data, using frontend calculation:", lowStockErr);
+                // Fallback to frontend calculation if backend fails
+                const lowStockItems = transformedItems.filter(item => item.availability.status === 'Low Stock');
+                setStockSummary({
+                    totalPartNumbers: transformedItems.length,
+                    lowStockCount: lowStockItems.length,
+                    outOfStockCount: outOfStockItems.length,
+                    activeAlertsCount: lowStockItems.length + outOfStockItems.length
+                });
+                setLowStockPartNumbers(lowStockItems.map(item => ({
+                    partNumber: item.partNumber,
+                    partName: item.name,
+                    currentAvailableStock: item.availableStock,
+                    lowStockThreshold: item.lowStockThreshold,
+                    alertLevel: item.availableStock <= 0 ? 'CRITICAL' : 
+                               item.availableStock < item.lowStockThreshold * 0.5 ? 'HIGH' : 'MEDIUM'
+                })));
+            }
 
             setLoading(false);
             // close loading toast
@@ -273,16 +290,6 @@ const Inventory = () => {
         }
     }, [showNotification, calculateAvailabilityStatus]);
 
-    // Fetch backend low stock data for comparison (optional)
-    const fetchBackendLowStockData = useCallback(async () => {
-        try {
-            const response = await api.get('/part/stock/lowStockPartNumbers');
-            // Log backend vs frontend comparison for debugging
-            // Backend and frontend low stock counts are logged for debugging if needed
-        } catch (err) {
-            console.error("Error fetching backend low stock data:", err);
-        }
-    }, []);
 
     // Manual low stock check and display modal
     const checkAndShowLowStock = useCallback(async () => {
@@ -452,9 +459,7 @@ const Inventory = () => {
                 setUserRole(normalizedRole);
 
                 await fetchInventory();
-                // Low stock data is calculated in fetchInventory() now
-                // Optional: fetch backend data for comparison
-                await fetchBackendLowStockData();
+                // Low stock data is now fetched from backend inside fetchInventory()
             } catch (err) {
                 console.error("Authentication error:", err);
                 showNotification("Authentication failed. Please log in again.", 'error', 5000);

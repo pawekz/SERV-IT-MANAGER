@@ -225,47 +225,24 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, []);
 
-    // Fetch inventory data from the backend
+    // Fetch low stock items count using the proper stock tracking endpoint
     useEffect(() => {
-         const fetchInventoryData = async () => {
+         const fetchLowStockCount = async () => {
              try {
-                 const response = await api.get('/part/getAllParts');
+                 // Use the PartNumberStockTracking endpoint which properly aggregates by part number
+                 const response = await api.get('/part/stock/lowStockPartNumbers');
                  const data = response.data;
-                 // Normalize response to an array. Some endpoints return an array, others wrap it in { content: [...] } or { data: [...] }
-                 let partsArray;
-                 if (Array.isArray(data)) {
-                     partsArray = data;
-                 } else if (data && Array.isArray(data.content)) {
-                     partsArray = data.content;
-                 } else if (data && Array.isArray(data.data)) {
-                     partsArray = data.data;
-                 } else if (data && Array.isArray(data.parts)) {
-                     partsArray = data.parts;
-                 } else if (data && typeof data === 'object') {
-                     const firstArray = Object.values(data).find(v => Array.isArray(v));
-                     if (firstArray) {
-                         partsArray = firstArray;
-                         console.debug("fetchInventoryData: resolved partsArray from first array in object; sample:", partsArray.slice(0,3));
-                     } else {
-                         partsArray = [];
-                         console.debug("fetchInventoryData: no array found in response object for /part/getAllParts", data);
-                     }
-                 } else {
-                     partsArray = [];
-                     console.debug("fetchInventoryData: unexpected response shape for /part/getAllParts", data);
-                 }
-                 const lowStockCount = partsArray.filter(item => (item && typeof item.currentStock === 'number' ? item.currentStock : 0) <= 5).length;
+                 // Returns array of PartNumberStockSummaryDTO for items below threshold
+                 const lowStockCount = Array.isArray(data) ? data.length : 0;
                  setStats(prevStats => ({
                      ...prevStats,
                      lowStockItems: lowStockCount
                  }));
              } catch (err) {
-                 console.error("Error fetching inventory data:", err);
-             } finally {
-                 // finished
+                 console.error("Error fetching low stock data:", err);
              }
          };
-         fetchInventoryData();
+         fetchLowStockCount();
      }, []);
 
     // Add useEffect to fetch feedback data from the backend with auto-refresh
