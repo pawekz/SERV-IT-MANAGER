@@ -273,14 +273,14 @@ public class PartNumberStockTrackingService {
     
     private String calculateStockStatus(PartNumberStockTrackingEntity tracking) {
         if (tracking.getCurrentAvailableStock() == 0) return "CRITICAL";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold()) return "LOW";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold() * 2) return "NORMAL";
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold()) return "LOW";
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold() * 2) return "NORMAL";
         return "GOOD";
     }
     
     private String calculateAlertLevel(PartNumberStockTrackingEntity tracking) {
         if (tracking.getCurrentAvailableStock() == 0) return "CRITICAL";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold()) {
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold()) {
             return tracking.getCurrentAvailableStock() <= (tracking.getLowStockThreshold() * 0.5) ? "HIGH" : "WARNING";
         }
         return "NONE";

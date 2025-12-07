@@ -14,9 +14,10 @@ public interface PartNumberStockTrackingRepository extends JpaRepository<PartNum
     
     Optional<PartNumberStockTrackingEntity> findByPartNumber(String partNumber);
     
-    // Find all part numbers that are currently below threshold and have active (non-deleted) parts
+    // Find all part numbers that are at or below threshold (excluding zero stock)
     @Query("SELECT p FROM PartNumberStockTrackingEntity p WHERE " +
-           "p.currentAvailableStock < p.lowStockThreshold AND " +
+           "p.currentAvailableStock > 0 AND " +
+           "p.currentAvailableStock <= p.lowStockThreshold AND " +
            "p.currentTotalStock > 0")
     List<PartNumberStockTrackingEntity> findLowStockPartNumbers();
     
@@ -41,9 +42,10 @@ public interface PartNumberStockTrackingRepository extends JpaRepository<PartNum
            "LOWER(p.partName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<PartNumberStockTrackingEntity> searchPartNumbers(@Param("searchTerm") String searchTerm);
     
-    // Get stock summary statistics
+    // Get stock summary statistics (excluding zero stock items)
     @Query("SELECT COUNT(p) FROM PartNumberStockTrackingEntity p WHERE " +
-           "p.currentAvailableStock < p.lowStockThreshold AND " +
+           "p.currentAvailableStock > 0 AND " +
+           "p.currentAvailableStock <= p.lowStockThreshold AND " +
            "p.currentTotalStock > 0")
     long countLowStockPartNumbers();
     
