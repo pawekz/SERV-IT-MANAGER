@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.servit.servit.enumeration.PartEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
@@ -103,6 +104,7 @@ public class PartEntity {
     @OneToOne
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
+    @ToString.Exclude
     private WarrantyEntity warranty;
 
     @Column(name = "brand")

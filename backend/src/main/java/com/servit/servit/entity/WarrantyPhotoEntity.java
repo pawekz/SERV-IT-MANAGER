@@ -3,6 +3,7 @@ package com.servit.servit.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 @Entity
 @Table(name = "warranty_photo")
@@ -19,6 +20,7 @@ public class WarrantyPhotoEntity {
     @ManyToOne
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
+    @ToString.Exclude
     private WarrantyEntity warranty;
 
     @Column(name = "document_path")
