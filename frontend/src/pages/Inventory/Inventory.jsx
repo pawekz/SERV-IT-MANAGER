@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, ChevronDown, Package, ChevronLeft, ChevronRight, X, Plus, AlertTriangle, TrendingDown, Eye, Settings, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import api, { parseJwt } from '../../config/ApiConfig';
 import InventoryTable from './InventoryTable';
 import Toast from '../../components/Toast/Toast.jsx';
+import { prefetchPartPhoto } from "../../hooks/usePartPhoto";
 
 // Import modal components
 import DescriptionModal from "./DescriptionModal/DescriptionModal.jsx";
@@ -17,6 +19,124 @@ import BulkAddModal from "./BulkAddModal/BulkAddModal.jsx";
 // Import new modern UI components
 import CategoryTree from "./CategoryTree/CategoryTree.jsx";
 import FilterSidebar from "./FilterSidebar/FilterSidebar.jsx";
+
+const INVENTORY_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const calculateAvailabilityStatus = (availableStock, threshold) => {
+    const validThreshold = (threshold && threshold > 0) ? threshold : 10;
+    if (availableStock <= 0) {
+        return { status: "Out of Stock", color: "bg-red-100 text-red-600" };
+    }
+    if (availableStock <= validThreshold) {
+        return { status: "Low Stock", color: "bg-yellow-100 text-yellow-600" };
+    }
+    if (availableStock <= validThreshold * 2) {
+        return { status: "Normal", color: "bg-blue-100 text-blue-600" };
+    }
+    return { status: "Good", color: "bg-green-100 text-green-600" };
+};
+
+const transformInventoryItems = (parts) => {
+    const partsMap = new Map();
+
+    parts.forEach(item => {
+        const partNumber = item.partNumber;
+        if (partsMap.has(partNumber)) {
+            const existing = partsMap.get(partNumber);
+            existing.totalStock += item.currentStock;
+            existing.totalReserved += (item.reservedQuantity || 0);
+            existing.totalParts += 1;
+            existing.suppliers.add(item.supplierName || 'Unknown');
+            existing.allParts.push(item);
+        } else {
+            partsMap.set(partNumber, {
+                id: item.id,
+                partNumber: partNumber,
+                name: item.name,
+                description: item.description,
+                unitCost: item.unitCost,
+                totalStock: item.currentStock,
+                totalReserved: (item.reservedQuantity || 0),
+                lowStockThreshold: item.lowStockThreshold,
+                serialNumber: item.serialNumber,
+                brand: item.brand,
+                model: item.model,
+                totalParts: 1,
+                suppliers: new Set([item.supplierName || 'Unknown']),
+                allParts: [item],
+                dateAdded: item.dateAdded,
+                addedBy: item.addedBy
+            });
+        }
+    });
+
+    const transformedItems = Array.from(partsMap.values()).map(aggregatedItem => {
+        const availableStock = aggregatedItem.totalStock - aggregatedItem.totalReserved;
+        const availability = calculateAvailabilityStatus(availableStock, aggregatedItem.lowStockThreshold);
+
+        return {
+            ...aggregatedItem,
+            id: aggregatedItem.id,
+            sku: aggregatedItem.partNumber,
+            currentStock: aggregatedItem.totalStock,
+            availableStock: availableStock,
+            reservedStock: aggregatedItem.totalReserved,
+            suppliersCount: aggregatedItem.suppliers.size,
+            suppliersList: Array.from(aggregatedItem.suppliers),
+            availability: {
+                status: availability.status,
+                quantity: availableStock,
+                color: availability.color
+            }
+        };
+    });
+
+    const outOfStockItems = transformedItems.filter(item => item.availability.status === 'Out of Stock');
+
+    return { transformedItems, outOfStockItems };
+};
+
+const fetchInventoryData = async () => {
+    const response = await api.get('/part/getAllParts');
+    const { transformedItems, outOfStockItems } = transformInventoryItems(response.data || []);
+
+    try {
+        const lowStockResponse = await api.get('/part/stock/lowStockPartNumbers');
+        const backendLowStockItems = Array.isArray(lowStockResponse.data) ? lowStockResponse.data : [];
+
+        return {
+            items: transformedItems,
+            lowStockPartNumbers: backendLowStockItems,
+            stockSummary: {
+                totalPartNumbers: transformedItems.length,
+                lowStockCount: backendLowStockItems.length,
+                outOfStockCount: outOfStockItems.length,
+                activeAlertsCount: backendLowStockItems.length + outOfStockItems.length
+            }
+        };
+    } catch (lowStockErr) {
+        console.error("Error fetching low stock data, using frontend calculation:", lowStockErr);
+        const lowStockItems = transformedItems.filter(item => item.availability.status === 'Low Stock');
+
+        return {
+            items: transformedItems,
+            lowStockPartNumbers: lowStockItems.map(item => ({
+                partNumber: item.partNumber,
+                partName: item.name,
+                currentAvailableStock: item.availableStock,
+                lowStockThreshold: item.lowStockThreshold,
+                alertLevel: item.availableStock <= 0 ? 'CRITICAL' :
+                    item.availableStock < item.lowStockThreshold * 0.5 ? 'HIGH' : 'MEDIUM'
+            })),
+            stockSummary: {
+                totalPartNumbers: transformedItems.length,
+                lowStockCount: lowStockItems.length,
+                outOfStockCount: outOfStockItems.length,
+                activeAlertsCount: lowStockItems.length + outOfStockItems.length
+            }
+        };
+    }
+};
 
 const Inventory = () => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -135,24 +255,6 @@ const Inventory = () => {
         showNotification("As a technician, you don't have permission to modify inventory.", "error");
     }, [showNotification]);
 
-    // Enhanced helper function to calculate availability status with part number aggregation
-    // Logic: Out of Stock (0) → Low Stock (1 to threshold) → Normal (threshold+1 to threshold*2) → Good
-    const calculateAvailabilityStatus = (availableStock, threshold) => {
-        // Ensure threshold is a valid number, default to 10 if invalid
-        const validThreshold = (threshold && threshold > 0) ? threshold : 10;
-        
-        if (availableStock <= 0) {
-            return { status: "Out of Stock", color: "bg-red-100 text-red-600" };
-        } else if (availableStock <= validThreshold) {
-            // Items at or below threshold are "Low Stock" (excludes zero which is "Out of Stock")
-            return { status: "Low Stock", color: "bg-yellow-100 text-yellow-600" };
-        } else if (availableStock <= validThreshold * 2) {
-            return { status: "Normal", color: "bg-blue-100 text-blue-600" };
-        } else {
-            return { status: "Good", color: "bg-green-100 text-green-600" };
-        }
-    };
-
     // Highlight matching text in search results (memoized)
     const highlightText = useCallback((text, searchTerm) => {
         if (!searchTerm.trim() || !text) return text;
@@ -169,126 +271,73 @@ const Inventory = () => {
         );
     }, []);
 
-    // Enhanced inventory fetching with part number aggregation (defined early as it's used by other callbacks)
-    const fetchInventory = useCallback(async () => {
-        setLoading(true);
-        // show loading toast
-        setToast({ show: true, message: 'Loading inventory...', type: 'loading', duration: 0 });
-        try {
-            const response = await api.get('/part/getAllParts');
+    const queryClient = useQueryClient();
 
-            // Transform API data and group by part number for display
-            const partsMap = new Map();
-            
-            response.data.forEach(item => {
-                const partNumber = item.partNumber;
-                if (partsMap.has(partNumber)) {
-                    // Aggregate stock for same part number
-                    const existing = partsMap.get(partNumber);
-                    existing.totalStock += item.currentStock;
-                    existing.totalReserved += (item.reservedQuantity || 0);
-                    existing.totalParts += 1;
-                    existing.suppliers.add(item.supplierName || 'Unknown');
-                    existing.allParts.push(item);
-                } else {
-                    partsMap.set(partNumber, {
-                        id: item.id, // Use first part's ID for operations
-                        partNumber: partNumber,
-                        name: item.name,
-                        description: item.description,
-                        unitCost: item.unitCost,
-                        totalStock: item.currentStock,
-                        totalReserved: (item.reservedQuantity || 0),
-                        lowStockThreshold: item.lowStockThreshold,
-                        serialNumber: item.serialNumber,
-                        brand: item.brand,
-                        model: item.model,
-                        totalParts: 1,
-                        suppliers: new Set([item.supplierName || 'Unknown']),
-                        allParts: [item],
-                        dateAdded: item.dateAdded,
-                        addedBy: item.addedBy
-                    });
-                }
+    const inventoryQuery = useQuery({
+        queryKey: ['inventory'],
+        queryFn: fetchInventoryData,
+        enabled: !!userRole,
+        staleTime: INVENTORY_CACHE_TTL_MS,
+        gcTime: INVENTORY_CACHE_TTL_MS * 3,
+        refetchOnMount: 'always', // Always fetch on first mount, use cache on remount
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+    });
+
+    useEffect(() => {
+        if (inventoryQuery.data) {
+            setInventoryItems(inventoryQuery.data.items);
+            setLowStockPartNumbers(inventoryQuery.data.lowStockPartNumbers || []);
+            setStockSummary(inventoryQuery.data.stockSummary || {
+                totalPartNumbers: 0,
+                lowStockCount: 0,
+                outOfStockCount: 0,
+                activeAlertsCount: 0
             });
-
-            // Convert map to array and calculate availability
-            const transformedItems = Array.from(partsMap.values()).map(aggregatedItem => {
-                const availableStock = aggregatedItem.totalStock - aggregatedItem.totalReserved;
-                const availability = calculateAvailabilityStatus(availableStock, aggregatedItem.lowStockThreshold);
-                
-                return {
-                    ...aggregatedItem,
-                    id: aggregatedItem.id,
-                    sku: aggregatedItem.partNumber,
-                    currentStock: aggregatedItem.totalStock,
-                    availableStock: availableStock,
-                    reservedStock: aggregatedItem.totalReserved,
-                    suppliersCount: aggregatedItem.suppliers.size,
-                    suppliersList: Array.from(aggregatedItem.suppliers),
-                    availability: {
-                        status: availability.status,
-                        quantity: availableStock,
-                        color: availability.color
-                    }
-                };
-            });
-
-            setInventoryItems(transformedItems);
-            
-            // Calculate out of stock from frontend data
-            const outOfStockItems = transformedItems.filter(item => item.availability.status === 'Out of Stock');
-            
-            // Fetch low stock count from backend tracking table for consistency with Dashboard
-            // This uses PartNumberStockTrackingEntity thresholds instead of individual PartEntity thresholds
-            try {
-                const lowStockResponse = await api.get('/part/stock/lowStockPartNumbers');
-                const backendLowStockItems = Array.isArray(lowStockResponse.data) ? lowStockResponse.data : [];
-                
-                setStockSummary({
-                    totalPartNumbers: transformedItems.length,
-                    lowStockCount: backendLowStockItems.length,
-                    outOfStockCount: outOfStockItems.length,
-                    activeAlertsCount: backendLowStockItems.length + outOfStockItems.length
-                });
-                
-                // Use backend data for low stock part numbers (has correct thresholds)
-                setLowStockPartNumbers(backendLowStockItems);
-            } catch (lowStockErr) {
-                console.error("Error fetching low stock data, using frontend calculation:", lowStockErr);
-                // Fallback to frontend calculation if backend fails
-                const lowStockItems = transformedItems.filter(item => item.availability.status === 'Low Stock');
-                setStockSummary({
-                    totalPartNumbers: transformedItems.length,
-                    lowStockCount: lowStockItems.length,
-                    outOfStockCount: outOfStockItems.length,
-                    activeAlertsCount: lowStockItems.length + outOfStockItems.length
-                });
-                setLowStockPartNumbers(lowStockItems.map(item => ({
-                    partNumber: item.partNumber,
-                    partName: item.name,
-                    currentAvailableStock: item.availableStock,
-                    lowStockThreshold: item.lowStockThreshold,
-                    alertLevel: item.availableStock <= 0 ? 'CRITICAL' : 
-                               item.availableStock < item.lowStockThreshold * 0.5 ? 'HIGH' : 'MEDIUM'
-                })));
-            }
-
             setLoading(false);
-            // close loading toast
+        }
+    }, [inventoryQuery.data]);
+
+    useEffect(() => {
+        if (inventoryQuery.isFetching && !inventoryQuery.data) {
+            setLoading(true);
+            setToast({ show: true, message: 'Loading inventory data...', type: 'loading', duration: 0 });
+        }
+        if (!inventoryQuery.isFetching && loading) {
+            setLoading(false);
             setToast({ show: false, message: '', type: 'success', duration: 3000 });
-        } catch (err) {
-            console.error("Error fetching inventory:", err);
-            // notify user of failure via toast
+        }
+        if (inventoryQuery.error) {
+            console.error("Error fetching inventory:", inventoryQuery.error);
             showNotification("Failed to load inventory items, add items or check your connection.", 'error', 5000);
             setLoading(false);
-            // Don't clear inventoryItems on error - keep existing data visible
-            // Only clear if we have no data at all (initial load)
-            if (inventoryItems.length === 0) {
-                setInventoryItems([]);
-            }
+            setToast({ show: false, message: '', type: 'success', duration: 3000 });
         }
-    }, [showNotification, calculateAvailabilityStatus]);
+    }, [inventoryQuery.isFetching, inventoryQuery.error, inventoryQuery.data, showNotification, loading]);
+
+    useEffect(() => {
+        if (!inventoryItems.length) return;
+        const itemsToPrefetch = inventoryItems.slice(0, 24);
+        itemsToPrefetch.forEach(item => {
+            const firstPart = item.allParts?.[0];
+            if (firstPart?.partPhotoUrl && firstPart.partPhotoUrl !== '0') {
+                prefetchPartPhoto(queryClient, firstPart.id, firstPart.partPhotoUrl);
+            }
+        });
+    }, [inventoryItems, queryClient]);
+
+    const fetchInventory = useCallback(async () => {
+        // show loading toast like the previous implementation
+        setToast({ show: true, message: 'Loading inventory...', type: 'loading', duration: 0 });
+        const result = await inventoryQuery.refetch();
+        if (result.error) {
+            showNotification("Failed to load inventory items, add items or check your connection.", 'error', 5000);
+            setToast({ show: false, message: '', type: 'success', duration: 3000 });
+            return null;
+        }
+        setToast({ show: false, message: '', type: 'success', duration: 3000 });
+        return result.data;
+    }, [inventoryQuery, showNotification]);
 
 
     // Manual low stock check and display modal
@@ -363,9 +412,6 @@ const Inventory = () => {
             showNotification("Stock settings updated successfully");
             setShowStockSettingsModal(false);
             await fetchInventory();
-            setTimeout(() => {
-                fetchInventory();
-            }, 500);
         } catch (err) {
             console.error("Error updating stock settings:", err);
             showNotification("Failed to update stock settings", "error");
@@ -407,7 +453,6 @@ const Inventory = () => {
             setToast({ show: true, message: 'Deleting part...', type: 'loading', duration: 0 });
             await api.delete(`/part/deletePart/${partToDelete.id}`);
             showNotification("Part deleted successfully");
-            await fetchInventory();
             await refreshAllStockTracking();
         } catch (err) {
             console.error("Error deleting part:", err);
@@ -457,9 +502,6 @@ const Inventory = () => {
 
                 const normalizedRole = Array.isArray(role) ? role[0]?.toLowerCase() : role.toLowerCase();
                 setUserRole(normalizedRole);
-
-                await fetchInventory();
-                // Low stock data is now fetched from backend inside fetchInventory()
             } catch (err) {
                 console.error("Authentication error:", err);
                 showNotification("Authentication failed. Please log in again.", 'error', 5000);
@@ -469,7 +511,7 @@ const Inventory = () => {
 
         checkAuthentication();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run once on mount - fetchInventory and showNotification are stable callbacks
+    }, []); // Only run once on mount for authentication bootstrap
 
     // Handle form input changes
     const handleInputChange = (e) => {
@@ -607,7 +649,6 @@ const Inventory = () => {
             }]);
 
             // Refresh inventory
-            await fetchInventory();
             await refreshAllStockTracking();
 
             // Close modal after delay
@@ -773,7 +814,6 @@ const Inventory = () => {
             await api.patch(`/part/updatePart/${editPart.id}`, updateData);
             setEditSuccess(true);
             showNotification("Part updated successfully");
-            await fetchInventory();
             await refreshAllStockTracking(false);
             setTimeout(() => {
                 setShowEditModal(false);
@@ -861,7 +901,6 @@ const Inventory = () => {
                 addToExisting: false,
                 image: null
             });
-            await fetchInventory();
             await refreshAllStockTracking();
             setTimeout(() => {
                 setShowAddModal(false);
@@ -1059,10 +1098,10 @@ const Inventory = () => {
         currentPage * itemsPerPage
     ), [filteredItems, currentPage, itemsPerPage]);
 
-    // Reset to page 1 when filters or category change
+    // Reset to page 1 when filters, category, or search query change
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedCategory, filters]);
+    }, [selectedCategory, filters, searchQuery]);
 
     return (
         <div className="flex min-h-screen w-full overflow-x-hidden flex-col md:flex-row font-['Poppins',sans-serif]">
@@ -1180,12 +1219,8 @@ const Inventory = () => {
                         </div>
                     )}
 
-                    {/* Loading Indicator */}
-                    {loading && (
-                        <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-md">
-                            <p>Loading inventory data...</p>
-                        </div>
-                    )}
+                    {/* Loading Indicator (replaced by Toast snackbar) */}
+                    {/* The Toast below handles loading, error, and success notifications including 'Loading inventory...' */}
 
                         {/* Search and View Controls */}
                         <div className="flex flex-col xl:flex-row gap-4 mb-6 w-full">
