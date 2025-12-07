@@ -479,8 +479,10 @@ public class PartService {
     @Transactional(readOnly = true)
     public List<PartResponseDTO> getAllParts() {
         logger.info("Retrieving all parts");
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
+
         return partRepository.findByIsDeletedFalse().stream()
-                .map(this::convertToDto)
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -769,7 +771,14 @@ public class PartService {
      * @return The converted DTO
      */
     private PartResponseDTO convertToDto(PartEntity partEntity) {
-        logger.info("Converting part entity to DTO: {}", partEntity);
+        return convertToDto(partEntity, null);
+    }
+
+    /**
+     * Variant that can leverage a pre-fetched stock summary map to avoid N+1 lookups.
+     */
+    private PartResponseDTO convertToDto(PartEntity partEntity, Map<String, PartNumberStockSummaryDTO> stockSummaryMap) {
+        logger.debug("Converting part entity to DTO: {}", partEntity);
         PartResponseDTO dto = new PartResponseDTO();
         dto.setId(partEntity.getPartId());
         dto.setPartNumber(partEntity.getPartNumber());
@@ -781,15 +790,20 @@ public class PartService {
         dto.setCurrentStock(1); // Each individual part represents 1 item
 
         // Get low stock threshold from part number level stock tracking
-        try {
-            PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
-            if (stockSummary != null) {
-                dto.setLowStockThreshold(stockSummary.getLowStockThreshold());
-            } else {
-                dto.setLowStockThreshold(10); // Default threshold
+        PartNumberStockSummaryDTO stockSummary = null;
+        if (stockSummaryMap != null) {
+            stockSummary = stockSummaryMap.get(partEntity.getPartNumber());
+        } else {
+            try {
+                stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
+            } catch (Exception e) {
+                logger.warn("Could not get low stock threshold for part number: {}", partEntity.getPartNumber());
             }
-        } catch (Exception e) {
-            logger.warn("Could not get low stock threshold for part number: {}", partEntity.getPartNumber());
+        }
+
+        if (stockSummary != null) {
+            dto.setLowStockThreshold(stockSummary.getLowStockThreshold());
+        } else {
             dto.setLowStockThreshold(10); // Default threshold
         }
         dto.setSerialNumber(partEntity.getSerialNumber());
@@ -818,15 +832,17 @@ public class PartService {
         dto.setAvailableStock(1); // Individual part represents 1 item
 
         // Get availability status from part number level
-        try {
-            PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
-            if (stockSummary != null) {
-                dto.setAvailabilityStatus(stockSummary.getStockStatus());
-            } else {
-                dto.setAvailabilityStatus("UNKNOWN");
+        if (stockSummary == null && stockSummaryMap == null) {
+            try {
+                stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
+            } catch (Exception e) {
+                logger.warn("Could not get stock status for part number: {}", partEntity.getPartNumber());
             }
-        } catch (Exception e) {
-            logger.warn("Could not get stock status for part number: {}", partEntity.getPartNumber());
+        }
+
+        if (stockSummary != null) {
+            dto.setAvailabilityStatus(stockSummary.getStockStatus());
+        } else {
             dto.setAvailabilityStatus("UNKNOWN");
         }
         dto.setVersion(partEntity.getVersion());
@@ -841,7 +857,7 @@ public class PartService {
         // Part picture URL
         dto.setPartPhotoUrl(partEntity.getPartPhotoUrl());
 
-        logger.info("Part converted to DTO: {}", dto);
+        logger.debug("Part converted to DTO: {}", dto);
         return dto;
     }
 

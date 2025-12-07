@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -163,6 +165,15 @@ public class PartNumberStockTrackingService {
         return needingReorder.stream()
                 .map(this::convertToSummaryDTO)
                 .toList();
+    }
+
+    /**
+     * Returns a map of all stock summaries keyed by part number without triggering updates.
+     * Used for bulk read scenarios to avoid N+1 lookups during list endpoints.
+     */
+    public Map<String, PartNumberStockSummaryDTO> getAllStockSummariesMap() {
+        return trackingRepository.findAll().stream()
+                .collect(Collectors.toMap(PartNumberStockTrackingEntity::getPartNumber, this::convertToSummaryDTO));
     }
     
     /**
