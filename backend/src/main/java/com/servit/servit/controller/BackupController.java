@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/backup")
@@ -171,6 +172,37 @@ public class BackupController {
         } catch (Exception e) {
             logger.error("Failed to delete S3 backup {}", s3Key, e);
             return ResponseEntity.status(500).body("Failed to delete S3 backup: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/restore-upload")
+    public ResponseEntity<Map<String, Object>> restoreFromUpload(@RequestParam("file") MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        try {
+            if (file.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "File is empty");
+                response.put("requireSignout", false);
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (fileName == null || !fileName.toLowerCase().endsWith(".sql")) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Only .sql files are allowed");
+                response.put("requireSignout", false);
+                return ResponseEntity.badRequest().body(response);
+            }
+            logger.info("POST /api/backup/restore-upload received - initiating restore from uploaded file: {}", fileName);
+            String result = backupService.restoreFromInputStream(file.getInputStream(), fileName);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", result);
+            response.put("requireSignout", true);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Restore from uploaded file failed: {}", fileName, e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Restore failed: " + e.getMessage());
+            response.put("requireSignout", true);
+            return ResponseEntity.status(500).body(response);
         }
     }
 }

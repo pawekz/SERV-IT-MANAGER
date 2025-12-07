@@ -125,9 +125,11 @@ public class BackupService {
     // ===================== BACKUP (CREATE + UPLOAD) =====================
 
     public String initiateManualBackup() {
+        logger.info("[BACKUP] ========== BACKUP PROCESS STARTED ==========");
         ParsedDbUrl dbUrl = parseDbUrl();
         String username = getDbUsername();
         String password = getDbPassword();
+        logger.info("[BACKUP] Database: {}:{}/{}", dbUrl.host, dbUrl.port, dbUrl.databaseName);
 
         LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
         String currentDate = now.format(DATE_FORMATTER);
@@ -136,6 +138,7 @@ public class BackupService {
         String basePath = configurationService.getBackupPath();
         Path backupDir = Paths.get(basePath);
         Path backupFilePath = backupDir.resolve(backupFileName);
+        logger.info("[BACKUP] Output file: {}", backupFilePath);
         try {
             if (!Files.exists(backupDir)) {
                 Files.createDirectories(backupDir);
@@ -174,19 +177,21 @@ public class BackupService {
 
                     // Quotation (depends on repair_ticket)
                     "quotation",                   // 10. References repair_ticket
-                    "quotation_part_ids",          // 11. Join table for quotation @ElementCollection
+                    "quotation_entity_part_ids",   // 11. @ElementCollection join table (quotation)
+                    "quotation_recommended_parts", // 12. ManyToMany join table (quotation + part)
+                    "quotation_alternative_parts", // 13. ManyToMany join table (quotation + part)
 
                     // Notifications (depends on repair_ticket)
-                    "notification",                // 12. References repair_ticket
+                    "notification",                // 14. References repair_ticket
 
                     // Part tracking (depends on part)
-                    "part_number_stock_tracking",  // 13. References part
+                    "part_number_stock_tracking",  // 15. References part
 
                     // Inventory (depends on part)
-                    "inventory_transaction",       // 14. References part
+                    "inventory_transaction",       // 16. References part
 
                     // Feedback (depends on repair_ticket)
-                    "feedback"                     // 15. References repair_ticket
+                    "feedback"                     // 17. References repair_ticket
             );
             Set<String> dbTables = new HashSet<>();
             DatabaseMetaData metaData = connection.getMetaData();
@@ -196,26 +201,43 @@ public class BackupService {
                     dbTables.add(tableName);
                 }
             }
+            logger.info("[BACKUP] Starting backup process - {} tables to process", orderedTables.size());
+            int totalRows = 0;
+            int tablesProcessed = 0;
             for (String tableName : orderedTables) {
                 if (dbTables.contains(tableName)) {
-                    backupTableDataOnly(connection, tableName, printWriter);
+                    try {
+                        int rowCount = backupTableDataOnly(connection, tableName, printWriter);
+                        totalRows += rowCount;
+                        tablesProcessed++;
+                        logger.info("[BACKUP] Table '{}': {} rows backed up", tableName, rowCount);
+                    } catch (Exception e) {
+                        logger.error("[BACKUP] Failed to backup table '{}': {}", tableName, e.getMessage(), e);
+                        throw e;
+                    }
+                } else {
+                    logger.warn("[BACKUP] Table '{}' not found in database - skipping", tableName);
                 }
             }
+            logger.info("[BACKUP] Backup completed: {} tables, {} total rows", tablesProcessed, totalRows);
             printWriter.println("SET FOREIGN_KEY_CHECKS=1;");
         } catch (IOException | SQLException e) {
-            logger.error("Backup process failed.", e);
+            logger.error("[BACKUP] ========== BACKUP PROCESS FAILED ==========");
+            logger.error("[BACKUP] Error: {}", e.getMessage(), e);
             throw new BackupOperationFailedException("Backup process failed.", e);
         }
+        logger.info("[BACKUP] ========== BACKUP PROCESS COMPLETED ==========");
         return backupFilePath.toString();
     }
 
-    private void backupTableDataOnly(Connection connection, String tableName, PrintWriter printWriter) throws SQLException {
+    private int backupTableDataOnly(Connection connection, String tableName, PrintWriter printWriter) throws SQLException {
         String dbName = connection.getCatalog();
         printWriter.println("-- Data for table " + tableName);
         String query = "SELECT * FROM `" + tableName + "`";
         if ("user".equalsIgnoreCase(tableName)) {
             query += " WHERE user_id <> 1 AND LOWER(role) NOT LIKE '%admin%'";
         }
+        int rowCount = 0;
         try (Statement stmt = connection.createStatement();
              ResultSet resultSet = stmt.executeQuery(query)) {
             ResultSetMetaData metaData = resultSet.getMetaData();
@@ -255,14 +277,23 @@ public class BackupService {
                 }
                 insertSql.append(");");
                 printWriter.println(insertSql.toString());
+                rowCount++;
             }
         }
         printWriter.println();
+        return rowCount;
     }
 
     public void uploadBackupToS3(String localFilePath, String backupFileName) {
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, "backup/" + backupFileName, new java.io.File(localFilePath));
-        s3Client.putObject(putObjectRequest);
+        logger.info("[BACKUP] Uploading to S3: bucket={}, key=backup/{}", bucketName, backupFileName);
+        try {
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, "backup/" + backupFileName, new java.io.File(localFilePath));
+            s3Client.putObject(putObjectRequest);
+            logger.info("[BACKUP] S3 upload completed: backup/{}", backupFileName);
+        } catch (Exception e) {
+            logger.error("[BACKUP] S3 upload failed for {}: {}", backupFileName, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public List<Map<String, Object>> listS3BackupsWithPresignedUrls() {
@@ -349,6 +380,29 @@ public class BackupService {
         } catch (Exception e) {
             logger.error("Restore process failed for backup: {}", backupIdentifier, e);
             throw new BackupOperationFailedException("Restore process failed for " + backupIdentifier + ": " + e.getMessage(), e);
+        }
+    }
+
+    public String restoreFromInputStream(InputStream inputStream, String fileName) {
+        if (inputStream == null) {
+            throw new BackupOperationFailedException("Input stream is null");
+        }
+        if (fileName == null || !fileName.toLowerCase().endsWith(".sql")) {
+            throw new BackupOperationFailedException("Unsupported file type. Only .sql files are allowed.");
+        }
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+            clearAllTables();
+            executeSqlDump(sb.toString());
+            logger.info("Restore completed successfully from uploaded file: {}", fileName);
+            return "Restore completed successfully from uploaded file: " + fileName;
+        } catch (Exception e) {
+            logger.error("Restore from uploaded file failed: {}", fileName, e);
+            throw new BackupOperationFailedException("Restore from uploaded file failed: " + e.getMessage(), e);
         }
     }
 

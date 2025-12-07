@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { HardDriveDownload, AlertCircle, } from "lucide-react";
+import { HardDriveDownload, AlertCircle, Upload } from "lucide-react";
 import Sidebar from "../../components/SideBar/Sidebar.jsx";
 import BackupScheduleTab from "../../components/BackupScheduleTab/BackupScheduleTab.jsx";
 import BackupHistoryTab from "../../components/BackupHistoryTab/BackupHistoryTab.jsx";
@@ -43,6 +43,10 @@ const BackupPage = () => {
 
     const navigate = useNavigate();
     const [tokenExpiredModal, setTokenExpiredModal] = useState(false);
+    const fileInputRef = useRef(null);
+    const [uploadRestoreLoading, setUploadRestoreLoading] = useState(false);
+    const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const userRole = getUserRole();
     const isAdmin = userRole === 'ADMIN';
@@ -82,6 +86,66 @@ const BackupPage = () => {
         }
     };
 
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            setActionError("Only .sql files are allowed");
+            setTimeout(clearMessages, 5000);
+            return;
+        }
+        
+        setSelectedFile(file);
+        setShowRestoreConfirm(true);
+    };
+
+    const handleUploadRestore = async () => {
+        if (!selectedFile) return;
+        
+        setShowRestoreConfirm(false);
+        setUploadRestoreLoading(true);
+        setActionError(null);
+        setShowToast(false);
+        setToastMessage("");
+        setToastS3Key(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            const response = await api.post("/api/backup/restore-upload", formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            const data = response.data;
+            setToastMessage(data.message || "Restore completed successfully");
+            setToastType("success");
+            setShowToast(true);
+            
+            // If restore requires sign out
+            if (data.requireSignout) {
+                setTimeout(() => {
+                    localStorage.removeItem('authToken');
+                    navigate('/login');
+                }, 3000);
+            }
+        } catch (err) {
+            setActionError(err.response?.data?.message || err.response?.data || err.message);
+        } finally {
+            setUploadRestoreLoading(false);
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            setTimeout(clearMessages, 5000);
+        }
+    };
+
+    const cancelUploadRestore = () => {
+        setShowRestoreConfirm(false);
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     useEffect(() => {
         const handleTokenExpired = () => {
             setTokenExpiredModal(true);
@@ -105,6 +169,37 @@ const BackupPage = () => {
                     </div>
                 </div>
             )}
+            {/* Restore from File Confirmation Modal */}
+            {showRestoreConfirm && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+                        <h3 className="text-lg font-semibold mb-2 text-gray-800">Restore from File</h3>
+                        <p className="mb-2 text-gray-700">
+                            Are you sure you want to restore the system from:
+                        </p>
+                        <p className="mb-4 text-sm font-medium text-blue-600 break-all">
+                            {selectedFile?.name}
+                        </p>
+                        <p className="mb-4 text-sm text-red-600">
+                            ⚠️ This will replace all current data. You will be signed out after the restore completes.
+                        </p>
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={cancelUploadRestore}
+                                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUploadRestore}
+                                className="px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600"
+                            >
+                                Restore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className=" w-full md:w-[250px] h-auto md:h-screen ">
                 <Sidebar activePage={'backup'}/>
             </div>
@@ -116,10 +211,25 @@ const BackupPage = () => {
                             Manually create database backups, schedule automatic backups, and restore from existing backup points.
                         </p>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex gap-3">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept=".sql"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadRestoreLoading || actionLoading}
+                            className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400"
+                        >
+                            <Upload className="mr-2" size={20} />
+                            {uploadRestoreLoading ? 'Restoring...' : 'Restore from File'}
+                        </button>
                         <button
                             onClick={handleManualBackup}
-                            disabled={actionLoading}
+                            disabled={actionLoading || uploadRestoreLoading}
                             className="flex items-center py-3 px-6 rounded-md font-medium transition-all text-white bg-[#2563eb] hover:bg-[#1e49c7] disabled:bg-gray-400"
                         >
                             <HardDriveDownload className="mr-2" />
