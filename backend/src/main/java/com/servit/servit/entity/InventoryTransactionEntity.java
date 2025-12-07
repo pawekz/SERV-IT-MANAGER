@@ -2,6 +2,7 @@ package com.servit.servit.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class InventoryTransactionEntity {
 
     @ManyToOne
     @JoinColumn(name = "part_id", nullable = false)
+    @ToString.Exclude
     private PartEntity part;
 
     @Column(name = "transaction_type", nullable = false)
