@@ -55,17 +55,41 @@ public class ScheduledQuotationService implements SchedulingConfigurer {
         }
     }
 
+    // Maximum age for reminder - skip if nextReminderAt is older than this (prevents re-sends after restore)
+    private static final int MAX_REMINDER_AGE_HOURS = 2;
+
     private void runMonitor() {
         try {
             logger.debug("Running quotation monitor at {}", LocalDateTime.now());
             List<QuotationEntity> pending = quotationRepository.findByStatus("PENDING");
             for (QuotationEntity q : pending) {
                 LocalDateTime now = LocalDateTime.now();
+                
+                // Check if reminder is due and not too old (prevents mass re-sends after backup restore)
                 if (q.getNextReminderAt() != null && (q.getLastReminderSentAt() == null || now.isAfter(q.getNextReminderAt()))) {
+                    // Skip if reminder is too old (likely from a restored backup)
+                    if (q.getNextReminderAt().isBefore(now.minusHours(MAX_REMINDER_AGE_HOURS))) {
+                        logger.warn("Skipping stale reminder for quotation {} - nextReminderAt {} is more than {} hours old", 
+                            q.getQuotationId(), q.getNextReminderAt(), MAX_REMINDER_AGE_HOURS);
+                        // Update nextReminderAt to prevent repeated warnings
+                        q.setNextReminderAt(now.plusHours(q.getReminderDelayHours() != null ? q.getReminderDelayHours() : 24));
+                        quotationRepository.save(q);
+                        continue;
+                    }
                     quotationService.sendReminder(q.getQuotationId());
                 }
+                
+                // Check for expiry - also skip if expiry is too old (prevents duplicate expired notifications after restore)
                 LocalDateTime expiry = q.getExpiryAt();
                 if (expiry != null && now.isAfter(expiry)) {
+                    // Skip if already way past expiry (likely already processed before backup)
+                    if (expiry.isBefore(now.minusHours(MAX_REMINDER_AGE_HOURS))) {
+                        logger.warn("Skipping stale expiry for quotation {} - expiryAt {} is more than {} hours old", 
+                            q.getQuotationId(), expiry, MAX_REMINDER_AGE_HOURS);
+                        q.setStatus("EXPIRED");
+                        quotationRepository.save(q);
+                        continue;
+                    }
                     q.setStatus("EXPIRED");
                     quotationRepository.save(q);
                     logger.info("Quotation {} expired", q.getQuotationId());
