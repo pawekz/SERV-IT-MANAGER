@@ -69,7 +69,7 @@ const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, ope
               <div className="space-y-2">
                 {optionA.map((part) => (
                   <div key={part.id} className="flex items-center gap-3 bg-white p-2 rounded">
-                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl || part.image} />
+                    <PartPhoto partId={part.photoSourcePartId || part.id} photoUrl={part.partPhotoUrl || part.image} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900">{part.name}</div>
                       <div className="text-xs text-gray-500">SKU: {part.sku}</div>
@@ -103,7 +103,7 @@ const SelectedPartsCard = ({ optionA = [], optionB = [], removePartFromSlot, ope
               <div className="space-y-2">
                 {optionB.map((part) => (
                   <div key={part.id} className="flex items-center gap-3 mb-2 last:mb-0 bg-white p-2 rounded">
-                    <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl || part.image} />
+                    <PartPhoto partId={part.photoSourcePartId || part.id} photoUrl={part.partPhotoUrl || part.image} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900">{part.name}</div>
                       <div className="text-xs text-gray-500">SKU: {part.sku}</div>
