@@ -23,6 +23,7 @@ import com.servit.servit.util.FileUtil;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.time.temporal.ChronoUnit;
 
 import org.slf4j.Logger;
@@ -494,22 +495,16 @@ public class PartService {
     public List<PartResponseDTO> getAvailableParts() {
         logger.info("Retrieving all parts with available stock at part number level");
 
-        // Get all active parts
-        List<PartEntity> allParts = partRepository.findByIsDeletedFalse();
+        // Pre-fetch stock summaries to avoid N+1 query problem
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
 
-        // Filter by part numbers that have available stock
-        return allParts.stream()
+        // Get all active parts and filter by available stock
+        return partRepository.findByIsDeletedFalse().stream()
                 .filter(part -> {
-                    try {
-                        // Check if this part number has available stock
-                        PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(part.getPartNumber());
-                        return stockSummary != null && stockSummary.getCurrentAvailableStock() > 0;
-                    } catch (Exception e) {
-                        logger.warn("Could not get stock summary for part number: {}", part.getPartNumber());
-                        return false;
-                    }
+                    PartNumberStockSummaryDTO stockSummary = stockSummaryMap.get(part.getPartNumber());
+                    return stockSummary != null && stockSummary.getCurrentAvailableStock() > 0;
                 })
-                .map(this::convertToDto)
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -521,25 +516,23 @@ public class PartService {
     public List<PartResponseDTO> getLowStockParts() {
         logger.info("Retrieving all parts with low stock at part number level");
 
-        // Get low stock part numbers from tracking service
-        List<PartNumberStockSummaryDTO> lowStockPartNumbers = stockTrackingService.getLowStockPartNumbers();
+        // Pre-fetch stock summaries to avoid N+1 query problem
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
+
+        // Get low stock part numbers
+        Set<String> lowStockPartNumbers = stockSummaryMap.values().stream()
+                .filter(summary -> summary.getCurrentAvailableStock() <= summary.getLowStockThreshold())
+                .map(PartNumberStockSummaryDTO::getPartNumber)
+                .collect(Collectors.toSet());
 
         if (lowStockPartNumbers.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // Get all parts for these part numbers
-        List<PartEntity> lowStockParts = new ArrayList<>();
-        for (PartNumberStockSummaryDTO lowStockSummary : lowStockPartNumbers) {
-            List<PartEntity> partsForNumber = partRepository.findAllByPartNumber(lowStockSummary.getPartNumber())
-                    .stream()
-                    .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                    .toList();
-            lowStockParts.addAll(partsForNumber);
-        }
-
-        return lowStockParts.stream()
-                .map(this::convertToDto)
+        // Get all active parts and filter by low stock part numbers
+        return partRepository.findByIsDeletedFalse().stream()
+                .filter(part -> lowStockPartNumbers.contains(part.getPartNumber()))
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -551,8 +544,12 @@ public class PartService {
     @Transactional(readOnly = true)
     public List<PartResponseDTO> getAllPartsForQuotation() {
         try {
+            // Pre-fetch stock summaries to avoid N+1 query problem
+            Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
             List<PartEntity> parts = partRepository.findEligiblePartsForQuotation();
-            return parts.stream().map(this::convertToDto).toList();
+            return parts.stream()
+                    .map(part -> convertToDto(part, stockSummaryMap))
+                    .toList();
         } catch (Exception e) {
             logger.error("Error retrieving parts for quotation: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to retrieve parts for quotation", e);
