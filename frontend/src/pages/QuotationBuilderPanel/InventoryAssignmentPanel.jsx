@@ -163,18 +163,33 @@ const InventoryAssignmentPanel = () => {
                 if (!token) return;
                 const { data } = await api.get("/part/getAllPartsForQuotation");
 
+                // Build a map of partNumber -> { photoUrl, sourcePartId } for parts that have photos
+                // This allows parts with the same partNumber to share the photo using the correct source ID
+                const photoByPartNumber = {};
+                data.forEach(p => {
+                    if (p.partPhotoUrl && !photoByPartNumber[p.partNumber]) {
+                        photoByPartNumber[p.partNumber] = { photoUrl: p.partPhotoUrl, sourcePartId: p.id };
+                    }
+                });
+
                 const transformed = data.map(p => {
                     const totalStock = p.currentStock || 1; // individual item represents 1
                     const reserved = p.reservedQuantity || 0;
                     const available = totalStock - reserved;
                     const availability = computeAvailability(available, p.lowStockThreshold || 5);
+                    // Use own photo, or fallback to shared photo by partNumber
+                    const photoInfo = photoByPartNumber[p.partNumber];
+                    const partPhotoUrl = p.partPhotoUrl || photoInfo?.photoUrl || "";
+                    // Use the source part ID that actually has the photo for API calls
+                    const photoSourcePartId = p.partPhotoUrl ? p.id : photoInfo?.sourcePartId || null;
                     return {
                         id: p.id,
                         name: p.name,
                         sku: p.partNumber,
                         serial: p.serialNumber,
                         image: "", // placeholder
-                        partPhotoUrl: p.partPhotoUrl || "",
+                        partPhotoUrl,
+                        photoSourcePartId,
                         availability,
                         price: p.unitCost || 0,
                         quantity: 1,
@@ -595,7 +610,7 @@ const InventoryAssignmentPanel = () => {
                                                 >
                                                     {recommendedParts.map((part) => (
                                                         <div key={part.id} className="flex items-start gap-3 mb-3 last:mb-0">
-                                                            <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
+                                                            <PartPhoto partId={part.photoSourcePartId || part.id} photoUrl={part.partPhotoUrl} />
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="text-sm font-semibold text-gray-900">{part.name || `Part #${part.id}`}</div>
                                                                 <div className="text-xs text-gray-500">SKU: {part.partNumber || '—'}</div>
@@ -660,7 +675,7 @@ const InventoryAssignmentPanel = () => {
                                                 >
                                                     {alternativeParts.map((part) => (
                                                         <div key={part.id} className="flex items-start gap-3 mb-3 last:mb-0">
-                                                            <PartPhoto partId={part.id} photoUrl={part.partPhotoUrl} />
+                                                            <PartPhoto partId={part.photoSourcePartId || part.id} photoUrl={part.partPhotoUrl} />
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="text-sm font-semibold text-gray-900">{part.name || `Part #${part.id}`}</div>
                                                                 <div className="text-xs text-gray-500">SKU: {part.partNumber || '—'}</div>

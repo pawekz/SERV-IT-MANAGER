@@ -279,7 +279,7 @@ const renderOptionCard = (label, partId, optionParts) => {
   const part = optionParts[partId];
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-white mb-2 flex items-center gap-3">
-      <PartPhoto partId={partId} photoUrl={part?.partPhotoUrl} />
+      <PartPhoto partId={part?.photoSourcePartId || partId} photoUrl={part?.partPhotoUrl} />
       <div className="flex-1 min-w-0">
         {label && <div className="text-xs font-semibold text-green-700 mb-1">{label}</div>}
         <div className="text-sm font-semibold text-gray-900">{part?.name || "Part #" + partId}</div>
