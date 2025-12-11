@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -164,6 +166,15 @@ public class PartNumberStockTrackingService {
                 .map(this::convertToSummaryDTO)
                 .toList();
     }
+
+    /**
+     * Returns a map of all stock summaries keyed by part number without triggering updates.
+     * Used for bulk read scenarios to avoid N+1 lookups during list endpoints.
+     */
+    public Map<String, PartNumberStockSummaryDTO> getAllStockSummariesMap() {
+        return trackingRepository.findAll().stream()
+                .collect(Collectors.toMap(PartNumberStockTrackingEntity::getPartNumber, this::convertToSummaryDTO));
+    }
     
     /**
      * Searches part numbers by name or part number
@@ -273,14 +284,14 @@ public class PartNumberStockTrackingService {
     
     private String calculateStockStatus(PartNumberStockTrackingEntity tracking) {
         if (tracking.getCurrentAvailableStock() == 0) return "CRITICAL";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold()) return "LOW";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold() * 2) return "NORMAL";
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold()) return "LOW";
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold() * 2) return "NORMAL";
         return "GOOD";
     }
     
     private String calculateAlertLevel(PartNumberStockTrackingEntity tracking) {
         if (tracking.getCurrentAvailableStock() == 0) return "CRITICAL";
-        if (tracking.getCurrentAvailableStock() < tracking.getLowStockThreshold()) {
+        if (tracking.getCurrentAvailableStock() <= tracking.getLowStockThreshold()) {
             return tracking.getCurrentAvailableStock() <= (tracking.getLowStockThreshold() * 0.5) ? "HIGH" : "WARNING";
         }
         return "NONE";

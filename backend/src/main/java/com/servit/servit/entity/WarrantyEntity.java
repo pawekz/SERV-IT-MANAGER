@@ -60,10 +60,12 @@ public class WarrantyEntity {
 
     @OneToOne(mappedBy = "warranty", cascade = CascadeType.ALL)
     @JsonManagedReference
+    @ToString.Exclude
     private PartEntity item;
 
     @OneToMany(mappedBy = "warranty", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @ToString.Exclude
     private List<WarrantyPhotoEntity> warrantyPhotos;
 
     @Column(name = "document_path")

@@ -4,6 +4,7 @@ import com.servit.servit.enumeration.RepairStatusEnum;
 import com.servit.servit.enumeration.RepairTicketDeviceType;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -85,6 +86,7 @@ public class RepairTicketEntity {
 
     @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @ToString.Exclude
     private List<RepairStatusHistoryEntity> repairStatusHistory;
 
     @CreationTimestamp
@@ -93,10 +95,12 @@ public class RepairTicketEntity {
 
     @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @ToString.Exclude
     private List<RepairPhotoEntity> repairPhotos;
 
     @OneToMany(mappedBy = "repairTicket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @ToString.Exclude
     private List<AfterRepairPhotoEntity> afterRepairPhotos;
 
     @Column(name = "document_path")

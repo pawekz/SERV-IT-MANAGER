@@ -23,6 +23,7 @@ import com.servit.servit.util.FileUtil;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.time.temporal.ChronoUnit;
 
 import org.slf4j.Logger;
@@ -93,12 +94,20 @@ public class PartService {
 
             // Use the first non-deleted part to get the common details
             PartEntity existingPart = existingParts.get(0);
+            String sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
             part.setName(existingPart.getName());
             part.setDescription(existingPart.getDescription());
             part.setUnitCost(existingPart.getUnitCost());
             part.setPartType(existingPart.getPartType());
             part.setBrand(existingPart.getBrand());
             part.setModel(existingPart.getModel());
+            if (sharedPhotoUrl != null) {
+                part.setPartPhotoUrl(sharedPhotoUrl);
+            }
 
             logger.info("Found {} existing parts with part number: {}", existingParts.size(), req.getPartNumber());
         } else {
@@ -109,6 +118,13 @@ public class PartService {
             part.setPartType(req.getPartType());
             part.setBrand(req.getBrand());
             part.setModel(req.getModel());
+        }
+
+        if (!hasValidPhotoUrl(part.getPartPhotoUrl())) {
+            String sharedPhotoUrlFallback = resolveSharedPhotoUrl(part.getPartNumber());
+            if (sharedPhotoUrlFallback != null) {
+                part.setPartPhotoUrl(sharedPhotoUrlFallback);
+            }
         }
 
         // Set common fields
@@ -163,12 +179,20 @@ public class PartService {
             }
 
             PartEntity existingPart = existingParts.get(0);
+            String sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
             part.setName(existingPart.getName());
             part.setDescription(existingPart.getDescription());
             part.setUnitCost(existingPart.getUnitCost());
             part.setPartType(existingPart.getPartType());
             part.setBrand(existingPart.getBrand());
             part.setModel(existingPart.getModel());
+            if (sharedPhotoUrl != null) {
+                part.setPartPhotoUrl(sharedPhotoUrl);
+            }
         } else {
             part.setName(req.getName());
             part.setDescription(req.getDescription());
@@ -181,6 +205,13 @@ public class PartService {
         part.setCurrentStock(1);
         part.setIsDeleted(false);
         part.setIsCustomerPurchased(false);
+
+        if (!hasValidPhotoUrl(part.getPartPhotoUrl())) {
+            String sharedPhotoUrlFallback = resolveSharedPhotoUrl(part.getPartNumber());
+            if (sharedPhotoUrlFallback != null) {
+                part.setPartPhotoUrl(sharedPhotoUrlFallback);
+            }
+        }
 
         try {
             PartEntity savedPart = partRepository.save(part);
@@ -236,6 +267,7 @@ public class PartService {
 
         // If adding to existing part number, fetch and copy the details
         PartEntity existingPart = null;
+        String sharedPhotoUrl = null;
         if (Boolean.TRUE.equals(bulkDto.getAddToExisting())) {
             // There may be many parts with the same part number, so fetch the list and
             // use the first active (non-deleted) entry instead of expecting a unique result.
@@ -249,6 +281,15 @@ public class PartService {
             }
 
             existingPart = existingParts.get(0);
+            sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (sharedPhotoUrl == null) {
+            sharedPhotoUrl = resolveSharedPhotoUrl(partNumber);
         }
 
         // First, check for duplicates within the request itself
@@ -292,6 +333,9 @@ public class PartService {
                 partEntity.setBrand(existingPart.getBrand());
                 partEntity.setModel(existingPart.getModel());
                 partEntity.setPartType(existingPart.getPartType());
+                if (sharedPhotoUrl != null) {
+                    partEntity.setPartPhotoUrl(sharedPhotoUrl);
+                }
             } else {
                 // Set new part details
                 partEntity.setName(bulkDto.getName());
@@ -313,6 +357,10 @@ public class PartService {
                 partEntity.setSupplierPartNumber(bulkDto.getSupplierPartNumber());
                 partEntity.setSupplierOrderDate(bulkDto.getSupplierOrderDate());
                 partEntity.setSupplierExpectedDelivery(bulkDto.getSupplierExpectedDelivery());
+            }
+
+            if (!hasValidPhotoUrl(partEntity.getPartPhotoUrl()) && sharedPhotoUrl != null) {
+                partEntity.setPartPhotoUrl(sharedPhotoUrl);
             }
 
             partsToSave.add(partEntity);
@@ -479,8 +527,10 @@ public class PartService {
     @Transactional(readOnly = true)
     public List<PartResponseDTO> getAllParts() {
         logger.info("Retrieving all parts");
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
+
         return partRepository.findByIsDeletedFalse().stream()
-                .map(this::convertToDto)
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -492,22 +542,16 @@ public class PartService {
     public List<PartResponseDTO> getAvailableParts() {
         logger.info("Retrieving all parts with available stock at part number level");
 
-        // Get all active parts
-        List<PartEntity> allParts = partRepository.findByIsDeletedFalse();
+        // Pre-fetch stock summaries to avoid N+1 query problem
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
 
-        // Filter by part numbers that have available stock
-        return allParts.stream()
+        // Get all active parts and filter by available stock
+        return partRepository.findByIsDeletedFalse().stream()
                 .filter(part -> {
-                    try {
-                        // Check if this part number has available stock
-                        PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(part.getPartNumber());
-                        return stockSummary != null && stockSummary.getCurrentAvailableStock() > 0;
-                    } catch (Exception e) {
-                        logger.warn("Could not get stock summary for part number: {}", part.getPartNumber());
-                        return false;
-                    }
+                    PartNumberStockSummaryDTO stockSummary = stockSummaryMap.get(part.getPartNumber());
+                    return stockSummary != null && stockSummary.getCurrentAvailableStock() > 0;
                 })
-                .map(this::convertToDto)
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -519,25 +563,23 @@ public class PartService {
     public List<PartResponseDTO> getLowStockParts() {
         logger.info("Retrieving all parts with low stock at part number level");
 
-        // Get low stock part numbers from tracking service
-        List<PartNumberStockSummaryDTO> lowStockPartNumbers = stockTrackingService.getLowStockPartNumbers();
+        // Pre-fetch stock summaries to avoid N+1 query problem
+        Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
+
+        // Get low stock part numbers
+        Set<String> lowStockPartNumbers = stockSummaryMap.values().stream()
+                .filter(summary -> summary.getCurrentAvailableStock() <= summary.getLowStockThreshold())
+                .map(PartNumberStockSummaryDTO::getPartNumber)
+                .collect(Collectors.toSet());
 
         if (lowStockPartNumbers.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // Get all parts for these part numbers
-        List<PartEntity> lowStockParts = new ArrayList<>();
-        for (PartNumberStockSummaryDTO lowStockSummary : lowStockPartNumbers) {
-            List<PartEntity> partsForNumber = partRepository.findAllByPartNumber(lowStockSummary.getPartNumber())
-                    .stream()
-                    .filter(part -> part.getIsDeleted() == null || !part.getIsDeleted())
-                    .toList();
-            lowStockParts.addAll(partsForNumber);
-        }
-
-        return lowStockParts.stream()
-                .map(this::convertToDto)
+        // Get all active parts and filter by low stock part numbers
+        return partRepository.findByIsDeletedFalse().stream()
+                .filter(part -> lowStockPartNumbers.contains(part.getPartNumber()))
+                .map(part -> convertToDto(part, stockSummaryMap))
                 .toList();
     }
 
@@ -549,8 +591,12 @@ public class PartService {
     @Transactional(readOnly = true)
     public List<PartResponseDTO> getAllPartsForQuotation() {
         try {
+            // Pre-fetch stock summaries to avoid N+1 query problem
+            Map<String, PartNumberStockSummaryDTO> stockSummaryMap = stockTrackingService.getAllStockSummariesMap();
             List<PartEntity> parts = partRepository.findEligiblePartsForQuotation();
-            return parts.stream().map(this::convertToDto).toList();
+            return parts.stream()
+                    .map(part -> convertToDto(part, stockSummaryMap))
+                    .toList();
         } catch (Exception e) {
             logger.error("Error retrieving parts for quotation: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to retrieve parts for quotation", e);
@@ -769,7 +815,14 @@ public class PartService {
      * @return The converted DTO
      */
     private PartResponseDTO convertToDto(PartEntity partEntity) {
-        logger.info("Converting part entity to DTO: {}", partEntity);
+        return convertToDto(partEntity, null);
+    }
+
+    /**
+     * Variant that can leverage a pre-fetched stock summary map to avoid N+1 lookups.
+     */
+    private PartResponseDTO convertToDto(PartEntity partEntity, Map<String, PartNumberStockSummaryDTO> stockSummaryMap) {
+        logger.debug("Converting part entity to DTO: {}", partEntity);
         PartResponseDTO dto = new PartResponseDTO();
         dto.setId(partEntity.getPartId());
         dto.setPartNumber(partEntity.getPartNumber());
@@ -781,15 +834,20 @@ public class PartService {
         dto.setCurrentStock(1); // Each individual part represents 1 item
 
         // Get low stock threshold from part number level stock tracking
-        try {
-            PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
-            if (stockSummary != null) {
-                dto.setLowStockThreshold(stockSummary.getLowStockThreshold());
-            } else {
-                dto.setLowStockThreshold(10); // Default threshold
+        PartNumberStockSummaryDTO stockSummary = null;
+        if (stockSummaryMap != null) {
+            stockSummary = stockSummaryMap.get(partEntity.getPartNumber());
+        } else {
+            try {
+                stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
+            } catch (Exception e) {
+                logger.warn("Could not get low stock threshold for part number: {}", partEntity.getPartNumber());
             }
-        } catch (Exception e) {
-            logger.warn("Could not get low stock threshold for part number: {}", partEntity.getPartNumber());
+        }
+
+        if (stockSummary != null) {
+            dto.setLowStockThreshold(stockSummary.getLowStockThreshold());
+        } else {
             dto.setLowStockThreshold(10); // Default threshold
         }
         dto.setSerialNumber(partEntity.getSerialNumber());
@@ -818,15 +876,17 @@ public class PartService {
         dto.setAvailableStock(1); // Individual part represents 1 item
 
         // Get availability status from part number level
-        try {
-            PartNumberStockSummaryDTO stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
-            if (stockSummary != null) {
-                dto.setAvailabilityStatus(stockSummary.getStockStatus());
-            } else {
-                dto.setAvailabilityStatus("UNKNOWN");
+        if (stockSummary == null && stockSummaryMap == null) {
+            try {
+                stockSummary = stockTrackingService.getStockSummary(partEntity.getPartNumber());
+            } catch (Exception e) {
+                logger.warn("Could not get stock status for part number: {}", partEntity.getPartNumber());
             }
-        } catch (Exception e) {
-            logger.warn("Could not get stock status for part number: {}", partEntity.getPartNumber());
+        }
+
+        if (stockSummary != null) {
+            dto.setAvailabilityStatus(stockSummary.getStockStatus());
+        } else {
             dto.setAvailabilityStatus("UNKNOWN");
         }
         dto.setVersion(partEntity.getVersion());
@@ -841,7 +901,7 @@ public class PartService {
         // Part picture URL
         dto.setPartPhotoUrl(partEntity.getPartPhotoUrl());
 
-        logger.info("Part converted to DTO: {}", dto);
+        logger.debug("Part converted to DTO: {}", dto);
         return dto;
     }
 
@@ -859,6 +919,7 @@ public class PartService {
             part.setDateModified(java.time.LocalDateTime.now());
             partRepository.save(part);
             logger.info("Picture uploaded and saved for part id: {}, url: {}", partId, url);
+            propagatePhotoUrlToSiblings(part.getPartNumber(), part.getPartPhotoUrl(), part.getPartId());
             return url;
         } catch (IOException e) {
             // Let IOException propagate as declared, but log it first
@@ -918,6 +979,7 @@ public class PartService {
         part.setDateModified(LocalDateTime.now());
         partRepository.save(part);
         logger.info("Part picture updated successfully for id {}", partId);
+        propagatePhotoUrlToSiblings(part.getPartNumber(), newUrl, part.getPartId());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
@@ -940,6 +1002,57 @@ public class PartService {
         part.setDateModified(LocalDateTime.now());
         partRepository.save(part);
         logger.info("Part photo removed successfully for id: {}", partId);
+    }
+
+    private boolean hasValidPhotoUrl(String url) {
+        return url != null && !url.isBlank() && !"0".equals(url);
+    }
+
+    private String resolveSharedPhotoUrl(String partNumber) {
+        if (partNumber == null || partNumber.isBlank()) {
+            return null;
+        }
+
+        return partRepository.findAllByPartNumber(partNumber).stream()
+                .filter(part -> !Boolean.TRUE.equals(part.getIsDeleted()))
+                .map(PartEntity::getPartPhotoUrl)
+                .filter(this::hasValidPhotoUrl)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void propagatePhotoUrlToSiblings(String partNumber, String photoUrl, Long sourcePartId) {
+        if (!hasValidPhotoUrl(photoUrl)) {
+            return;
+        }
+
+        List<PartEntity> siblings = partRepository.findAllByPartNumber(partNumber);
+        if (siblings.isEmpty()) {
+            return;
+        }
+
+        String currentUser = getCurrentUserEmail();
+        LocalDateTime now = LocalDateTime.now();
+        boolean updated = false;
+
+        for (PartEntity sibling : siblings) {
+            if (Boolean.TRUE.equals(sibling.getIsDeleted())) {
+                continue;
+            }
+            if (Objects.equals(sibling.getPartId(), sourcePartId)) {
+                continue;
+            }
+            if (!hasValidPhotoUrl(sibling.getPartPhotoUrl())) {
+                sibling.setPartPhotoUrl(photoUrl);
+                sibling.setModifiedBy(currentUser);
+                sibling.setDateModified(now);
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            partRepository.saveAll(siblings);
+        }
     }
 
     public Map<String, Object> verifyWarranty(Long partId) {

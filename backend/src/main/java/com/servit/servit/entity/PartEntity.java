@@ -105,6 +105,7 @@ public class PartEntity {
     @OneToOne
     @JoinColumn(name = "warranty_id")
     @JsonBackReference
+    @ToString.Exclude
     private WarrantyEntity warranty;
 
     @Column(name = "brand")

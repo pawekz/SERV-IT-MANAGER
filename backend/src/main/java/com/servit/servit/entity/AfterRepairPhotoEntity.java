@@ -2,6 +2,7 @@ package com.servit.servit.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -21,5 +22,6 @@ public class AfterRepairPhotoEntity {
     @ManyToOne
     @JoinColumn(name = "repair_ticket_id")
     @JsonBackReference
+    @ToString.Exclude
     private RepairTicketEntity repairTicket;
 } 

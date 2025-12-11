@@ -1,5 +1,34 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Search, ChevronDown, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { usePartPhoto } from "../../hooks/usePartPhoto.js";
+
+const PartPhoto = ({ partId, photoUrl }) => {
+  const { data: src, isLoading, isError } = usePartPhoto(partId, photoUrl);
+
+  if (isLoading) {
+    return (
+      <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center animate-pulse">
+        <span className="text-[8px] text-gray-400">...</span>
+      </div>
+    );
+  }
+
+  if (isError || !src) {
+    return (
+      <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
+        <Package size={16} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt="Part"
+      className="w-10 h-10 rounded-md object-cover border border-gray-200"
+    />
+  );
+};
 
 const AvailableInventory = ({ inventoryItems, selectedParts, togglePartSelection, getStatusColor }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,9 +104,7 @@ const AvailableInventory = ({ inventoryItems, selectedParts, togglePartSelection
                   />
                 </td>
                 <td className="px-5 py-4">
-                  <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
-                    {/* image placeholder */}
-                  </div>
+                  <PartPhoto partId={item.photoSourcePartId || item.id} photoUrl={item.partPhotoUrl} />
                 </td>
                 <td className="px-5 py-4">
                   <div className="text-sm font-medium text-gray-900">{item.name}</div>

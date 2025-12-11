@@ -3,6 +3,7 @@ package com.servit.servit.entity;
 import com.servit.servit.enumeration.RepairStatusEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class RepairStatusHistoryEntity {
 
     @ManyToOne
     @JoinColumn(name = "repair_ticket_id", nullable = false)
+    @ToString.Exclude
     private RepairTicketEntity repairTicket;
 
     @Enumerated(EnumType.STRING)
