@@ -4,15 +4,16 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.servit.servit.enumeration.WarrantyStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "warranty")
 @Data
+@ToString(exclude = "item")
 public class WarrantyEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
