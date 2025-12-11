@@ -94,12 +94,20 @@ public class PartService {
 
             // Use the first non-deleted part to get the common details
             PartEntity existingPart = existingParts.get(0);
+            String sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
             part.setName(existingPart.getName());
             part.setDescription(existingPart.getDescription());
             part.setUnitCost(existingPart.getUnitCost());
             part.setPartType(existingPart.getPartType());
             part.setBrand(existingPart.getBrand());
             part.setModel(existingPart.getModel());
+            if (sharedPhotoUrl != null) {
+                part.setPartPhotoUrl(sharedPhotoUrl);
+            }
 
             logger.info("Found {} existing parts with part number: {}", existingParts.size(), req.getPartNumber());
         } else {
@@ -110,6 +118,13 @@ public class PartService {
             part.setPartType(req.getPartType());
             part.setBrand(req.getBrand());
             part.setModel(req.getModel());
+        }
+
+        if (!hasValidPhotoUrl(part.getPartPhotoUrl())) {
+            String sharedPhotoUrlFallback = resolveSharedPhotoUrl(part.getPartNumber());
+            if (sharedPhotoUrlFallback != null) {
+                part.setPartPhotoUrl(sharedPhotoUrlFallback);
+            }
         }
 
         // Set common fields
@@ -164,12 +179,20 @@ public class PartService {
             }
 
             PartEntity existingPart = existingParts.get(0);
+            String sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
             part.setName(existingPart.getName());
             part.setDescription(existingPart.getDescription());
             part.setUnitCost(existingPart.getUnitCost());
             part.setPartType(existingPart.getPartType());
             part.setBrand(existingPart.getBrand());
             part.setModel(existingPart.getModel());
+            if (sharedPhotoUrl != null) {
+                part.setPartPhotoUrl(sharedPhotoUrl);
+            }
         } else {
             part.setName(req.getName());
             part.setDescription(req.getDescription());
@@ -182,6 +205,13 @@ public class PartService {
         part.setCurrentStock(1);
         part.setIsDeleted(false);
         part.setIsCustomerPurchased(false);
+
+        if (!hasValidPhotoUrl(part.getPartPhotoUrl())) {
+            String sharedPhotoUrlFallback = resolveSharedPhotoUrl(part.getPartNumber());
+            if (sharedPhotoUrlFallback != null) {
+                part.setPartPhotoUrl(sharedPhotoUrlFallback);
+            }
+        }
 
         try {
             PartEntity savedPart = partRepository.save(part);
@@ -237,6 +267,7 @@ public class PartService {
 
         // If adding to existing part number, fetch and copy the details
         PartEntity existingPart = null;
+        String sharedPhotoUrl = null;
         if (Boolean.TRUE.equals(bulkDto.getAddToExisting())) {
             // There may be many parts with the same part number, so fetch the list and
             // use the first active (non-deleted) entry instead of expecting a unique result.
@@ -250,6 +281,15 @@ public class PartService {
             }
 
             existingPart = existingParts.get(0);
+            sharedPhotoUrl = existingParts.stream()
+                    .map(PartEntity::getPartPhotoUrl)
+                    .filter(this::hasValidPhotoUrl)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (sharedPhotoUrl == null) {
+            sharedPhotoUrl = resolveSharedPhotoUrl(partNumber);
         }
 
         // First, check for duplicates within the request itself
@@ -293,6 +333,9 @@ public class PartService {
                 partEntity.setBrand(existingPart.getBrand());
                 partEntity.setModel(existingPart.getModel());
                 partEntity.setPartType(existingPart.getPartType());
+                if (sharedPhotoUrl != null) {
+                    partEntity.setPartPhotoUrl(sharedPhotoUrl);
+                }
             } else {
                 // Set new part details
                 partEntity.setName(bulkDto.getName());
@@ -314,6 +357,10 @@ public class PartService {
                 partEntity.setSupplierPartNumber(bulkDto.getSupplierPartNumber());
                 partEntity.setSupplierOrderDate(bulkDto.getSupplierOrderDate());
                 partEntity.setSupplierExpectedDelivery(bulkDto.getSupplierExpectedDelivery());
+            }
+
+            if (!hasValidPhotoUrl(partEntity.getPartPhotoUrl()) && sharedPhotoUrl != null) {
+                partEntity.setPartPhotoUrl(sharedPhotoUrl);
             }
 
             partsToSave.add(partEntity);
@@ -872,6 +919,7 @@ public class PartService {
             part.setDateModified(java.time.LocalDateTime.now());
             partRepository.save(part);
             logger.info("Picture uploaded and saved for part id: {}, url: {}", partId, url);
+            propagatePhotoUrlToSiblings(part.getPartNumber(), part.getPartPhotoUrl(), part.getPartId());
             return url;
         } catch (IOException e) {
             // Let IOException propagate as declared, but log it first
@@ -931,6 +979,7 @@ public class PartService {
         part.setDateModified(LocalDateTime.now());
         partRepository.save(part);
         logger.info("Part picture updated successfully for id {}", partId);
+        propagatePhotoUrlToSiblings(part.getPartNumber(), newUrl, part.getPartId());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
@@ -953,6 +1002,57 @@ public class PartService {
         part.setDateModified(LocalDateTime.now());
         partRepository.save(part);
         logger.info("Part photo removed successfully for id: {}", partId);
+    }
+
+    private boolean hasValidPhotoUrl(String url) {
+        return url != null && !url.isBlank() && !"0".equals(url);
+    }
+
+    private String resolveSharedPhotoUrl(String partNumber) {
+        if (partNumber == null || partNumber.isBlank()) {
+            return null;
+        }
+
+        return partRepository.findAllByPartNumber(partNumber).stream()
+                .filter(part -> !Boolean.TRUE.equals(part.getIsDeleted()))
+                .map(PartEntity::getPartPhotoUrl)
+                .filter(this::hasValidPhotoUrl)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void propagatePhotoUrlToSiblings(String partNumber, String photoUrl, Long sourcePartId) {
+        if (!hasValidPhotoUrl(photoUrl)) {
+            return;
+        }
+
+        List<PartEntity> siblings = partRepository.findAllByPartNumber(partNumber);
+        if (siblings.isEmpty()) {
+            return;
+        }
+
+        String currentUser = getCurrentUserEmail();
+        LocalDateTime now = LocalDateTime.now();
+        boolean updated = false;
+
+        for (PartEntity sibling : siblings) {
+            if (Boolean.TRUE.equals(sibling.getIsDeleted())) {
+                continue;
+            }
+            if (Objects.equals(sibling.getPartId(), sourcePartId)) {
+                continue;
+            }
+            if (!hasValidPhotoUrl(sibling.getPartPhotoUrl())) {
+                sibling.setPartPhotoUrl(photoUrl);
+                sibling.setModifiedBy(currentUser);
+                sibling.setDateModified(now);
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            partRepository.saveAll(siblings);
+        }
     }
 
     public Map<String, Object> verifyWarranty(Long partId) {
