@@ -402,7 +402,11 @@ public class QuotationService {
             return;
         }
         try {
-            EmailService.QuotationOption selected = buildOption(safeParseLong(quotation.getCustomerSelection()), "Approved Selection", quotation.getLaborCost());
+            EmailService.QuotationOption selected = buildOption(
+                    quotation,
+                    safeParseLong(quotation.getCustomerSelection()),
+                    "Approved Selection",
+                    quotation.getLaborCost());
             if (selected == null) {
                 return;
             }
@@ -419,10 +423,30 @@ public class QuotationService {
         }
     }
 
-    private EmailService.QuotationOption buildOption(Long partId, String label, Double laborCost) {
+    private EmailService.QuotationOption buildOption(QuotationEntity quotation, Long partId, String label, Double laborCost) {
         if (partId == null) {
             return null;
         }
+
+        // If the selected part belongs to the recommended set, return the entire recommended list
+        if (quotation != null && quotation.getRecommendedPart() != null && !quotation.getRecommendedPart().isEmpty()) {
+            boolean inRecommended = quotation.getRecommendedPart().stream()
+                    .anyMatch(p -> p != null && p.getPartId() != null && p.getPartId().equals(partId));
+            if (inRecommended) {
+                return buildOptionFromPartList(quotation.getRecommendedPart(), label, laborCost);
+            }
+        }
+
+        // If the selected part belongs to the alternative set, return the entire alternative list
+        if (quotation != null && quotation.getAlternativePart() != null && !quotation.getAlternativePart().isEmpty()) {
+            boolean inAlternative = quotation.getAlternativePart().stream()
+                    .anyMatch(p -> p != null && p.getPartId() != null && p.getPartId().equals(partId));
+            if (inAlternative) {
+                return buildOptionFromPartList(quotation.getAlternativePart(), label, laborCost);
+            }
+        }
+
+        // Fallback: build a single-part option
         return partRepository.findById(partId)
                 .map(part -> {
                     double unitCost = part.getUnitCost() != null ? part.getUnitCost().doubleValue() : 0.0;

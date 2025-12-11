@@ -2,6 +2,7 @@ package com.servit.servit.service;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.servit.servit.util.EmailUtil;
+import com.servit.servit.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,7 @@ public class EmailService {
     private EmailUtil emailUtil;
 
     @Autowired
-    private com.servit.servit.util.FileUtil fileUtil;
+    private FileUtil fileUtil;
 
     public void sendOtpEmail(String to, String otp) throws MessagingException {
         String subject = "Account Verification Request (OTP) - IOCONNECT";
@@ -312,14 +313,22 @@ public class EmailService {
                                                boolean isApprovedSummary) {
 
         String customer = customerName == null ? "Customer" : customerName;
-        String primaryCard = renderOptionCard(primary);
-        String secondaryCard = renderOptionCard(secondary);
+        String optionCards = "";
+        if (!isApprovedSummary) {
+            String primaryCard = renderOptionCard(primary);
+            String secondaryCard = renderOptionCard(secondary);
+            StringBuilder grid = new StringBuilder("<div class='options-grid'>");
+            if (primaryCard != null && !primaryCard.isEmpty()) grid.append(primaryCard);
+            if (secondaryCard != null && !secondaryCard.isEmpty()) grid.append(secondaryCard);
+            grid.append("</div>");
+            optionCards = grid.toString();
+        }
 
         String ctaButton = "<div style='text-align:center;margin-top:18px;'><a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;'>View Quotation</a></div>";
 
+        // Build a concise breakdown table for approved summary (keeps single card + breakdown)
         String pricingTable = "";
         if (isApprovedSummary && primary != null && !primary.getParts().isEmpty()) {
-            // Build a clearer table for approved quotation showing breakdown with all parts
             StringBuilder tableRows = new StringBuilder();
             for (PartInfo part : primary.getParts()) {
                 tableRows.append("<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: ")
@@ -331,7 +340,7 @@ public class EmailService {
                     "<table role='table' style='width:100%;border-collapse:collapse;font-size:14px;'>" +
                     "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>Amount</th></tr></thead>" +
                     "<tbody>" +
-                    tableRows.toString() +
+                    tableRows +
                     "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
                     "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
                     "</tbody></table></div>";
@@ -341,18 +350,26 @@ public class EmailService {
                 "<head>" +
                 "<style>" +
                 "body { font-family: Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 0; }" +
-                ".email-container { max-width: 640px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); overflow: hidden; }" +
+                ".email-container { max-width: 720px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); overflow: hidden; }" +
                 ".header { background-color: #33e407; color: #ffffff; padding: 22px; text-align: center; font-size: 24px; font-weight: 700; }" +
                 ".content { padding: 24px; color: #1f2937; background-color: #ffffff; }" +
                 ".content h1 { font-size: 20px; margin-bottom: 8px; }" +
                 ".content p { font-size: 15px; line-height: 1.6; margin-bottom: 14px; }" +
                 ".ticket-box { display: inline-block; padding: 8px 14px; font-size: 15px; font-weight: 700; color: #ffffff; background-color: #33e407; border-radius: 6px; margin: 12px 0; }" +
-                ".option-card { border: 1px solid #e6f3ea; border-radius: 8px; padding: 14px; margin-bottom: 12px; background: #fbfffb; }" +
-                ".option-card h3 { margin: 0 0 6px; font-size: 16px; color: #064e3b; }" +
-                ".option-card p { margin: 4px 0; color: #374151; font-size: 14px; }" +
-                ".amounts { display: flex; gap: 12px; margin-top: 10px; font-size: 13px; font-weight: 600; }" +
-                ".amounts div { display: flex; flex-direction: column; }" +
-                ".amounts span { font-weight: 500; font-size: 12px; color: #6b7280; }" +
+                ".options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 12px; }" +
+                ".option-card { border: 1px solid #e6f3ea; border-radius: 10px; padding: 14px; background: #f8fdf9; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }" +
+                ".option-card__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }" +
+                ".option-card__title { font-size: 16px; font-weight: 700; color: #064e3b; }" +
+                ".option-card__meta { font-size: 12px; font-weight: 600; color: #047857; background: #e7f8ec; padding: 4px 8px; border-radius: 999px; }" +
+                ".option-card__parts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }" +
+                ".option-card__parts-title { font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }" +
+                ".part-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: #1f2937; padding: 8px 10px; background: #ffffff; border: 1px solid #ecf5ef; border-radius: 8px; }" +
+                ".part-row .part-name { font-weight: 600; color: #0b3b2e; }" +
+                ".part-row .part-sku { font-size: 12px; color: #6b7280; }" +
+                ".amounts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px; font-weight: 600; }" +
+                ".amounts div { background: #ffffff; border: 1px solid #ecf5ef; border-radius: 8px; padding: 10px; }" +
+                ".amounts span { display: block; font-weight: 500; font-size: 12px; color: #6b7280; margin-bottom: 4px; }" +
+                ".amounts .total { color: #065f46; font-size: 14px; }" +
                 ".footer { text-align: center; padding: 14px; font-size: 12px; color: #6b7280; background-color: #f3f6f5; }" +
                 "a.cta { display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;margin-top:10px; }" +
                 "</style>" +
@@ -364,7 +381,8 @@ public class EmailService {
                 "<h1>Hello " + customer + ",</h1>" +
                 "<p>" + intro + "</p>" +
                 "<div class='ticket-box'>Ticket " + ticketNumber + "</div>" +
-                (isApprovedSummary ? pricingTable : primaryCard + secondaryCard) +
+                optionCards +
+                (isApprovedSummary ? pricingTable : "") +
                 (reminderCopy != null ? "<p style='font-weight:700;color:#064e3b;margin-top:12px;'>" + reminderCopy + "</p>" : "") +
                 ctaButton +
                 "<p style='margin-top:18px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
@@ -381,22 +399,27 @@ public class EmailService {
         
         StringBuilder partsHtml = new StringBuilder();
         for (PartInfo part : option.getParts()) {
-            partsHtml.append("<p><strong>Part:</strong> ").append(escape(part.getPartName()))
-                    .append(" (SKU: ").append(escape(part.getSku())).append(")</p>");
-            if (part.getDescription() != null && !part.getDescription().trim().isEmpty()) {
-                partsHtml.append("<p style='font-size:13px;color:#6b7280;'>").append(escape(part.getDescription())).append("</p>");
-            }
+            partsHtml.append("<div class='part-row'>")
+                    .append("<div class='part-name'>").append(escape(part.getPartName())).append("</div>")
+                    .append("<div class='part-sku'>SKU: ").append(escape(part.getSku())).append("</div>")
+                    .append("</div>");
         }
-        
+
+        String partCount = option.getParts().size() == 1 ? "1 part" : option.getParts().size() + " parts";
+
         return "<div class='option-card'>" +
-                "<h3>" + escape(option.getLabel()) + 
-                (option.getParts().size() > 1 ? " (" + option.getParts().size() + " parts)" : "") + 
-                "</h3>" +
-                partsHtml.toString() +
+                "<div class='option-card__header'>" +
+                "<div class='option-card__title'>" + escape(option.getLabel()) + "</div>" +
+                "<div class='option-card__meta'>" + partCount + "</div>" +
+                "</div>" +
+                "<div class='option-card__parts'>" +
+                "<div class='option-card__parts-title'>Included parts</div>" +
+                partsHtml +
+                "</div>" +
                 "<div class='amounts'>" +
                 "<div><span>Parts Total</span>" + formatCurrency(option.getPartCost()) + "</div>" +
                 "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
-                "<div><span>Total</span>" + formatCurrency(option.getTotalCost()) + "</div>" +
+                "<div><span>Total</span><span class='total'>" + formatCurrency(option.getTotalCost()) + "</span></div>" +
                 "</div>" +
                 "</div>";
     }
