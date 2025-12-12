@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../../config/ApiConfig';
 
@@ -50,6 +50,7 @@ const AddPartModal = ({
     const [imageValidationError, setImageValidationError] = useState(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingSubmit, setPendingSubmit] = useState(null);
+    const partCheckTimeoutRef = useRef(null);
 
     const fetchPresignedImageUrl = useCallback(async (id, originalUrl) => {
         try {
@@ -74,7 +75,8 @@ const AddPartModal = ({
 
     // Function to check if part number exists and auto-fill fields
     const checkPartNumber = useCallback(async (partNumber) => {
-        if (!partNumber) {
+        const normalized = (partNumber || '').trim();
+        if (!normalized) {
             setPartExists(false);
             return;
         }
@@ -82,11 +84,18 @@ const AddPartModal = ({
         setCheckingPart(true);
         console.log('Checking part number:', partNumber);
         try {
+            // Keep trimmed value in state to avoid trailing-space mismatches
+            onInputChange({
+                target: {
+                    name: 'partNumber',
+                    value: normalized
+                }
+            });
             const token = localStorage.getItem('authToken');
             console.log('Auth token present:', !!token);
             
-            console.log('Making API request to:', `/part/getPartDetailsByPartNumber/${partNumber}`);
-            const response = await api.get(`/part/getPartDetailsByPartNumber/${partNumber}`);
+            console.log('Making API request to:', `/part/getPartDetailsByPartNumber/${normalized}`);
+            const response = await api.get(`/part/getPartDetailsByPartNumber/${encodeURIComponent(normalized)}`);
             console.log('API response status:', response.status);
             console.log('API response headers:', response.headers);
             console.log('API response data:', response.data);
@@ -237,9 +246,20 @@ const AddPartModal = ({
     }, [onInputChange]);
 
     // Part-number input handlers (no debounce)
+    const triggerDebouncedCheck = useCallback((value) => {
+        if (partCheckTimeoutRef.current) {
+            clearTimeout(partCheckTimeoutRef.current);
+        }
+        partCheckTimeoutRef.current = setTimeout(() => {
+            checkPartNumber(value);
+        }, 300);
+    }, [checkPartNumber]);
+
     const handlePartNumberChange = useCallback((e) => {
-        onInputChange(e); // just update local state
-    }, [onInputChange]);
+        const value = e.target.value;
+        onInputChange({ ...e, target: { ...e.target, value } }); // update parent with raw input
+        triggerDebouncedCheck(value); // auto-check without relying on blur
+    }, [onInputChange, triggerDebouncedCheck]);
 
     const handlePartNumberBlur = useCallback((e) => {
         const value = e.target.value;
@@ -366,6 +386,9 @@ const AddPartModal = ({
     useEffect(() => {
         return () => {
             if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (partCheckTimeoutRef.current) {
+                clearTimeout(partCheckTimeoutRef.current);
+            }
         };
     }, [objectUrl]);
 

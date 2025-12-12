@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { X, Copy, Trash, Plus } from 'lucide-react';
 import api from '../../../config/ApiConfig';
 
@@ -14,10 +14,12 @@ const BulkAddModal = ({
 }) => {
     const [partExists, setPartExists] = useState(false);
     const [checkingPart, setCheckingPart] = useState(false);
+    const partCheckTimeoutRef = useRef(null);
 
     // Function to check if part number exists and auto-fill fields
     const checkPartNumber = useCallback(async (partNumber, index) => {
-        if (!partNumber) {
+        const normalized = (partNumber || '').trim();
+        if (!normalized) {
             setPartExists(false);
             return;
         }
@@ -27,7 +29,9 @@ const BulkAddModal = ({
         
         setCheckingPart(true);
         try {
-            const response = await api.get(`/part/getPartDetailsByPartNumber/${partNumber}`);
+            // Keep trimmed value in state to avoid trailing-space mismatches
+            onBulkItemChange(0, 'partNumber', normalized);
+            const response = await api.get(`/part/getPartDetailsByPartNumber/${encodeURIComponent(normalized)}`);
             const details = response.data;
             
             if (details.exists) {
@@ -52,10 +56,22 @@ const BulkAddModal = ({
         }
     }, [onBulkItemChange]);
 
-    // Handle part number input change ~with proper debouncing~
+    const triggerDebouncedCheck = useCallback((value) => {
+        if (partCheckTimeoutRef.current) {
+            clearTimeout(partCheckTimeoutRef.current);
+        }
+        partCheckTimeoutRef.current = setTimeout(() => {
+            checkPartNumber(value, 0);
+        }, 300);
+    }, [checkPartNumber]);
+
+    // Handle part number input change with debounced lookup on master row
     const handlePartNumberChange = useCallback((index, value) => {
         onBulkItemChange(index, 'partNumber', value);
-    }, [onBulkItemChange]);
+        if (index === 0) {
+            triggerDebouncedCheck(value);
+        }
+    }, [onBulkItemChange, triggerDebouncedCheck]);
 
     // NEW: trigger part number check when the user leaves the field
     const handlePartNumberBlur = useCallback((index, value) => {
@@ -64,8 +80,13 @@ const BulkAddModal = ({
         }
     }, [checkPartNumber]);
 
-    // Cleanup timeout on unmount ~ (removed since debounce no longer used)
-    // ... existing code ...
+    useEffect(() => {
+        return () => {
+            if (partCheckTimeoutRef.current) {
+                clearTimeout(partCheckTimeoutRef.current);
+            }
+        };
+    }, []);
 
     if (!isOpen) return null;
 
