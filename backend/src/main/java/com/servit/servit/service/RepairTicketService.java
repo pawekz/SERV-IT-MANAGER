@@ -468,7 +468,7 @@ public class RepairTicketService {
         notification.setStatus(newStatus.name());
         notification.setRecipientEmail(repairTicket.getCustomerEmail());
         notification.setMessage("Your repair ticket " + repairTicket.getTicketNumber() +
-                " status changed to: " + newStatus.name());
+                " status changed to: " + formatStatusName(newStatus.name()));
 
         notificationService.sendNotification(notification);
 
@@ -832,5 +832,25 @@ public class RepairTicketService {
             default:
                 return "Status updated to " + status.replace("_", " ").toLowerCase();
         }
+    }
+
+    private String formatStatusName(String statusName) {
+        if (statusName == null || statusName.isEmpty()) {
+            return statusName;
+        }
+        String[] words = statusName.replace("_", " ").toLowerCase().split(" ");
+        StringBuilder formatted = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                formatted.append(" ");
+            }
+            if (!words[i].isEmpty()) {
+                formatted.append(Character.toUpperCase(words[i].charAt(0)));
+                if (words[i].length() > 1) {
+                    formatted.append(words[i].substring(1));
+                }
+            }
+        }
+        return formatted.toString();
     }
 }
