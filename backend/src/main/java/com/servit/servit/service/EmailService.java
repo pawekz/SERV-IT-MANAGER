@@ -317,78 +317,73 @@ public class EmailService {
         if (!isApprovedSummary) {
             String primaryCard = renderOptionCard(primary);
             String secondaryCard = renderOptionCard(secondary);
-            StringBuilder grid = new StringBuilder("<div class='options-grid'>");
-            if (primaryCard != null && !primaryCard.isEmpty()) grid.append(primaryCard);
-            if (secondaryCard != null && !secondaryCard.isEmpty()) grid.append(secondaryCard);
-            grid.append("</div>");
+            StringBuilder grid = new StringBuilder("<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='margin-top:12px;'>");
+            grid.append("<tr>");
+            if (primaryCard != null && !primaryCard.isEmpty()) {
+                grid.append("<td width='50%' valign='top' style='padding-right:7px;padding-bottom:14px;'>").append(primaryCard).append("</td>");
+            }
+            if (secondaryCard != null && !secondaryCard.isEmpty()) {
+                grid.append("<td width='50%' valign='top' style='padding-left:7px;padding-bottom:14px;'>").append(secondaryCard).append("</td>");
+            }
+            grid.append("</tr></table>");
             optionCards = grid.toString();
         }
 
-        String ctaButton = "<div style='text-align:center;margin-top:18px;'><a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;'>View Quotation</a></div>";
+        String ctaButton = "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='margin-top:18px;'>" +
+                "<tr><td align='center'>" +
+                "<a href='https://weservit.tech/login' style='display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;'>View Quotation</a>" +
+                "</td></tr></table>";
 
         // Build a concise breakdown table for approved summary (keeps single card + breakdown)
         String pricingTable = "";
         if (isApprovedSummary && primary != null && !primary.getParts().isEmpty()) {
             StringBuilder tableRows = new StringBuilder();
             for (PartInfo part : primary.getParts()) {
-                tableRows.append("<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Part: ")
+                tableRows.append("<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;font-family:Arial,sans-serif;font-size:14px;'>Part: ")
                         .append(escape(part.getPartName())).append(" (SKU: ").append(escape(part.getSku()))
-                        .append(")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>")
+                        .append(")</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;font-family:Arial,sans-serif;font-size:14px;'>")
                         .append(formatCurrency(part.getPartCost())).append("</td></tr>");
             }
-            pricingTable = "<div style='margin-top:18px;'>" +
-                    "<table role='table' style='width:100%;border-collapse:collapse;font-size:14px;'>" +
-                    "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>Amount</th></tr></thead>" +
+            pricingTable = "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='margin-top:18px;font-family:Arial,sans-serif;'>" +
+                    "<tr><td>" +
+                    "<table role='table' cellpadding='0' cellspacing='0' border='0' width='100%' style='width:100%;border-collapse:collapse;font-size:14px;font-family:Arial,sans-serif;'>" +
+                    "<thead><tr style='background:#f3fdf4;color:#065f46;text-align:left;'><th style='padding:10px 12px;border:1px solid #e6f3ea;font-family:Arial,sans-serif;font-size:14px;font-weight:700;'>Item</th><th style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;font-family:Arial,sans-serif;font-size:14px;font-weight:700;'>Amount</th></tr></thead>" +
                     "<tbody>" +
                     tableRows +
-                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
-                    "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
-                    "</tbody></table></div>";
+                    "<tr><td style='padding:10px 12px;border:1px solid #f0f6f1;font-family:Arial,sans-serif;font-size:14px;'>Labor</td><td style='padding:10px 12px;border:1px solid #f0f6f1;text-align:right;font-family:Arial,sans-serif;font-size:14px;'>" + formatCurrency(primary.getLaborCost()) + "</td></tr>" +
+                    "<tr style='font-weight:700;background:#ffffff;'><td style='padding:10px 12px;border:1px solid #e6f3ea;font-family:Arial,sans-serif;font-size:14px;'>Total</td><td style='padding:10px 12px;border:1px solid #e6f3ea;text-align:right;font-family:Arial,sans-serif;font-size:14px;'>" + formatCurrency(primary.getTotalCost()) + "</td></tr>" +
+                    "</tbody></table>" +
+                    "</td></tr></table>";
         }
 
-        return "<html>" +
+        return "<!DOCTYPE html>" +
+                "<html>" +
                 "<head>" +
-                "<style>" +
-                "body { font-family: Arial, sans-serif; background-color: #f4f6f5; margin: 0; padding: 0; }" +
-                ".email-container { max-width: 720px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); overflow: hidden; }" +
-                ".header { background-color: #33e407; color: #ffffff; padding: 22px; text-align: center; font-size: 24px; font-weight: 700; }" +
-                ".content { padding: 24px; color: #1f2937; background-color: #ffffff; }" +
-                ".content h1 { font-size: 20px; margin-bottom: 8px; }" +
-                ".content p { font-size: 15px; line-height: 1.6; margin-bottom: 14px; }" +
-                ".ticket-box { display: inline-block; padding: 8px 14px; font-size: 15px; font-weight: 700; color: #ffffff; background-color: #33e407; border-radius: 6px; margin: 12px 0; }" +
-                ".options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 12px; }" +
-                ".option-card { border: 1px solid #e6f3ea; border-radius: 10px; padding: 14px; background: #f8fdf9; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }" +
-                ".option-card__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }" +
-                ".option-card__title { font-size: 16px; font-weight: 700; color: #064e3b; }" +
-                ".option-card__meta { font-size: 12px; font-weight: 600; color: #047857; background: #e7f8ec; padding: 4px 8px; border-radius: 999px; }" +
-                ".option-card__parts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }" +
-                ".option-card__parts-title { font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }" +
-                ".part-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: #1f2937; padding: 8px 10px; background: #ffffff; border: 1px solid #ecf5ef; border-radius: 8px; }" +
-                ".part-row .part-name { font-weight: 600; color: #0b3b2e; }" +
-                ".part-row .part-sku { font-size: 12px; color: #6b7280; }" +
-                ".amounts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px; font-weight: 600; }" +
-                ".amounts div { background: #ffffff; border: 1px solid #ecf5ef; border-radius: 8px; padding: 10px; }" +
-                ".amounts span { display: block; font-weight: 500; font-size: 12px; color: #6b7280; margin-bottom: 4px; }" +
-                ".amounts .total { color: #065f46; font-size: 14px; }" +
-                ".footer { text-align: center; padding: 14px; font-size: 12px; color: #6b7280; background-color: #f3f6f5; }" +
-                "a.cta { display:inline-block;padding:12px 20px;border-radius:6px;background-color:#33e407;color:#ffffff;text-decoration:none;font-weight:600;margin-top:10px; }" +
-                "</style>" +
+                "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
                 "</head>" +
-                "<body>" +
-                "<div class='email-container'>" +
-                "<div class='header'>" + heading + "</div>" +
-                "<div class='content'>" +
-                "<h1>Hello " + customer + ",</h1>" +
-                "<p>" + intro + "</p>" +
-                "<div class='ticket-box'>Ticket " + ticketNumber + "</div>" +
+                "<body style='margin:0;padding:0;background-color:#f4f6f5;font-family:Arial,sans-serif;'>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='background-color:#f4f6f5;'>" +
+                "<tr><td align='center' style='padding:20px 10px;'>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='max-width:720px;background:#ffffff;border-radius:8px;overflow:hidden;'>" +
+                "<tr><td style='background-color:#33e407;color:#ffffff;padding:22px;text-align:center;font-size:24px;font-weight:700;font-family:Arial,sans-serif;'>" + heading + "</td></tr>" +
+                "<tr><td style='padding:24px;color:#1f2937;background-color:#ffffff;font-family:Arial,sans-serif;'>" +
+                "<h1 style='font-size:20px;margin:0 0 8px 0;font-weight:700;color:#1f2937;font-family:Arial,sans-serif;'>Hello " + customer + ",</h1>" +
+                "<p style='font-size:15px;line-height:1.6;margin:0 0 14px 0;color:#1f2937;font-family:Arial,sans-serif;'>" + intro + "</p>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='margin:12px 0;'>" +
+                "<tr><td align='center' style='padding:0;'>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' style='margin:0 auto;'>" +
+                "<tr><td style='padding:8px 14px;font-size:15px;font-weight:700;color:#ffffff;background-color:#33e407;border-radius:6px;font-family:Arial,sans-serif;'>Ticket " + ticketNumber + "</td></tr>" +
+                "</table></td></tr></table>" +
                 optionCards +
                 (isApprovedSummary ? pricingTable : "") +
-                (reminderCopy != null ? "<p style='font-weight:700;color:#064e3b;margin-top:12px;'>" + reminderCopy + "</p>" : "") +
+                (reminderCopy != null ? "<p style='font-weight:700;color:#064e3b;margin:12px 0 0 0;font-size:15px;line-height:1.6;font-family:Arial,sans-serif;'>" + reminderCopy + "</p>" : "") +
                 ctaButton +
-                "<p style='margin-top:18px;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
-                "</div>" +
-                "<div class='footer'>© 2025 IOCONNECT. All rights reserved.</div>" +
-                "</div>" +
+                "<p style='margin:18px 0 0 0;font-size:15px;line-height:1.6;color:#1f2937;font-family:Arial,sans-serif;'>Need help deciding? Call <strong>" + supportNumber + "</strong> referencing ticket <strong>" + ticketNumber + "</strong>.</p>" +
+                "</td></tr>" +
+                "<tr><td style='text-align:center;padding:14px;font-size:12px;color:#6b7280;background-color:#f3f6f5;font-family:Arial,sans-serif;'>© 2025 IOCONNECT. All rights reserved.</td></tr>" +
+                "</table>" +
+                "</td></tr></table>" +
                 "</body>" +
                 "</html>";
     }
@@ -399,29 +394,56 @@ public class EmailService {
         
         StringBuilder partsHtml = new StringBuilder();
         for (PartInfo part : option.getParts()) {
-            partsHtml.append("<div class='part-row'>")
-                    .append("<div class='part-name'>").append(escape(part.getPartName())).append("</div>")
-                    .append("<div class='part-sku'>SKU: ").append(escape(part.getSku())).append("</div>")
-                    .append("</div>");
+            partsHtml.append("<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='margin-bottom:8px;'>")
+                    .append("<tr><td style='padding:8px 10px;background:#ffffff;border:1px solid #ecf5ef;border-radius:8px;font-family:Arial,sans-serif;'>")
+                    .append("<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%'>")
+                    .append("<tr><td style='font-size:13px;font-weight:600;color:#0b3b2e;font-family:Arial,sans-serif;padding-bottom:4px;'>")
+                    .append(escape(part.getPartName()))
+                    .append("</td></tr>")
+                    .append("<tr><td style='font-size:12px;color:#6b7280;font-family:Arial,sans-serif;'>SKU: ")
+                    .append(escape(part.getSku()))
+                    .append("</td></tr>")
+                    .append("</table>")
+                    .append("</td></tr></table>");
         }
 
         String partCount = option.getParts().size() == 1 ? "1 part" : option.getParts().size() + " parts";
 
-        return "<div class='option-card'>" +
-                "<div class='option-card__header'>" +
-                "<div class='option-card__title'>" + escape(option.getLabel()) + "</div>" +
-                "<div class='option-card__meta'>" + partCount + "</div>" +
-                "</div>" +
-                "<div class='option-card__parts'>" +
-                "<div class='option-card__parts-title'>Included parts</div>" +
+        return "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='border:1px solid #e6f3ea;border-radius:10px;padding:14px;background:#f8fdf9;font-family:Arial,sans-serif;'>" +
+                // Header row with title and part count
+                "<tr><td style='padding-bottom:10px;'>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%'>" +
+                "<tr>" +
+                "<td style='font-size:16px;font-weight:700;color:#064e3b;font-family:Arial,sans-serif;'>" + escape(option.getLabel()) + "</td>" +
+                "<td align='right' style='font-size:12px;font-weight:600;color:#047857;background:#e7f8ec;padding:4px 8px;border-radius:999px;font-family:Arial,sans-serif;white-space:nowrap;'>" + partCount + "</td>" +
+                "</tr>" +
+                "</table>" +
+                "</td></tr>" +
+                // Included parts section
+                "<tr><td style='padding-bottom:12px;'>" +
+                "<div style='font-size:12px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-family:Arial,sans-serif;'>Included parts</div>" +
                 partsHtml +
-                "</div>" +
-                "<div class='amounts'>" +
-                "<div><span>Parts Total</span>" + formatCurrency(option.getPartCost()) + "</div>" +
-                "<div><span>Labor</span>" + formatCurrency(option.getLaborCost()) + "</div>" +
-                "<div><span>Total</span><span class='total'>" + formatCurrency(option.getTotalCost()) + "</span></div>" +
-                "</div>" +
-                "</div>";
+                "</td></tr>" +
+                // Amounts row (Parts Total, Labor, Total)
+                "<tr><td>" +
+                "<table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' style='font-size:13px;font-weight:600;font-family:Arial,sans-serif;'>" +
+                "<tr>" +
+                "<td width='33.33%' valign='top' style='background:#ffffff;border:1px solid #ecf5ef;border-radius:8px;padding:10px;'>" +
+                "<div style='font-weight:500;font-size:12px;color:#6b7280;margin-bottom:4px;font-family:Arial,sans-serif;'>Parts Total</div>" +
+                "<div style='font-family:Arial,sans-serif;'>" + formatCurrency(option.getPartCost()) + "</div>" +
+                "</td>" +
+                "<td width='33.33%' valign='top' style='background:#ffffff;border:1px solid #ecf5ef;border-radius:8px;padding:10px;'>" +
+                "<div style='font-weight:500;font-size:12px;color:#6b7280;margin-bottom:4px;font-family:Arial,sans-serif;'>Labor</div>" +
+                "<div style='font-family:Arial,sans-serif;'>" + formatCurrency(option.getLaborCost()) + "</div>" +
+                "</td>" +
+                "<td width='33.33%' valign='top' style='background:#ffffff;border:1px solid #ecf5ef;border-radius:8px;padding:10px;'>" +
+                "<div style='font-weight:500;font-size:12px;color:#6b7280;margin-bottom:4px;font-family:Arial,sans-serif;'>Total</div>" +
+                "<div style='color:#065f46;font-size:14px;font-family:Arial,sans-serif;'>" + formatCurrency(option.getTotalCost()) + "</div>" +
+                "</td>" +
+                "</tr>" +
+                "</table>" +
+                "</td></tr>" +
+                "</table>";
     }
 
     private String formatCurrency(double amount) {
