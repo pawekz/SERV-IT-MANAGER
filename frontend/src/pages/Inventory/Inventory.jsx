@@ -103,15 +103,29 @@ const fetchInventoryData = async () => {
     try {
         const lowStockResponse = await api.get('/part/stock/lowStockPartNumbers');
         const backendLowStockItems = Array.isArray(lowStockResponse.data) ? lowStockResponse.data : [];
+        
+        // Create a Set of part numbers that exist in transformedItems for quick lookup
+        const activePartNumbers = new Set(transformedItems.map(item => item.partNumber));
+        
+        // Filter backend low stock items to only include parts that exist in active inventory
+        const filteredLowStockItems = backendLowStockItems.filter(item => 
+            activePartNumbers.has(item.partNumber)
+        );
+        
+        // Also ensure out of stock items don't overlap with low stock items
+        const lowStockPartNumbers = new Set(filteredLowStockItems.map(item => item.partNumber));
+        const uniqueOutOfStockItems = outOfStockItems.filter(item => 
+            !lowStockPartNumbers.has(item.partNumber)
+        );
 
         return {
             items: transformedItems,
-            lowStockPartNumbers: backendLowStockItems,
+            lowStockPartNumbers: filteredLowStockItems,
             stockSummary: {
                 totalPartNumbers: transformedItems.length,
-                lowStockCount: backendLowStockItems.length,
-                outOfStockCount: outOfStockItems.length,
-                activeAlertsCount: backendLowStockItems.length + outOfStockItems.length
+                lowStockCount: filteredLowStockItems.length,
+                outOfStockCount: uniqueOutOfStockItems.length,
+                activeAlertsCount: filteredLowStockItems.length + uniqueOutOfStockItems.length
             }
         };
     } catch (lowStockErr) {
