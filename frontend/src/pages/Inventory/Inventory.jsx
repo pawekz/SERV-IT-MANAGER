@@ -1559,7 +1559,27 @@ const Inventory = () => {
             {showAddModal && (
                 <AddPartModal
                     isOpen={showAddModal}
-                    onClose={() => setShowAddModal(false)}
+                    onClose={() => {
+                        setShowAddModal(false);
+                        // Reset form to initial state
+                        setNewPart({
+                            partNumber: "",
+                            name: "",
+                            description: "",
+                            unitCost: 0,
+                            currentStock: 0,
+                            lowStockThreshold: 10,
+                            serialNumber: "",
+                            dateAdded: null,
+                            datePurchasedByCustomer: null,
+                            warrantyExpiration: "",
+                            addedBy: "",
+                            addToExisting: false,
+                            image: null
+                        });
+                        setAddPartSuccess(false);
+                        setAddPartError(null);
+                    }}
                     onSubmit={handleAddPart}
                     onInputChange={handleInputChange}
                     newPart={newPart}
