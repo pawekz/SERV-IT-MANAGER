@@ -245,24 +245,45 @@ const AddPartModal = ({
         }
     }, [onInputChange]);
 
-    // Part-number input handlers (no debounce)
-    const triggerDebouncedCheck = useCallback((value) => {
+    // Part-number input handlers - only trigger autofill on blur (focus out)
+    const handlePartNumberChange = useCallback((e) => {
+        const value = e.target.value;
+        const name = e.target.name;
+        
+        // Update parent with raw input
+        onInputChange({
+            target: {
+                name: name,
+                value: value
+            }
+        });
+        
+        // Clear part exists state when user is actively editing
         if (partCheckTimeoutRef.current) {
             clearTimeout(partCheckTimeoutRef.current);
         }
-        partCheckTimeoutRef.current = setTimeout(() => {
-            checkPartNumber(value);
-        }, 300);
-    }, [checkPartNumber]);
-
-    const handlePartNumberChange = useCallback((e) => {
-        const value = e.target.value;
-        onInputChange({ ...e, target: { ...e.target, value } }); // update parent with raw input
-        triggerDebouncedCheck(value); // auto-check without relying on blur
-    }, [onInputChange, triggerDebouncedCheck]);
+        
+        // Only clear autofilled data, don't trigger check yet
+        if (partExists) {
+            setPartExists(false);
+            setPartId(null);
+            setImagePreview(null);
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+                setObjectUrl(null);
+            }
+            onInputChange({
+                target: {
+                    name: 'addToExisting',
+                    value: false
+                }
+            });
+        }
+    }, [onInputChange, partExists, objectUrl]);
 
     const handlePartNumberBlur = useCallback((e) => {
         const value = e.target.value;
+        // Only check when user leaves the field (blur/focus out)
         checkPartNumber(value);
     }, [checkPartNumber]);
 
@@ -407,7 +428,22 @@ const AddPartModal = ({
                         </p>
                     </div>
                     <button
-                        onClick={onClose}
+                        onClick={() => {
+                            // Clear all form values
+                            setPartExists(false);
+                            setPartId(null);
+                            setImagePreview(null);
+                            setImageError(false);
+                            setImageValidationError(null);
+                            if (objectUrl) {
+                                URL.revokeObjectURL(objectUrl);
+                                setObjectUrl(null);
+                            }
+                            if (partCheckTimeoutRef.current) {
+                                clearTimeout(partCheckTimeoutRef.current);
+                            }
+                            onClose();
+                        }}
                         className="text-gray-500 hover:text-gray-700"
                     >
                         <X size={20} />
@@ -632,7 +668,22 @@ const AddPartModal = ({
                     <div className="flex justify-end space-x-3 mt-6">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => {
+                                // Clear all form values
+                                setPartExists(false);
+                                setPartId(null);
+                                setImagePreview(null);
+                                setImageError(false);
+                                setImageValidationError(null);
+                                if (objectUrl) {
+                                    URL.revokeObjectURL(objectUrl);
+                                    setObjectUrl(null);
+                                }
+                                if (partCheckTimeoutRef.current) {
+                                    clearTimeout(partCheckTimeoutRef.current);
+                                }
+                                onClose();
+                            }}
                             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                         >
                             Cancel
